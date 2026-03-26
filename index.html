@@ -145,6 +145,8 @@ const MW=1900,MH=1900; // map size (smaller for higher pressure)
 const PR=18,ER=16,BR=5,PS=4.5;
 const AUTO_CD=500,HOLD_CD=115;
 const ULT_CHARGE_NEED=100; // charge by holding ult button (100 = full)
+const BH_DURATION_MS=3000;
+const BH_COOLDOWN_MS=20000;
 const CRATE_HP=8;
 const BOSS_EVERY=8; // kills between bosses (was 12, faster first encounter)
 const EXP_BASE=50,EXP_SCALE=1.55;
@@ -346,15 +348,28 @@ function hud(){if(!g)return;
   $("ll").textContent="Lv."+g.level;
   $("eb").style.width=(g.exp/g.expTo*100)+"%";
   $("sl").textContent="⭐"+g.score;$("kl").textContent="💀"+g.kills;
-  const pct=Math.min(g.ultCharge/ULT_CHARGE_NEED,1);
-  $("ultR").style.background="conic-gradient(#BE4BDB "+(pct*360)+"deg,rgba(190,78,219,.1) "+(pct*360)+"deg)";
-  $("ultI").textContent=pct>=1?"💥":"💎";
-  $("ultL").textContent=pct>=1?"⬇ 大招就緒 ⬇":g.ultHold?"集氣中...":"長壓集氣";
-  $("ub").style.width=(pct*100)+"%";
-  $("ulbl").textContent=pct>=1?"💥MAX":`💎${Math.floor(pct*100)}%`;
-  $("ulr").textContent=pct>=1?"💥 READY":"💎"+Math.floor(pct*100)+"%";
-  $("ulr").style.color=pct>=1?"#FFD43B":"rgba(190,78,219,.85)";
-  $("ultR").style.animation=pct>=1?"gw .45s infinite":"none";
+  if(g.p.ultType==="bh"){
+    const now=performance.now(),cdLeft=Math.max(0,(g.ultCdEnd||0)-now),ready=cdLeft<=0;
+    const pct=ready?1:1-cdLeft/BH_COOLDOWN_MS;
+    $("ultR").style.background="conic-gradient(#495057 "+(pct*360)+"deg,rgba(190,78,219,.1) "+(pct*360)+"deg)";
+    $("ultI").textContent=ready?"🕳️":"⏳";
+    $("ultL").textContent=ready?"⬇ 黑洞就緒 ⬇":`冷卻 ${Math.ceil(cdLeft/1000)}s`;
+    $("ub").style.width=(pct*100)+"%";
+    $("ulbl").textContent=ready?"🕳️READY":`⏳${Math.ceil(cdLeft/1000)}s`;
+    $("ulr").textContent=ready?"🕳️ READY":`⏳ ${Math.ceil(cdLeft/1000)}s`;
+    $("ulr").style.color=ready?"#FFD43B":"rgba(190,78,219,.85)";
+    $("ultR").style.animation=ready?"gw .45s infinite":"none";
+  }else{
+    const pct=Math.min(g.ultCharge/ULT_CHARGE_NEED,1);
+    $("ultR").style.background="conic-gradient(#BE4BDB "+(pct*360)+"deg,rgba(190,78,219,.1) "+(pct*360)+"deg)";
+    $("ultI").textContent=pct>=1?"💥":"💎";
+    $("ultL").textContent=pct>=1?"⬇ 大招就緒 ⬇":g.ultHold?"集氣中...":"長壓集氣";
+    $("ub").style.width=(pct*100)+"%";
+    $("ulbl").textContent=pct>=1?"💥MAX":`💎${Math.floor(pct*100)}%`;
+    $("ulr").textContent=pct>=1?"💥 READY":"💎"+Math.floor(pct*100)+"%";
+    $("ulr").style.color=pct>=1?"#FFD43B":"rgba(190,78,219,.85)";
+    $("ultR").style.animation=pct>=1?"gw .45s infinite":"none";
+  }
 }
 
 /* ═══ floating hints ═══ */
@@ -713,24 +728,25 @@ function triggerHuntPressure(now){
 }
 function tapAtk(){if(!g||!g.run||g.heatCD>0)return;const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;const berserkMul=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;fire((3.5+g.p.atk+bonus)*berserkMul,g.ad.x,g.ad.y,.03);if(!g.heatCD)$("combo").textContent=aim.tn>2?aim.tn+"x COMBO!":"";clearTimeout(cTimer);cTimer=setTimeout(()=>{if(!g.heatCD){$("combo").textContent="";}aim.tn=0;},700);}
 
-function doUlt(){if(!g||!g.run||g.ultCharge<ULT_CHARGE_NEED)return;
+function doUlt(){if(!g||!g.run)return;
   const isBH=g.p.ultType==="bh";
+  const now=performance.now();
+  if(isBH&&now<(g.ultCdEnd||0))return;
+  if(!isBH&&g.ultCharge<ULT_CHARGE_NEED)return;
   const ultLv=g.p.ultLv||0;
   const baseDmg=(ULT_D+g.p.atk*4+g.level*3)*(g.p.ultDmgMul||1)*(1+ultLv*.35);
   if(isBH){
-    const bhDur=2200+ultLv*500;
-    const pull=55+ultLv*24;
-    g.ene.forEach(e=>{const dx=g.p.x-e.x,dy=g.p.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;e.x+=dx/d*pull;e.y+=dy/d*pull;});
-    g.bhEnd=performance.now()+bhDur;
+    g.bhEnd=now+BH_DURATION_MS;
     g.bhPow=1+ultLv*.45;
-    g.p.bhSafeEnd=performance.now()+bhDur+900; // prevent instant death while enemies are vacuumed in / right after collapse
+    g.ultCdEnd=now+BH_COOLDOWN_MS;
+    g.p.bhSafeEnd=now+BH_DURATION_MS;
   }
   g.ene.forEach(e=>{e.hp-=baseDmg;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(baseDmg),life:1.3,color:isBH?"#868E96":"#FFD43B",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,14);});
   settleEnemyDeaths();
   const cols=isBH?["#495057","#868E96","#CED4DA","#fff"]:["#BE4BDB","#FFD43B","#FF6B6B","#74C0FC","#fff"];
   const burstCount=40+ultLv*12;
   for(let i=0;i<burstCount&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/burstCount,v=rn(2,7+ultLv);par.push({x:g.p.x+Math.cos(a)*20,y:g.p.y+Math.sin(a)*20,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1.3+ultLv*.15,color:cols[i%cols.length],sz:rn(3,8+ultLv)});}
-  g.ultFlash=1;g.ultType=isBH?"bh":"n";g.ultCharge=0;
+  g.ultFlash=1;g.ultType=isBH?"bh":"n";if(!isBH)g.ultCharge=0;
 }
 
 /* ════════ MAIN LOOP ════════ */
@@ -749,35 +765,32 @@ function loop(){
     else{const sec=Math.ceil(g.heatCD/1000);$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FF6B6B,#C92A2A);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;letter-spacing:.5px;box-shadow:0 0 14px #FF6B6Baa;animation:gw .65s infinite">🔥 攻擊冷卻 '+sec+'s</span>';}}
   else if(g.huntModeUntil&&now<g.huntModeUntil){$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FA5252,#C92A2A);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;box-shadow:0 0 14px #FA5252aa;animation:gw .55s infinite">⚠️ 獵殺模式</span>';}
 
-  // ult charge — hold to charge, tap when full to detonate
-  if(g.ultHold&&g.ultCharge<ULT_CHARGE_NEED){g.ultCharge=Math.min(g.ultCharge+(g.p.ultRate||1)*dt*1.2,ULT_CHARGE_NEED);}
-  if(!g.ultHold&&g.ultCharge>0&&g.ultCharge<ULT_CHARGE_NEED){g.ultCharge=Math.max(0,g.ultCharge-dt*.4);}// slowly drain if released early
+  // ult charge — hold to charge, tap when full to detonate (non-black-hole)
+  if(g.p.ultType!=="bh"){
+    if(g.ultHold&&g.ultCharge<ULT_CHARGE_NEED){g.ultCharge=Math.min(g.ultCharge+(g.p.ultRate||1)*dt*1.2,ULT_CHARGE_NEED);}
+    if(!g.ultHold&&g.ultCharge>0&&g.ultCharge<ULT_CHARGE_NEED){g.ultCharge=Math.max(0,g.ultCharge-dt*.4);}// slowly drain if released early
+  }else g.ultHold=false;
   if(!g.heatCD&&aim.a){g.heat=Math.min(HOLD_COOLDOWN_NEED,g.heat+dt*16.67);}
   else if(g.heat>0&&!aim.a){g.heat=Math.max(0,g.heat-dt*40);}
   if(g.heat>=HOLD_COOLDOWN_NEED&&!g.heatCD){g.heatCD=500;g.heat=HOLD_COOLDOWN_NEED;}
 
-  // black-hole ult field (continuous pull + damage so difference is obvious)
+  // black-hole ult field: 3s duration, pull + instantly kill non-boss enemies
   if(g.bhEnd&&now<g.bhEnd){
-    const bhLv=(g.p.ultLv||0),bhR=145+bhLv*35,bhTick=(11+bhLv*5+g.p.atk*.7+g.level*.35)*(g.bhPow||1);
+    const bhLv=(g.p.ultLv||0),bhR=170+bhLv*30;
     g.ene.forEach(e=>{
+      if(e.boss)return; // mini-boss/boss and above are not affected by black-hole pull
       const dx=g.p.x-e.x,dy=g.p.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
       if(d>bhR)return;
-      const pull=(1-d/bhR)*(3.2+bhLv*1.4)*dt*16.67;
+      const pull=(1-d/bhR)*(4+bhLv*1.2)*dt*16.67;
       e.x+=dx/d*pull;e.y+=dy/d*pull;
-      e.hp-=(bhTick+e.mhp*.0018)*dt*.75;
+      e.hp=0;
+      burst(e.x,e.y,"#868E96",8);
     });
   }else if(g.bhEnd){
-    const bhLv=(g.p.ultLv||0),blastR=170+bhLv*40,blastDmg=(20+g.p.atk*6+g.level*4)*(1+bhLv*.45);
-    g.ene.forEach(e=>{
-      const dx=e.x-g.p.x,dy=e.y-g.p.y,d=Math.sqrt(dx*dx+dy*dy)||1;
-      if(d>blastR)return;
-      e.hp-=blastDmg*(1-d/blastR*.65);
-      const kb=(1-d/blastR)*(28+bhLv*9);
-      e.x+=dx/d*kb;e.y+=dy/d*kb;
-    });
-    g.p.bhSafeEnd=Math.max(g.p.bhSafeEnd||0,now+700); // small grace to avoid post-black-hole pileup deaths
+    g.p.bhSafeEnd=Math.max(g.p.bhSafeEnd||0,now+150);
     g.bhEnd=0;g.bhPow=1;
   }
+  settleEnemyDeaths();
 
   // auto-aim target (attack input only triggers shooting, not direction control)
   let nr=null,nd=1e9;
@@ -1369,7 +1382,7 @@ window.startGame=window.SG=function(){
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
     lastKill:performance.now(),lastHunt:0,
-    time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1};
+    time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1};
   inv=[];par=[];
   joy={a:0,dx:0,dy:0,id:null,sx:null,sy:null};aim={a:0,dx:0,dy:0,id:null,sx:null,sy:null,tn:0,lt:0};
   show("play");if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
@@ -1398,7 +1411,9 @@ $("jzR").addEventListener("touchstart",e=>{
 
 function startUltPress(){
   if(!g)return;
-  if(g.ultCharge>=ULT_CHARGE_NEED){
+  if(g.p.ultType==="bh"){
+    if(performance.now()>=(g.ultCdEnd||0))doUlt();
+  }else if(g.ultCharge>=ULT_CHARGE_NEED){
     doUlt(); // cast immediately when fully charged
   }else g.ultHold=true;
 }
@@ -1453,7 +1468,12 @@ window.addEventListener("keydown",e=>{
   ks[e.key]=true;
   uK();
   if(c==="Space"||e.key===" "){e.preventDefault();tapAtk();}
-  if(c==="KeyE"||e.key==="e"||e.key==="E"){if(g&&g.ultCharge>=ULT_CHARGE_NEED)doUlt();else if(g)g.ultHold=true;}
+  if(c==="KeyE"||e.key==="e"||e.key==="E"){
+    if(!g)return;
+    if(g.p.ultType==="bh"){if(performance.now()>=(g.ultCdEnd||0))doUlt();}
+    else if(g.ultCharge>=ULT_CHARGE_NEED)doUlt();
+    else g.ultHold=true;
+  }
   if(c.startsWith("Arrow"))e.preventDefault();
 },{capture:true});
 window.addEventListener("keyup",e=>{
