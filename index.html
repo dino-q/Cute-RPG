@@ -292,7 +292,7 @@ function pks(n,excludeIds){
 
 let cv,cx,fxc,fxctx;
 let g,joy={a:0,dx:0,dy:0,id:null,sx:null,sy:null},aim={a:0,dx:0,dy:0,id:null,sx:null,sy:null,tn:0,lt:0};
-let raf,cTimer;
+let raf,cTimer,ultCastTimer=null;
 
 function setStick(el,dx=0,dy=0){
   el.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
