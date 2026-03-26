@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>萌萌大冒險 — Cute Dungeon Adventure</title>
+<title>Dino真是個小天才</title>
 <meta name="theme-color" content="#141428">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
@@ -30,6 +30,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 @keyframes ssrRainbow{0%{border-color:#FFD43B;box-shadow:0 0 15px #FFD43B60}25%{border-color:#FF6B6B;box-shadow:0 0 15px #FF6B6B60}50%{border-color:#DA77F2;box-shadow:0 0 15px #DA77F260}75%{border-color:#74C0FC;box-shadow:0 0 15px #74C0FC60}100%{border-color:#FFD43B;box-shadow:0 0 15px #FFD43B60}}
 @keyframes srShine{0%,100%{box-shadow:0 0 10px #DA77F240}50%{box-shadow:0 0 22px #DA77F266,0 0 35px #DA77F222}}
 @keyframes cardSelect{0%{transform:scale(1)}15%{transform:scale(1.15)}30%{transform:scale(.95)}100%{transform:scale(0);opacity:0}}
+@keyframes heroUltPulse{0%{transform:scale(.7);opacity:.85}100%{transform:scale(1.8);opacity:0}}
 /* HUD */
 #hud{position:absolute;top:0;left:0;right:0;padding:5px 10px;z-index:10;pointer-events:none;display:none}
 .hbar{display:flex;align-items:center;gap:4px;margin-bottom:2px}
@@ -77,8 +78,13 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 <!-- Title -->
 <div id="titleOv" class="ov" style="background:linear-gradient(140deg,#141428,#1a1a35 40%,#0f1a2e)">
 <div class="panel" style="background:transparent;border:none">
-  <div style="font-size:72px;animation:fl 2.5s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(116,192,252,.5))">🧙‍♂️</div>
-  <h1 style="font-size:30px;font-weight:900;color:#fff;margin:4px 0 0;text-shadow:0 0 25px rgba(116,192,252,.3)">萌萌大冒險</h1>
+  <div id="heroIcon" style="position:relative;width:86px;height:86px;margin:0 auto;animation:fl 2.5s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(116,192,252,.55))">
+    <div style="position:absolute;left:50%;top:50%;width:56px;height:56px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#cfe7ff 45%,#74C0FC);border:2px solid rgba(255,255,255,.25)"></div>
+    <div style="position:absolute;left:57%;top:22%;width:8px;height:42px;transform:rotate(34deg);background:linear-gradient(180deg,#fff,#CED4DA 60%,#ADB5BD);border-radius:4px;box-shadow:0 0 10px rgba(255,255,255,.45)"></div>
+    <div style="position:absolute;left:58%;top:57%;width:18px;height:5px;transform:rotate(34deg);background:#FFD43B;border-radius:3px"></div>
+    <div id="heroUltFx" style="position:absolute;inset:0;border-radius:50%;border:2px solid #BE4BDB;opacity:0;pointer-events:none"></div>
+  </div>
+  <h1 style="font-size:30px;font-weight:900;color:#fff;margin:4px 0 0;text-shadow:0 0 25px rgba(116,192,252,.3)">Dino真是個小天才</h1>
   <p style="color:rgba(255,255,255,.35);font-size:12px;margin:0 0 20px;letter-spacing:2px">Cute Dungeon Adventure</p>
   <button class="btn btn-b" onclick="startGame()">▶ 開始冒險</button>
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6;margin-top:10px">
@@ -198,7 +204,7 @@ card("毒刺","🌿","R","atk",["中毒2秒","中毒4秒","劇毒7秒"],[s=>{s.p
 card("穿透箭","🔱","R","atk",["子彈穿透1個","穿透2個","穿透全部"],[s=>{s.pierce=(s.pierce||0)+1},s=>{s.pierce=(s.pierce||0)+2},s=>{s.pierce=99}],"#F08C00");
 card("蓄力拳","👊","R","atk",["攻+3","攻+6","攻+10"],[s=>{s.atk+=3},s=>{s.atk+=6},s=>{s.atk+=10}],"#E8590C");
 card("回血斬","💉","R","pas",["擊殺回5HP","回12HP","回22HP"],[s=>{s.ls=(s.ls||0)+5},s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+22}],"#E64980");
-card("探索靴","🗺️","R","pas",["寶箱顯示範圍+30%","範圍+60%","全圖顯示"],[s=>{s.crateVis=(s.crateVis||1)*1.3},s=>{s.crateVis=(s.crateVis||1)*1.6},s=>{s.crateVis=99}],"#12B886");
+card("探索靴","🗺️","R","pas",["移速+0.3 吸取+25%","移速+0.7 吸取+55%","移速+1.2 吸取+100%"],[s=>{s.speed+=.3;s.expR=(s.expR||1)*1.25},s=>{s.speed+=.7;s.expR=(s.expR||1)*1.55},s=>{s.speed+=1.2;s.expR=(s.expR||1)*2}],"#12B886");
 card("堅韌心","🫀","R","pas",["最大HP+10 攻+1","HP+20 攻+2","HP+35 攻+4"],[s=>{s.maxHp+=10;s.hp=Math.min(s.hp+10,s.maxHp);s.atk+=1},s=>{s.maxHp+=20;s.hp=Math.min(s.hp+20,s.maxHp);s.atk+=2},s=>{s.maxHp+=35;s.hp=Math.min(s.hp+35,s.maxHp);s.atk+=4}],"#FF922B");
 // --- SR: 20 cards ---
 card("雷擊鏈","⚡","SR","atk",["連鎖雷電×1","連鎖×2","連鎖×3"],[s=>{s.chain=(s.chain||0)+1;s.fx.lightning=1},s=>{s.chain=(s.chain||0)+2;s.fx.lightning=2},s=>{s.chain=(s.chain||0)+3;s.fx.lightning=3}],"#FAB005","lightning");
@@ -246,6 +252,8 @@ const di=(a,b)=>Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);
 const cl=(v,l,h)=>Math.max(l,Math.min(h,v));
 const rn=(a,b)=>a+Math.random()*(b-a);
 const $=id=>document.getElementById(id);
+const mapW=()=>MW+((g&&g.p&&g.p.mapExpand)||0);
+const mapH=()=>MH+((g&&g.p&&g.p.mapExpand)||0);
 const crateActive=cr=>!!(g&&cr&&cr.hp>0&&g.level>=(cr.unlockLv||1));
 let fxQ=1; // adaptive FX quality (1=full, lower=lighter effects)
 function nearestTargets(src,k){
@@ -321,7 +329,7 @@ function settleEnemyDeaths(){
 }
 
 /* ═══ camera ═══ */
-function cam(){return{x:cl(g.p.x-VW/2,0,MW-VW),y:cl(g.p.y-VH/2,0,MH-VH)};}
+function cam(){const w=mapW(),h=mapH();return{x:cl(g.p.x-VW/2,0,w-VW),y:cl(g.p.y-VH/2,0,h-VH)};}
 
 /* ═══ resize ═══ */
 function resize(){const s=Math.min(window.innerWidth/VW,window.innerHeight/VH,2),cw=VW*s,ch=VH*s;
@@ -373,7 +381,7 @@ function showHint(text){
 function drawMinimap(){
   const mc=$("minimap"),mx=mc.getContext("2d"),mw=mc.width,mh=mc.height;
   mx.fillStyle="rgba(10,10,24,.7)";mx.fillRect(0,0,mw,mh);
-  const sx=mw/MW,sy=mh/MH;
+  const sx=mw/mapW(),sy=mh/mapH();
   // crates
   g.crates.forEach(c=>{if(crateActive(c)){mx.fillStyle="rgba(255,215,75,.6)";mx.fillRect(c.x*sx-1,c.y*sy-1,2,2);}});
   // enemies
@@ -547,6 +555,21 @@ function show(n){["titleOv","tutOv","pickOv","overOv"].forEach(id=>$(id).style.d
 }
 
 window.showTutorial=function(){show("tut");};
+function titleHeroUlt(){
+  const fx=$("heroUltFx");
+  if(!fx)return;
+  fx.style.animation="none";
+  fx.style.opacity=".9";
+  void fx.offsetWidth;
+  fx.style.animation="heroUltPulse .75s ease-out";
+  setTimeout(()=>{if(fx)fx.style.opacity="0";},760);
+}
+(function loopTitleHeroUlt(){
+  setTimeout(()=>{
+    titleHeroUlt();
+    loopTitleHeroUlt();
+  },3000+Math.random()*2000);
+})();
 
 /* ═══ generate map features ═══ */
 function genCrates(){
@@ -641,7 +664,7 @@ function spawn(boss,opts={}){
   const rm=(boss?1.85:1)*(mega?1.9:1)*(1+tier*.11)*grow.size;
   const a=rn(0,Math.PI*2),d=SPAWN_R+rn(0,80);
   let x=g.p.x+Math.cos(a)*d,y=g.p.y+Math.sin(a)*d;
-  x=cl(x,ER*rm+5,MW-ER*rm-5);y=cl(y,ER*rm+5,MH-ER*rm-5);
+  x=cl(x,ER*rm+5,mapW()-ER*rm-5);y=cl(y,ER*rm+5,mapH()-ER*rm-5);
   const tcols=TC[tier],col=tcols[tcols.length*Math.random()|0];
   const role=opts.role??pickRole(w,boss);
   // role-specific tweaks
@@ -699,6 +722,7 @@ function doUlt(){if(!g||!g.run||g.ultCharge<ULT_CHARGE_NEED)return;
     g.ene.forEach(e=>{const dx=g.p.x-e.x,dy=g.p.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;e.x+=dx/d*pull;e.y+=dy/d*pull;});
     g.bhEnd=performance.now()+(2200+ultLv*500);
     g.bhPow=1+ultLv*.45;
+    g.p.bhSafeEnd=performance.now()+(2400+ultLv*500); // prevent instant death while enemies are vacuumed in
   }
   g.ene.forEach(e=>{e.hp-=baseDmg;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(baseDmg),life:1.3,color:isBH?"#868E96":"#FFD43B",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,14);});
   settleEnemyDeaths();
@@ -712,11 +736,12 @@ function doUlt(){if(!g||!g.run||g.ultCharge<ULT_CHARGE_NEED)return;
 function loop(){
   if(!g||!g.run){raf=requestAnimationFrame(loop);return;}
   const now=performance.now(),frameMs=Math.min(now-g.lf,33),dt=frameMs/16.67;g.lf=now;g.time=now;
+  const bhSafe=!!(g.p.bhSafeEnd&&now<g.p.bhSafeEnd);
   fxQ=frameMs>24?Math.max(.45,fxQ-.05):Math.min(1,fxQ+.02);
 
   // move
   if(joy.a){g.p.x+=joy.dx*g.p.speed*dt;g.p.y+=joy.dy*g.p.speed*dt;if(Math.abs(joy.dx)>.2)g.p.face=joy.dx>0?1:-1;}
-  g.p.x=cl(g.p.x,PR+4,MW-PR-4);g.p.y=cl(g.p.y,PR+4,MH-PR-4);
+  g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
 
   // heat system
   if(g.heatCD>0){g.heatCD-=dt*16.67;if(g.heatCD<=0){g.heatCD=0;g.heat=0;$("combo").textContent="";}
@@ -816,7 +841,7 @@ function loop(){
       if(Math.random()<.12&&par.length<MAX_PARTICLES)par.push({x:e.x+rn(-e.r,e.r),y:e.y+rn(-e.r,e.r),vx:rn(-.4,.4),vy:rn(-1.2,-.3),life:.5,color:"#FF6B6B",sz:rn(2,4)});
     }
     const cs=e.st>0?(g.p.slow||1):1;const ts=e.frozen>0?0:1;
-    const hs=(g.huntModeUntil&&now<g.huntModeUntil)?1.35:1;
+    const hs=(g.huntModeUntil&&now<g.huntModeUntil)?2.1:1;
     const es=e.speed*hs;
     const dx=g.p.x-e.x,dy=g.p.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
     if(Math.abs(dx)>2)e.face=dx>0?1:-1;
@@ -883,6 +908,10 @@ function loop(){
       e.x+=(dx/d*es*cs*ts+Math.sin(e.t*2.5)*.3*ts)*dt;
       e.y+=(dy/d*es*cs*ts)*dt;
     }
+    // anti-clump jitter so enemies approach from less predictable angles
+    const jw=.18*hs;
+    e.x+=Math.sin(e.t*3.7+(e.flankA||0))*jw*dt;
+    e.y+=Math.cos(e.t*3.1+(e.flankA||0))*jw*dt;
 
     // === Boss skills (wave 10+) ===
     if(e.boss&&g.wave>=10&&ts){
@@ -934,7 +963,7 @@ function loop(){
       if(Math.abs(b.x-g.p.x)>VW||Math.abs(b.y-g.p.y)>VH)return false;
       if(b.life<=0)return false;
       // hit player?
-      if(!g.p._inv&&di(b,g.p)<PR+4){
+      if(!g.p._inv&&!bhSafe&&di(b,g.p)<PR+4){
         if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});return false;}
         if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"🛡️擋住",life:1,color:"#4DABF7",big:1});return false;}
         const lateMul=1+Math.max(0,g.wave-10)*.07;
@@ -1008,7 +1037,7 @@ function loop(){
   const ep=60*(g.p.expR||1);g.orbs=g.orbs.filter(o=>{const d=di(o,g.p);if(d<ep){const s=Math.max(3,(ep-d)/ep*8),dx=g.p.x-o.x,dy=g.p.y-o.y,dd=Math.sqrt(dx*dx+dy*dy)||1;o.x+=dx/dd*s*dt;o.y+=dy/dd*s*dt;}if(d<PR+8){g.exp+=o.xp;return false;}o.life-=.001*dt;return o.life>0;});
 
   // enemy-player
-  if(!g.p._inv){
+  if(!g.p._inv&&!bhSafe){
   g.ene=g.ene.filter(e=>{if(di(e,g.p)<PR+e.r-4){
     if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});if(g.p.dodgeAtk>0){e.hp-=g.p.dodgeAtk;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(g.p.dodgeAtk),life:1,color:"#FFE066"});}return e.hp>0;}
     if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"🛡️擋住",life:1,color:"#4DABF7",big:1});return false;}
@@ -1039,15 +1068,33 @@ function loop(){
   }
 
   // orbiters
-  const whirlCnt=g.p.whirlCount||0,passiveCnt=g.p.orbiters||0,totalOrb=whirlCnt+passiveCnt;
+  const whirlCnt=g.p.whirlCount||0,passiveCnt=g.p.orbiters||0,totalOrb=whirlCnt+passiveCnt,passiveOrbPos=[];
   if(totalOrb>0){for(let i=0;i<totalOrb;i++){
     const whirlLv=g.p.whirlLv||0,isWhirl=i<whirlCnt;
     const rotMul=isWhirl?([1,1,1.18,1.42][whirlLv]||1):1;
     const orbR=isWhirl?([42,48,58,70][whirlLv]||42):42;
     const a=now/(600/rotMul)+Math.PI*2*i/totalOrb;
     const ox=g.p.x+Math.cos(a)*orbR,oy=g.p.y+Math.sin(a)*orbR;
+    if(!isWhirl)passiveOrbPos.push({x:ox,y:oy});
     g.ene.forEach(e=>{if(di({x:ox,y:oy},e)<e.r+(isWhirl?14:12)){const dmg=(g.p.atk*.4+2)*(isWhirl?1.1:1)*dt;e.hp-=dmg;}});
   }}
+  // summoned orbs actively zap nearby enemies
+  if(passiveCnt>0&&g.ene.length){
+    g.p.orbShotT=(g.p.orbShotT||0)-dt*16.67;
+    if(g.p.orbShotT<=0){
+      g.p.orbShotT=420/Math.max(1,passiveCnt);
+      passiveOrbPos.forEach(o=>{
+        let t=null,nd=260;
+        g.ene.forEach(e=>{const d=di(o,e);if(e.hp>0&&d<nd){nd=d;t=e;}});
+        if(t){
+          const od=(g.p.atk*.85+3.5);
+          t.hp-=od;
+          addLtn(o.x,o.y,t.x,t.y,.5);
+          g.dn.push({x:t.x,y:t.y-t.r,d:Math.floor(od),life:.7,color:"#FCC419"});
+        }
+      });
+    }
+  }
   settleEnemyDeaths();
 
   // particles
@@ -1070,10 +1117,10 @@ function loop(){
     cx.fillStyle=dark;cx.fillRect(tx*tileS,ty*tileS,tileS,tileS);
   }
   // map border
-  cx.strokeStyle="rgba(255,255,255,.06)";cx.lineWidth=2;cx.strokeRect(0,0,MW,MH);
+  cx.strokeStyle="rgba(255,255,255,.06)";cx.lineWidth=2;cx.strokeRect(0,0,mapW(),mapH());
 
   // crates
-  const crateSense=Infinity; // always hint crates regardless of distance
+  const crateSense=Infinity; // crate hints always visible across full map
   g.crates.forEach(cr=>{if(!crateActive(cr))return;
     const dx=cr.x-g.p.x,dy=cr.y-g.p.y;if(Math.abs(dx)>VW*.7||Math.abs(dy)>VH*.7)return;
     cx.save();cx.fillStyle="#3D3522";cx.fillRect(cr.x-12,cr.y-12,24,24);cx.strokeStyle="#FFD43B60";cx.lineWidth=1.5;cx.strokeRect(cr.x-12,cr.y-12,24,24);
@@ -1305,7 +1352,7 @@ window.startGame=window.SG=function(){
   cv.width=fxc.width=VW;cv.height=fxc.height=VH;resize();
   // clear BG
   cx.fillStyle="#0a0a18";cx.fillRect(0,0,VW,VH);
-  g={p:{x:MW/2,y:MH/2,hp:120,maxHp:120,atk:2.5,speed:PS,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,ultType:"n",ultLv:0,pierce:0,homing:0,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,crateVis:1,pickCount:2,face:1},
+  g={p:{x:MW/2,y:MH/2,hp:120,maxHp:120,atk:2.5,speed:PS,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,ultType:"n",ultLv:0,pierce:0,homing:0,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,crateVis:1,mapExpand:0,pickCount:2,face:1},
     ene:[],bul:[],par:[],dn:[],orbs:[],ltn:[],ebul:[],crates:genCrates(),
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
