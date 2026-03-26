@@ -46,10 +46,10 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 .jkR{background:radial-gradient(circle,rgba(255,107,107,.35),rgba(255,107,107,.08));border:2px solid rgba(255,107,107,.4)}
 #rbtns{display:flex;flex-direction:column;gap:7px;align-items:center;pointer-events:auto}
 #combo{color:#FFD43B;font-size:11px;font-weight:900;text-shadow:0 0 8px #FFD43B;min-height:16px;text-align:center}
-#ultW{position:relative;width:50px;height:50px}
-#ultR{width:50px;height:50px;border-radius:50%;display:flex;justify-content:center;align-items:center;cursor:pointer;touch-action:none}
-#ultI{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle,rgba(190,78,219,.12),rgba(20,20,40,.95));border:1.5px solid rgba(190,78,219,.25);display:flex;justify-content:center;align-items:center;font-size:18px}
-#ultL{color:rgba(255,255,255,.25);font-size:7px;text-align:center;margin-top:1px}
+#ultW{position:relative;width:66px;height:66px}
+#ultR{width:66px;height:66px;border-radius:50%;display:flex;justify-content:center;align-items:center;cursor:pointer;touch-action:none;box-shadow:0 0 18px rgba(190,78,219,.3)}
+#ultI{width:50px;height:50px;border-radius:50%;background:radial-gradient(circle,rgba(190,78,219,.2),rgba(20,20,40,.95));border:2px solid rgba(190,78,219,.45);display:flex;justify-content:center;align-items:center;font-size:24px}
+#ultL{color:rgba(255,255,255,.42);font-size:9px;text-align:center;margin-top:2px;font-weight:700}
 #minimap{position:absolute;top:52px;right:8px;z-index:10;pointer-events:none;border:1px solid rgba(255,255,255,.1);border-radius:4px;display:none}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
 </style>
@@ -68,8 +68,8 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div class="joyW" id="jzL" style="width:140px;height:140px;margin-bottom:14px"><div class="joyR"><div class="joyK jkL" id="jkL"></div></div></div>
   <div id="rbtns">
     <div id="combo"></div>
-    <div class="joyW" id="jzR" style="width:120px;height:120px"><div class="joyR"><div class="joyK jkR" id="jkR"></div></div></div>
     <div id="ultW"><div id="ultR"><div id="ultI">💎</div></div><div id="ultL">長壓集氣</div></div>
+    <div class="joyW" id="jzR" style="width:120px;height:120px"><div class="joyR"><div class="joyK jkR" id="jkR"></div></div></div>
   </div>
 </div>
 
@@ -156,8 +156,9 @@ const SPAWN_R=320; // spawn distance from player (closer threats)
 const ULT_D=55;
 const MAX_EBULLETS=80; // enemy bullet pool cap
 const PLAYER_DMG_SCALE=.84; // lower overall item/bullet damage
-const ENEMY_HP_SCALE=1.12; // enemies slightly tankier
+const ENEMY_HP_SCALE=1.18; // enemies slightly tankier
 const LIGHTNING_CAP=90; // cap lightning fx to avoid frame drops
+const HOLD_COOLDOWN_NEED=15e3; // holding attack for 15s triggers cooldown
 
 /* ═══ enemy roles — unlocked gradually by wave ═══ */
 const ROLE_NORMAL="n",ROLE_FLANKER="f",ROLE_SHOOTER="s",ROLE_DASHER="d",ROLE_SHIELD="sh";
@@ -244,6 +245,7 @@ const di=(a,b)=>Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);
 const cl=(v,l,h)=>Math.max(l,Math.min(h,v));
 const rn=(a,b)=>a+Math.random()*(b-a);
 const $=id=>document.getElementById(id);
+const crateActive=cr=>!!(g&&cr&&cr.hp>0&&g.level>=(cr.unlockLv||1));
 
 /* ═══ inventory ═══ */
 let inv=[];
@@ -346,7 +348,7 @@ function drawMinimap(){
   mx.fillStyle="rgba(10,10,24,.7)";mx.fillRect(0,0,mw,mh);
   const sx=mw/MW,sy=mh/MH;
   // crates
-  g.crates.forEach(c=>{if(c.hp>0){mx.fillStyle="rgba(255,215,75,.6)";mx.fillRect(c.x*sx-1,c.y*sy-1,2,2);}});
+  g.crates.forEach(c=>{if(crateActive(c)){mx.fillStyle="rgba(255,215,75,.6)";mx.fillRect(c.x*sx-1,c.y*sy-1,2,2);}});
   // enemies
   g.ene.forEach(e=>{mx.fillStyle=e.boss?"#FF6B6B":e.role===ROLE_SHOOTER?"#FFA94D":e.role===ROLE_SHIELD?"#4DABF7":"rgba(255,100,100,.5)";mx.fillRect(e.x*sx-1,e.y*sy-1,e.boss?3:2,e.boss?3:2);});
   // player
@@ -390,10 +392,6 @@ function drawPlayer(x,y,r,t,col,face){
   const fx=g?g.p.fx:{},wt=getWpn(fx),w=WP[wt]||WP.sword;
   // shadow
   cx.fillStyle="rgba(0,0,0,.2)";cx.beginPath();cx.ellipse(x,y+r+2,r*.6,2.5,0,0,Math.PI*2);cx.fill();
-  // cape
-  cx.fillStyle=col+"44";cx.beginPath();cx.moveTo(x-f*r*.2,cy);
-  cx.quadraticCurveTo(x-f*r*.9,cy+r+Math.sin(t*4)*2,x-f*r*.5,cy+r*1.4);
-  cx.lineTo(x-f*r*.05,cy+r*.15);cx.closePath();cx.fill();
   // weapon
   cx.save();cx.translate(x+f*r*.7,cy-r*.05);cx.rotate(f>0?-.45:.45+Math.PI);
   cx.rotate(Math.sin(t*5)*.04);cx.shadowColor=w[1];cx.shadowBlur=4;
@@ -407,28 +405,6 @@ function drawPlayer(x,y,r,t,col,face){
   bg.addColorStop(0,"#fff");bg.addColorStop(.3,"#d4e8ff");bg.addColorStop(1,col);
   cx.beginPath();cx.arc(x,cy,r,0,Math.PI*2);cx.fillStyle=bg;cx.fill();
   cx.strokeStyle="rgba(0,0,0,.06)";cx.lineWidth=1;cx.stroke();
-  // hair — spiky, golden, direction-aware
-  cx.fillStyle="#FFD43B";
-  cx.beginPath();cx.moveTo(x-r*.35,cy-r*.85);cx.lineTo(x+f*r*.15,cy-r*1.55);cx.lineTo(x+f*r*.1,cy-r*.85);cx.closePath();cx.fill();
-  cx.beginPath();cx.moveTo(x-f*r*.05,cy-r*.88);cx.lineTo(x+f*r*.5,cy-r*1.3);cx.lineTo(x+f*r*.32,cy-r*.8);cx.closePath();cx.fill();
-  cx.beginPath();cx.moveTo(x-f*r*.3,cy-r*.82);cx.lineTo(x-f*r*.1,cy-r*1.2);cx.lineTo(x+f*r*.08,cy-r*.85);cx.closePath();cx.fill();
-  // eyes — big anime style, direction-aware
-  const ed=f*r*.1;
-  cx.fillStyle="#fff";
-  cx.beginPath();cx.ellipse(x+ed-r*.24,cy+r*.05,r*.22,r*.26,0,0,Math.PI*2);cx.fill();
-  cx.beginPath();cx.ellipse(x+ed+r*.24,cy+r*.05,r*.22,r*.26,0,0,Math.PI*2);cx.fill();
-  cx.fillStyle="#2a5caa";
-  cx.beginPath();cx.arc(x+ed-r*.21+f*r*.05,cy+r*.08,r*.14,0,Math.PI*2);cx.fill();
-  cx.beginPath();cx.arc(x+ed+r*.27+f*r*.05,cy+r*.08,r*.14,0,Math.PI*2);cx.fill();
-  cx.fillStyle="#111";
-  cx.beginPath();cx.arc(x+ed-r*.19+f*r*.05,cy+r*.09,r*.08,0,Math.PI*2);cx.fill();
-  cx.beginPath();cx.arc(x+ed+r*.29+f*r*.05,cy+r*.09,r*.08,0,Math.PI*2);cx.fill();
-  cx.fillStyle="#fff";
-  cx.beginPath();cx.arc(x+ed-r*.16+f*r*.02,cy,r*.05,0,Math.PI*2);cx.fill();
-  cx.beginPath();cx.arc(x+ed+r*.32+f*r*.02,cy,r*.05,0,Math.PI*2);cx.fill();
-  // small smile
-  cx.strokeStyle="#555";cx.lineWidth=1.2;cx.beginPath();
-  cx.arc(x+f*r*.04,cy+r*.32,r*.14,.1*Math.PI,.9*Math.PI);cx.stroke();
   cx.restore();
 }
 
@@ -544,7 +520,7 @@ function genCrates(){
     const x=rn(100,MW-100),y=rn(100,MH-100);
     if(Math.sqrt((x-spawnCenter.x)**2+(y-spawnCenter.y)**2)<350)continue; // keep away from spawn
     if(crates.some(c=>Math.sqrt((c.x-x)**2+(c.y-y)**2)<minDist))continue; // min spacing
-    crates.push({x,y,hp:CRATE_HP,mhp:CRATE_HP,card:null,hits:0,needed:rn(14,24)|0});
+    crates.push({x,y,hp:CRATE_HP,mhp:CRATE_HP,card:null,hits:0,needed:rn(8,14)|0,unlockLv:crates.length+1});
   }
   const shuffled=[...C].sort(()=>Math.random()-.5);
   crates.forEach((c,i)=>{c.card=shuffled[i%shuffled.length];});
@@ -597,8 +573,14 @@ function fire(dmg,dx,dy,sp){
   dmg*=PLAYER_DMG_SCALE;
   const shots=g.p.split||1,ba=Math.atan2(dy,dx),bc=bCol();
   const dbl=Math.random()<(g.p.dblAtk||0);
-  const count=Math.min(dbl?shots*2:shots,12);
-  for(let i=0;i<count;i++){const a=ba+(i-(count-1)/2)*.16+rn(-sp,sp);g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(g.p.crit||.05),bc,trail:[],pierce:g.p.pierce||0,hm:g.p.homing||0});}
+  const dirs=dbl?[ba,ba+Math.PI]:[ba];
+  dirs.forEach(dir=>{
+    const count=Math.min(shots,12);
+    for(let i=0;i<count;i++){
+      const a=dir+(i-(count-1)/2)*.16+rn(-sp,sp);
+      g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(g.p.crit||.05),bc,trail:[],pierce:g.p.pierce||0,hm:g.p.homing||0});
+    }
+  });
 }
 function spawn(boss,opts={}){
   if(!g||g.ene.length>=MAX_ENEMIES)return;
@@ -608,7 +590,7 @@ function spawn(boss,opts={}){
   const tierDmg=[1,1.15,1.35,1.6,1.9][tier]||1;
   const bhp=(20+w*11)*(1+w*.018)*tierHp;
   const hp=Math.floor(bhp*(boss?8.5:1)*ENEMY_HP_SCALE);
-  const spd=(.92+Math.min(w*.13,2.4))*(boss?.62:1)*tierSpd;
+  const spd=(.92+Math.min(w*.13,2.4))*tierSpd;
   const rm=(boss?1.85:1)*(1+tier*.11);
   const a=rn(0,Math.PI*2),d=SPAWN_R+rn(0,80);
   let x=g.p.x+Math.cos(a)*d,y=g.p.y+Math.sin(a)*d;
@@ -658,7 +640,7 @@ function triggerHuntPressure(now){
   pack.forEach(role=>{if(g.ene.length<MAX_ENEMIES)spawn(false,{role,tier});});
   g.dn.push({x:g.p.x,y:g.p.y-60,d:"⚠️ 被獵殺！快擊殺敵人止壓",life:1.6,color:"#FF6B6B",big:1});
 }
-function tapAtk(){if(!g||!g.run||g.heat>=g.heatMax)return;const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;const berserkMul=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;fire((3.5+g.p.atk+bonus)*berserkMul,g.ad.x,g.ad.y,.03);g.heat+=1.5;if(!g.heatCD)$("combo").textContent=aim.tn>2?aim.tn+"x COMBO!":"";clearTimeout(cTimer);cTimer=setTimeout(()=>{if(!g.heatCD){$("combo").textContent="";}aim.tn=0;},700);}
+function tapAtk(){if(!g||!g.run||g.heatCD>0)return;const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;const berserkMul=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;fire((3.5+g.p.atk+bonus)*berserkMul,g.ad.x,g.ad.y,.03);if(!g.heatCD)$("combo").textContent=aim.tn>2?aim.tn+"x COMBO!":"";clearTimeout(cTimer);cTimer=setTimeout(()=>{if(!g.heatCD){$("combo").textContent="";}aim.tn=0;},700);}
 
 function doUlt(){if(!g||!g.run||g.ultCharge<ULT_CHARGE_NEED)return;
   const isBH=g.p.ultType==="bh";
@@ -687,18 +669,19 @@ function loop(){
 
   // heat system
   if(g.heatCD>0){g.heatCD-=dt*16.67;if(g.heatCD<=0){g.heatCD=0;g.heat=0;$("combo").textContent="";}
-    else{const sec=Math.ceil(g.heatCD/1000);$("combo").innerHTML='<span style="color:#FF6B6B">🔥 冷卻 '+sec+'s</span>';}}
+    else{const sec=Math.ceil(g.heatCD/1000);$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FF6B6B,#C92A2A);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;letter-spacing:.5px;box-shadow:0 0 14px #FF6B6Baa;animation:gw .65s infinite">🔥 攻擊冷卻 '+sec+'s</span>';}}
 
   // ult charge — hold to charge, tap when full to detonate
   if(g.ultHold&&g.ultCharge<ULT_CHARGE_NEED){g.ultCharge=Math.min(g.ultCharge+(g.p.ultRate||1)*dt*1.2,ULT_CHARGE_NEED);}
   if(!g.ultHold&&g.ultCharge>0&&g.ultCharge<ULT_CHARGE_NEED){g.ultCharge=Math.max(0,g.ultCharge-dt*.4);}// slowly drain if released early
-  else if(g.heat>0&&!aim.a){g.heat=Math.max(0,g.heat-dt*.5);}
-  if(g.heat>=g.heatMax&&!g.heatCD){g.heatCD=1000;g.heat=g.heatMax;}
+  if(!g.heatCD&&aim.a){g.heat=Math.min(HOLD_COOLDOWN_NEED,g.heat+dt*16.67);}
+  else if(g.heat>0&&!aim.a){g.heat=Math.max(0,g.heat-dt*40);}
+  if(g.heat>=HOLD_COOLDOWN_NEED&&!g.heatCD){g.heatCD=500;g.heat=HOLD_COOLDOWN_NEED;}
 
   // auto-aim target (attack input only triggers shooting, not direction control)
   let nr=null,nd=1e9;
   g.ene.forEach(e=>{const d=di(g.p,e);if(d<nd){nd=d;nr=e;}});
-  g.crates.forEach(cr=>{if(cr.hp<=0)return;const d=di(g.p,cr);if(d<nd&&d<VW*.7){nd=d;nr=cr;}});
+  g.crates.forEach(cr=>{if(!crateActive(cr))return;const d=di(g.p,cr);if(d<nd&&d<VW*.7){nd=d;nr=cr;}});
   if(nr){
     const dx=nr.x-g.p.x,dy=nr.y-g.p.y,d=Math.sqrt(dx*dx+dy*dy)||1;
     g.ad={x:dx/d,y:dy/d};
@@ -925,7 +908,7 @@ function loop(){
 
   // bullet-crate hit
   const c_=cam();
-  g.crates.forEach(cr=>{if(cr.hp<=0)return;g.bul.forEach(b=>{if(b.life<=0)return;if(di(b,cr)<16){cr.hits++;b.life=0;burst(cr.x,cr.y,"#FFD43B",3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",12);g.run=false;showPick("crate");}}});});
+  g.crates.forEach(cr=>{if(!crateActive(cr))return;g.bul.forEach(b=>{if(b.life<=0)return;if(di(b,cr)<16){cr.hits++;b.life=0;burst(cr.x,cr.y,"#FFD43B",3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",12);g.run=false;showPick("crate");}}});});
 
   // exp orbs
   const ep=60*(g.p.expR||1);g.orbs=g.orbs.filter(o=>{const d=di(o,g.p);if(d<ep){const s=Math.max(3,(ep-d)/ep*8),dx=g.p.x-o.x,dy=g.p.y-o.y,dd=Math.sqrt(dx*dx+dy*dy)||1;o.x+=dx/dd*s*dt;o.y+=dy/dd*s*dt;}if(d<PR+8){g.exp+=o.xp;return false;}o.life-=.001*dt;return o.life>0;});
@@ -950,11 +933,12 @@ function loop(){
     if(g.level===6&&!g._hint6){g._hint6=1;showHint("⚠️ 新型敵人出現了！小心包圍！");}
     if(g.level===8&&!g._hint8){g._hint8=1;showHint("🎯 遠程射手出沒，注意閃避子彈！");}
     if(g.level===10&&!g._hint10){g._hint10=1;showHint("💨 衝刺者與強化 Boss 登場！");}
+    if(g.level<=g.crates.length)showHint("📦 新寶箱出現！");
   }
 
   // orbiters
   const totalOrb=(g.p.whirl||0)+(g.p.orbiters||0);
-  if(totalOrb>0){for(let i=0;i<totalOrb;i++){const a=now/600+Math.PI*2*i/totalOrb;const ox=g.p.x+Math.cos(a)*35,oy=g.p.y+Math.sin(a)*35;g.ene.forEach(e=>{if(di({x:ox,y:oy},e)<e.r+8){const dmg=(g.p.atk*.4+2)*dt;e.hp-=dmg;}});}}
+  if(totalOrb>0){for(let i=0;i<totalOrb;i++){const a=now/600+Math.PI*2*i/totalOrb;const ox=g.p.x+Math.cos(a)*42,oy=g.p.y+Math.sin(a)*42;g.ene.forEach(e=>{if(di({x:ox,y:oy},e)<e.r+12){const dmg=(g.p.atk*.4+2)*dt;e.hp-=dmg;}});}}
   settleEnemyDeaths();
 
   // particles
@@ -980,8 +964,8 @@ function loop(){
   cx.strokeStyle="rgba(255,255,255,.06)";cx.lineWidth=2;cx.strokeRect(0,0,MW,MH);
 
   // crates
-  const crateSense=(g.p.crateVis>=99)?Infinity:Math.max(VW,VH)*.55*(g.p.crateVis||1);
-  g.crates.forEach(cr=>{if(cr.hp<=0)return;
+  const crateSense=Infinity; // always hint crates regardless of distance
+  g.crates.forEach(cr=>{if(!crateActive(cr))return;
     const dx=cr.x-g.p.x,dy=cr.y-g.p.y;if(Math.abs(dx)>VW*.7||Math.abs(dy)>VH*.7)return;
     cx.save();cx.fillStyle="#3D3522";cx.fillRect(cr.x-12,cr.y-12,24,24);cx.strokeStyle="#FFD43B60";cx.lineWidth=1.5;cx.strokeRect(cr.x-12,cr.y-12,24,24);
     cx.fillStyle="#FFD43B";cx.font="bold 10px Nunito";cx.textAlign="center";cx.fillText("📦",cr.x,cr.y+4);
@@ -1074,7 +1058,7 @@ function loop(){
   if(g.p.fx.dragon){cx.save();cx.globalAlpha=.12+fxLv_*.03;cx.fillStyle="#FF922B";cx.beginPath();cx.arc(g.p.x,g.p.y,PR+6+(g.p.fx.dragon||1)*3,0,Math.PI*2);cx.fill();cx.restore();}
 
   // orbiters visual
-  if(totalOrb>0){for(let i=0;i<totalOrb;i++){const a=now/600+Math.PI*2*i/totalOrb;const ox=g.p.x+Math.cos(a)*35,oy=g.p.y+Math.sin(a)*35;cx.save();cx.shadowColor=i<(g.p.whirl||0)?"#99E9F2":"#FCC419";cx.shadowBlur=6;cx.fillStyle=cx.shadowColor;cx.beginPath();cx.arc(ox,oy,4.5,0,Math.PI*2);cx.fill();cx.restore();}}
+  if(totalOrb>0){for(let i=0;i<totalOrb;i++){const a=now/600+Math.PI*2*i/totalOrb;const ox=g.p.x+Math.cos(a)*42,oy=g.p.y+Math.sin(a)*42;cx.save();cx.shadowColor=i<(g.p.whirl||0)?"#99E9F2":"#FCC419";cx.shadowBlur=10;cx.fillStyle=cx.shadowColor;cx.beginPath();cx.arc(ox,oy,7.5,0,Math.PI*2);cx.fill();cx.restore();}}
 
   // aim line
   if(aim.a){cx.save();cx.globalAlpha=.3;cx.strokeStyle=bc.f;cx.lineWidth=1.5;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(g.p.x+g.ad.x*PR,g.p.y+g.ad.y*PR);cx.lineTo(g.p.x+g.ad.x*50,g.p.y+g.ad.y*50);cx.stroke();cx.setLineDash([]);cx.restore();}
@@ -1090,7 +1074,7 @@ function loop(){
   if(crateSense>0){
     const edgePad=24,halfW=VW/2,halfH=VH/2;
     g.crates.forEach(cr=>{
-      if(cr.hp<=0||di(cr,g.p)>crateSense) return;
+      if(!crateActive(cr)||di(cr,g.p)>crateSense) return;
       const sx=cr.x-cm.x,sy=cr.y-cm.y;
       if(sx>=0&&sx<=VW&&sy>=0&&sy<=VH) return;
       const vx=sx-halfW,vy=sy-halfH;
