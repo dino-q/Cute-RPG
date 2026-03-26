@@ -884,7 +884,7 @@ function loop(){
     if(e.poisonT>0){
       e.poisonT-=dt*16.67;
       const lv=e.poisonLv||1;
-      const pd=e.boss?e.mhp*(0.0007*lv):((g.p.atk*.12)+.5*lv); // poison: %HP vs bosses, weaker vs mobs
+      const pd=e.boss?e.mhp*(0.0012*lv):((g.p.atk*.18)+.8*lv); // poison: %HP vs bosses, weaker vs mobs
       e.hp-=pd*dt;
     }
     if(e.burnT>0){
@@ -1038,13 +1038,13 @@ function loop(){
   g.bul.forEach(b=>{if(b.life<=0)return;for(let ei=0;ei<g.ene.length;ei++){const e=g.ene[ei];if(e.hp<=0||b.life<=0)continue;if(di(b,e)<e.r+BR){
     const fx=g.p.fx,fxLv=Math.max(fx.fire||0,fx.ice||0,fx.dragon||0,fx.star||0,fx.poison||0,1);
     let dmg=b.dmg*(g.p.elemBoost||1);if(b.crit)dmg*=2;
-    if(fx.lightning)dmg*=.72; // lightning: lower per-hit, higher spread/coverage
-    if(fx.ice)dmg*=.88; // ice: control first, damage second
+    if(fx.lightning)dmg*=.85; // lightning: lower per-hit, higher spread/coverage
+    if(fx.ice)dmg*=.95; // ice: control first, damage second
     // shield enemy: frontal hits deal only 25% damage
     if(e.role===ROLE_SHIELD){const ba=Math.atan2(b.vy,b.vx),fa=e.shieldAng+Math.PI,ad=Math.abs(((ba-fa)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);if(ad<Math.PI*.55)dmg*=.25;}
     e.hp-=dmg;
     if(g.p.slow<1)e.st=1800;
-    if(fx.fire){e.burnT=Math.max(e.burnT||0,1200+fxLv*500);e.burnLv=fxLv;} // fire: burn DoT
+    if(fx.fire){e.burnT=Math.max(e.burnT||0,1400+fxLv*600);e.burnLv=fxLv;} // fire: burn DoT
     if(fx.ice){if(Math.random()<(.12+.08*fxLv))e.frozen=Math.max(e.frozen||0,350+fxLv*260);else e.st=Math.max(e.st||0,800+fxLv*450);} // ice: freeze/slow control
     if(g.p.poison>0){e.poisonT=g.p.poison*1e3;e.poisonLv=fxLv;} // poison: %HP vs boss handled in tick
     if(g.p.bulletHeal>0)g.p.hp=Math.min(g.p.hp+g.p.bulletHeal,g.p.maxHp);
@@ -1055,7 +1055,7 @@ function loop(){
       const baseChain=Math.max(g.p.chain||0,fx.lightning?fxLv+1:0);
       const chainCnt=e.boss?Math.min(2,baseChain):Math.min(5,baseChain);
       const tgts=nearestTargets(e,chainCnt);
-      tgts.forEach(t=>{const cd=dmg*(fx.lightning?.42:.3);t.hp-=cd;addLtn(e.x,e.y,t.x,t.y,.85);});
+      tgts.forEach(t=>{const cd=dmg*(fx.lightning?.58:.3);t.hp-=cd;addLtn(e.x,e.y,t.x,t.y,.85);});
     }
     // hit fx — scales dramatically with card level
     const pN=3+fxLv*3;// 6/9/12 particles at lv1/2/3
@@ -1084,14 +1084,15 @@ function loop(){
 
   // bullet-crate hit
   const c_=cam();
-  g.crates.forEach(cr=>{if(!crateActive(cr))return;g.bul.forEach(b=>{if(b.life<=0)return;if(di(b,cr)<16){cr.hits++;b.life=0;burst(cr.x,cr.y,"#FFD43B",3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",12);g.run=false;showPick("crate");}}});});
+  let crateOpened=false;
+  g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<16){cr.hits++;b.life=0;burst(cr.x,cr.y,"#FFD43B",3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",12);crateOpened=true;g.run=false;showPick("crate");}}});});
 
   // exp orbs
   const ep=60*(g.p.expR||1);g.orbs=g.orbs.filter(o=>{const d=di(o,g.p);if(d<ep){const s=Math.max(3,(ep-d)/ep*8),dx=g.p.x-o.x,dy=g.p.y-o.y,dd=Math.sqrt(dx*dx+dy*dy)||1;o.x+=dx/dd*s*dt;o.y+=dy/dd*s*dt;}if(d<PR+8){g.exp+=o.xp;return false;}o.life-=.001*dt;return o.life>0;});
 
   // enemy-player
   if(!g.p._inv&&!bhSafe){
-  g.ene=g.ene.filter(e=>{if(di(e,g.p)<PR+e.r-4){
+  g.ene=g.ene.filter(e=>{if(e.bhExeAt)return true;if(di(e,g.p)<PR+e.r-4){
     if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});if(g.p.dodgeAtk>0){e.hp-=g.p.dodgeAtk;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(g.p.dodgeAtk),life:1,color:"#FFE066"});}return e.hp>0;}
     if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"🛡️擋住",life:1,color:"#4DABF7",big:1});return false;}
     const lateMul=1+Math.max(0,g.wave-10)*.07;
@@ -1363,13 +1364,15 @@ function buildCard(cd,w,i,wrap){
   const lvL=isUp?`<div style="font-size:9px;color:#FFD43B;font-weight:900;margin-bottom:2px;text-shadow:0 0 6px #FFD43B">⬆Lv${dLv}</div>`:"";
   const rarBadge=cd.r==="SSR"?'<div style="font-size:9px;background:linear-gradient(90deg,#FFD43B,#FF6B6B,#DA77F2,#74C0FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:2px;margin-bottom:3px">✦ SSR ✦</div>':`<div style="font-size:10px;color:${RC[cd.r]};font-weight:700;letter-spacing:1px;margin-bottom:3px">★${cd.r}</div>`;
   b.innerHTML=`${rarBadge}${tpL}<div style="font-size:30px;margin-bottom:3px">${cd.e}</div><div style="font-size:12px;font-weight:900;margin-bottom:2px">${cd.n}</div>${lvL}<div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">${desc}</div>`;
-  b.onclick=()=>{b.style.animation="cardSelect .35s forwards";setTimeout(()=>{const lv=addCard(cd.id);cd.ap[Math.max(lv,0)](g.p);g.p.hp=Math.min(g.p.hp+15,g.p.maxHp);resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;
+  b.onclick=()=>{b.style.animation="cardSelect .35s forwards";setTimeout(()=>{const lv=addCard(cd.id);cd.ap[Math.max(lv,0)](g.p);g.p.hp=Math.min(g.p.hp+15,g.p.maxHp);g.pickOpen=false;resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;
     // mobile: some devices keep stale touch identifiers after overlay taps; hard-reset sticks again shortly after returning
     setTimeout(resetControls,60);setTimeout(resetControls,180);
   },300);};
   wrap.innerHTML="";wrap.appendChild(b);
 }
 function showPick(src,specificCard){
+  if(g.pickOpen)return;
+  g.pickOpen=true;
   resetControls();
   const luck=g.p.luck||0;
   const cnt=src==="crate"?3:(specificCard?1:(Math.random()*100<(25+luck)?3:(g.p.pickCount||2)));
@@ -1422,7 +1425,7 @@ window.startGame=window.SG=function(){
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
     lastKill:performance.now(),lastHunt:0,
-    time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1};
+    time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,pickOpen:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1};
   inv=[];par=[];
   joy={a:0,dx:0,dy:0,id:null,sx:null,sy:null};aim={a:0,dx:0,dy:0,id:null,sx:null,sy:null,tn:0,lt:0};
   show("play");if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
