@@ -223,7 +223,7 @@ card("召喚球","🪐","SR","atk",["1顆守護球","2顆","3顆"],[s=>{s.orbite
 card("旋風斬","🌪️","SR","atk",["3顆旋風球","5顆旋風球","7顆高速旋風球"],[s=>{s.whirlCount=Math.max(s.whirlCount||0,3);s.whirlLv=1;s.fx.whirl=1},s=>{s.whirlCount=Math.max(s.whirlCount||0,5);s.whirlLv=2;s.fx.whirl=2},s=>{s.whirlCount=Math.max(s.whirlCount||0,7);s.whirlLv=3;s.fx.whirl=3}],"#99E9F2");
 card("狂暴之力","💢","SR","pas",["HP<30%攻擊翻倍","HP<40%","HP<50%翻倍"],[s=>{s.berserk=.3},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
 card("連鎖爆破","💥","SR","atk",["擊殺爆炸傷害","大爆炸","連環爆"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
-card("閃電步","💫","SR","pas",["大招瞬移+無敵1秒 CD10秒","大招瞬移+無敵1秒 CD10秒","大招瞬移+無敵1秒 CD10秒"],[s=>{s.lStep=true;s.lStepDist=140;s.lStepInvDur=1e3;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDist=140;s.lStepInvDur=1e3;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDist=140;s.lStepInvDur=1e3;s.lStepCd=10e3}],"#FFE066",null,1);
+card("閃電步","💫","SR","pas",["大招衝刺+殘影+無敵 CD10秒","大招衝刺+殘影+無敵 CD10秒","大招衝刺+殘影+無敵 CD10秒"],[s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8;s.lStepCd=10e3}],"#FFE066",null,1);
 card("元素精通","🔮","SR","pas",["所有屬性效果+15%","效果+30%","效果+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
 card("大招增幅","☄️","SR","pas",["大招傷害+30%","傷害+60%","傷害+100%"],[s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.3},s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.6},s=>{s.ultDmgMul=(s.ultDmgMul||1)*2}],"#BE4BDB");
 card("彈幕之王","🎆","SR","atk",["子彈+1 攻速+8%","子彈+2 攻速+15%","子彈+3 攻速+25%"],[s=>{s.split=(s.split||1)+1;s.fr*=.92},s=>{s.split=(s.split||1)+2;s.fr*=.85},s=>{s.split=(s.split||1)+3;s.fr*=.75}],"#FF6B6B");
@@ -797,6 +797,20 @@ function triggerHuntPressure(now){
 }
 function tapAtk(){if(!g||!g.run||g.heatCD>0)return;const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;const berserkMul=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;fire((3.5+g.p.atk+bonus)*berserkMul,g.ad.x,g.ad.y,.03);if(!g.heatCD)$("combo").textContent=aim.tn>2?aim.tn+"x COMBO!":"";clearTimeout(cTimer);cTimer=setTimeout(()=>{if(!g.heatCD){$("combo").textContent="";}aim.tn=0;},700);}
 
+let _dashGhosts=[]; // afterimage array: {x,y,face,life}
+function _startDash(now){
+  if(!g)return;
+  const hasJoy=joy.a&&(Math.abs(joy.dx)>.2||Math.abs(joy.dy)>.2);
+  const ldx=hasJoy?joy.dx:g.ad.x,ldy=hasJoy?joy.dy:g.ad.y;
+  const ld=Math.sqrt(ldx*ldx+ldy*ldy)||1;
+  g.p._dashEnd=now+(g.p.lStepDur||200);
+  g.p._dashDx=ldx/ld;g.p._dashDy=ldy/ld;
+  g.p._dashSpd=g.p.lStepSpd||8;
+  g.p._inv=true;
+  g._lStepCdEnd=now+(g.p.lStepCd||10e3);
+  burst(g.p.x,g.p.y,"#FFE066",6);
+  g.dn.push({x:g.p.x,y:g.p.y-20,d:"⚡衝刺",life:1,color:"#FFE066"});
+}
 function doUlt(){if(!g||!g.run)return;
   const isBH=g.p.ultType==="bh";
   const isTS=g.p.ultType==="ts";
@@ -822,20 +836,9 @@ function doUlt(){if(!g||!g.run)return;
     const cols=["#74C0FC","#4DABF7","#339AF0","#fff"];
     for(let i=0;i<30&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/30,v=rn(3,8);par.push({x:g.p.x+Math.cos(a)*15,y:g.p.y+Math.sin(a)*15,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1.2,color:cols[i%cols.length],sz:rn(3,7)});}
     g.ultFlash=.6;g.ultType="ts";
-    // 閃電步：大招同時瞬移（用移動方向，沒移動才用瞄準方向）
+    // 閃電步：大招啟動衝刺+殘影
     if(isLS&&now>=(g._lStepCdEnd||0)){
-      const dist=g.p.lStepDist||80;
-      const hasJoy=joy.a&&(Math.abs(joy.dx)>.2||Math.abs(joy.dy)>.2);
-      const ldx=hasJoy?joy.dx:g.ad.x,ldy=hasJoy?joy.dy:g.ad.y;
-      const ld=Math.sqrt(ldx*ldx+ldy*ldy)||1;
-      const ox=g.p.x,oy=g.p.y;
-      g.p.x+=ldx/ld*dist;g.p.y+=ldy/ld*dist;
-      g.p.x=cl(g.p.x,PR,mapW()-PR);g.p.y=cl(g.p.y,PR,mapH()-PR);
-      g.p._inv=true;setTimeout(()=>{if(g)g.p._inv=false;},g.p.lStepInvDur||1e3);
-      g._lStepCdEnd=now+(g.p.lStepCd||10e3);
-      burst(ox,oy,"#FFE066",8); // trail at old position
-      burst(g.p.x,g.p.y,"#FFE066",8); // flash at new position
-      g.dn.push({x:g.p.x,y:g.p.y-20,d:"⚡瞬移",life:1,color:"#FFE066"});
+      _startDash(now);
     }
     return;
   }
@@ -845,20 +848,9 @@ function doUlt(){if(!g||!g.run)return;
   const burstCount=40+ultLv*12;
   for(let i=0;i<burstCount&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/burstCount,v=rn(2,7+ultLv);par.push({x:g.p.x+Math.cos(a)*20,y:g.p.y+Math.sin(a)*20,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1.3+ultLv*.15,color:cols[i%cols.length],sz:rn(3,8+ultLv)});}
   g.ultFlash=1;g.ultType=isBH?"bh":"n";if(!isBH)g.ultCharge=0;
-  // 閃電步：普通大招也觸發瞬移（用移動方向）
+  // 閃電步：普通大招也觸發衝刺
   if(isLS&&now>=(g._lStepCdEnd||0)){
-    const dist=g.p.lStepDist||80;
-    const hasJoy=joy.a&&(Math.abs(joy.dx)>.2||Math.abs(joy.dy)>.2);
-    const ldx=hasJoy?joy.dx:g.ad.x,ldy=hasJoy?joy.dy:g.ad.y;
-    const ld=Math.sqrt(ldx*ldx+ldy*ldy)||1;
-    const ox=g.p.x,oy=g.p.y;
-    g.p.x+=ldx/ld*dist;g.p.y+=ldy/ld*dist;
-    g.p.x=cl(g.p.x,PR,mapW()-PR);g.p.y=cl(g.p.y,PR,mapH()-PR);
-    g.p._inv=true;setTimeout(()=>{if(g)g.p._inv=false;},g.p.lStepInvDur||1e3);
-    g._lStepCdEnd=now+(g.p.lStepCd||10e3);
-    burst(ox,oy,"#FFE066",8);
-    burst(g.p.x,g.p.y,"#FFE066",8);
-    g.dn.push({x:g.p.x,y:g.p.y-20,d:"⚡瞬移",life:1,color:"#FFE066"});
+    _startDash(now);
   }
 }
 
@@ -887,6 +879,25 @@ function loop(){
   if(!g.heatCD&&aim.a){g.heat=Math.min(HOLD_COOLDOWN_NEED,g.heat+dt*16.67);}
   else if(g.heat>0&&!aim.a){g.heat=Math.max(0,g.heat-dt*40);}
   if(g.heat>=HOLD_COOLDOWN_NEED&&!g.heatCD){g.heatCD=500;g.heat=HOLD_COOLDOWN_NEED;}
+
+  // 閃電步 dash movement + afterimage
+  if(g.p._dashEnd&&now<g.p._dashEnd){
+    const ds=g.p._dashSpd||8;
+    g.p.x+=g.p._dashDx*ds*g.p.speed*dt;
+    g.p.y+=g.p._dashDy*ds*g.p.speed*dt;
+    g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
+    // spawn afterimage every ~40ms
+    if(!g.p._dashGT||now-g.p._dashGT>40){
+      g.p._dashGT=now;
+      _dashGhosts.push({x:g.p.x,y:g.p.y,face:g.p.face,life:1});
+      if(_dashGhosts.length>8)_dashGhosts.shift();
+    }
+  }else if(g.p._dashEnd&&now>=g.p._dashEnd){
+    g.p._dashEnd=0;g.p._inv=false;
+    burst(g.p.x,g.p.y,"#FFE066",6);
+  }
+  // decay afterimages
+  for(let i=_dashGhosts.length-1;i>=0;i--){_dashGhosts[i].life-=.06*dt;if(_dashGhosts[i].life<=0)_dashGhosts.splice(i,1);}
 
   // black-hole ult field: 3s duration, pull + stylish execute for non-boss enemies
   if(g.bhEnd&&now<g.bhEnd){
@@ -1473,6 +1484,12 @@ function loop(){
     const ac=fx_.dragon?"#FF922B":fx_.fire?"#FF4500":fx_.ice?"#66D9E8":fx_.lightning?"#FAB005":fx_.poison?"#A9E34B":fx_.star?"#F06595":pCol;
     par.push({x:g.p.x+Math.cos(aa)*ar,y:g.p.y+Math.sin(aa)*ar,vx:Math.cos(aa)*rn(.2,.6),vy:Math.sin(aa)*rn(.2,.6)-.3,life:.4+fxLv_*.15,color:ac,sz:rn(1.5,3+fxLv_)});
   }
+  // dash afterimages
+  _dashGhosts.forEach(gh=>{
+    cx.save();cx.globalAlpha=gh.life*.4;
+    drawPlayer(gh.x,gh.y,PR,g.time/1000,"#FFE066",gh.face);
+    cx.restore();
+  });
   // player (blinks during i-frame)
   cx.save();
   if(g.p._iFrameEnd>0&&now<g.p._iFrameEnd){cx.globalAlpha=Math.sin(now/30)*0.35+0.55;}
@@ -1606,7 +1623,7 @@ function buildCard(cd,w,i,wrap){
       const rerollCount=inv.length-1;
       const fateEntry=inv.find(x=>C.find(c=>c.id===x.id&&c.n==="命運轉輪"));
       inv.length=0;if(fateEntry)inv.push(fateEntry);
-      g.p.atk=2.5;g.p.speed=PS;g.p.fr=1;g.p.armor=0;g.p.chain=0;g.p.ls=0;g.p.slow=1;g.p.split=1;g.p.expR=1;g.p.crit=.05;g.p.revive=0;g.p.fx={};g.p.regen=0;g.p.luck=0;g.p.dodge=0;g.p.thorns=0;g.p.dblAtk=0;g.p.shieldCD=0;g.p._sh=false;g.p._shT=0;g.p._shSpawn=0;g.p.whirlCount=0;g.p.whirlLv=0;g.p.orbiters=0;g.p.poison=0;g.p.ultType="n";g.p.ultLv=0;g.p.pierce=0;g.p.homing=0;g.p.splash=0;g.p.berserk=0;g.p.deathBoom=0;g.p.dodgeAtk=0;g.p.elemBoost=1;g.p.ultDmgMul=1;g.p.ultRate=1;g.p.bulletHeal=0;g.p.invCD=0;g.p.invDur=0;g.p._inv=false;g.p._ivT=0;g.p.timestop=0;g.p.tsD=0;g.p.tsFrzDur=0;g.p.tsCd=0;g.p.lStep=false;g.p.lStepDist=0;g.p.lStepInvDur=0;g.p.lStepCd=0;g.p.chainDmg=1;g.p.poisonDmg=0;g.p.crateVis=1;g.p.mapExpand=0;g.p.pickCount=2;g.p.face=1;g.p._iFrameEnd=0;g.p._healFlash=0;
+      g.p.atk=2.5;g.p.speed=PS;g.p.fr=1;g.p.armor=0;g.p.chain=0;g.p.ls=0;g.p.slow=1;g.p.split=1;g.p.expR=1;g.p.crit=.05;g.p.revive=0;g.p.fx={};g.p.regen=0;g.p.luck=0;g.p.dodge=0;g.p.thorns=0;g.p.dblAtk=0;g.p.shieldCD=0;g.p._sh=false;g.p._shT=0;g.p._shSpawn=0;g.p.whirlCount=0;g.p.whirlLv=0;g.p.orbiters=0;g.p.poison=0;g.p.ultType="n";g.p.ultLv=0;g.p.pierce=0;g.p.homing=0;g.p.splash=0;g.p.berserk=0;g.p.deathBoom=0;g.p.dodgeAtk=0;g.p.elemBoost=1;g.p.ultDmgMul=1;g.p.ultRate=1;g.p.bulletHeal=0;g.p.invCD=0;g.p.invDur=0;g.p._inv=false;g.p._ivT=0;g.p.timestop=0;g.p.tsD=0;g.p.tsFrzDur=0;g.p.tsCd=0;g.p.lStep=false;g.p.lStepDur=0;g.p.lStepSpd=0;g.p.lStepCd=0;g.p._dashEnd=0;g.p._dashDx=0;g.p._dashDy=0;g.p._dashSpd=0;g.p._dashGT=0;g.p.chainDmg=1;g.p.poisonDmg=0;g.p.crateVis=1;g.p.mapExpand=0;g.p.pickCount=2;g.p.face=1;g.p._iFrameEnd=0;g.p._healFlash=0;
       g.p.maxHp=120;g.p.hp=Math.min(g.p.hp,120);g.p.expMul=1.3;g.orbs=[];
       g.ultCharge=0;g.ultCdEnd=0;g.bhEnd=0;g.bhPow=1;g.ultFlash=0;g._lStepCdEnd=0;
       g.pickOpen=false;
@@ -1678,13 +1695,13 @@ window.startGame=window.SG=function(){
   resetSessionUi();
   // clear BG
   cx.fillStyle="#0a0a18";cx.fillRect(0,0,VW,VH);
-  g={p:{x:MW/2,y:MH/2,hp:120,maxHp:120,atk:2.5,speed:PS,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,ultType:"n",ultLv:0,pierce:0,homing:0,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDist:0,lStepInvDur:0,lStepCd:0,chainDmg:1,poisonDmg:0,crateVis:1,mapExpand:0,pickCount:2,face:1,_iFrameEnd:0,_healFlash:0},
+  g={p:{x:MW/2,y:MH/2,hp:120,maxHp:120,atk:2.5,speed:PS,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,ultType:"n",ultLv:0,pierce:0,homing:0,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,crateVis:1,mapExpand:0,pickCount:2,face:1,_iFrameEnd:0,_healFlash:0},
     ene:[],bul:[],par:[],dn:[],orbs:[],ltn:[],ebul:[],crates:genCrates(),
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
     lastKill:performance.now(),lastHunt:0,
     time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,pickOpen:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1};
-  inv=[];par=[];_ltnRingIdx=0;
+  inv=[];par=[];_ltnRingIdx=0;_dashGhosts=[];
   joy={a:0,dx:0,dy:0,id:null,sx:null,sy:null};aim={a:0,dx:0,dy:0,id:null,sx:null,sy:null,tn:0,lt:0};
   show("play");if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
   setTimeout(resetControls,60);setTimeout(resetControls,180);
