@@ -221,9 +221,9 @@ card("追蹤彈","🎯","SR","atk",["子彈微追蹤","強追蹤","完美追蹤"
 card("吸血領主","🦇","SR","pas",["擊殺回12HP","回25HP","回40HP+攻+5"],[s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+25},s=>{s.ls=(s.ls||0)+40;s.atk+=5}],"#C2255C");
 card("召喚球","🪐","SR","atk",["1顆守護球","2顆","3顆"],[s=>{s.orbiters=(s.orbiters||0)+1},s=>{s.orbiters=(s.orbiters||0)+2},s=>{s.orbiters=(s.orbiters||0)+3}],"#FCC419");
 card("旋風斬","🌪️","SR","atk",["3顆旋風球","5顆旋風球","7顆高速旋風球"],[s=>{s.whirlCount=Math.max(s.whirlCount||0,3);s.whirlLv=1;s.fx.whirl=1},s=>{s.whirlCount=Math.max(s.whirlCount||0,5);s.whirlLv=2;s.fx.whirl=2},s=>{s.whirlCount=Math.max(s.whirlCount||0,7);s.whirlLv=3;s.fx.whirl=3}],"#99E9F2");
-card("狂暴之力","💢","SR","pas",["HP<30%攻擊翻倍","HP<40%","HP<50%翻倍"],[s=>{s.berserk=(s.berserk||.3)+0},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
+card("狂暴之力","💢","SR","pas",["HP<30%攻擊翻倍","HP<40%","HP<50%翻倍"],[s=>{s.berserk=.3},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
 card("連鎖爆破","💥","SR","atk",["擊殺爆炸傷害","大爆炸","連環爆"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
-card("閃電步","💫","SR","pas",["大招瞬移+無敵1秒 CD10秒","大招瞬移+無敵1秒 CD10秒","大招瞬移+無敵1秒 CD10秒"],[s=>{s.lStep=true;s.lStepDist=80;s.lStepInvDur=1e3;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDist=80;s.lStepInvDur=1e3;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDist=80;s.lStepInvDur=1e3;s.lStepCd=10e3}],"#FFE066",null,1);
+card("閃電步","💫","SR","pas",["大招瞬移+無敵1秒 CD10秒","大招瞬移+無敵1秒 CD10秒","大招瞬移+無敵1秒 CD10秒"],[s=>{s.lStep=true;s.lStepDist=140;s.lStepInvDur=1e3;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDist=140;s.lStepInvDur=1e3;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDist=140;s.lStepInvDur=1e3;s.lStepCd=10e3}],"#FFE066",null,1);
 card("元素精通","🔮","SR","pas",["所有屬性效果+15%","效果+30%","效果+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
 card("大招增幅","☄️","SR","pas",["大招傷害+30%","傷害+60%","傷害+100%"],[s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.3},s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.6},s=>{s.ultDmgMul=(s.ultDmgMul||1)*2}],"#BE4BDB");
 card("彈幕之王","🎆","SR","atk",["子彈+1 攻速+8%","子彈+2 攻速+15%","子彈+3 攻速+25%"],[s=>{s.split=(s.split||1)+1;s.fr*=.92},s=>{s.split=(s.split||1)+2;s.fr*=.85},s=>{s.split=(s.split||1)+3;s.fr*=.75}],"#FF6B6B");
@@ -822,14 +822,19 @@ function doUlt(){if(!g||!g.run)return;
     const cols=["#74C0FC","#4DABF7","#339AF0","#fff"];
     for(let i=0;i<30&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/30,v=rn(3,8);par.push({x:g.p.x+Math.cos(a)*15,y:g.p.y+Math.sin(a)*15,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1.2,color:cols[i%cols.length],sz:rn(3,7)});}
     g.ultFlash=.6;g.ultType="ts";
-    // 閃電步：大招同時瞬移
+    // 閃電步：大招同時瞬移（用移動方向，沒移動才用瞄準方向）
     if(isLS&&now>=(g._lStepCdEnd||0)){
       const dist=g.p.lStepDist||80;
-      g.p.x+=g.ad.x*dist;g.p.y+=g.ad.y*dist;
+      const hasJoy=joy.a&&(Math.abs(joy.dx)>.2||Math.abs(joy.dy)>.2);
+      const ldx=hasJoy?joy.dx:g.ad.x,ldy=hasJoy?joy.dy:g.ad.y;
+      const ld=Math.sqrt(ldx*ldx+ldy*ldy)||1;
+      const ox=g.p.x,oy=g.p.y;
+      g.p.x+=ldx/ld*dist;g.p.y+=ldy/ld*dist;
       g.p.x=cl(g.p.x,PR,mapW()-PR);g.p.y=cl(g.p.y,PR,mapH()-PR);
       g.p._inv=true;setTimeout(()=>{if(g)g.p._inv=false;},g.p.lStepInvDur||1e3);
       g._lStepCdEnd=now+(g.p.lStepCd||10e3);
-      burst(g.p.x,g.p.y,"#FFE066",12);
+      burst(ox,oy,"#FFE066",8); // trail at old position
+      burst(g.p.x,g.p.y,"#FFE066",8); // flash at new position
       g.dn.push({x:g.p.x,y:g.p.y-20,d:"⚡瞬移",life:1,color:"#FFE066"});
     }
     return;
@@ -840,14 +845,19 @@ function doUlt(){if(!g||!g.run)return;
   const burstCount=40+ultLv*12;
   for(let i=0;i<burstCount&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/burstCount,v=rn(2,7+ultLv);par.push({x:g.p.x+Math.cos(a)*20,y:g.p.y+Math.sin(a)*20,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1.3+ultLv*.15,color:cols[i%cols.length],sz:rn(3,8+ultLv)});}
   g.ultFlash=1;g.ultType=isBH?"bh":"n";if(!isBH)g.ultCharge=0;
-  // 閃電步：普通大招也觸發瞬移
+  // 閃電步：普通大招也觸發瞬移（用移動方向）
   if(isLS&&now>=(g._lStepCdEnd||0)){
     const dist=g.p.lStepDist||80;
-    g.p.x+=g.ad.x*dist;g.p.y+=g.ad.y*dist;
+    const hasJoy=joy.a&&(Math.abs(joy.dx)>.2||Math.abs(joy.dy)>.2);
+    const ldx=hasJoy?joy.dx:g.ad.x,ldy=hasJoy?joy.dy:g.ad.y;
+    const ld=Math.sqrt(ldx*ldx+ldy*ldy)||1;
+    const ox=g.p.x,oy=g.p.y;
+    g.p.x+=ldx/ld*dist;g.p.y+=ldy/ld*dist;
     g.p.x=cl(g.p.x,PR,mapW()-PR);g.p.y=cl(g.p.y,PR,mapH()-PR);
     g.p._inv=true;setTimeout(()=>{if(g)g.p._inv=false;},g.p.lStepInvDur||1e3);
     g._lStepCdEnd=now+(g.p.lStepCd||10e3);
-    burst(g.p.x,g.p.y,"#FFE066",12);
+    burst(ox,oy,"#FFE066",8);
+    burst(g.p.x,g.p.y,"#FFE066",8);
     g.dn.push({x:g.p.x,y:g.p.y-20,d:"⚡瞬移",life:1,color:"#FFE066"});
   }
 }
@@ -1089,7 +1099,7 @@ function loop(){
             const mx2=cl(e.x+Math.cos(sa)*sd,30,MW-30),my2=cl(e.y+Math.sin(sa)*sd,30,MH-30);
             const mhp2=Math.floor((10+g.wave*5)*tierHpFor(e.tier));
             const mc=TC[e.tier][TC[e.tier].length*Math.random()|0];
-            g.ene.push({x:mx2,y:my2,hp:mhp2,mhp:mhp2,speed:e.speed*1.5,color:mc,t:rn(0,10),r:ER*.8,st:0,boss:false,tier:Math.max(0,e.tier-1),face:1,xp:2+Math.floor(g.wave/3),poisonT:0,frozen:0,dmgMul:e.dmgMul*.6,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0});
+            g.ene.push({x:mx2,y:my2,hp:mhp2,mhp:mhp2,speed:e.speed*1.5,color:mc,t:rn(0,10),r:ER*.8,st:0,boss:false,mega:false,tier:Math.max(0,e.tier-1),face:1,xp:2+Math.floor(g.wave/3),poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:e.dmgMul*.6,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0});
           }
           burst(e.x,e.y,"#BE4BDB",10);
           g.dn.push({x:e.x,y:e.y-e.r-10,d:"召喚！",life:1.2,color:"#BE4BDB",big:1});
@@ -1184,23 +1194,37 @@ function loop(){
         const cd=dmg*chainMul;t.hp-=cd;addLtn(e.x,e.y,t.x,t.y,.85);
       });
     }
-    // hit fx — scales dramatically with card level
-    const pN=3+fxLv*3;// 6/9/12 particles at lv1/2/3
-    if(fx.dragon){burst(b.x,b.y,"#FF922B",pN);burst(b.x,b.y,"#FFD43B",pN>>1);if(fxLv>=2)burst(b.x,b.y,"#FF6B6B",3);}
-    else if(fx.fire){burst(b.x,b.y,"#FF4500",pN);if(fxLv>=2)burst(b.x,b.y,"#FFD43B",pN>>1);}
-    else if(fx.ice){burst(b.x,b.y,"#66D9E8",pN);if(fxLv>=2){burst(b.x,b.y,"#fff",3);}}
-    else if(fx.lightning){burst(b.x,b.y,"#FAB005",pN);if(fxLv>=2)addLtn(b.x+rn(-15,15),b.y+rn(-15,15),b.x+rn(-20,20),b.y+rn(-20,20),.35);}
-    else if(fx.star){burst(b.x,b.y,"#F06595",pN);if(fxLv>=2)burst(b.x,b.y,"#FFD43B",3);}
-    else if(fx.poison){burst(b.x,b.y,"#A9E34B",pN);if(fxLv>=2)burst(b.x,b.y,"#69DB7C",3);}
-    else burst(b.x,b.y,e.color,3);
-    g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(dmg),life:1,color:b.crit?"#FFD43B":"#fff",big:b.crit});
+    // hit fx — lightning throttled to avoid particle/number spam with split bullets
+    const pN=3+fxLv*3;
+    const ltnThrottle=fx.lightning&&(g.p.split||1)>2; // throttle when split+lightning
+    if(ltnThrottle){
+      // lightning+split: only 1 in 4 hits produce particles, accumulate damage numbers
+      if(Math.random()<.25)burst(b.x,b.y,"#FAB005",3);
+      if(!e._dmgAcc)e._dmgAcc=0;e._dmgAcc+=dmg;
+      if(Math.random()<.2||e.hp<=0){g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(e._dmgAcc),life:1,color:b.crit?"#FFD43B":"#FAB005",big:b.crit});e._dmgAcc=0;}
+    } else {
+      if(fx.dragon){burst(b.x,b.y,"#FF922B",pN);burst(b.x,b.y,"#FFD43B",pN>>1);if(fxLv>=2)burst(b.x,b.y,"#FF6B6B",3);}
+      else if(fx.fire){burst(b.x,b.y,"#FF4500",pN);if(fxLv>=2)burst(b.x,b.y,"#FFD43B",pN>>1);}
+      else if(fx.ice){burst(b.x,b.y,"#66D9E8",pN);if(fxLv>=2){burst(b.x,b.y,"#fff",3);}}
+      else if(fx.lightning){burst(b.x,b.y,"#FAB005",pN);}
+      else if(fx.star){burst(b.x,b.y,"#F06595",pN);if(fxLv>=2)burst(b.x,b.y,"#FFD43B",3);}
+      else if(fx.poison){burst(b.x,b.y,"#A9E34B",pN);if(fxLv>=2)burst(b.x,b.y,"#69DB7C",3);}
+      else burst(b.x,b.y,e.color,3);
+      g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(dmg),life:1,color:b.crit?"#FFD43B":"#fff",big:b.crit});
+    }
     if(e.hp<=0){
-      burst(e.x,e.y,e.color,8+fxLv*3);
-      if(fx.fire||fx.dragon)burst(e.x,e.y,"#FF4500",5+fxLv*2);
-      if(fx.ice)burst(e.x,e.y,"#fff",4+fxLv);
-      if(fx.lightning){for(let li=0;li<Math.min(fxLv,2);li++)addLtn(e.x,e.y,e.x+rn(-40,40),e.y+rn(-40,40),.5);}
-      if(fx.poison)burst(e.x,e.y,"#69DB7C",4+fxLv*2);
-      if(fx.star)burst(e.x,e.y,"#FFD43B",4+fxLv*2);
+      if(ltnThrottle){
+        // lightweight kill fx for lightning+split
+        burst(e.x,e.y,e.color,5);
+        addLtn(e.x,e.y,e.x+rn(-30,30),e.y+rn(-30,30),.4);
+      }else{
+        burst(e.x,e.y,e.color,8+fxLv*3);
+        if(fx.fire||fx.dragon)burst(e.x,e.y,"#FF4500",5+fxLv*2);
+        if(fx.ice)burst(e.x,e.y,"#fff",4+fxLv);
+        if(fx.lightning){for(let li=0;li<Math.min(fxLv,2);li++)addLtn(e.x,e.y,e.x+rn(-40,40),e.y+rn(-40,40),.5);}
+        if(fx.poison)burst(e.x,e.y,"#69DB7C",4+fxLv*2);
+        if(fx.star)burst(e.x,e.y,"#FFD43B",4+fxLv*2);
+      }
       if(g.p.deathBoom>0){burst(e.x,e.y,"#FF922B",8);g.ene.forEach(oe=>{if(oe!==e&&oe.hp>0&&di(e,oe)<50){oe.hp-=g.p.deathBoom;}});}
       awardEnemyKill(e);
       if(!g.run)return;
@@ -1368,6 +1392,7 @@ function loop(){
     cx.fillStyle="#fff";cx.beginPath();cx.arc(0,0,sz*.25,0,Math.PI*2);cx.fill();
     cx.restore();
   });
+  cx.globalAlpha=1; // reset after bullet trail rendering
 
   // enemy bullets
   g.ebul.forEach(b=>{
@@ -1748,7 +1773,7 @@ window.addEventListener("keydown",e=>{
   // also map e.key for compat
   ks[e.key]=true;
   uK();
-  if(c==="Space"||e.key===" "){e.preventDefault();tapAtk();}
+  if(c==="Space"||e.key===" "){e.preventDefault();if(!aim.a||aim.id!=="kb"){aim.a=1;aim.id="kb";tapAtk();}}
   if(c==="KeyE"||e.key==="e"||e.key==="E"){
     if(!g)return;
     if(g.p.ultType==="bh"||g.p.ultType==="ts"){if(performance.now()>=(g.ultCdEnd||0))doUlt();}
@@ -1759,6 +1784,7 @@ window.addEventListener("keydown",e=>{
 },{capture:true});
 window.addEventListener("keyup",e=>{
   const c=e.code||e.key;ks[c]=false;ks[e.key]=false;uK();
+  if((c==="Space"||e.key===" ")&&aim.id==="kb"){aim.a=0;aim.id=null;}
   if((c==="KeyE"||e.key==="e"||e.key==="E")&&g)g.ultHold=false;
 },{capture:true});
 function uK(){let dx=0,dy=0;
