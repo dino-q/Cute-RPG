@@ -188,7 +188,7 @@ function pickRole(wave,boss){
 /* ═══════════════ CARD POOL (52 cards) ═══════════════ */
 const C=[];
 let CID=0;
-function card(n,e,r,tp,d,ap,c,fx){C.push({id:++CID,n,e,r,tp,d,ap,c,fx:fx||null});}
+function card(n,e,r,tp,d,ap,c,fx,once){C.push({id:++CID,n,e,r,tp,d,ap,c,fx:fx||null,once:!!once});}
 // --- R: 18 cards ---
 card("火焰彈","🔥","R","atk",["攻+2 火焰","攻+5 烈焰","攻+9 獄火"],[s=>{s.atk+=2;s.fx.fire=1},s=>{s.atk+=5;s.fx.fire=2},s=>{s.atk+=9;s.fx.fire=3}],"#FF6B6B","fire");
 card("冰錐","❄️","R","atk",["攻+1 減速30%","攻+3 減速50%","攻+5 凍結70%"],[s=>{s.atk+=1;s.slow=Math.max((s.slow||1)*.7,.3);s.fx.ice=1},s=>{s.atk+=3;s.slow=Math.max((s.slow||1)*.5,.2);s.fx.ice=2},s=>{s.atk+=5;s.slow=.3;s.fx.ice=3}],"#66D9E8","ice");
@@ -198,23 +198,23 @@ card("連弩","🏹","R","atk",["攻速+12%","攻速+25%","攻速+40%"],[s=>{s.f
 card("鏡盾","🪞","R","pas",["受傷-10%","受傷-22%","受傷-35%"],[s=>{s.armor=1-(1-s.armor)*.9},s=>{s.armor=1-(1-s.armor)*.78},s=>{s.armor=1-(1-s.armor)*.65}],"#B2F2BB");
 card("自癒術","💗","R","pas",["每秒回1HP","回2.5HP","回5HP"],[s=>{s.regen=(s.regen||0)+1},s=>{s.regen=(s.regen||0)+2.5},s=>{s.regen=(s.regen||0)+5}],"#FFC9C9");
 card("學者帽","🎓","R","pas",["經驗+20%","經驗+45%","經驗+80%"],[s=>{s.expMul=(s.expMul||1)*1.2},s=>{s.expMul=(s.expMul||1)*1.45},s=>{s.expMul=(s.expMul||1)*1.8}],"#D0BFFF");
-card("幸運幣","🍀","R","pas",["三選一+15%","三選一+30%","必定三選一"],[s=>{s.luck=(s.luck||0)+15},s=>{s.luck=(s.luck||0)+30},s=>{s.luck=100}],"#8CE99A");
+card("幸運幣","🍀","R","pas",["額外三選一","額外三選一","額外三選一"],[s=>{s._luckyPick=true},s=>{s._luckyPick=true},s=>{s._luckyPick=true}],"#8CE99A",null,1);
 card("石膚術","🪨","R","pas",["被撞傷-15%","傷-30%","傷-50%"],[s=>{s.armor=1-(1-s.armor)*.85},s=>{s.armor=1-(1-s.armor)*.7},s=>{s.armor=1-(1-s.armor)*.5}],"#ADB5BD");
 card("集氣珠","🔋","R","pas",["集氣速度+20%","速度+40%","速度+70%"],[s=>{s.ultRate=(s.ultRate||1)*1.2},s=>{s.ultRate=(s.ultRate||1)*1.4},s=>{s.ultRate=(s.ultRate||1)*1.7}],"#E599F7");
-card("磁力場","🧲","R","pas",["吸取+50%","吸取+100%","全屏吸取"],[s=>{s.expR=(s.expR||1)*1.5},s=>{s.expR=(s.expR||1)*2},s=>{s.expR=99}],"#339AF0");
-card("毒刺","🌿","R","atk",["中毒2秒","中毒4秒","劇毒7秒"],[s=>{s.poison=(s.poison||0)+2;s.fx.poison=1},s=>{s.poison=(s.poison||0)+4;s.fx.poison=2},s=>{s.poison=(s.poison||0)+7;s.fx.poison=3}],"#A9E34B","poison");
+card("磁力場","🧲","R","pas",["全螢幕吸取經驗","全螢幕吸取經驗","全螢幕吸取經驗"],[s=>{s.expR=99},s=>{s.expR=99},s=>{s.expR=99}],"#339AF0",null,1);
+card("毒刺","🌿","R","atk",["中毒3秒 毒傷+2","中毒5秒 毒傷+4","劇毒8秒 毒傷+7"],[s=>{s.poison=(s.poison||0)+3;s.poisonDmg=(s.poisonDmg||0)+2;s.fx.poison=1},s=>{s.poison=(s.poison||0)+5;s.poisonDmg=(s.poisonDmg||0)+4;s.fx.poison=2},s=>{s.poison=(s.poison||0)+8;s.poisonDmg=(s.poisonDmg||0)+7;s.fx.poison=3}],"#A9E34B","poison");
 card("穿透箭","🔱","R","atk",["子彈穿透1個","穿透2個","穿透全部"],[s=>{s.pierce=(s.pierce||0)+1},s=>{s.pierce=(s.pierce||0)+2},s=>{s.pierce=99}],"#F08C00");
 card("蓄力拳","👊","R","atk",["攻+3","攻+6","攻+10"],[s=>{s.atk+=3},s=>{s.atk+=6},s=>{s.atk+=10}],"#E8590C");
 card("回血斬","💉","R","pas",["擊殺回5HP","回12HP","回22HP"],[s=>{s.ls=(s.ls||0)+5},s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+22}],"#E64980");
 card("探索靴","🗺️","R","pas",["移速+0.3 吸取+25%","移速+0.7 吸取+55%","移速+1.2 吸取+100%"],[s=>{s.speed+=.3;s.expR=(s.expR||1)*1.25},s=>{s.speed+=.7;s.expR=(s.expR||1)*1.55},s=>{s.speed+=1.2;s.expR=(s.expR||1)*2}],"#12B886");
 card("堅韌心","🫀","R","pas",["最大HP+10 攻+1","HP+20 攻+2","HP+35 攻+4"],[s=>{s.maxHp+=10;s.hp=Math.min(s.hp+10,s.maxHp);s.atk+=1},s=>{s.maxHp+=20;s.hp=Math.min(s.hp+20,s.maxHp);s.atk+=2},s=>{s.maxHp+=35;s.hp=Math.min(s.hp+35,s.maxHp);s.atk+=4}],"#FF922B");
 // --- SR: 20 cards ---
-card("雷擊鏈","⚡","SR","atk",["連鎖雷電×1","連鎖×2","連鎖×3"],[s=>{s.chain=(s.chain||0)+1;s.fx.lightning=1},s=>{s.chain=(s.chain||0)+2;s.fx.lightning=2},s=>{s.chain=(s.chain||0)+3;s.fx.lightning=3}],"#FAB005","lightning");
+card("雷擊鏈","⚡","SR","atk",["連鎖雷電 傷害+30%","連鎖 傷害+50%","連鎖 傷害+80%"],[s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.3;s.fx.lightning=1},s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.5;s.fx.lightning=2},s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.8;s.fx.lightning=3}],"#FAB005","lightning");
 card("分裂彈","💎","SR","atk",["3發","5發","7發彈幕"],[s=>{s.split=(s.split||1)+2},s=>{s.split=(s.split||1)+4},s=>{s.split=(s.split||1)+6}],"#845EF7");
 card("閃避斗篷","🌀","SR","pas",["12%閃避","25%閃避","40%閃避"],[s=>{s.dodge=(s.dodge||0)+.12},s=>{s.dodge=(s.dodge||0)+.25},s=>{s.dodge=(s.dodge||0)+.4}],"#B197FC");
 card("荊棘甲","🌵","SR","pas",["反彈15%","反彈30%","反彈50%"],[s=>{s.thorns=(s.thorns||0)+.15},s=>{s.thorns=(s.thorns||0)+.3},s=>{s.thorns=(s.thorns||0)+.5}],"#69DB7C");
-card("護盾術","🛡️","SR","pas",["每15秒護盾","12秒","8秒"],[s=>{s.shieldCD=s.shieldCD?Math.min(s.shieldCD,15e3):15e3},s=>{s.shieldCD=12e3},s=>{s.shieldCD=8e3}],"#4DABF7");
-card("影分身","👥","SR","pas",["10%雙倍攻擊","25%","40%"],[s=>{s.dblAtk=(s.dblAtk||0)+.1},s=>{s.dblAtk=(s.dblAtk||0)+.25},s=>{s.dblAtk=(s.dblAtk||0)+.4}],"#868E96");
+card("守護星","🛡️","SR","pas",["每20秒自動護盾","每20秒自動護盾","每20秒自動護盾"],[s=>{s.shieldCD=20e3},s=>{s.shieldCD=20e3},s=>{s.shieldCD=20e3}],"#4DABF7",null,1);
+card("影分身","👥","SR","pas",["100%前後攻擊","100%前後攻擊","100%前後攻擊"],[s=>{s.dblAtk=1},s=>{s.dblAtk=1},s=>{s.dblAtk=1}],"#868E96",null,1);
 card("烈焰風暴","🌋","SR","atk",["攻+4 爆炸濺射","攻+8 大爆炸","攻+14 核爆"],[s=>{s.atk+=4;s.splash=(s.splash||0)+30;s.fx.fire=Math.max(s.fx.fire||0,2)},s=>{s.atk+=8;s.splash=(s.splash||0)+45;s.fx.fire=3},s=>{s.atk+=14;s.splash=(s.splash||0)+60;s.fx.fire=3}],"#E03131","fire");
 card("暴風雪","🌨️","SR","atk",["範圍凍結+攻+3","攻+6","攻+10全凍"],[s=>{s.atk+=3;s.slow=Math.max((s.slow||1)*.5,.2);s.fx.ice=2},s=>{s.atk+=6;s.slow=.3;s.fx.ice=3},s=>{s.atk+=10;s.slow=.2;s.fx.ice=3}],"#339AF0","ice");
 card("追蹤彈","🎯","SR","atk",["子彈微追蹤","強追蹤","完美追蹤"],[s=>{s.homing=(s.homing||0)+.02},s=>{s.homing=(s.homing||0)+.04},s=>{s.homing=(s.homing||0)+.08}],"#F06595");
@@ -223,7 +223,7 @@ card("召喚球","🪐","SR","atk",["1顆守護球","2顆","3顆"],[s=>{s.orbite
 card("旋風斬","🌪️","SR","atk",["3顆旋風球","5顆旋風球","7顆高速旋風球"],[s=>{s.whirlCount=Math.max(s.whirlCount||0,3);s.whirlLv=1;s.fx.whirl=1},s=>{s.whirlCount=Math.max(s.whirlCount||0,5);s.whirlLv=2;s.fx.whirl=2},s=>{s.whirlCount=Math.max(s.whirlCount||0,7);s.whirlLv=3;s.fx.whirl=3}],"#99E9F2");
 card("狂暴之力","💢","SR","pas",["HP<30%攻擊翻倍","HP<40%","HP<50%翻倍"],[s=>{s.berserk=(s.berserk||.3)+0},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
 card("連鎖爆破","💥","SR","atk",["擊殺爆炸傷害","大爆炸","連環爆"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
-card("閃電步","⚡","SR","pas",["閃避時反擊","強反擊","必殺反擊"],[s=>{s.dodgeAtk=(s.dodgeAtk||0)+5},s=>{s.dodgeAtk=(s.dodgeAtk||0)+12},s=>{s.dodgeAtk=(s.dodgeAtk||0)+25}],"#FFE066");
+card("閃電步","💫","SR","pas",["大招瞬移+無敵1秒 CD10秒","大招瞬移+無敵1秒 CD10秒","大招瞬移+無敵1秒 CD10秒"],[s=>{s.lStep=true;s.lStepDist=80;s.lStepInvDur=1e3;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDist=80;s.lStepInvDur=1e3;s.lStepCd=10e3},s=>{s.lStep=true;s.lStepDist=80;s.lStepInvDur=1e3;s.lStepCd=10e3}],"#FFE066",null,1);
 card("元素精通","🔮","SR","pas",["所有屬性效果+15%","效果+30%","效果+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
 card("大招增幅","☄️","SR","pas",["大招傷害+30%","傷害+60%","傷害+100%"],[s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.3},s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.6},s=>{s.ultDmgMul=(s.ultDmgMul||1)*2}],"#BE4BDB");
 card("彈幕之王","🎆","SR","atk",["子彈+1 攻速+8%","子彈+2 攻速+15%","子彈+3 攻速+25%"],[s=>{s.split=(s.split||1)+1;s.fr*=.92},s=>{s.split=(s.split||1)+2;s.fr*=.85},s=>{s.split=(s.split||1)+3;s.fr*=.75}],"#FF6B6B");
@@ -231,15 +231,15 @@ card("彈幕之王","🎆","SR","atk",["子彈+1 攻速+8%","子彈+2 攻速+15%
 card("龍之心","🐉","SSR","atk",["全能力+龍息","龍王","遠古龍神"],[s=>{s.atk+=6;s.maxHp+=30;s.hp=Math.min(s.hp+30,s.maxHp);s.speed+=.3;s.fx.dragon=1},s=>{s.atk+=12;s.maxHp+=60;s.hp=Math.min(s.hp+60,s.maxHp);s.speed+=.5;s.fx.dragon=2},s=>{s.atk+=20;s.maxHp+=100;s.hp=s.maxHp;s.speed+=.8;s.fx.dragon=3}],"#FF922B","dragon");
 card("星辰劍","⭐","SSR","atk",["攻+8 暴擊+20%","攻+16 暴擊+35%","攻+28 暴擊+50%"],[s=>{s.atk+=8;s.crit=(s.crit||.05)+.2;s.fx.star=1},s=>{s.atk+=16;s.crit=(s.crit||.05)+.35;s.fx.star=2},s=>{s.atk+=28;s.crit=(s.crit||.05)+.5;s.fx.star=3}],"#F06595","star");
 card("時光沙","⏳","SSR","atk",["攻速+40%集氣+30%","攻速+60%集氣+50%","攻速+80%集氣+80%"],[s=>{s.fr*=.6;s.ultRate=(s.ultRate||1)*1.3},s=>{s.fr*=.4;s.ultRate=(s.ultRate||1)*1.5},s=>{s.fr*=.2;s.ultRate=(s.ultRate||1)*1.8}],"#20C997");
-card("不死鳥","🔮","SSR","pas",["復活1次","復活2次","復活3次+滿血"],[s=>{s.revive=(s.revive||0)+1;s.fx.phoenix=1},s=>{s.revive=(s.revive||0)+2;s.fx.phoenix=2},s=>{s.revive=(s.revive||0)+3;s.fx.phoenix=3}],"#BE4BDB");
-card("黑洞","🕳️","SSR","atk",["大招變黑洞","大黑洞","超新星"],[s=>{s.ultType="bh";s.ultLv=1},s=>{s.ultType="bh";s.ultLv=2},s=>{s.ultType="bh";s.ultLv=3}],"#495057");
+card("不死鳥","🔮","SSR","pas",["復活1次+怪物撤退","復活2次+怪物撤退","復活3次+滿血+怪物撤退"],[s=>{s.revive=(s.revive||0)+1;s.fx.phoenix=1},s=>{s.revive=(s.revive||0)+2;s.fx.phoenix=2},s=>{s.revive=(s.revive||0)+3;s.fx.phoenix=3}],"#BE4BDB");
+card("黑洞","🕳️","SSR","atk",["大招變黑洞","大黑洞","超新星"],[s=>{s.ultType="bh";s.ultLv=1;g.ultCharge=0;g.ultCdEnd=0},s=>{s.ultType="bh";s.ultLv=2;g.ultCharge=0;g.ultCdEnd=0},s=>{s.ultType="bh";s.ultLv=3;g.ultCharge=0;g.ultCdEnd=0}],"#495057");
 card("天使之翼","👼","SSR","pas",["每10秒無敵2秒","每8秒","每6秒3秒"],[s=>{s.invCD=s.invCD?Math.min(s.invCD,10e3):10e3;s.invDur=2e3},s=>{s.invCD=8e3;s.invDur=2e3},s=>{s.invCD=6e3;s.invDur=3e3}],"#FFF3BF");
 card("毀滅之手","🤚","SSR","atk",["攻+12 擊殺爆炸","攻+22 大爆炸","攻+35 核爆"],[s=>{s.atk+=12;s.deathBoom=(s.deathBoom||0)+20;s.fx.fire=Math.max(s.fx.fire||0,2)},s=>{s.atk+=22;s.deathBoom=(s.deathBoom||0)+35;s.fx.fire=3},s=>{s.atk+=35;s.deathBoom=(s.deathBoom||0)+50;s.fx.fire=3}],"#E03131","fire");
 card("無盡之刃","🗡️","SSR","atk",["攻+10 穿透全部","攻+20 穿透","攻+35 穿透+連鎖"],[s=>{s.atk+=10;s.pierce=99;s.fx.star=1},s=>{s.atk+=20;s.pierce=99;s.fx.star=2},s=>{s.atk+=35;s.pierce=99;s.chain=(s.chain||0)+2;s.fx.star=3}],"#FFD43B","star");
 card("虛空步","🌑","SSR","pas",["35%閃避+反擊","50%閃避","65%閃避+強反擊"],[s=>{s.dodge=(s.dodge||0)+.35;s.dodgeAtk=(s.dodgeAtk||0)+10},s=>{s.dodge=(s.dodge||0)+.5;s.dodgeAtk=(s.dodgeAtk||0)+15},s=>{s.dodge=(s.dodge||0)+.65;s.dodgeAtk=(s.dodgeAtk||0)+30}],"#343A40");
-card("命運轉輪","🎰","SSR","pas",["每次選卡必三選一+經驗+30%","選四+經驗+50%","選四+經驗+80%+攻+8"],[s=>{s.luck=100;s.expMul=(s.expMul||1)*1.3},s=>{s.luck=100;s.pickCount=4;s.expMul=(s.expMul||1)*1.5},s=>{s.luck=100;s.pickCount=4;s.expMul=(s.expMul||1)*1.8;s.atk+=8}],"#F59F00");
+card("命運轉輪","🎰","SSR","pas",["重抽所有能力+經驗+30%","重抽所有能力+經驗+30%","重抽所有能力+經驗+30%"],[s=>{s._fateWheel=true},s=>{s._fateWheel=true},s=>{s._fateWheel=true}],"#F59F00",null,1);
 card("混沌核心","⚛️","SSR","atk",["隨機3項能力大幅提升","5項","全能力爆發"],[s=>{for(let i=0;i<3;i++)rndBuff(s)},s=>{for(let i=0;i<5;i++)rndBuff(s)},s=>{for(let i=0;i<8;i++)rndBuff(s)}],"#E599F7");
-card("時間停止","⏸️","SSR","pas",["被擊時10%暫停敵人2秒","20%","30%暫停3秒"],[s=>{s.timestop=(s.timestop||0)+.1;s.tsD=2e3},s=>{s.timestop=(s.timestop||0)+.2;s.tsD=2e3},s=>{s.timestop=(s.timestop||0)+.3;s.tsD=3e3}],"#74C0FC");
+card("時間停止","⏸️","SSR","pas",["大招：凍結全敵2秒 CD15秒","大招：凍結全敵2秒 CD15秒","大招：凍結全敵2秒 CD15秒"],[s=>{s.ultType="ts";s.tsFrzDur=2e3;s.tsCd=15e3;g.ultCharge=0;g.ultCdEnd=0},s=>{s.ultType="ts";s.tsFrzDur=2e3;s.tsCd=15e3;g.ultCharge=0;g.ultCdEnd=0},s=>{s.ultType="ts";s.tsFrzDur=2e3;s.tsCd=15e3;g.ultCharge=0;g.ultCdEnd=0}],"#74C0FC",null,1);
 card("萬物吞噬","🌀","SSR","atk",["子彈吸取HP+攻+8","吸取+攻+15","吸取全+攻+25"],[s=>{s.atk+=8;s.bulletHeal=(s.bulletHeal||0)+.5},s=>{s.atk+=15;s.bulletHeal=(s.bulletHeal||0)+1},s=>{s.atk+=25;s.bulletHeal=(s.bulletHeal||0)+2}],"#845EF7");
 card("創世神力","✨","SSR","atk",["攻+15 攻速+30% 暴擊+15%","攻+25全面強化","攻+40神之力"],[s=>{s.atk+=15;s.fr*=.7;s.crit=(s.crit||.05)+.15;s.fx.star=Math.max(s.fx.star||0,2)},s=>{s.atk+=25;s.fr*=.55;s.crit=(s.crit||.05)+.3;s.speed+=.5;s.fx.star=3},s=>{s.atk+=40;s.fr*=.4;s.crit=(s.crit||.05)+.45;s.speed+=.8;s.maxHp+=50;s.hp=Math.min(s.hp+50,s.maxHp);s.fx.star=3}],"#FFD43B","star");
 
@@ -282,7 +282,7 @@ function pks(n,excludeIds){
     at++;
     const v=Math.random()*100;
     let r=v<RW.SSR?"SSR":v<RW.SSR+RW.SR?"SR":"R";
-    const pool=C.filter(c=>c.r===r&&!u.has(c.id)&&!ex.has(c.id)&&getCardLv(c.id)<2);
+    const pool=C.filter(c=>c.r===r&&!u.has(c.id)&&!ex.has(c.id)&&(c.once?getCardLv(c.id)<0:getCardLv(c.id)<2));
     if(!pool.length)continue;
     const c=pool[pool.length*Math.random()|0];
     p.push(c);u.add(c.id);
@@ -301,6 +301,38 @@ function resetControls(){
   joy.a=0;joy.dx=0;joy.dy=0;joy.id=null;joy.sx=null;joy.sy=null;
   aim.a=0;aim.dx=0;aim.dy=0;aim.id=null;aim.sx=null;aim.sy=null;
   setStick($("jkL"));setStick($("jkR"));
+}
+function resetSessionUi(){
+  $("combo").textContent="";
+  if(cTimer){clearTimeout(cTimer);cTimer=null;}
+}
+function attachTouchToStick(state,zoneId,knobId,touch){
+  const zone=$(zoneId),knob=$(knobId);
+  if(!zone||!knob||!touch)return false;
+  const rc=zone.getBoundingClientRect();
+  state.a=1;state.id=touch.identifier;
+  state.sx=rc.left+rc.width/2;state.sy=rc.top+rc.height/2;
+  state.dx=0;state.dy=0;
+  const mx=zone.offsetWidth/2||(zoneId==="jzL"?70:60);
+  let dx=touch.clientX-state.sx,dy=touch.clientY-state.sy;
+  const d=Math.sqrt(dx*dx+dy*dy);
+  if(d>mx&&d>0){dx=dx/d*mx;dy=dy/d*mx;}
+  state.dx=dx/mx;state.dy=dy/mx;
+  const travel=Math.max(0,mx-knob.offsetWidth/2);
+  setStick(knob,state.dx*travel,state.dy*travel);
+  return true;
+}
+function rebindActiveTouches(){
+  if(!g)return;
+  const activeTouches=(window.__lastTouchSnapshot&&window.__lastTouchSnapshot.length)?window.__lastTouchSnapshot:[];
+  if(!joy.a){
+    const left=activeTouches.find(t=>t.clientX<=window.innerWidth*.5);
+    if(left)attachTouchToStick(joy,"jzL","jkL",left);
+  }
+  if(!aim.a){
+    const right=activeTouches.find(t=>t.clientX>window.innerWidth*.5);
+    if(right)attachTouchToStick(aim,"jzR","jkR",right);
+  }
 }
 
 function awardEnemyKill(e){
@@ -348,15 +380,19 @@ function hud(){if(!g)return;
   $("ll").textContent="Lv."+g.level;
   $("eb").style.width=(g.exp/g.expTo*100)+"%";
   $("sl").textContent="⭐"+g.score;$("kl").textContent="💀"+g.kills;
-  if(g.p.ultType==="bh"){
+  if(g.p.ultType==="bh"||g.p.ultType==="ts"){
+    const isBH=g.p.ultType==="bh";
+    const cdMs=isBH?BH_COOLDOWN_MS:(g.p.tsCd||15e3);
+    const icon=isBH?"🕳️":"⏸️";
+    const label=isBH?"黑洞":"時停";
     const now=performance.now(),cdLeft=Math.max(0,(g.ultCdEnd||0)-now),ready=cdLeft<=0;
-    const pct=ready?1:1-cdLeft/BH_COOLDOWN_MS;
-    $("ultR").style.background="conic-gradient(#495057 "+(pct*360)+"deg,rgba(190,78,219,.1) "+(pct*360)+"deg)";
-    $("ultI").textContent=ready?"🕳️":"⏳";
-    $("ultL").textContent=ready?"⬇ 黑洞就緒 ⬇":`冷卻 ${Math.ceil(cdLeft/1000)}s`;
+    const pct=ready?1:1-cdLeft/cdMs;
+    $("ultR").style.background="conic-gradient("+(isBH?"#495057":"#74C0FC")+" "+(pct*360)+"deg,rgba(190,78,219,.1) "+(pct*360)+"deg)";
+    $("ultI").textContent=ready?icon:"⏳";
+    $("ultL").textContent=ready?`⬇ ${label}就緒 ⬇`:`冷卻 ${Math.ceil(cdLeft/1000)}s`;
     $("ub").style.width=(pct*100)+"%";
-    $("ulbl").textContent=ready?"🕳️READY":`⏳${Math.ceil(cdLeft/1000)}s`;
-    $("ulr").textContent=ready?"🕳️ READY":`⏳ ${Math.ceil(cdLeft/1000)}s`;
+    $("ulbl").textContent=ready?`${icon}READY`:`⏳${Math.ceil(cdLeft/1000)}s`;
+    $("ulr").textContent=ready?`${icon} READY`:`⏳ ${Math.ceil(cdLeft/1000)}s`;
     $("ulr").style.color=ready?"#FFD43B":"rgba(190,78,219,.85)";
     $("ultR").style.animation=ready?"gw .45s infinite":"none";
   }else{
@@ -747,9 +783,11 @@ function tapAtk(){if(!g||!g.run||g.heatCD>0)return;const now=performance.now();a
 
 function doUlt(){if(!g||!g.run)return;
   const isBH=g.p.ultType==="bh";
+  const isTS=g.p.ultType==="ts";
+  const isLS=!!g.p.lStep;
   const now=performance.now();
-  if(isBH&&now<(g.ultCdEnd||0))return;
-  if(!isBH&&g.ultCharge<ULT_CHARGE_NEED)return;
+  if((isBH||isTS)&&now<(g.ultCdEnd||0))return;
+  if(!isBH&&!isTS&&g.ultCharge<ULT_CHARGE_NEED)return;
   const ultLv=g.p.ultLv||0;
   const baseDmg=(ULT_D+g.p.atk*4+g.level*3)*(g.p.ultDmgMul||1)*(1+ultLv*.35);
   if(isBH){
@@ -758,12 +796,44 @@ function doUlt(){if(!g||!g.run)return;
     g.ultCdEnd=now+BH_COOLDOWN_MS;
     g.p.bhSafeEnd=now+BH_DURATION_MS;
   }
+  // 時間停止大招：凍結全敵，CD制
+  if(isTS){
+    const frzDur=g.p.tsFrzDur||2e3;
+    g.ene.forEach(e=>{e.frozen=Math.max(e.frozen||0,frzDur);});
+    g.ultCdEnd=now+(g.p.tsCd||15e3);
+    burst(g.p.x,g.p.y,"#74C0FC",25);
+    g.dn.push({x:g.p.x,y:g.p.y-30,d:"⏸️時間停止",life:1.5,color:"#74C0FC",big:1});
+    const cols=["#74C0FC","#4DABF7","#339AF0","#fff"];
+    for(let i=0;i<30&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/30,v=rn(3,8);par.push({x:g.p.x+Math.cos(a)*15,y:g.p.y+Math.sin(a)*15,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1.2,color:cols[i%cols.length],sz:rn(3,7)});}
+    g.ultFlash=.6;g.ultType="ts";
+    // 閃電步：大招同時瞬移
+    if(isLS&&now>=(g._lStepCdEnd||0)){
+      const dist=g.p.lStepDist||80;
+      g.p.x+=g.ad.x*dist;g.p.y+=g.ad.y*dist;
+      g.p.x=cl(g.p.x,PR,mapW()-PR);g.p.y=cl(g.p.y,PR,mapH()-PR);
+      g.p._inv=true;setTimeout(()=>{if(g)g.p._inv=false;},g.p.lStepInvDur||1e3);
+      g._lStepCdEnd=now+(g.p.lStepCd||10e3);
+      burst(g.p.x,g.p.y,"#FFE066",12);
+      g.dn.push({x:g.p.x,y:g.p.y-20,d:"⚡瞬移",life:1,color:"#FFE066"});
+    }
+    return;
+  }
   g.ene.forEach(e=>{e.hp-=baseDmg;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(baseDmg),life:1.3,color:isBH?"#868E96":"#FFD43B",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,14);});
   settleEnemyDeaths();
   const cols=isBH?["#495057","#868E96","#CED4DA","#fff"]:["#BE4BDB","#FFD43B","#FF6B6B","#74C0FC","#fff"];
   const burstCount=40+ultLv*12;
   for(let i=0;i<burstCount&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/burstCount,v=rn(2,7+ultLv);par.push({x:g.p.x+Math.cos(a)*20,y:g.p.y+Math.sin(a)*20,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1.3+ultLv*.15,color:cols[i%cols.length],sz:rn(3,8+ultLv)});}
   g.ultFlash=1;g.ultType=isBH?"bh":"n";if(!isBH)g.ultCharge=0;
+  // 閃電步：普通大招也觸發瞬移
+  if(isLS&&now>=(g._lStepCdEnd||0)){
+    const dist=g.p.lStepDist||80;
+    g.p.x+=g.ad.x*dist;g.p.y+=g.ad.y*dist;
+    g.p.x=cl(g.p.x,PR,mapW()-PR);g.p.y=cl(g.p.y,PR,mapH()-PR);
+    g.p._inv=true;setTimeout(()=>{if(g)g.p._inv=false;},g.p.lStepInvDur||1e3);
+    g._lStepCdEnd=now+(g.p.lStepCd||10e3);
+    burst(g.p.x,g.p.y,"#FFE066",12);
+    g.dn.push({x:g.p.x,y:g.p.y-20,d:"⚡瞬移",life:1,color:"#FFE066"});
+  }
 }
 
 /* ════════ MAIN LOOP ════════ */
@@ -783,6 +853,7 @@ function loop(){
   else if(g.huntModeUntil&&now<g.huntModeUntil){$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FA5252,#C92A2A);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;box-shadow:0 0 14px #FA5252aa;animation:gw .55s infinite">⚠️ 獵殺模式</span>';}
 
   // ult charge — hold to charge, tap when full to detonate (non-black-hole)
+  else if($("combo").innerHTML.includes("#FA5252aa")){$("combo").textContent="";}
   if(g.p.ultType!=="bh"){
     if(g.ultHold&&g.ultCharge<ULT_CHARGE_NEED){g.ultCharge=Math.min(g.ultCharge+(g.p.ultRate||1)*dt*1.2,ULT_CHARGE_NEED);}
     if(!g.ultHold&&g.ultCharge>0&&g.ultCharge<ULT_CHARGE_NEED){g.ultCharge=Math.max(0,g.ultCharge-dt*.4);}// slowly drain if released early
@@ -825,8 +896,8 @@ function loop(){
 
   // passive regen
   if(g.p.regen>0&&g.p.hp<g.p.maxHp)g.p.hp=Math.min(g.p.hp+g.p.regen*dt/60,g.p.maxHp);
-  // shield timer
-  if(g.p.shieldCD>0){g.p._shT=(g.p._shT||0)+dt*16.67;if(g.p._shT>=g.p.shieldCD&&!g.p._sh){g.p._sh=true;g.p._shT=0;}}
+  // shield timer (守護星)
+  if(g.p.shieldCD>0){g.p._shT=(g.p._shT||0)+dt*16.67;if(g.p._shT>=g.p.shieldCD&&!g.p._sh){g.p._sh=true;g.p._shT=0;g.p._shSpawn=now;burst(g.p.x,g.p.y,"#4DABF7",12);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🛡️守護星",life:1,color:"#4DABF7"});}}
   // invincibility timer
   if(g.p.invCD>0){g.p._ivT=(g.p._ivT||0)+dt*16.67;if(g.p._ivT>=g.p.invCD){g.p._inv=true;g.p._ivT=0;setTimeout(()=>{if(g)g.p._inv=false;},g.p.invDur||2e3);}}
 
@@ -884,12 +955,14 @@ function loop(){
     if(e.poisonT>0){
       e.poisonT-=dt*16.67;
       const lv=e.poisonLv||1;
-      const pd=e.boss?e.mhp*(0.0012*lv):((g.p.atk*.18)+.8*lv); // poison: %HP vs bosses, weaker vs mobs
+      const pBonus=g.p.poisonDmg||0;
+      const elemMul=g.p.elemBoost||1;
+      const pd=e.boss?e.mhp*(0.0012*lv+pBonus*.0003)*elemMul:((g.p.atk*.18)+.8*lv+pBonus)*elemMul;
       e.hp-=pd*dt;
     }
     if(e.burnT>0){
       e.burnT-=dt*16.67;
-      const bd=(g.p.atk*.22+1.2*(e.burnLv||1))*dt; // fire: stronger DoT burst
+      const bd=(g.p.atk*.22+1.2*(e.burnLv||1))*(g.p.elemBoost||1)*dt; // fire: stronger DoT burst
       e.hp-=bd;
       if(Math.random()<.12&&par.length<MAX_PARTICLES)par.push({x:e.x+rn(-e.r,e.r),y:e.y+rn(-e.r,e.r),vx:rn(-.4,.4),vy:rn(-1.2,-.3),life:.5,color:"#FF6B6B",sz:rn(2,4)});
     }
@@ -1024,10 +1097,9 @@ function loop(){
         const survMit=1-Math.min(.42,surv*.36);
         let dmg=b.dmg*(1-g.p.armor)*lateMul*survMit;
         if(g.p.thorns>0){/* thorns don't apply to projectiles */}
-        if(g.p.timestop&&Math.random()<g.p.timestop){g.ene.forEach(oe=>oe.frozen=(g.p.tsD||2e3));g.dn.push({x:g.p.x,y:g.p.y-30,d:"⏸️時停",life:1.2,color:"#74C0FC",big:1});}
         g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",4);
         g.dn.push({x:g.p.x,y:g.p.y-20,d:Math.floor(dmg),life:1,color:"#FF6B6B"});
-        if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"✨復活",life:1.5,color:"#BE4BDB",big:1});}else{g.run=false;showOver();}}
+        if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"✨復活",life:1.5,color:"#BE4BDB",big:1});g.ene.forEach(oe=>{const rdx=oe.x-g.p.x,rdy=oe.y-g.p.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;oe.x+=rdx/rd*SPAWN_R;oe.y+=rdy/rd*SPAWN_R;oe.frozen=1500;});}else{g.run=false;showOver();}}
         return false;
       }
       return true;
@@ -1044,18 +1116,22 @@ function loop(){
     if(e.role===ROLE_SHIELD){const ba=Math.atan2(b.vy,b.vx),fa=e.shieldAng+Math.PI,ad=Math.abs(((ba-fa)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);if(ad<Math.PI*.55)dmg*=.25;}
     e.hp-=dmg;
     if(g.p.slow<1)e.st=1800;
-    if(fx.fire){e.burnT=Math.max(e.burnT||0,1400+fxLv*600);e.burnLv=fxLv;} // fire: burn DoT
-    if(fx.ice){if(Math.random()<(.12+.08*fxLv))e.frozen=Math.max(e.frozen||0,350+fxLv*260);else e.st=Math.max(e.st||0,800+fxLv*450);} // ice: freeze/slow control
-    if(g.p.poison>0){e.poisonT=g.p.poison*1e3;e.poisonLv=fxLv;} // poison: %HP vs boss handled in tick
+    if(fx.fire){e.burnT=Math.max(e.burnT||0,(1400+fxLv*600)*(g.p.elemBoost||1));e.burnLv=fxLv;} // fire: burn DoT
+    if(fx.ice){
+      const iceMul=g.p.elemBoost||1;
+      if(Math.random()<Math.min(.95,(.12+.08*fxLv)*iceMul))e.frozen=Math.max(e.frozen||0,(350+fxLv*260)*iceMul);
+      else e.st=Math.max(e.st||0,(800+fxLv*450)*iceMul);
+    } // ice: freeze/slow control
+    if(g.p.poison>0){e.poisonT=g.p.poison*1e3*(g.p.elemBoost||1);e.poisonLv=fxLv;} // poison: %HP vs boss handled in tick
     if(g.p.bulletHeal>0)g.p.hp=Math.min(g.p.hp+g.p.bulletHeal,g.p.maxHp);
     // splash
     if(g.p.splash>0){g.ene.forEach(oe=>{if(oe!==e&&oe.hp>0&&di(e,oe)<g.p.splash){oe.hp-=dmg*.3;}});}
     // chain
     if(g.p.chain>0||fx.lightning){
-      const baseChain=Math.max(g.p.chain||0,fx.lightning?fxLv+1:0);
-      const chainCnt=e.boss?Math.min(2,baseChain):Math.min(5,baseChain);
+      const chainCnt=e.boss?1:2;
+      const chainMul=(g.p.chainDmg||1)*(fx.lightning ? .58 : .3);
       const tgts=nearestTargets(e,chainCnt);
-      tgts.forEach(t=>{const cd=dmg*(fx.lightning?.58:.3);t.hp-=cd;addLtn(e.x,e.y,t.x,t.y,.85);});
+      tgts.forEach(t=>{const cd=dmg*chainMul;t.hp-=cd;addLtn(e.x,e.y,t.x,t.y,.85);});
     }
     // hit fx — scales dramatically with card level
     const pN=3+fxLv*3;// 6/9/12 particles at lv1/2/3
@@ -1100,9 +1176,8 @@ function loop(){
     const survMit=1-Math.min(.42,surv*.36);
     let dmg=(8+g.wave*2)*(1-g.p.armor)*(e.dmgMul||1)*lateMul*survMit;
     if(g.p.thorns>0){const td=dmg*g.p.thorns;e.hp-=td;}
-    if(g.p.timestop&&Math.random()<g.p.timestop){g.ene.forEach(oe=>oe.frozen=(g.p.tsD||2e3));g.dn.push({x:g.p.x,y:g.p.y-30,d:"⏸️時停",life:1.2,color:"#74C0FC",big:1});}
     g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",6);
-    if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"✨復活",life:1.5,color:"#BE4BDB",big:1});}else{g.run=false;showOver();return false;}}return false;}return true;});}
+    if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"✨復活",life:1.5,color:"#BE4BDB",big:1});g.ene.forEach(oe=>{const rdx=oe.x-g.p.x,rdy=oe.y-g.p.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;oe.x+=rdx/rd*SPAWN_R;oe.y+=rdy/rd*SPAWN_R;oe.frozen=1500;});}else{g.run=false;showOver();return false;}}return false;}return true;});}
 
   // level up
   while(g.exp>=g.expTo){g.exp-=g.expTo;g.level++;g.wave=g.level;g.expTo=expForLevel(g.level);
@@ -1287,7 +1362,12 @@ function loop(){
     cx.restore();
   }
   if(g.p._inv){cx.save();cx.globalAlpha=.2+Math.sin(now/150)*.1;cx.strokeStyle="#FFF3BF";cx.lineWidth=2;cx.beginPath();cx.arc(g.p.x,g.p.y+Math.sin(g.time/1000*3)*2.5,PR+6,0,Math.PI*2);cx.stroke();cx.restore();}
-  if(g.p._sh){cx.save();cx.globalAlpha=.18+Math.sin(now/200)*.08;cx.strokeStyle="#4DABF7";cx.lineWidth=2;cx.beginPath();cx.arc(g.p.x,g.p.y+Math.sin(g.time/1000*3)*2.5,PR+5,0,Math.PI*2);cx.stroke();cx.restore();}
+  if(g.p._sh){cx.save();
+    const shAge=now-(g.p._shSpawn||0),shPulse=shAge<500?1-shAge/500:0;
+    cx.globalAlpha=.12+Math.sin(now/180)*.06+shPulse*.3;cx.strokeStyle="#4DABF7";cx.lineWidth=3+shPulse*4;cx.shadowColor="#4DABF7";cx.shadowBlur=12+shPulse*15;cx.beginPath();cx.arc(g.p.x,g.p.y+Math.sin(now/300)*2,PR+7+shPulse*8,0,Math.PI*2);cx.stroke();
+    cx.shadowBlur=0;cx.globalAlpha=.25+Math.sin(now/150)*.1;cx.strokeStyle="#74C0FC";cx.lineWidth=1.5;cx.beginPath();cx.arc(g.p.x,g.p.y+Math.sin(now/300)*2,PR+4,0,Math.PI*2);cx.stroke();
+    for(let si=0;si<4;si++){const sa=now/400+si*Math.PI/2,sx=g.p.x+Math.cos(sa)*(PR+6),sy=g.p.y+Math.sin(sa)*(PR+6);cx.globalAlpha=.4;cx.fillStyle="#fff";cx.beginPath();cx.arc(sx,sy,1.5,0,Math.PI*2);cx.fill();}
+    cx.restore();}
   if(g.p.fx.dragon){cx.save();cx.globalAlpha=.12+fxLv_*.03;cx.fillStyle="#FF922B";cx.beginPath();cx.arc(g.p.x,g.p.y,PR+6+(g.p.fx.dragon||1)*3,0,Math.PI*2);cx.fill();cx.restore();}
 
   // orbiters visual
@@ -1364,9 +1444,25 @@ function buildCard(cd,w,i,wrap){
   const lvL=isUp?`<div style="font-size:9px;color:#FFD43B;font-weight:900;margin-bottom:2px;text-shadow:0 0 6px #FFD43B">⬆Lv${dLv}</div>`:"";
   const rarBadge=cd.r==="SSR"?'<div style="font-size:9px;background:linear-gradient(90deg,#FFD43B,#FF6B6B,#DA77F2,#74C0FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:2px;margin-bottom:3px">✦ SSR ✦</div>':`<div style="font-size:10px;color:${RC[cd.r]};font-weight:700;letter-spacing:1px;margin-bottom:3px">★${cd.r}</div>`;
   b.innerHTML=`${rarBadge}${tpL}<div style="font-size:30px;margin-bottom:3px">${cd.e}</div><div style="font-size:12px;font-weight:900;margin-bottom:2px">${cd.n}</div>${lvL}<div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">${desc}</div>`;
-  b.onclick=()=>{b.style.animation="cardSelect .35s forwards";setTimeout(()=>{const lv=addCard(cd.id);cd.ap[Math.max(lv,0)](g.p);g.p.hp=Math.min(g.p.hp+15,g.p.maxHp);g.pickOpen=false;resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;
-    // mobile: some devices keep stale touch identifiers after overlay taps; hard-reset sticks again shortly after returning
-    setTimeout(resetControls,60);setTimeout(resetControls,180);
+  b.onclick=()=>{b.style.animation="cardSelect .35s forwards";setTimeout(()=>{const lv=addCard(cd.id);cd.ap[Math.max(lv,0)](g.p);g.p.hp=Math.min(g.p.hp+15,g.p.maxHp);
+    // --- 幸運幣：選後立即彈出額外3張卡（無重骰） ---
+    if(g.p._luckyPick){g.p._luckyPick=false;g.pickOpen=false;setTimeout(()=>showPick("lucky"),350);return;}
+    // --- 命運轉輪：清除所有能力重抽 ---
+    if(g.p._fateWheel){g.p._fateWheel=false;
+      const rerollCount=inv.length-1;
+      const fateEntry=inv.find(x=>C.find(c=>c.id===x.id&&c.n==="命運轉輪"));
+      inv.length=0;if(fateEntry)inv.push(fateEntry);
+      g.p.atk=2.5;g.p.speed=PS;g.p.fr=1;g.p.armor=0;g.p.chain=0;g.p.ls=0;g.p.slow=1;g.p.split=1;g.p.expR=1;g.p.crit=.05;g.p.revive=0;g.p.fx={};g.p.regen=0;g.p.luck=0;g.p.dodge=0;g.p.thorns=0;g.p.dblAtk=0;g.p.shieldCD=0;g.p._sh=false;g.p._shT=0;g.p._shSpawn=0;g.p.whirlCount=0;g.p.whirlLv=0;g.p.orbiters=0;g.p.poison=0;g.p.ultType="n";g.p.ultLv=0;g.p.pierce=0;g.p.homing=0;g.p.splash=0;g.p.berserk=0;g.p.deathBoom=0;g.p.dodgeAtk=0;g.p.elemBoost=1;g.p.ultDmgMul=1;g.p.ultRate=1;g.p.bulletHeal=0;g.p.invCD=0;g.p.invDur=0;g.p._inv=false;g.p._ivT=0;g.p.timestop=0;g.p.tsD=0;g.p.tsFrzDur=0;g.p.tsCd=0;g.p.lStep=false;g.p.lStepDist=0;g.p.lStepInvDur=0;g.p.lStepCd=0;g.p.chainDmg=1;g.p.poisonDmg=0;g.p.crateVis=1;g.p.mapExpand=0;g.p.pickCount=2;g.p.face=1;
+      g.p.maxHp=120;g.p.hp=Math.min(g.p.hp,120);g.p.expMul=1.3;g.orbs=[];
+      g.ultCharge=0;g.ultCdEnd=0;g.bhEnd=0;g.bhPow=1;g.ultFlash=0;g._lStepCdEnd=0;
+      g.pickOpen=false;
+      if(rerollCount>0){g._fateQueue=rerollCount;setTimeout(()=>showPick("fate"),350);}
+      else{resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;rebindActiveTouches();setTimeout(()=>{resetControls();rebindActiveTouches();},60);}
+      return;}
+    // --- 命運轉輪後續輪次 ---
+    if(g._fateQueue>0){g.pickOpen=false;setTimeout(()=>showPick("fate"),350);return;}
+    g.pickOpen=false;resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;rebindActiveTouches();
+    setTimeout(()=>{resetControls();rebindActiveTouches();},60);setTimeout(()=>{resetControls();rebindActiveTouches();},180);
   },300);};
   wrap.innerHTML="";wrap.appendChild(b);
 }
@@ -1374,13 +1470,20 @@ function showPick(src,specificCard){
   if(g.pickOpen)return;
   g.pickOpen=true;
   resetControls();
+  const isLucky=src==="lucky";
+  const isFate=src==="fate";
+  if(isFate&&g._fateQueue>0)g._fateQueue--;
   const luck=g.p.luck||0;
-  const cnt=src==="crate"?3:(specificCard?1:(Math.random()*100<(25+luck)?3:(g.p.pickCount||2)));
+  const cnt=isLucky?3:isFate?3:src==="crate"?3:(specificCard?1:(Math.random()*100<(25+luck)?3:(g.p.pickCount||2)));
   const pk=specificCard?[specificCard]:pks(cnt);
+  const roundSeen=new Set(pk.map(c=>c.id));
+  const noReroll=isLucky||isFate;
   const p=$("pickPanel");
-  const title=src==="boss"?"👑 小王擊敗！":src==="crate"?"📦 寶箱解鎖！":"⬆ 升級！";
+  const fateLeft=isFate?(g._fateQueue||0):0;
+  const title=isFate?`🎰 命運重抽！(剩餘${fateLeft}次)`:isLucky?"🍀 幸運抽卡！":src==="boss"?"👑 小王擊敗！":src==="crate"?"📦 寶箱解鎖！":"⬆ 升級！";
+  const subtitle=noReroll?"選擇一張卡牌":(pk.length>1?"選擇一張卡牌（每張可重骰一次）":"獲得卡牌");
   p.innerHTML=`<div style="color:#FFD43B;font-size:14px;font-weight:700;letter-spacing:3px;margin-bottom:4px">${title}</div>
-    <p style="color:rgba(255,255,255,.4);font-size:11px;margin:0 0 14px">${pk.length>1?"選擇一張卡牌（每張可重骰一次）":"獲得卡牌"}</p>
+    <p style="color:rgba(255,255,255,.4);font-size:11px;margin:0 0 14px">${subtitle}</p>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap" id="pickCards"></div>`;
   const cc=$("pickCards");
   const w=pk.length>=3?100:pk.length===1?180:135;
@@ -1389,15 +1492,15 @@ function showPick(src,specificCard){
     const cardWrap=document.createElement("div");
     buildCard(cd,w,i,cardWrap);
     col.appendChild(cardWrap);
-    // reroll button — one chance per slot
-    if(pk.length>1){
+    // reroll button — disabled for lucky/fate picks
+    if(pk.length>1&&!noReroll){
       const rr=document.createElement("button");
       rr.style.cssText="border:none;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:9px;font-weight:700;font-family:inherit;padding:4px 10px;border-radius:12px;cursor:pointer;transition:opacity .2s;";
       rr.textContent="🎲 重骰";
       rr.onclick=()=>{
-        const exc=new Set(pk.map((x,idx)=>idx===i?null:x.id).filter(Boolean));
+        const exc=new Set(roundSeen);
         const nw=pks(1,exc);
-        if(nw.length){pk[i]=nw[0];buildCard(nw[0],w,i,cardWrap);}
+        if(nw.length){pk[i]=nw[0];roundSeen.add(nw[0].id);buildCard(nw[0],w,i,cardWrap);}
         rr.textContent="已使用";rr.style.opacity=".3";rr.style.pointerEvents="none";
       };
       col.appendChild(rr);
@@ -1418,9 +1521,10 @@ function showOver(){
 window.startGame=window.SG=function(){
   cv=$("cv");cx=cv.getContext("2d");fxc=$("fx");fxctx=fxc.getContext("2d");
   cv.width=fxc.width=VW;cv.height=fxc.height=VH;resize();
+  resetSessionUi();
   // clear BG
   cx.fillStyle="#0a0a18";cx.fillRect(0,0,VW,VH);
-  g={p:{x:MW/2,y:MH/2,hp:120,maxHp:120,atk:2.5,speed:PS,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,ultType:"n",ultLv:0,pierce:0,homing:0,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,crateVis:1,mapExpand:0,pickCount:2,face:1},
+  g={p:{x:MW/2,y:MH/2,hp:120,maxHp:120,atk:2.5,speed:PS,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,ultType:"n",ultLv:0,pierce:0,homing:0,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDist:0,lStepInvDur:0,lStepCd:0,chainDmg:1,poisonDmg:0,crateVis:1,mapExpand:0,pickCount:2,face:1},
     ene:[],bul:[],par:[],dn:[],orbs:[],ltn:[],ebul:[],crates:genCrates(),
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
@@ -1436,6 +1540,7 @@ window.startGame=window.SG=function(){
 // touchstart ONLY on each element — touchmove/end on document
 $("jzL").addEventListener("touchstart",e=>{
   e.preventDefault();
+  window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
   const t=e.changedTouches[0],rc=$("jzL").getBoundingClientRect();
   joy.a=1;joy.id=t.identifier;
   joy.sx=rc.left+rc.width/2;joy.sy=rc.top+rc.height/2;
@@ -1445,6 +1550,7 @@ $("jzL").addEventListener("touchstart",e=>{
 
 $("jzR").addEventListener("touchstart",e=>{
   e.preventDefault();
+  window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
   const t=e.changedTouches[0],rc=$("jzR").getBoundingClientRect();
   aim.a=1;aim.id=t.identifier;
   aim.sx=rc.left+rc.width/2;aim.sy=rc.top+rc.height/2;
@@ -1455,10 +1561,10 @@ $("jzR").addEventListener("touchstart",e=>{
 
 function startUltPress(){
   if(!g)return;
-  if(g.p.ultType==="bh"){
+  if(g.p.ultType==="bh"||g.p.ultType==="ts"){
     if(performance.now()>=(g.ultCdEnd||0))doUlt();
   }else if(g.ultCharge>=ULT_CHARGE_NEED){
-    doUlt(); // cast immediately when fully charged
+    doUlt();
   }else g.ultHold=true;
 }
 function endUltPress(){
@@ -1474,6 +1580,7 @@ window.addEventListener("mouseup",()=>endUltPress());
 document.addEventListener("touchmove",e=>{
   if(e.target.closest&&e.target.closest(".panel"))return;// allow panel scroll
   e.preventDefault();
+  window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
   for(let i=0;i<e.touches.length;i++){
     const t=e.touches[i];
     if(joy.a&&t.identifier===joy.id){
@@ -1497,6 +1604,7 @@ document.addEventListener("touchmove",e=>{
 
 // global touchend/cancel — always fires
 function touchReset(e){
+  window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
   for(let i=0;i<e.changedTouches.length;i++){
     const id=e.changedTouches[i].identifier;
     if(id===joy.id){joy.a=0;joy.dx=0;joy.dy=0;joy.id=null;joy.sx=null;joy.sy=null;setStick($("jkL"));}
@@ -1514,7 +1622,7 @@ window.addEventListener("keydown",e=>{
   if(c==="Space"||e.key===" "){e.preventDefault();tapAtk();}
   if(c==="KeyE"||e.key==="e"||e.key==="E"){
     if(!g)return;
-    if(g.p.ultType==="bh"){if(performance.now()>=(g.ultCdEnd||0))doUlt();}
+    if(g.p.ultType==="bh"||g.p.ultType==="ts"){if(performance.now()>=(g.ultCdEnd||0))doUlt();}
     else if(g.ultCharge>=ULT_CHARGE_NEED)doUlt();
     else g.ultHold=true;
   }
