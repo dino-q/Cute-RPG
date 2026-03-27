@@ -727,7 +727,7 @@ function fire(dmg,dx,dy,sp){
     const count=Math.min(shots,12);
     for(let i=0;i<count;i++){
       const a=dir+(i-(count-1)/2)*.16+rn(-sp,sp);
-      g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(g.p.crit||.05),bc,trail:[],pierce:g.p.pierce||0,hm:g.p.homing||0});
+      g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(g.p.crit||.05),bc,trail:[],_tw:0,pierce:g.p.pierce||0,hm:g.p.homing||0});
     }
   });
 }
@@ -945,9 +945,15 @@ function loop(){
   }
 
   // bullets update
+  const _trailMax=fxQ<.65?3:5;
   g.bul=g.bul.filter(b=>{
-    if(Math.random()<fxQ){b.trail.push({x:b.x,y:b.y,life:1});if(b.trail.length>(fxQ<.65?3:5))b.trail.shift();}
-    b.trail.forEach(t=>t.life-=.18*dt);
+    if(Math.random()<fxQ){
+      if(!b._tw)b._tw=0; // trail write index
+      if(b.trail.length<_trailMax){b.trail.push({x:b.x,y:b.y,life:1});}
+      else{const t=b.trail[b._tw%_trailMax];t.x=b.x;t.y=b.y;t.life=1;}
+      b._tw++;
+    }
+    for(let ti=0;ti<b.trail.length;ti++)b.trail[ti].life-=.18*dt;
     // homing
     if(b.hm>0){let nr=null,nd=1e9;g.ene.forEach(e=>{const d=di(b,e);if(d<nd){nd=d;nr=e;}});if(nr&&nd<200){const dx=nr.x-b.x,dy=nr.y-b.y,d=Math.sqrt(dx*dx+dy*dy)||1;b.vx+=(dx/d)*b.hm*dt*60;b.vy+=(dy/d)*b.hm*dt*60;const bs=Math.sqrt(b.vx*b.vx+b.vy*b.vy);if(bs>8){b.vx=b.vx/bs*8;b.vy=b.vy/bs*8;}}}
     b.x+=b.vx*dt;b.y+=b.vy*dt;
@@ -1127,8 +1133,9 @@ function loop(){
     });
   }
 
-  // bullet-enemy hit — per-frame chain dedup
+  // bullet-enemy hit — per-frame chain dedup + neighbor cache
   const _chainedSet=new Set();
+  const _neighborCache=new Map(); // ei → [target indices]
   g.bul.forEach(b=>{if(b.life<=0)return;for(let ei=0;ei<g.ene.length;ei++){const e=g.ene[ei];if(e.hp<=0||b.life<=0)continue;if(di(b,e)<e.r+BR){
     const fx=g.p.fx,fxLv=Math.max(fx.fire||0,fx.ice||0,fx.dragon||0,fx.star||0,fx.poison||0,1);
     let dmg=b.dmg*(g.p.elemBoost||1);if(b.crit)dmg*=2;
@@ -1162,15 +1169,17 @@ function loop(){
         }
       }
     }
-    // chain — deduped per frame so same pair only chains once
+    // chain — deduped per frame, cached neighbor lookup
     if(g.p.chain>0||fx.lightning){
       const chainCnt=e.boss?1:2;
       const chainMul=(g.p.chainDmg||1)*(fx.lightning ? .58 : .3);
-      const tgts=nearestTargets(e,chainCnt);
+      // use cached neighbors for this enemy index
+      let tgts=_neighborCache.get(ei);
+      if(!tgts){tgts=nearestTargets(e,chainCnt);_neighborCache.set(ei,tgts);}
       tgts.forEach(t=>{
         const ti=g.ene.indexOf(t);
         const key=ei<ti?ei+"|"+ti:ti+"|"+ei;
-        if(_chainedSet.has(key))return; // skip duplicate chain this frame
+        if(_chainedSet.has(key))return;
         _chainedSet.add(key);
         const cd=dmg*chainMul;t.hp-=cd;addLtn(e.x,e.y,t.x,t.y,.85);
       });
@@ -1323,35 +1332,40 @@ function loop(){
   // orbs
   g.orbs.forEach(o=>{cx.save();cx.globalAlpha=o.life;cx.shadowColor="#51CF66";cx.shadowBlur=6;cx.fillStyle="#51CF66";cx.beginPath();cx.arc(o.x,o.y,3.5,0,Math.PI*2);cx.fill();cx.restore();});
 
-  // bullets — enhanced per element
+  // bullets — enhanced per element (no shadowBlur)
   const bc=bCol(),fx_=g.p.fx,fxLv_=Math.max(fx_.fire||0,fx_.ice||0,fx_.dragon||0,fx_.star||0,fx_.poison||0,fx_.lightning||0,0);
   g.bul.forEach(b=>{
-    const sz=BR*(1+fxLv_*.12);// bigger bullets with upgrades
-    // trail — thicker/longer with upgrades
-    b.trail.forEach(t=>{if(t.life<=0)return;cx.save();cx.globalAlpha=t.life*(.3+fxLv_*.08);cx.fillStyle=b.bc.t;cx.beginPath();cx.arc(t.x,t.y,sz*(t.life*.6+.3),0,Math.PI*2);cx.fill();cx.restore();});
-    cx.save();cx.shadowColor=b.bc.g;cx.shadowBlur=b.crit?14:(6+fxLv_*3);
+    const sz=BR*(1+fxLv_*.12);
+    // trail doubles as glow — slightly larger, softer
+    for(let ti=0;ti<b.trail.length;ti++){const t=b.trail[ti];if(t.life<=0)continue;cx.globalAlpha=t.life*(.25+fxLv_*.06);cx.fillStyle=b.bc.t;cx.beginPath();cx.arc(t.x,t.y,sz*(t.life*.7+.4),0,Math.PI*2);cx.fill();}
+    cx.save();cx.globalAlpha=1;
     cx.fillStyle=b.crit?"#FFD43B":b.bc.f;
+    // outer glow circle (replaces shadowBlur — one extra arc, much cheaper)
+    if(b.crit||fxLv_>=2){cx.globalAlpha=.25;cx.beginPath();cx.arc(b.x,b.y,sz*2,0,Math.PI*2);cx.fill();cx.globalAlpha=1;}
     // element-specific bullet shape
-    if(fx_.fire||fx_.dragon){// elongated flame
+    if(fx_.fire||fx_.dragon){
       const a=Math.atan2(b.vy,b.vx);cx.translate(b.x,b.y);cx.rotate(a);
       cx.beginPath();cx.ellipse(0,0,sz*1.4,sz*.7,0,0,Math.PI*2);cx.fill();
       cx.fillStyle="#FFD43B";cx.beginPath();cx.ellipse(-sz*.3,0,sz*.5,sz*.3,0,0,Math.PI*2);cx.fill();
-    }else if(fx_.ice){// diamond shard
+    }else if(fx_.ice){
       cx.translate(b.x,b.y);cx.rotate(g.time/200);
       cx.beginPath();cx.moveTo(0,-sz*1.2);cx.lineTo(sz*.6,0);cx.lineTo(0,sz*1.2);cx.lineTo(-sz*.6,0);cx.closePath();cx.fill();
-    }else if(fx_.lightning){// jagged bolt
+    }else if(fx_.lightning){
       const a=Math.atan2(b.vy,b.vx);cx.translate(b.x,b.y);cx.rotate(a);
       cx.beginPath();cx.moveTo(sz*1.2,0);cx.lineTo(sz*.2,sz*.5);cx.lineTo(sz*.5,0);cx.lineTo(-sz*.2,-sz*.5);cx.lineTo(sz*.2,0);cx.closePath();cx.fill();
-    }else if(fx_.poison){// bubble
-      cx.beginPath();cx.arc(b.x,b.y,sz,0,Math.PI*2);cx.fill();
+    }else if(fx_.poison){
+      cx.translate(b.x,b.y);
+      cx.beginPath();cx.arc(0,0,sz,0,Math.PI*2);cx.fill();
       cx.strokeStyle="#69DB7C";cx.lineWidth=1;cx.stroke();
-    }else if(fx_.star){// star shape
+    }else if(fx_.star){
       cx.translate(b.x,b.y);cx.rotate(g.time/150);
       cx.beginPath();for(let i=0;i<10;i++){const a2=Math.PI*i/5,rr=i%2===0?sz*1.1:sz*.5;cx.lineTo(Math.cos(a2)*rr,Math.sin(a2)*rr);}cx.closePath();cx.fill();
-    }else{// default round
-      cx.beginPath();cx.arc(b.x,b.y,sz,0,Math.PI*2);cx.fill();
+    }else{
+      cx.translate(b.x,b.y);
+      cx.beginPath();cx.arc(0,0,sz,0,Math.PI*2);cx.fill();
     }
-    cx.fillStyle="#fff";cx.beginPath();cx.arc(b.x,b.y,sz*.25,0,Math.PI*2);cx.fill();
+    // white center highlight (always at local origin since all branches translate)
+    cx.fillStyle="#fff";cx.beginPath();cx.arc(0,0,sz*.25,0,Math.PI*2);cx.fill();
     cx.restore();
   });
 
