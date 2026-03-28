@@ -648,14 +648,21 @@ function drawPlayer(x,y,r,t,col,face){
   cx.strokeStyle="rgba(255,255,255,.45)";cx.lineWidth=1;cx.strokeRect(-bw/2,-bl,bw,bl*.95);
   cx.shadowBlur=0;cx.fillStyle=w[4];cx.fillRect(-6,0,12,3.2);
   cx.fillStyle="#5C3A1E";cx.fillRect(-2,3.2,4,r*.36);cx.restore();
-  // 守護星盾牌（非持劍側）
+  // 守護星盾牌（持劍同側前方，灰色金屬質感）
   if(g&&g.p._sh){
-    cx.save();cx.translate(x-f*r*.75,cy+r*.05);cx.rotate(f>0?.3:-.3);
-    cx.globalAlpha=.85;
-    cx.fillStyle="#4DABF7";cx.beginPath();
-    cx.moveTo(0,-7);cx.lineTo(6,-3);cx.lineTo(5,5);cx.lineTo(0,8);cx.lineTo(-5,5);cx.lineTo(-6,-3);cx.closePath();cx.fill();
-    cx.strokeStyle="#74C0FC";cx.lineWidth=1;cx.stroke();
-    cx.fillStyle="#fff";cx.globalAlpha=.4;cx.beginPath();cx.arc(0,0,2.5,0,Math.PI*2);cx.fill();
+    cx.save();cx.translate(x+f*r*.55,cy+r*.15);cx.rotate(f>0?-.15:.15);
+    cx.globalAlpha=.9;
+    // 盾牌本體
+    cx.fillStyle="#868E96";cx.beginPath();
+    cx.moveTo(0,-8);cx.lineTo(7,-4);cx.lineTo(6,4);cx.lineTo(0,9);cx.lineTo(-6,4);cx.lineTo(-7,-4);cx.closePath();cx.fill();
+    // 邊框
+    cx.strokeStyle="#ADB5BD";cx.lineWidth=1.2;cx.stroke();
+    // 十字紋
+    cx.strokeStyle="#CED4DA";cx.lineWidth=.8;
+    cx.beginPath();cx.moveTo(0,-5);cx.lineTo(0,6);cx.stroke();
+    cx.beginPath();cx.moveTo(-4,0);cx.lineTo(4,0);cx.stroke();
+    // 高光
+    cx.fillStyle="#fff";cx.globalAlpha=.3;cx.beginPath();cx.arc(-1.5,-2,2,0,Math.PI*2);cx.fill();
     cx.restore();
   }
   // body
@@ -1752,6 +1759,44 @@ function loop(){
     drawPlayer(gh.x,gh.y,PR,g.time/1000,"#FFE066",gh.face);
     cx.restore();
   });
+  // 天使之翼：畫在主角身後（drawPlayer 之前）
+  if(g.p._inv&&(!g.p._dashEnd||now>=g.p._dashEnd)){
+    const px=g.p.x,py=g.p.y,f=g.p.face||1;
+    const flap=Math.sin(now/90);
+    const wSpan=24+flap*6; // 翅膀展開寬度
+    const wH=28+flap*4; // 翅膀高度
+    cx.save();
+    // 左翅（3段羽毛）
+    for(let s=0;s<3;s++){
+      const seg=s/3,segA=-.3-seg*.5+flap*.15;
+      const sx2=px-6-s*wSpan*.3,sy=py-2+s*3;
+      const ex=px-wSpan*(1-seg*.2),ey=py-wH*(1-seg*.5)+flap*3;
+      cx.globalAlpha=.55-.1*s;
+      cx.fillStyle=s===0?"rgba(255,255,255,.6)":s===1?"rgba(220,230,255,.5)":"rgba(200,215,245,.4)";
+      cx.beginPath();cx.moveTo(sx2,sy);
+      cx.quadraticCurveTo(ex-4,ey,ex,ey+8);
+      cx.quadraticCurveTo((sx2+ex)/2,sy+6,sx2,sy);
+      cx.fill();
+    }
+    // 右翅（3段羽毛）
+    for(let s=0;s<3;s++){
+      const seg=s/3;
+      const sx2=px+6+s*wSpan*.3,sy=py-2+s*3;
+      const ex=px+wSpan*(1-seg*.2),ey=py-wH*(1-seg*.5)+flap*3;
+      cx.globalAlpha=.55-.1*s;
+      cx.fillStyle=s===0?"rgba(255,255,255,.6)":s===1?"rgba(220,230,255,.5)":"rgba(200,215,245,.4)";
+      cx.beginPath();cx.moveTo(sx2,sy);
+      cx.quadraticCurveTo(ex+4,ey,ex,ey+8);
+      cx.quadraticCurveTo((sx2+ex)/2,sy+6,sx2,sy);
+      cx.fill();
+    }
+    // 羽毛粒子（白色為主）
+    if(par.length<MAX_PARTICLES&&Math.random()<.35){
+      const side=Math.random()>.5?1:-1;
+      par.push({x:px+side*rn(8,wSpan),y:py-rn(0,wH*.6),vx:side*rn(.1,.4),vy:rn(.4,1.2),life:.6,color:"rgba(255,255,255,.7)",sz:rn(1,2.5)});
+    }
+    cx.restore();
+  }
   // player (blinks during i-frame)
   cx.save();
   if(g.p._iFrameEnd>0&&now<g.p._iFrameEnd){cx.globalAlpha=Math.sin(now/30)*0.35+0.55;}
@@ -1764,60 +1809,7 @@ function loop(){
     cx.restore();
   }
   if(g.p._inv){
-    cx.save();cx.globalAlpha=.2+Math.sin(now/150)*.1;cx.strokeStyle="#FFF3BF";cx.lineWidth=2;cx.beginPath();cx.arc(g.p.x,g.p.y+Math.sin(g.time/1000*3)*2.5,PR+6,0,Math.PI*2);cx.stroke();cx.restore();
-    // 天使之翼：無敵期間畫翅膀（排除閃電步衝刺）
-    if(!g.p._dashEnd||now>=g.p._dashEnd){
-      const px=g.p.x,py=g.p.y,wFlap=Math.sin(now/100);
-      const wH=34+wFlap*12,wW=30+wFlap*8;
-      cx.save();
-      // 外層發光翅膀
-      cx.globalAlpha=.7+Math.sin(now/80)*.15;
-      cx.fillStyle="#FFF3BF";
-      // 左翅
-      cx.beginPath();
-      cx.moveTo(px-4,py-4);
-      cx.quadraticCurveTo(px-wW*.5,py-wH*1.1,px-wW-6,py-wH*.3);
-      cx.quadraticCurveTo(px-wW-2,py+8,px-wW*.3,py+6);
-      cx.quadraticCurveTo(px-wW*.15,py+2,px-4,py-4);
-      cx.fill();
-      // 右翅
-      cx.beginPath();
-      cx.moveTo(px+4,py-4);
-      cx.quadraticCurveTo(px+wW*.5,py-wH*1.1,px+wW+6,py-wH*.3);
-      cx.quadraticCurveTo(px+wW+2,py+8,px+wW*.3,py+6);
-      cx.quadraticCurveTo(px+wW*.15,py+2,px+4,py-4);
-      cx.fill();
-      // 內層亮白
-      cx.globalAlpha=.4;cx.fillStyle="#fff";
-      cx.beginPath();
-      cx.moveTo(px-3,py-2);
-      cx.quadraticCurveTo(px-wW*.4,py-wH*.8,px-wW*.7,py-wH*.1);
-      cx.quadraticCurveTo(px-wW*.3,py+3,px-3,py-2);
-      cx.fill();
-      cx.beginPath();
-      cx.moveTo(px+3,py-2);
-      cx.quadraticCurveTo(px+wW*.4,py-wH*.8,px+wW*.7,py-wH*.1);
-      cx.quadraticCurveTo(px+wW*.3,py+3,px+3,py-2);
-      cx.fill();
-      // 發光邊框
-      cx.globalAlpha=.5;cx.strokeStyle="#FFD43B";cx.lineWidth=1.5;
-      cx.beginPath();
-      cx.moveTo(px-4,py-4);
-      cx.quadraticCurveTo(px-wW*.5,py-wH*1.1,px-wW-6,py-wH*.3);
-      cx.quadraticCurveTo(px-wW-2,py+8,px-wW*.3,py+6);
-      cx.stroke();
-      cx.beginPath();
-      cx.moveTo(px+4,py-4);
-      cx.quadraticCurveTo(px+wW*.5,py-wH*1.1,px+wW+6,py-wH*.3);
-      cx.quadraticCurveTo(px+wW+2,py+8,px+wW*.3,py+6);
-      cx.stroke();
-      // 羽毛粒子
-      if(par.length<MAX_PARTICLES&&Math.random()<.5){
-        const side=Math.random()>.5?1:-1;
-        par.push({x:px+side*(wW*.5+Math.random()*wW*.5),y:py-Math.random()*wH*.8,vx:side*rn(.2,.6),vy:rn(.5,1.5),life:.7,color:Math.random()>.5?"#FFF3BF":"#FFD43B",sz:rn(1.5,3.5)});
-      }
-      cx.restore();
-    }
+    cx.save();cx.globalAlpha=.2+Math.sin(now/150)*.1;cx.strokeStyle="rgba(255,255,255,.4)";cx.lineWidth=2;cx.beginPath();cx.arc(g.p.x,g.p.y+Math.sin(g.time/1000*3)*2.5,PR+6,0,Math.PI*2);cx.stroke();cx.restore();
   }
   if(g.p._sh){cx.save();
     const shAge=now-(g.p._shSpawn||0),shPulse=shAge<500?1-shAge/500:0;
@@ -2046,7 +2038,7 @@ function buildCard(cd,w,i,wrap){
       const rerollCount=inv.length-1;
       const fateEntry=inv.find(x=>C.find(c=>c.id===x.id&&c.n==="命運轉輪"));
       inv.length=0;if(fateEntry)inv.push(fateEntry);
-      g.p.atk=2.5;g.p.speed=PS;g.p.fr=1;g.p.armor=0;g.p.chain=0;g.p.ls=0;g.p.slow=1;g.p.split=1;g.p.expR=1;g.p.crit=.05;g.p.revive=0;g.p.fx={};g.p.regen=0;g.p.luck=0;g.p.dodge=0;g.p.thorns=0;g.p.dblAtk=0;g.p.shieldCD=0;g.p._sh=false;g.p._shT=0;g.p._shSpawn=0;g.p.whirlCount=0;g.p.whirlLv=0;g.p.windBlades=0;g.p.orbiters=0;g.p.poison=0;g.p.hasBH=false;g.p.hasTS=false;g.p.ultLv=0;g.p.pierce=0;g.p.homing=0;g.p.splash=0;g.p.berserk=0;g.p.deathBoom=0;g.p.dodgeAtk=0;g.p.elemBoost=1;g.p.ultDmgMul=1;g.p.ultRate=1;g.p.bulletHeal=0;g.p.invCD=0;g.p.invDur=0;g.p._inv=false;g.p._ivT=0;g.p._invEnd=0;g.p.timestop=0;g.p.tsD=0;g.p.tsFrzDur=0;g.p.tsCd=0;g.p.lStep=false;g.p.lStepDur=0;g.p.lStepSpd=0;g.p.lStepCd=0;g.p._dashEnd=0;g.p._dashDx=0;g.p._dashDy=0;g.p._dashSpd=0;g.p._dashGT=0;g.p.chainDmg=1;g.p.poisonDmg=0;g.p.bossDmg=1;g.p.mobDmg=1;g.p.poisonBossMul=1;g.p.burnBoost=1;g.p.projImmune=false;g.p.crateVis=1;g.p.mapExpand=0;g.p.pickCount=2;g.p.face=1;g.p._iFrameEnd=0;g.p._healFlash=0;
+      g.p.atk=2.5;g.p.speed=PS;g.p.fr=1;g.p.armor=0;g.p.chain=0;g.p.ls=0;g.p.slow=1;g.p.split=1;g.p.expR=1;g.p.crit=.05;g.p.revive=0;g.p.fx={};g.p.regen=0;g.p.luck=0;g.p.dodge=0;g.p.thorns=0;g.p.dblAtk=0;g.p.shieldCD=0;g.p._sh=false;g.p._shT=0;g.p._shSpawn=0;g.p.windBlades=0;g.p.orbiters=0;g.p.poison=0;g.p.hasBH=false;g.p.hasTS=false;g.p.ultLv=0;g.p.pierce=0;g.p.homing=0;g.p.splash=0;g.p.berserk=0;g.p.deathBoom=0;g.p.dodgeAtk=0;g.p.elemBoost=1;g.p.ultDmgMul=1;g.p.ultRate=1;g.p.bulletHeal=0;g.p.invCD=0;g.p.invDur=0;g.p._inv=false;g.p._ivT=0;g.p._invEnd=0;g.p.timestop=0;g.p.tsD=0;g.p.tsFrzDur=0;g.p.tsCd=0;g.p.lStep=false;g.p.lStepDur=0;g.p.lStepSpd=0;g.p.lStepCd=0;g.p._dashEnd=0;g.p._dashDx=0;g.p._dashDy=0;g.p._dashSpd=0;g.p._dashGT=0;g.p.chainDmg=1;g.p.poisonDmg=0;g.p.bossDmg=1;g.p.mobDmg=1;g.p.poisonBossMul=1;g.p.burnBoost=1;g.p.projImmune=false;g.p.crateVis=1;g.p.mapExpand=0;g.p.pickCount=2;g.p.face=1;g.p._iFrameEnd=0;g.p._healFlash=0;
       g.p.maxHp=120;g.p.hp=Math.min(g.p.hp,120);g.p.expMul=1.3;g.orbs=[];
       g.ultCharge=0;g.ultCdEnd=0;g.bhEnd=0;g.bhPow=1;g.ultFlash=0;g._lStepCdEnd=0;
       _phoenixT=0;_hitFlash=0;_shakeT=0;_shakePow=0;
@@ -2207,7 +2199,7 @@ function triggerStageBoss(lv){
     speed:lv===20?0.6:0.45,color:lv===20?"#8B6914":"#9B59B6",t:0,r:lv===20?36:48,st:0,
     boss:true,mega:true,tier:4,face:1,xp:lv===20?200:500,
     poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:lv===20?2:3.5,
-    role:0,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
+    role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
     stageBoss:lv,sbPhase:1,sbAtkCD:now+2500,sbSpawnCD:now+10000,sbTeleCD:now+8000,sbPulseCD:now+12000,deadHandled:false,_pendingPulse:0};
   g.ene.push(sb);_stageBoss=sb;
   g.dn.push({x:g.p.x,y:g.p.y-70,d:lv===20?"💩 中場Boss登場！":"😈 最終魔王降臨！",life:3,color:lv===20?"#8B6914":"#9B59B6",big:1});
@@ -2239,7 +2231,7 @@ function updateStageBoss(e,now,dt){
       for(let i=0;i<10;i++){const a=Math.PI*2*i/10;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*3,vy:Math.sin(a)*3,dmg:15+g.wave*1.2,life:1.2,color:"#8B6914"});}burst(e.x,e.y,"#8B6914",12);}
     if(now>e.sbSpawnCD){e.sbSpawnCD=now+10000;sfxBossAtk("spawn");
       for(let i=0;i<3;i++){const a=Math.PI*2*i/3,mx=cl(e.x+Math.cos(a)*40,20,mapW()-20),my=cl(e.y+Math.sin(a)*40,20,mapH()-20);
-        g.ene.push({x:mx,y:my,hp:30+g.wave*3,mhp:30+g.wave*3,speed:1.8,color:"#A0822A",t:rn(0,10),r:10,st:0,boss:false,mega:false,tier:0,face:1,xp:3,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:1.2,role:0,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniPoo:true});}
+        g.ene.push({x:mx,y:my,hp:30+g.wave*3,mhp:30+g.wave*3,speed:1.8,color:"#A0822A",t:rn(0,10),r:10,st:0,boss:false,mega:false,tier:0,face:1,xp:3,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:1.2,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniPoo:true});}
       g.dn.push({x:e.x,y:e.y-e.r-10,d:"💩 增生！",life:1.5,color:"#A0822A"});}
   }
   // 😈 Attacks
@@ -2265,7 +2257,7 @@ function updateStageBoss(e,now,dt){
       else if(safe){g.dn.push({x:g.p.x,y:g.p.y-30,d:"安全！",life:1,color:"#51CF66",big:1});}
       burst(e.x,e.y,"#9B59B6",30);
       for(let i=0;i<2;i++){const a=Math.random()*Math.PI*2,mx=cl(e.x+Math.cos(a)*50,20,mapW()-20),my=cl(e.y+Math.sin(a)*50,20,mapH()-20);
-        g.ene.push({x:mx,y:my,hp:40+g.wave*4,mhp:40+g.wave*4,speed:1.5,color:"#8E44AD",t:rn(0,10),r:10,st:0,boss:false,mega:false,tier:1,face:1,xp:5,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:1.5,role:4,flankA:0,shootCD:2000,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniDemon:true});}
+        g.ene.push({x:mx,y:my,hp:40+g.wave*4,mhp:40+g.wave*4,speed:1.5,color:"#8E44AD",t:rn(0,10),r:10,st:0,boss:false,mega:false,tier:1,face:1,xp:5,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:1.5,role:ROLE_SHOOTER,flankA:0,shootCD:2000,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniDemon:true});}
       sfxBossAtk("spawn");}
   }
   g.lS=now; // suppress normal spawns
@@ -2388,7 +2380,7 @@ window.startGame=window.SG=function(){
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
     lastKill:performance.now(),lastHunt:0,
     time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,pickOpen:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1,_startTime:performance.now(),_stageBossActive:false,_stageBossLv:0,_boss20:false,_boss30:false,_bigChestTotal:0,_bigChestLeft:0};
-  inv=[];par=[];_ltnRingIdx=0;_dashGhosts=[];_stageBoss=null;bossBgmStop();_hitFlash=0;_shakeT=0;_phoenixT=0;
+  inv=[];par=[];_ltnRingIdx=0;_dashGhosts=[];_stageBoss=null;bossBgmStop();_hitFlash=0;_shakeT=0;_phoenixT=0;g._wb=[];g._wbSpawnT=0;
   joy={a:0,dx:0,dy:0,id:null,sx:null,sy:null};aim={a:0,dx:0,dy:0,id:null,sx:null,sy:null,tn:0,lt:0};
   show("play");if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
   setTimeout(resetControls,60);setTimeout(resetControls,180);
