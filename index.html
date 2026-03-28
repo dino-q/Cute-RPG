@@ -93,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.02</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.03</div>
 </div>
 </div>
 
@@ -172,15 +172,16 @@ const MODE={
     smallHpBase:null, // 使用原始 tierHp 系統
   },
   elite:{
-    startAtk:5,startHp:150,startSpeed:5.2,
+    startAtk:5,startHp:200,startSpeed:5.2,
     maxEnemies:20,spawnBase:2400,spawnWaveMul:40,
     enemyContactVanish:false, // 接觸後敵人不消失
-    atkPerLv:2,hpPerLv:10,
+    atkPerLv:2,hpPerLv:15,dmgCap:1.2, // 傷害上限低，靠多元攻擊模式而非高傷
     smallHpBase:8, // 小怪基礎 HP（1~2 下死）
     smallHpPerWave:1.5,
     eliteHpBase:150,eliteHpPerWave:15,
     eliteChance:.12, // 精英出現機率（每次出怪）
     eliteStartWave:8,
+    enemySpdCap:1.6, // 敵人速度成長上限（經典 2.4），確保跑得掉
   }
 };
 // early levels need less XP so first card pick comes fast
@@ -710,13 +711,17 @@ function drawEnemy(e){
   const bob=Math.sin(e.t*3)*2,cy=y+bob;
   const bhLeft=(e.bhExeAt||0)-(g?g.time:0);
   cx.save();
-  // 精英怪光環
+  // 精英怪光環 + 物抗標示
   if(e.eliteEnemy){
-    cx.globalAlpha=.3+Math.sin(performance.now()/200)*.1;cx.fillStyle="#E74C3C";
+    const enow=performance.now();
+    cx.globalAlpha=.3+Math.sin(enow/200)*.1;cx.fillStyle="#E74C3C";
     cx.beginPath();cx.arc(x,cy,r*1.5,0,Math.PI*2);cx.fill();cx.globalAlpha=1;
+    // 物抗圖示
+    cx.globalAlpha=.6;cx.font="8px 'Nunito',sans-serif";cx.textAlign="center";
+    cx.fillStyle="#ADB5BD";cx.fillText("🛡️物抗",x,cy-r-6);cx.globalAlpha=1;
     // 護盾視覺
-    if(e._eShieldEnd&&performance.now()<e._eShieldEnd){
-      cx.globalAlpha=.4+Math.sin(performance.now()/80)*.15;cx.strokeStyle="#4DABF7";cx.lineWidth=2.5;
+    if(e._eShieldEnd&&enow<e._eShieldEnd){
+      cx.globalAlpha=.4+Math.sin(enow/80)*.15;cx.strokeStyle="#4DABF7";cx.lineWidth=2.5;
       cx.beginPath();cx.arc(x,cy,r+5,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;
     }
   }
@@ -901,10 +906,11 @@ function enemyGrowth(w){
   if(surge) return{hp:2.5,spd:1.25,dmg:1.8,size:1.1};
   // 正常曲線：Lv11+ 以 Lv10 後的緩和斜率成長
   const postSurge=w>10?w-10:0;
+  const dmgMax=MODE[_mode].dmgCap||1.8;
   return{
     hp:1+Math.min(4,w*.09+postSurge*.035),
     spd:1+Math.min(.65,w*.02),
-    dmg:1+Math.min(1.8,w*.04+postSurge*.015),
+    dmg:1+Math.min(dmgMax,w*.04+postSurge*.015),
     size:1+Math.min(.32,w*.008)
   };
 }
@@ -974,7 +980,8 @@ function spawn(boss,opts={}){
   const tierDmg=[1,1.15,1.35,1.6,1.9][tier]||1;
   const bhp=(20+w*11)*(1+w*.018)*tierHp;
   const hp=Math.floor(bhp*(boss?8.5:1)*(mega?3.3:1)*ENEMY_HP_SCALE*grow.hp*earlyMul);
-  const spd=(.92+Math.min(w*.13,2.4))*tierSpd*grow.spd*(mega?.85:1)*(w<8?.92:1);
+  const _spdCap=MODE[_mode].enemySpdCap||2.4;
+  const spd=(.92+Math.min(w*.13,_spdCap))*tierSpd*grow.spd*(mega?.85:1)*(w<8?.92:1);
   const rm=(boss?1.85:1)*(mega?1.9:1)*(1+tier*.11)*grow.size;
   const a=rn(0,Math.PI*2),d=SPAWN_R+rn(0,80);
   let x=g.p.x+Math.cos(a)*d,y=g.p.y+Math.sin(a)*d;
@@ -993,9 +1000,10 @@ function spawn(boss,opts={}){
   if(_mode==="elite"&&!boss){
     const eMC=MODE.elite;
     if(w>=eMC.eliteStartWave&&Math.random()<eMC.eliteChance){
-      // 精英怪：高HP + 特殊能力
+      // 精英怪：高HP + 特殊能力 + 物理抗性
       finalHp=Math.floor(eMC.eliteHpBase+w*eMC.eliteHpPerWave);
       isEliteEnemy=true;
+      if(!g._eliteHint){g._eliteHint=true;showHint("⚠️ 精英怪有物理抗性！帶元素卡更有效");}
     }else{
       finalHp=Math.floor(eMC.smallHpBase+w*eMC.smallHpPerWave);
     }
@@ -1462,7 +1470,13 @@ function loop(){
         dmg*=Math.min(.9,baseDR+timeBonus);
       }else{dmg*=baseDR;}
     }
-    if(fx.ice)dmg*=.95; // ice: control first, damage second
+    // 精英怪物理抗性：無元素純攻擊 -50%，有元素 +20%
+    if(e.eliteEnemy||e.boss){
+      const hasElem=!!(fx.fire||fx.ice||fx.lightning||fx.poison||fx.dragon);
+      if(hasElem)dmg*=1.2; // 元素弱點
+      else dmg*=.5; // 物理抗性
+    }
+    if(fx.ice)dmg*=.95;
     // shield enemy: frontal hits deal only 25% damage
     if(e.role===ROLE_SHIELD){const ba=Math.atan2(b.vy,b.vx),fa=e.shieldAng+Math.PI,ad=Math.abs(((ba-fa)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);if(ad<Math.PI*.55)dmg*=.25;}
     e.hp-=dmg;sfxHit();
@@ -2380,7 +2394,8 @@ function estimateBossDPS(lv){
 function triggerStageBoss(lv){
   // 計算是否需要天使卡
   const dps=estimateBossDPS(lv);
-  const baseHp=1500+g.wave*100,hpMul=lv===20?1.2:3.5;
+  const _bossEliteMul=_mode==="elite"?10:1;
+  const baseHp=(1500+g.wave*100)*_bossEliteMul,hpMul=lv===20?1.2:3.5;
   const bossHp=baseHp*hpMul;
   const estTime=bossHp/Math.max(dps,0.1);
   if(estTime>240&&!g._angelOffered){
