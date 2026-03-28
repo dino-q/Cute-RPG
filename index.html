@@ -86,6 +86,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6;margin-top:10px">
     操作說明：左搖桿 / WASD 移動，右搖桿 / Space 射擊，長壓 E 或 💎 集氣，集滿再點一下放大招。
   </div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:12px">v2.11</div>
 </div>
 </div>
 
@@ -1359,7 +1360,7 @@ function loop(){
   // bullet-enemy hit — per-frame chain dedup + neighbor cache
   const _chainedSet=new Set();
   const _neighborCache=new Map(); // ei → [target indices]
-  g.bul.forEach(b=>{if(b.life<=0)return;for(let ei=0;ei<g.ene.length;ei++){const e=g.ene[ei];if(e.hp<=0||b.life<=0)continue;if(di(b,e)<e.r+BR){
+  g.bul.forEach(b=>{if(b.life<=0)return;for(let ei=0;ei<g.ene.length;ei++){const e=g.ene[ei];if(e.hp<=0||b.life<=0)continue;if(e._spawnShield&&now<e._spawnShield)continue;if(di(b,e)<e.r+BR){
     const fx=g.p.fx,fxLv=Math.max(fx.fire||0,fx.ice||0,fx.dragon||0,fx.star||0,fx.poison||0,1);
     let dmg=b.dmg*(g.p.elemBoost||1)*(g.p.levelDmgMul||1);if(b.crit)dmg*=2;
     if(e.boss||e.mega){if(g.p.bossDmg>1)dmg*=g.p.bossDmg;} // 穿透箭：對Boss(小王+巨王)加傷
@@ -2038,13 +2039,14 @@ function buildCard(cd,w,i,wrap){
   const rarAnim=cd.r==="SSR"?"ssrRainbow 1.5s infinite":cd.r==="SR"?"srShine 1.2s infinite":"none";
   const tpAnim=cd.tp==="atk"?"atkPulse 1.5s infinite":"defPulse 1.5s infinite";
   const mainAnim=cd.r==="SSR"?rarAnim:tpAnim;
-  b.style.cssText=`width:100%;border:2px solid ${isUp?LVC[nLv]:RC[cd.r]};animation:ci .4s ${i*.1}s both cubic-bezier(.34,1.56,.64,1);`;
-  setTimeout(()=>{b.style.animation=mainAnim;},400+i*100);
+  b.style.cssText=`width:100%;border:2px solid ${isUp?LVC[nLv]:RC[cd.r]};animation:ci .35s ${i*.08}s both cubic-bezier(.34,1.56,.64,1);`;
+  setTimeout(()=>{b.style.animation=mainAnim;},350+i*80);
   const tpL=cd.tp==="atk"?'<div style="font-size:8px;color:#FF6B6B;margin-bottom:1px">⚔️ 攻擊</div>':'<div style="font-size:8px;color:#4DABF7;margin-bottom:1px">🛡️ 被動</div>';
   const lvL=isUp?`<div style="font-size:9px;color:#FFD43B;font-weight:900;margin-bottom:2px;text-shadow:0 0 6px #FFD43B">⬆Lv${dLv}</div>`:"";
   const rarBadge=cd.r==="SSR"?'<div style="font-size:9px;background:linear-gradient(90deg,#FFD43B,#FF6B6B,#DA77F2,#74C0FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:2px;margin-bottom:3px">✦ SSR ✦</div>':`<div style="font-size:10px;color:${RC[cd.r]};font-weight:700;letter-spacing:1px;margin-bottom:3px">★${cd.r}</div>`;
   b.innerHTML=`${rarBadge}${tpL}<div style="font-size:30px;margin-bottom:3px">${cd.e}</div><div style="font-size:12px;font-weight:900;margin-bottom:2px">${cd.n}</div>${lvL}<div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">${desc}</div>`;
-  b.onclick=()=>{const lv=addCard(cd.id);cd.ap[Math.max(lv,0)](g.p);g.p.hp=Math.min(g.p.hp+15,g.p.maxHp);
+  let _picked=false;
+  const doPick=()=>{if(_picked)return;_picked=true;const lv=addCard(cd.id);cd.ap[Math.max(lv,0)](g.p);g.p.hp=Math.min(g.p.hp+15,g.p.maxHp);
     // --- 幸運幣：選後立即彈出額外3張卡（無重骰） ---
     if(g.p._luckyPick){g.p._luckyPick=false;g.pickOpen=false;setTimeout(()=>showPick("lucky"),80);return;}
     // --- 命運轉輪：清除所有能力重抽 ---
@@ -2068,6 +2070,8 @@ function buildCard(cd,w,i,wrap){
     g.pickOpen=false;g._bigChestTotal=0;g._bigChestLeft=0;resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();
     setTimeout(()=>{resetControls();rebindActiveTouches();},30);
   };
+  b.onclick=doPick;
+  b.addEventListener("touchend",e=>{e.preventDefault();e.stopPropagation();doPick();},{passive:false});
   wrap.innerHTML="";wrap.appendChild(b);
 }
 // 大寶箱：在地圖上生成大寶箱（需打破才能選卡，每個選3張）
@@ -2204,17 +2208,17 @@ function sfxVictory(){
 function triggerStageBoss(lv){
   g.ene.forEach(e=>{if(!e.stageBoss)burst(e.x,e.y,e.color,5);});
   g.ene=g.ene.filter(e=>e.stageBoss);
-  g.ebul=[];g._stageBossActive=true;g._stageBossLv=lv;
+  g.ebul=[];g.bul=[];g._stageBossActive=true;g._stageBossLv=lv; // 清除所有子彈
   sfxBossEntrance(lv);
   const now=performance.now(),px=g.p.x,py=g.p.y;
   const bx=px+(Math.random()>.5?1:-1)*180,by=py+(Math.random()>.5?1:-1)*180;
-  const baseHp=1200+g.wave*80,hpMul=lv===20?1:3.5;
+  const baseHp=1500+g.wave*100,hpMul=lv===20?1.2:3.5;
   const sb={x:cl(bx,60,mapW()-60),y:cl(by,60,mapH()-60),hp:baseHp*hpMul,mhp:baseHp*hpMul,
     speed:lv===20?0.6:0.45,color:lv===20?"#8B6914":"#9B59B6",t:0,r:lv===20?36:48,st:0,
     boss:true,mega:true,tier:4,face:1,xp:lv===20?200:500,
     poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:lv===20?2:3.5,
     role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
-    stageBoss:lv,sbPhase:1,sbAtkCD:now+2500,sbSpawnCD:now+10000,sbTeleCD:now+8000,sbPulseCD:now+12000,deadHandled:false,_pendingPulse:0};
+    stageBoss:lv,sbPhase:1,sbAtkCD:now+2500,sbSpawnCD:now+10000,sbTeleCD:now+8000,sbPulseCD:now+12000,deadHandled:false,_pendingPulse:0,_spawnShield:now+2000};
   g.ene.push(sb);_stageBoss=sb;
   g.dn.push({x:g.p.x,y:g.p.y-70,d:lv===20?"💩 中場Boss登場！":"😈 最終魔王降臨！",life:3,color:lv===20?"#8B6914":"#9B59B6",big:1});
   setTimeout(()=>bossBgmStart(120),1800);
@@ -2223,6 +2227,12 @@ function triggerStageBoss(lv){
 function updateStageBoss(e,now,dt){
   if(!e||e.hp<=0)return;
   const lv=e.stageBoss;
+  // 護盾循環：每6秒觸發2秒護盾
+  if(!e._spawnShield||now>=e._spawnShield){
+    if(!e._shieldNextCD)e._shieldNextCD=now+6000;
+    if(now>=e._shieldNextCD){e._spawnShield=now+2000;e._shieldNextCD=now+8000;
+      g.dn.push({x:e.x,y:e.y-e.r-10,d:"🛡️護盾！",life:1.5,color:"#fff"});}
+  }
   const dx=g.p.x-e.x,dy=g.p.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
   if(Math.abs(dx)>2)e.face=dx>0?1:-1;
   // 😈 Phase transitions
@@ -2279,8 +2289,10 @@ function updateStageBoss(e,now,dt){
 
 function drawStageBoss(e,now){
   if(!e||e.hp<=0)return;
-  const lv=e.stageBoss;cx.save();
+  const lv=e.stageBoss,shielded=e._spawnShield&&now<e._spawnShield;cx.save();
   const bounce=Math.sin(now/(lv===20?200:300))*4,squash=e.st>0?1.2:1,breathe=1+Math.sin(now/400)*.06,scale=breathe*squash;
+  // 出生護盾視覺
+  if(shielded){cx.globalAlpha=.3+Math.sin(now/80)*.15;cx.strokeStyle="#fff";cx.lineWidth=3;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*1.8,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;}
   if(lv===30){const phase=e.sbPhase,gc=phase===1?"rgba(155,89,182,.2)":phase===2?"rgba(231,76,60,.25)":"rgba(192,57,43,.35)";
     cx.globalAlpha=.4+Math.sin(now/150)*.15;cx.fillStyle=gc;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*1.6,0,Math.PI*2);cx.fill();
     if(phase===3){cx.globalAlpha=.2+Math.sin(now/80)*.1;cx.fillStyle="#E74C3C";cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2,0,Math.PI*2);cx.fill();}}
@@ -2442,7 +2454,7 @@ window.addEventListener("mouseup",()=>endUltPress());
 
 // global touchmove — always fires, handles both joysticks
 document.addEventListener("touchmove",e=>{
-  if(e.target.closest&&e.target.closest(".panel"))return;// allow panel scroll
+  if(e.target.closest&&(e.target.closest(".panel")||e.target.closest(".ov")))return;// allow panel/overlay interaction
   e.preventDefault();
   window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
   for(let i=0;i<e.touches.length;i++){
