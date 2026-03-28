@@ -1360,7 +1360,7 @@ function loop(){
   const _neighborCache=new Map(); // ei → [target indices]
   g.bul.forEach(b=>{if(b.life<=0)return;for(let ei=0;ei<g.ene.length;ei++){const e=g.ene[ei];if(e.hp<=0||b.life<=0)continue;if(di(b,e)<e.r+BR){
     const fx=g.p.fx,fxLv=Math.max(fx.fire||0,fx.ice||0,fx.dragon||0,fx.star||0,fx.poison||0,1);
-    let dmg=b.dmg*(g.p.elemBoost||1);if(b.crit)dmg*=2;
+    let dmg=b.dmg*(g.p.elemBoost||1)*(g.p.levelDmgMul||1);if(b.crit)dmg*=2;
     if(e.boss||e.mega){if(g.p.bossDmg>1)dmg*=g.p.bossDmg;} // 穿透箭：對Boss(小王+巨王)加傷
     if(!e.mega){if(g.p.mobDmg>1)dmg*=g.p.mobDmg;} // 雷擊鏈：對小怪+小王加傷
     if(fx.ice)dmg*=.95; // ice: control first, damage second
@@ -1478,8 +1478,10 @@ function loop(){
 
   // level up
   while(g.exp>=g.expTo){g.exp-=g.expTo;g.level++;g.wave=g.level;g.expTo=expForLevel(g.level);sfx("levelup");
-    // stat boost on level up (moderate — cards are the main progression)
-    g.p.atk+=1;g.p.maxHp+=3;g.p.hp=Math.min(g.p.hp+8,g.p.maxHp);
+    // NOTE 未來可考慮方案D — 升級解鎖能力：Lv5解鎖衝刺、Lv10解鎖第二武器等，增加階段感
+    // stat boost on level up
+    g.p.atk+=2;g.p.maxHp+=5;g.p.hp=g.p.maxHp; // 回滿血
+    if(g.level%5===0){g.p.levelDmgMul=(g.p.levelDmgMul||1)+.1;} // 每5等全傷害+10%
     // milestone hints — non-intrusive floating text
     if(g.level===3&&!g._hint3){g._hint3=1;showHint("📦 探索地圖找寶箱，打開獲得卡牌！");}
     if(g.level===6&&!g._hint6){g._hint6=1;showHint("⚠️ 新型敵人出現了！小心包圍！");}
@@ -1487,7 +1489,8 @@ function loop(){
     if(g.level===10&&!g._hint10){g._hint10=1;showHint("💨 衝刺者與強化 Boss 登場！");}
     if(g.level%5===0){
       const eg=enemyGrowth(g.level);
-      showHint(`⚔️ 敵人強化！HPx${eg.hp.toFixed(1)} / 傷害x${eg.dmg.toFixed(1)}`);
+      const dmgPct=Math.round((g.p.levelDmgMul-1)*100);
+      showHint(`⚔️ 敵人強化！你的全傷害+${dmgPct}%`);
     }
     if(g.level>=12&&((g.p.armor||0)+(g.p.dodge||0))<.25)showHint("🛡️ 後期建議補防禦/閃避，不然很痛！");
     // 前期小寶箱 + 里程碑大寶箱系統
@@ -1763,8 +1766,8 @@ function loop(){
   if(g.p._inv&&(!g.p._dashEnd||now>=g.p._dashEnd)){
     const px=g.p.x,py=g.p.y,f=g.p.face||1;
     const flap=Math.sin(now/90);
-    const wSpan=24+flap*6; // 翅膀展開寬度
-    const wH=28+flap*4; // 翅膀高度
+    const wSpan=38+flap*10; // 翅膀展開寬度
+    const wH=40+flap*6; // 翅膀高度
     cx.save();
     // 左翅（3段羽毛）
     for(let s=0;s<3;s++){
@@ -2030,30 +2033,30 @@ function buildCard(cd,w,i,wrap){
   const lvL=isUp?`<div style="font-size:9px;color:#FFD43B;font-weight:900;margin-bottom:2px;text-shadow:0 0 6px #FFD43B">⬆Lv${dLv}</div>`:"";
   const rarBadge=cd.r==="SSR"?'<div style="font-size:9px;background:linear-gradient(90deg,#FFD43B,#FF6B6B,#DA77F2,#74C0FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:2px;margin-bottom:3px">✦ SSR ✦</div>':`<div style="font-size:10px;color:${RC[cd.r]};font-weight:700;letter-spacing:1px;margin-bottom:3px">★${cd.r}</div>`;
   b.innerHTML=`${rarBadge}${tpL}<div style="font-size:30px;margin-bottom:3px">${cd.e}</div><div style="font-size:12px;font-weight:900;margin-bottom:2px">${cd.n}</div>${lvL}<div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">${desc}</div>`;
-  b.onclick=()=>{b.style.animation="cardSelect .15s forwards";setTimeout(()=>{const lv=addCard(cd.id);cd.ap[Math.max(lv,0)](g.p);g.p.hp=Math.min(g.p.hp+15,g.p.maxHp);
+  b.onclick=()=>{const lv=addCard(cd.id);cd.ap[Math.max(lv,0)](g.p);g.p.hp=Math.min(g.p.hp+15,g.p.maxHp);
     // --- 幸運幣：選後立即彈出額外3張卡（無重骰） ---
-    if(g.p._luckyPick){g.p._luckyPick=false;g.pickOpen=false;setTimeout(()=>showPick("lucky"),350);return;}
+    if(g.p._luckyPick){g.p._luckyPick=false;g.pickOpen=false;setTimeout(()=>showPick("lucky"),80);return;}
     // --- 命運轉輪：清除所有能力重抽 ---
     if(g.p._fateWheel){g.p._fateWheel=false;
       const rerollCount=inv.length-1;
       const fateEntry=inv.find(x=>C.find(c=>c.id===x.id&&c.n==="命運轉輪"));
       inv.length=0;if(fateEntry)inv.push(fateEntry);
-      g.p.atk=2.5;g.p.speed=PS;g.p.fr=1;g.p.armor=0;g.p.chain=0;g.p.ls=0;g.p.slow=1;g.p.split=1;g.p.expR=1;g.p.crit=.05;g.p.revive=0;g.p.fx={};g.p.regen=0;g.p.luck=0;g.p.dodge=0;g.p.thorns=0;g.p.dblAtk=0;g.p.shieldCD=0;g.p._sh=false;g.p._shT=0;g.p._shSpawn=0;g.p.windBlades=0;g.p.orbiters=0;g.p.poison=0;g.p.hasBH=false;g.p.hasTS=false;g.p.ultLv=0;g.p.pierce=0;g.p.homing=0;g.p.splash=0;g.p.berserk=0;g.p.deathBoom=0;g.p.dodgeAtk=0;g.p.elemBoost=1;g.p.ultDmgMul=1;g.p.ultRate=1;g.p.bulletHeal=0;g.p.invCD=0;g.p.invDur=0;g.p._inv=false;g.p._ivT=0;g.p._invEnd=0;g.p.timestop=0;g.p.tsD=0;g.p.tsFrzDur=0;g.p.tsCd=0;g.p.lStep=false;g.p.lStepDur=0;g.p.lStepSpd=0;g.p.lStepCd=0;g.p._dashEnd=0;g.p._dashDx=0;g.p._dashDy=0;g.p._dashSpd=0;g.p._dashGT=0;g.p.chainDmg=1;g.p.poisonDmg=0;g.p.bossDmg=1;g.p.mobDmg=1;g.p.poisonBossMul=1;g.p.burnBoost=1;g.p.projImmune=false;g.p.crateVis=1;g.p.mapExpand=0;g.p.pickCount=2;g.p.face=1;g.p._iFrameEnd=0;g.p._healFlash=0;
+      g.p.atk=2.5;g.p.speed=PS;g.p.fr=1;g.p.armor=0;g.p.chain=0;g.p.ls=0;g.p.slow=1;g.p.split=1;g.p.expR=1;g.p.crit=.05;g.p.revive=0;g.p.fx={};g.p.regen=0;g.p.luck=0;g.p.dodge=0;g.p.thorns=0;g.p.dblAtk=0;g.p.shieldCD=0;g.p._sh=false;g.p._shT=0;g.p._shSpawn=0;g.p.windBlades=0;g.p.orbiters=0;g.p.poison=0;g.p.hasBH=false;g.p.hasTS=false;g.p.ultLv=0;g.p.pierce=0;g.p.homing=0;g.p.splash=0;g.p.berserk=0;g.p.deathBoom=0;g.p.dodgeAtk=0;g.p.elemBoost=1;g.p.ultDmgMul=1;g.p.ultRate=1;g.p.bulletHeal=0;g.p.invCD=0;g.p.invDur=0;g.p._inv=false;g.p._ivT=0;g.p._invEnd=0;g.p.timestop=0;g.p.tsD=0;g.p.tsFrzDur=0;g.p.tsCd=0;g.p.lStep=false;g.p.lStepDur=0;g.p.lStepSpd=0;g.p.lStepCd=0;g.p._dashEnd=0;g.p._dashDx=0;g.p._dashDy=0;g.p._dashSpd=0;g.p._dashGT=0;g.p.chainDmg=1;g.p.poisonDmg=0;g.p.bossDmg=1;g.p.mobDmg=1;g.p.poisonBossMul=1;g.p.burnBoost=1;g.p.levelDmgMul=1;g.p.projImmune=false;g.p.crateVis=1;g.p.mapExpand=0;g.p.pickCount=2;g.p.face=1;g.p._iFrameEnd=0;g.p._healFlash=0;
       g.p.maxHp=120;g.p.hp=Math.min(g.p.hp,120);g.p.expMul=1.3;g.orbs=[];
       g.ultCharge=0;g.ultCdEnd=0;g.bhEnd=0;g.bhPow=1;g.ultFlash=0;g._lStepCdEnd=0;
       _phoenixT=0;_hitFlash=0;_shakeT=0;_shakePow=0;
       g.pickOpen=false;
-      if(rerollCount>0){g._fateQueue=rerollCount;setTimeout(()=>showPick("fate"),350);}
+      if(rerollCount>0){g._fateQueue=rerollCount;setTimeout(()=>showPick("fate"),80);}
       else{resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();setTimeout(()=>{resetControls();rebindActiveTouches();},60);}
       return;}
     // --- 命運轉輪後續輪次 ---
-    if(g._fateQueue>0){g.pickOpen=false;setTimeout(()=>showPick("fate"),350);return;}
+    if(g._fateQueue>0){g.pickOpen=false;setTimeout(()=>showPick("fate"),80);return;}
     // --- 大寶箱連續選卡 ---
     if(g._bigChestLeft>0){g._bigChestLeft--;
-      if(g._bigChestLeft>0){g.pickOpen=false;setTimeout(()=>showPick("bigchest"),150);return;}}
+      if(g._bigChestLeft>0){g.pickOpen=false;setTimeout(()=>showPick("bigchest"),80);return;}}
     g.pickOpen=false;g._bigChestTotal=0;g._bigChestLeft=0;resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();
-    setTimeout(()=>{resetControls();rebindActiveTouches();},60);setTimeout(()=>{resetControls();rebindActiveTouches();},180);
-  },120);};
+    setTimeout(()=>{resetControls();rebindActiveTouches();},30);
+  };
   wrap.innerHTML="";wrap.appendChild(b);
 }
 // 大寶箱：在地圖上生成大寶箱（需打破才能選卡，每個選3張）
