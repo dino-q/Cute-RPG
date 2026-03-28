@@ -93,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.01</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.02</div>
 </div>
 </div>
 
@@ -2398,8 +2398,8 @@ function triggerStageBoss(lv){
   sfxBossEntrance(lv);
   const now=performance.now(),px=g.p.x,py=g.p.y;
   const bx=px+(Math.random()>.5?1:-1)*180,by=py+(Math.random()>.5?1:-1)*180;
-  const baseHp=1500+g.wave*100,hpMul=lv===20?1.2:3.5;
-  const sb={x:cl(bx,60,mapW()-60),y:cl(by,60,mapH()-60),hp:baseHp*hpMul,mhp:baseHp*hpMul,
+  const bHp=baseHp*hpMul;
+  const sb={x:cl(bx,60,mapW()-60),y:cl(by,60,mapH()-60),hp:bHp,mhp:bHp,
     speed:lv===20?0.6:0.45,color:lv===20?"#8B6914":"#9B59B6",t:0,r:lv===20?36:48,st:0,
     boss:true,mega:true,tier:4,face:1,xp:lv===20?200:500,
     poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:lv===20?2:3.5,
