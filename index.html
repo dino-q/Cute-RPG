@@ -18,7 +18,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 .btn:active{transform:scale(.95)!important}
 .btn-b{background:linear-gradient(135deg,#74C0FC,#4DABF7);box-shadow:0 4px 18px rgba(116,192,252,.35)}
 .btn-g{background:linear-gradient(135deg,#51CF66,#40C057);box-shadow:0 4px 18px rgba(81,207,102,.3)}
-.cb{background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border-radius:14px;padding:14px 10px;cursor:pointer;color:#fff;font-family:inherit;transition:transform .15s;text-align:center;min-width:0}
+.cb{background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border-radius:14px;padding:14px 10px;cursor:pointer;color:#fff;font-family:inherit;transition:transform .15s;text-align:center;min-width:0;touch-action:manipulation}
 .cb:active{transform:scale(.95)!important}
 .tag{display:inline-block;font-size:8px;font-weight:700;border-radius:3px;padding:1px 4px;margin-left:3px;vertical-align:middle}
 @keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -86,7 +86,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6;margin-top:10px">
     操作說明：左搖桿 / WASD 移動，右搖桿 / Space 射擊，長壓 E 或 💎 集氣，集滿再點一下放大招。
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:12px">v2.11</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:12px">v2.12</div>
 </div>
 </div>
 
@@ -124,8 +124,8 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 </div>
 
 <!-- Card Pick -->
-<div id="pickOv" class="ov" style="display:none;background:rgba(10,10,24,.94)">
-<div class="panel" id="pickPanel"></div>
+<div id="pickOv" class="ov" style="display:none;background:rgba(10,10,24,.94)" ontouchstart="event.stopPropagation()">
+<div class="panel" id="pickPanel" style="touch-action:manipulation;overflow:visible"></div>
 </div>
 
 <!-- Game Over -->
@@ -2060,18 +2060,18 @@ function buildCard(cd,w,i,wrap){
       _phoenixT=0;_hitFlash=0;_shakeT=0;_shakePow=0;
       g.pickOpen=false;
       if(rerollCount>0){g._fateQueue=rerollCount;setTimeout(()=>showPick("fate"),80);}
-      else{resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();setTimeout(()=>{resetControls();rebindActiveTouches();},60);}
+      else{g.pickOpen=false;requestAnimationFrame(()=>{show("play");resetControls();g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();});}
       return;}
     // --- 命運轉輪後續輪次 ---
     if(g._fateQueue>0){g.pickOpen=false;setTimeout(()=>showPick("fate"),80);return;}
     // --- 大寶箱連續選卡 ---
     if(g._bigChestLeft>0){g._bigChestLeft--;
       if(g._bigChestLeft>0){g.pickOpen=false;setTimeout(()=>showPick("bigchest"),80);return;}}
-    g.pickOpen=false;g._bigChestTotal=0;g._bigChestLeft=0;resetControls();show("play");g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();
-    setTimeout(()=>{resetControls();rebindActiveTouches();},30);
+    g.pickOpen=false;g._bigChestTotal=0;g._bigChestLeft=0;
+    requestAnimationFrame(()=>{show("play");resetControls();g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();});
   };
-  b.onclick=doPick;
-  b.addEventListener("touchend",e=>{e.preventDefault();e.stopPropagation();doPick();},{passive:false});
+  b.onclick=e=>{e.preventDefault();doPick();};
+  b.ontouchstart=e=>{e.stopPropagation();e.preventDefault();doPick();};
   wrap.innerHTML="";wrap.appendChild(b);
 }
 // 大寶箱：在地圖上生成大寶箱（需打破才能選卡，每個選3張）
