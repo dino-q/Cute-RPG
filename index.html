@@ -219,14 +219,14 @@ card("閃避斗篷","🌀","SR","pas",["12%閃避","25%閃避","40%閃避"],[s=>
 card("鐵壁金身","🔔","SR","pas",["完全免疫遠程攻擊","完全免疫遠程攻擊","完全免疫遠程攻擊"],[s=>{s.projImmune=true},s=>{s.projImmune=true},s=>{s.projImmune=true}],"#CED4DA",null,1);
 card("守護星","🛡️","SR","pas",["每20秒自動護盾","每20秒自動護盾","每20秒自動護盾"],[s=>{s.shieldCD=20e3;s._sh=true;s._shT=0;s._shSpawn=performance.now()},s=>{s.shieldCD=20e3;s._sh=true;s._shT=0;s._shSpawn=performance.now()},s=>{s.shieldCD=20e3;s._sh=true;s._shT=0;s._shSpawn=performance.now()}],"#4DABF7",null,1);
 card("影分身","👥","SR","pas",["100%前後攻擊","100%前後攻擊","100%前後攻擊"],[s=>{s.dblAtk=1},s=>{s.dblAtk=1},s=>{s.dblAtk=1}],"#868E96",null,1);
-card("烈焰風暴","🌋","SR","atk",["攻+4 爆炸濺射","攻+8 大爆炸","攻+14 核爆"],[s=>{s.atk+=4;s.splash=(s.splash||0)+30;s.fx.fire=Math.max(s.fx.fire||0,2)},s=>{s.atk+=8;s.splash=(s.splash||0)+45;s.fx.fire=3},s=>{s.atk+=14;s.splash=(s.splash||0)+60;s.fx.fire=3}],"#E03131","fire");
+card("烈焰風暴","🌋","SR","atk",["攻+4 命中範圍濺射","攻+8 大範圍濺射","攻+14 超大範圍濺射"],[s=>{s.atk+=4;s.splash=(s.splash||0)+30;s.fx.fire=Math.max(s.fx.fire||0,2)},s=>{s.atk+=8;s.splash=(s.splash||0)+45;s.fx.fire=3},s=>{s.atk+=14;s.splash=(s.splash||0)+60;s.fx.fire=3}],"#E03131","fire");
 card("暴風雪","🌨️","SR","atk",["範圍凍結+攻+3","攻+6","攻+10全凍"],[s=>{s.atk+=3;s.slow=Math.max((s.slow||1)*.5,.2);s.fx.ice=2},s=>{s.atk+=6;s.slow=.3;s.fx.ice=3},s=>{s.atk+=10;s.slow=.2;s.fx.ice=3}],"#339AF0","ice");
 card("追蹤彈","🎯","SR","atk",["微追蹤","強追蹤 範圍↑ 攻+3","完美追蹤 攻+6 穿透1"],[s=>{s.homing=.03;s.homingR=200},s=>{s.homing=.06;s.homingR=320;s.atk+=3},s=>{s.homing=.1;s.homingR=400;s.atk+=6;s.pierce=(s.pierce||0)+1}],"#F06595");
 card("吸血領主","🦇","SR","pas",["擊殺回12HP","回25HP","回40HP+攻+5"],[s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+25},s=>{s.ls=(s.ls||0)+40;s.atk+=5}],"#C2255C");
 card("召喚球","🪐","SR","atk",["1顆守護球","2顆","3顆"],[s=>{s.orbiters=(s.orbiters||0)+1},s=>{s.orbiters=(s.orbiters||0)+2},s=>{s.orbiters=(s.orbiters||0)+3}],"#FCC419");
 card("旋風斬","🌪️","SR","atk",["3顆旋風球","5顆旋風球","7顆高速旋風球"],[s=>{s.whirlCount=Math.max(s.whirlCount||0,3);s.whirlLv=1;s.fx.whirl=1},s=>{s.whirlCount=Math.max(s.whirlCount||0,5);s.whirlLv=2;s.fx.whirl=2},s=>{s.whirlCount=Math.max(s.whirlCount||0,7);s.whirlLv=3;s.fx.whirl=3}],"#99E9F2");
 card("狂暴之力","💢","SR","pas",["HP<30%攻擊翻倍","HP<40%","HP<50%翻倍"],[s=>{s.berserk=.3},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
-card("連鎖爆破","💥","SR","atk",["擊殺爆炸傷害","大爆炸","連環爆"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
+card("連鎖爆破","💥","SR","atk",["敵人死亡後爆炸 周圍傷8","敵人死亡 周圍傷18","敵人死亡 周圍傷30"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
 card("閃電步","💫","SR","pas",["大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招"],[s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8}],"#FFE066",null,1);
 card("元素精通","🔮","SR","pas",["所有屬性效果+15%","效果+30%","效果+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
 card("大招增幅","☄️","SR","pas",["大招傷害+30%","傷害+60%","傷害+100%"],[s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.3},s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.6},s=>{s.ultDmgMul=(s.ultDmgMul||1)*2}],"#BE4BDB");
@@ -1858,20 +1858,22 @@ function loop(){
     fxc.style.display="block";
   }else{fxctx.clearRect(0,0,VW,VH);fxc.style.display="none";}
 
-  // 左側能力欄（溢出時換行到下一列）
+  // 右側能力欄（溢出時往左換列，避開小地圖）
   if(inv.length>0){
-    const abS=26,abGap=3,abStep=abS+abGap,abStartY=78;
+    const abS=26,abGap=3,abStep=abS+abGap,abStartY=140;
     const maxRows=Math.floor((VH-abStartY-65)/abStep)||1;
+    const _rr=cx.roundRect?function(x,y,w,h,r){cx.beginPath();cx.roundRect(x,y,w,h,r);}
+      :function(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.lineTo(x+w-r,y);cx.arcTo(x+w,y,x+w,y+r,r);cx.lineTo(x+w,y+h-r);cx.arcTo(x+w,y+h,x+w-r,y+h,r);cx.lineTo(x+r,y+h);cx.arcTo(x,y+h,x,y+h-r,r);cx.lineTo(x,y+r);cx.arcTo(x,y,x+r,y,r);cx.closePath();};
     cx.save();cx.textAlign="center";cx.textBaseline="middle";
     inv.forEach((ci,i)=>{
       const cd=C.find(c=>c.id===ci.id);if(!cd)return;
       const col=Math.floor(i/maxRows),row=i%maxRows;
-      const x=6+col*(abS+4),y=abStartY+row*abStep;
+      const x=VW-abS-6-col*(abS+4),y=abStartY+row*abStep;
       // 背景
       cx.globalAlpha=.35;cx.fillStyle="#0a0a18";
-      cx.beginPath();cx.roundRect(x,y,abS,abS,4);cx.fill();
+      _rr(x,y,abS,abS,4);cx.fill();
       cx.globalAlpha=.25;cx.strokeStyle=RC[cd.r];cx.lineWidth=1;
-      cx.beginPath();cx.roundRect(x,y,abS,abS,4);cx.stroke();
+      _rr(x,y,abS,abS,4);cx.stroke();
       // emoji
       cx.globalAlpha=.8;cx.font="14px 'Nunito',sans-serif";
       cx.fillText(cd.e,x+abS/2,y+abS/2);
@@ -1958,7 +1960,7 @@ function showPick(src,specificCard){
     <p style="color:rgba(255,255,255,.4);font-size:11px;margin:0 0 14px">${subtitle}</p>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap" id="pickCards"></div>`;
   const cc=$("pickCards");
-  const w=pk.length>=3?100:pk.length===1?180:135;
+  const w=pk.length===1?160:105; // 統一卡片大小，1張稍寬，多張固定105
   pk.forEach((cd,i)=>{
     const col=document.createElement("div");col.style.cssText="display:flex;flex-direction:column;align-items:center;gap:5px;";
     const cardWrap=document.createElement("div");
