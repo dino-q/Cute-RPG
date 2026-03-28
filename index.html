@@ -461,7 +461,8 @@ function awardEnemyKill(e){
   g.score+=10+g.wave*5+(e.boss?50:0);
   g.kills++;
   // 每50殺送1個寶箱
-  if(g.kills%50===0){spawnBonusCrates(1,true);g.dn.push({x:g.p.x,y:g.p.y-40,d:"📦 "+g.kills+"殺獎勵！",life:2,color:"#FFD43B",big:1});}
+  // NOTE: 殺怪寶箱已移除，如果後續覺得寶箱太少可恢復：
+  // if(g.kills%50===0){spawnBonusCrates(1,true);g.dn.push({...});}
   g.ultCharge=Math.min(g.ultCharge+(g.p.ultRate||1)*(e.boss?3:1),ULT_CHARGE_NEED);
   g.orbs.push({x:e.x,y:e.y,xp:e.xp*(g.p.expMul||1),life:1});
   if(g.p.ls>0){
@@ -857,9 +858,9 @@ function enemyGrowth(w){
   // 正常曲線：Lv11+ 以 Lv10 後的緩和斜率成長
   const postSurge=w>10?w-10:0;
   return{
-    hp:1+Math.min(3,w*.07+postSurge*.025),
+    hp:1+Math.min(4,w*.09+postSurge*.035),
     spd:1+Math.min(.65,w*.02),
-    dmg:1+Math.min(1.8,w*.04+postSurge*.015),
+    dmg:1+Math.min(2.2,w*.05+postSurge*.02),
     size:1+Math.min(.32,w*.008)
   };
 }
@@ -1463,7 +1464,17 @@ function loop(){
   if(!g.p._inv&&!bhSafe&&!iFrameActive){
   // NOTE: 接觸碰撞後敵人消失(return false)是目前的暫時設計，用來降低怪物難度。
   // 如果日後主角太強，可改回 return e.hp>0 讓敵人存活，並只在 e.hp<=0 時 awardEnemyKill。
-  g.ene=g.ene.filter(e=>{if(e.bhExeAt)return true;if(e.stageBoss)return true;if(di(e,g.p)<PR+e.r-4){
+  g.ene=g.ene.filter(e=>{if(e.bhExeAt)return true;
+    // Stage Boss：接觸造成傷害但Boss不消失
+    if(e.stageBoss){if(di(e,g.p)<PR+e.r-4){
+      const lateMul=1+Math.max(0,g.wave-10)*.07;
+      let dmg=(12+g.wave*3)*(e.dmgMul||1)*lateMul*(1-g.p.armor);
+      g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",8);_hitFlash=1;_shakeT=.5;_shakePow=8;sfx("hurt");
+      g.p._iFrameEnd=now+600;
+      g.dn.push({x:g.p.x,y:g.p.y-20,d:Math.floor(dmg),life:1,color:"#FF6B6B"});
+      if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;g.p._iFrameEnd=now+1500;_phoenixT=1.2;sfx("phoenix");burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🔥 不死鳥復活！",life:2,color:"#FF922B",big:1});}else{g.run=false;showOver();}}
+    }return true;}
+    if(di(e,g.p)<PR+e.r-4){
     if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});if(g.p.dodgeAtk>0){e.hp-=g.p.dodgeAtk;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(g.p.dodgeAtk),life:1,color:"#FFE066"});}return e.hp>0;}
     if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"🛡️擋住",life:1,color:"#4DABF7",big:1});return true;}
     const lateMul=1+Math.max(0,g.wave-10)*.07;
@@ -2197,7 +2208,7 @@ function triggerStageBoss(lv){
   sfxBossEntrance(lv);
   const now=performance.now(),px=g.p.x,py=g.p.y;
   const bx=px+(Math.random()>.5?1:-1)*180,by=py+(Math.random()>.5?1:-1)*180;
-  const baseHp=800+g.wave*60,hpMul=lv===20?1:3;
+  const baseHp=1200+g.wave*80,hpMul=lv===20?1:3.5;
   const sb={x:cl(bx,60,mapW()-60),y:cl(by,60,mapH()-60),hp:baseHp*hpMul,mhp:baseHp*hpMul,
     speed:lv===20?0.6:0.45,color:lv===20?"#8B6914":"#9B59B6",t:0,r:lv===20?36:48,st:0,
     boss:true,mega:true,tier:4,face:1,xp:lv===20?200:500,
