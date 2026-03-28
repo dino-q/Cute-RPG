@@ -861,7 +861,7 @@ function enemyGrowth(w){
   return{
     hp:1+Math.min(4,w*.09+postSurge*.035),
     spd:1+Math.min(.65,w*.02),
-    dmg:1+Math.min(2.2,w*.05+postSurge*.02),
+    dmg:1+Math.min(1.8,w*.04+postSurge*.015),
     size:1+Math.min(.32,w*.008)
   };
 }
@@ -1492,8 +1492,9 @@ function loop(){
   while(g.exp>=g.expTo){g.exp-=g.expTo;g.level++;g.wave=g.level;g.expTo=expForLevel(g.level);sfx("levelup");
     // NOTE 未來可考慮方案D — 升級解鎖能力：Lv5解鎖衝刺、Lv10解鎖第二武器等，增加階段感
     // stat boost on level up
-    g.p.atk+=2;g.p.maxHp+=5;g.p.hp=g.p.maxHp; // 回滿血
+    g.p.atk+=2;g.p.maxHp+=10;g.p.hp=g.p.maxHp; // 回滿血，HP+10/級
     if(g.level%5===0){g.p.levelDmgMul=(g.p.levelDmgMul||1)+.1;} // 每5等全傷害+10%
+    if(g.level%10===0){g.p.pierce=(g.p.pierce||0)+1;showHint("🔱 穿透+1！子彈可貫穿更多敵人");} // 每10等基礎穿透+1
     // milestone hints — non-intrusive floating text
     if(g.level===3&&!g._hint3){g._hint3=1;showHint("📦 探索地圖找寶箱，打開獲得卡牌！");}
     if(g.level===6&&!g._hint6){g._hint6=1;showHint("⚠️ 新型敵人出現了！小心包圍！");}
