@@ -93,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.33</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.35</div>
 </div>
 </div>
 
@@ -2629,7 +2629,7 @@ function triggerStageBoss(lv){
   const bx=px+(Math.random()>.5?1:-1)*180,by=py+(Math.random()>.5?1:-1)*180;
   const bHp=baseHp*hpMul;
   const sb={x:cl(bx,60,mapW()-60),y:cl(by,60,mapH()-60),hp:bHp,mhp:bHp,
-    speed:lv===20?0.6:0.45,color:lv===20?"#8B6914":"#9B59B6",t:0,r:lv===20?36:48,st:0,
+    speed:lv===20?0.6:0.45,color:lv===20?"#8B6914":"#9B59B6",t:0,r:lv===20?54:48,st:0,
     boss:true,mega:true,tier:4,face:1,xp:lv===20?200:500,
     poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:lv===20?2:3.5,
     role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
@@ -2697,17 +2697,18 @@ function updateStageBoss(e,now,dt){
   e.x+=dx/d*spd*dt;e.y+=dy/d*spd*dt;
   e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);e.t+=.02*dt;
 
-  // 💩 半血狂暴：抖動 + 召喚10個無表情便便
+  // 💩 半血狂暴：抖動 + 召喚20個半透明便便散佈地圖
   if(lv===20&&e.hp<e.mhp*.5&&!e._pooRageSpawned){
     e._pooRageSpawned=true;e._pooRage=true;
     _shakeT=.6;_shakePow=8;sfxBossAtk("phase");
     g.dn.push({x:e.x,y:e.y-e.r-20,d:"💩 狂暴！便便軍團！",life:3,color:"#8B6914",big:1});
-    for(let i=0;i<10;i++){const a=Math.PI*2*i/10,sd=50+rn(0,40);
-      const mx=cl(e.x+Math.cos(a)*sd,20,mapW()-20),my=cl(e.y+Math.sin(a)*sd,20,mapH()-20);
-      g.ene.push({x:mx,y:my,hp:9999999,mhp:9999999,speed:1.0,color:"#C4A882",t:rn(0,10),r:10,st:0,
+    const mw=mapW(),mh=mapH();
+    for(let i=0;i<20;i++){
+      const mx=rn(40,mw-40),my=rn(40,mh-40);
+      g.ene.push({x:mx,y:my,hp:9999999,mhp:9999999,speed:1.0,color:"#C4A882",t:rn(0,10),r:16,st:0,
         boss:false,mega:false,tier:0,face:1,xp:0,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:0,
         role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
-        ragePoo:true,_parentBoss:e});}
+        ragePoo:true});}
   }
 
   // 💩 Attacks
@@ -2717,7 +2718,7 @@ function updateStageBoss(e,now,dt){
     if(now>e.sbSpawnCD){e.sbSpawnCD=now+(e._pooRage?8000:10000);sfxBossAtk("spawn");
       const spnHp=400+g.wave*25;
       for(let i=0;i<3;i++){const a=Math.PI*2*i/3,mx=cl(e.x+Math.cos(a)*40,20,mapW()-20),my=cl(e.y+Math.sin(a)*40,20,mapH()-20);
-        g.ene.push({x:mx,y:my,hp:spnHp,mhp:spnHp,speed:1.8,color:"#A0822A",t:rn(0,10),r:12,st:0,boss:true,mega:false,tier:1,face:1,xp:5,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:1.5,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniPoo:true,bossType:Math.random()>.5?"tough":"armor"});}
+        g.ene.push({x:mx,y:my,hp:spnHp,mhp:spnHp,speed:1.8,color:"#A0822A",t:rn(0,10),r:18,st:0,boss:true,mega:false,tier:1,face:1,xp:5,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:1.5,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniPoo:true,bossType:Math.random()>.5?"tough":"armor"});}
       g.dn.push({x:e.x,y:e.y-e.r-10,d:"💩 增生！",life:1.5,color:"#A0822A"});}
   }
 
@@ -2830,9 +2831,9 @@ function drawStageBoss(e,now){
 function drawMiniEnemy(e,now){
   cx.save();const bounce=Math.sin(now/120+e.t)*3,wobble=Math.sin(now/200+e.t*2)*.15;
   cx.translate(e.x,e.y+bounce);cx.rotate(wobble);
-  const sz=e.ragePoo?14:16;
+  const sz=e.ragePoo?16:e.miniPoo?20:16;
   cx.font=sz+"px 'Nunito',sans-serif";cx.textAlign="center";cx.textBaseline="middle";
-  if(e.ragePoo){cx.globalAlpha=.7;cx.fillText("😐",0,0);} // 無表情便便
+  if(e.ragePoo){cx.globalAlpha=.5;cx.fillText("💩",0,0);}
   else cx.fillText(e.miniPoo?"💩":"😈",0,0);
   cx.restore();
 }
