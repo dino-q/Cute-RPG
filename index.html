@@ -79,7 +79,6 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 <div id="titleOv" class="ov" style="background:linear-gradient(140deg,#141428,#1a1a35 40%,#0f1a2e)">
 <div class="panel" style="background:transparent;border:none">
   <canvas id="heroCanvas" width="160" height="60" style="margin:0 auto;display:block;filter:drop-shadow(0 0 20px rgba(116,192,252,.55))"></canvas>
-  <div id="heroUltFx" style="position:absolute;left:50%;top:20%;width:86px;height:86px;transform:translateX(-50%);border-radius:50%;border:2px solid #BE4BDB;opacity:0;pointer-events:none"></div>
   <h1 style="font-size:30px;font-weight:900;color:#fff;margin:4px 0 0;text-shadow:0 0 25px rgba(116,192,252,.3)">Dino真是個小天才</h1>
   <p style="color:rgba(255,255,255,.35);font-size:12px;margin:0 0 20px;letter-spacing:2px">Cute Dungeon Adventure</p>
   <div style="display:flex;gap:10px;justify-content:center;margin-bottom:8px">
@@ -93,7 +92,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.03</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.04</div>
 </div>
 </div>
 
@@ -173,15 +172,15 @@ const MODE={
   },
   elite:{
     startAtk:5,startHp:200,startSpeed:5.2,
-    maxEnemies:20,spawnBase:2400,spawnWaveMul:40,
-    enemyContactVanish:false, // 接觸後敵人不消失
-    atkPerLv:2,hpPerLv:15,dmgCap:1.2, // 傷害上限低，靠多元攻擊模式而非高傷
-    smallHpBase:8, // 小怪基礎 HP（1~2 下死）
-    smallHpPerWave:1.5,
-    eliteHpBase:150,eliteHpPerWave:15,
-    eliteChance:.12, // 精英出現機率（每次出怪）
-    eliteStartWave:8,
-    enemySpdCap:1.6, // 敵人速度成長上限（經典 2.4），確保跑得掉
+    maxEnemies:8,spawnBase:3000,spawnWaveMul:30,
+    enemyContactVanish:false,
+    atkPerLv:2,hpPerLv:15,dmgCap:1.2,
+    mapW:1200,mapH:1200, // 小地圖，近距離戰鬥
+    smallHpBase:200,smallHpPerWave:20, // 小怪也很耐打
+    eliteHpBase:800,eliteHpPerWave:40, // 精英非常耐打
+    eliteChance:.2, // 精英出現機率提高
+    eliteStartWave:5, // 更早出精英
+    enemySpdCap:1.6,
   }
 };
 // early levels need less XP so first card pick comes fast
@@ -292,8 +291,8 @@ const di=(a,b)=>Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);
 const cl=(v,l,h)=>Math.max(l,Math.min(h,v));
 const rn=(a,b)=>a+Math.random()*(b-a);
 const $=id=>document.getElementById(id);
-const mapW=()=>MW+((g&&g.p&&g.p.mapExpand)||0);
-const mapH=()=>MH+((g&&g.p&&g.p.mapExpand)||0);
+const mapW=()=>(MODE[_mode].mapW||MW)+((g&&g.p&&g.p.mapExpand)||0);
+const mapH=()=>(MODE[_mode].mapH||MH)+((g&&g.p&&g.p.mapExpand)||0);
 const crateActive=cr=>!!(g&&cr&&cr.hp>0&&g.level>=(cr.unlockLv||1));
 let fxQ=1; // adaptive FX quality (1=full, lower=lighter effects)
 function nearestTargets(src,k){
@@ -853,7 +852,8 @@ function show(n){["titleOv","tutOv","pickOv","overOv","victoryOv"].forEach(id=>$
 
 window.showTutorial=function(){show("tut");};
 
-// 首頁勇者 — 在標題上方左右走動
+// 首頁勇者 — 走動 + 粒子拖尾 + 劍氣斬擊 + 星光
+let _titlePar=[],_titleSlash=0,_titleSlashX=0,_titleSlashFace=1;
 (function drawTitleHero(){
   const hc=$("heroCanvas");if(!hc)return;
   try{
@@ -861,35 +861,79 @@ window.showTutorial=function(){show("tut");};
     const _origCx=cx;cx=hctx;
     const _origG=g;g={p:{fx:{},_sh:false}};
     const t=performance.now()/1000;
-    const walkX=80+Math.sin(t*.8)*55; // 左右走動
+    const now=performance.now();
+    const walkX=80+Math.sin(t*.8)*55;
     const face=Math.cos(t*.8)>0?1:-1;
     hctx.clearRect(0,0,160,60);
+
+    // 粒子更新+渲染
+    _titlePar=_titlePar.filter(p=>{
+      p.x+=p.vx;p.y+=p.vy;p.vy+=p.g||0;p.life-=.02;
+      if(p.life<=0)return false;
+      hctx.globalAlpha=p.life*p.a;hctx.fillStyle=p.c;
+      hctx.beginPath();hctx.arc(p.x,p.y,p.s,0,Math.PI*2);hctx.fill();
+      return true;
+    });
+    hctx.globalAlpha=1;
+
+    // 走路拖尾塵土
+    if(Math.random()<.4){
+      _titlePar.push({x:walkX+rn(-4,4),y:42+rn(0,3),vx:-Math.cos(t*.8)*.3+rn(-.2,.2),vy:rn(-.3,-.1),life:1,a:.3,c:"rgba(116,192,252,.5)",s:rn(1,2.5),g:.01});
+    }
+
+    // 星光閃爍
+    if(Math.random()<.08){
+      _titlePar.push({x:rn(10,150),y:rn(5,50),vx:0,vy:rn(-.1,.1),life:1,a:.6,c:"#fff",s:rn(.5,1.5),g:0});
+    }
+
+    // 定期劍氣斬擊
+    if(_titleSlash<=0&&Math.random()<.008){
+      _titleSlash=1;_titleSlashX=walkX;_titleSlashFace=face;
+      // 斬擊粒子爆發
+      for(let i=0;i<8;i++){
+        const a=-Math.PI*.3+Math.PI*.6*i/8;
+        _titlePar.push({x:walkX+face*12,y:28,vx:Math.cos(a)*face*rn(1.5,3),vy:Math.sin(a)*rn(1,2),life:1,a:.7,c:i%2?"#74C0FC":"#fff",s:rn(1,3),g:0});
+      }
+    }
+
+    // 劍氣弧線
+    if(_titleSlash>0){
+      const sp=1-_titleSlash;
+      hctx.save();
+      hctx.globalAlpha=_titleSlash*.8;
+      hctx.strokeStyle="#74C0FC";hctx.lineWidth=2.5;
+      hctx.shadowColor="#74C0FC";hctx.shadowBlur=8;
+      hctx.beginPath();
+      const cx2=_titleSlashX+_titleSlashFace*12;
+      hctx.arc(cx2,30,14+sp*18,-Math.PI*.6+sp*.3,-Math.PI*.6+Math.PI*.8*sp);
+      hctx.stroke();
+      // 內層白弧
+      hctx.globalAlpha=_titleSlash*.5;hctx.strokeStyle="#fff";hctx.lineWidth=1;hctx.shadowBlur=0;
+      hctx.beginPath();
+      hctx.arc(cx2,30,10+sp*14,-Math.PI*.5+sp*.2,-Math.PI*.5+Math.PI*.7*sp);
+      hctx.stroke();
+      hctx.restore();
+      _titleSlash=Math.max(0,_titleSlash-.025);
+    }
+
+    // 繪製勇者
     drawPlayer(walkX,35,16,t,"#74C0FC",face);
+
+    // 角色光暈
+    hctx.save();hctx.globalAlpha=.08+Math.sin(t*2)*.04;
+    hctx.fillStyle="#74C0FC";hctx.beginPath();hctx.arc(walkX,35,22,0,Math.PI*2);hctx.fill();
+    hctx.restore();
+
     g=_origG;cx=_origCx;
   }catch(e){}
   requestAnimationFrame(drawTitleHero);
 })();
-
-function titleHeroUlt(){
-  const fx=$("heroUltFx");
-  if(!fx)return;
-  fx.style.animation="none";
-  fx.style.opacity=".9";
-  void fx.offsetWidth;
-  fx.style.animation="heroUltPulse .75s ease-out";
-  setTimeout(()=>{if(fx)fx.style.opacity="0";},760);
-}
-let _titleUltTimer=null;
-(function loopTitleHeroUlt(){
-  _titleUltTimer=setTimeout(()=>{
-    titleHeroUlt();
-    loopTitleHeroUlt();
-  },3000+Math.random()*2000);
-})();
+let _titleUltTimer=null; // 保留變數避免 startGame 報錯
 
 /* ═══ generate map features ═══ */
 function genCrates(){
-  const crates=[],spawnCenter={x:MW/2,y:MH/2};
+  const _gmw=MODE[_mode].mapW||MW,_gmh=MODE[_mode].mapH||MH;
+  const crates=[],spawnCenter={x:_gmw/2,y:_gmh/2};
   // 開局只放1個寶箱，靠近出生點
   const a1=rn(0,Math.PI*2),d1=rn(80,160);
   const shuffled=[...C].sort(()=>Math.random()-.5);
@@ -935,8 +979,8 @@ function pickEnemyTier(w,boss){
 
 function spawnTargetForWave(w){
   if(_mode==="elite"){
-    if(w<4)return 5;if(w<8)return 7;if(w<12)return 10;
-    if(w<18)return 13;if(w<24)return 16;return Math.min(20,17+Math.floor((w-24)/3));
+    if(w<4)return 3;if(w<8)return 4;if(w<15)return 5;
+    if(w<22)return 6;return Math.min(8,7);
   }
   if(w<2)return 12;if(w<4)return 16;if(w<6)return 20;
   if(w<10)return 26;if(w<14)return 36;if(w<18)return 50;
@@ -1202,26 +1246,44 @@ function loop(){
   if(g._stageBossActive&&_stageBoss&&_stageBoss.hp>0)updateStageBoss(_stageBoss,now,dt);
   checkStageBossDeath();
 
-  // spawn enemies around player (suppressed during stage boss)
-  if(g._stageBossActive){g.lS=now;} // skip spawn
-  const MC=MODE[_mode];
-  const si=Math.max(380,MC.spawnBase-g.wave*MC.spawnWaveMul);
-  const targetEnemies=spawnTargetForWave(g.wave);
-  triggerSpikeWave(g.wave);
-  if(now-g.lS>si){
-    const missing=Math.max(0,targetEnemies-g.ene.length);
-    if(missing>0){
-      const batch=Math.min(
-        missing,
-        g.wave<3?2:g.wave<6?2:g.wave<10?3:g.wave<16?4:5 // batch 2 from start
-      );
-      for(let i=0;i<batch;i++)spawn(false);
-      if(g.wave>=8&&missing>batch&&Math.random()<.5)spawn(false);
-      if(g.wave>=14&&missing>batch+1&&Math.random()<.35)spawn(false);
+  // spawn system
+  if(g._stageBossActive){g.lS=now;} // skip spawn during stage boss
+  else if(_mode==="elite"){
+    // === 精英模式：波次制 ===
+    if(!g._ew)g._ew={num:0,restEnd:0,active:false};
+    const ew=g._ew;
+    const aliveEnemies=g.ene.filter(e=>e.hp>0&&!e.stageBoss).length;
+    if(ew.active&&aliveEnemies===0){
+      // 波次清完 → 休息 2 秒
+      ew.active=false;ew.restEnd=now+2000;
+      g.dn.push({x:g.p.x,y:g.p.y-40,d:"✨ 波次清除！",life:1.5,color:"#51CF66",big:1});
     }
-    g.lS=now;
+    if(!ew.active&&now>=ew.restEnd){
+      // 休息結束 → 出下一波
+      ew.num++;ew.active=true;
+      const waveSize=Math.min(5,3+Math.floor(ew.num/5)); // 3~5隻
+      g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${ew.num}波！`,life:2,color:"#FF6B6B",big:1});
+      sfx("boss");
+      for(let i=0;i<waveSize;i++)spawn(false);
+    }
+  }else{
+    // === 經典模式：持續出怪 ===
+    const MC=MODE[_mode];
+    const si=Math.max(380,MC.spawnBase-g.wave*MC.spawnWaveMul);
+    const targetEnemies=spawnTargetForWave(g.wave);
+    triggerSpikeWave(g.wave);
+    if(now-g.lS>si){
+      const missing=Math.max(0,targetEnemies-g.ene.length);
+      if(missing>0){
+        const batch=Math.min(missing,g.wave<3?2:g.wave<6?2:g.wave<10?3:g.wave<16?4:5);
+        for(let i=0;i<batch;i++)spawn(false);
+        if(g.wave>=8&&missing>batch&&Math.random()<.5)spawn(false);
+        if(g.wave>=14&&missing>batch+1&&Math.random()<.35)spawn(false);
+      }
+      g.lS=now;
+    }
+    triggerHuntPressure(now);
   }
-  triggerHuntPressure(now);
   // boss spawn
   if(g.kills>0&&g.kills>=g.nextBoss){
     g.bossCount=(g.bossCount||0)+1;
@@ -1380,10 +1442,17 @@ function loop(){
       e.x+=(dx/d*es*cs*ts+Math.sin(e.t*2.5)*.3*ts)*dt;
       e.y+=(dy/d*es*cs*ts)*dt;
     }
-    // anti-clump jitter so enemies approach from less predictable angles
-    const jw=.18*hs;
-    e.x+=Math.sin(e.t*3.7+(e.flankA||0))*jw*dt;
-    e.y+=Math.cos(e.t*3.1+(e.flankA||0))*jw*dt;
+    // anti-clump jitter — 精英模式更強，避免怪物全部疊在一起
+    const jw=_mode==="elite"?1.2:.18*hs;
+    e.x+=Math.sin(e.t*3.7+(e.flankA||0)*2)*jw*dt;
+    e.y+=Math.cos(e.t*3.1+(e.flankA||0)*2)*jw*dt;
+    // 精英模式：定期隨機切換追擊角度偏移
+    if(_mode==="elite"){
+      if(!e._randAng)e._randAng=rn(-1,1);
+      if(Math.random()<.005*dt)e._randAng=rn(-1.2,1.2); // 隨機改變方向
+      e.x+=Math.cos(Math.atan2(dy,dx)+e._randAng)*es*.3*dt;
+      e.y+=Math.sin(Math.atan2(dy,dx)+e._randAng)*es*.3*dt;
+    }
 
     // === Boss skills (wave 10+) ===
     if(e.boss&&g.wave>=10&&ts){
@@ -2602,12 +2671,13 @@ window.startGame=window.SG=function(mode){
   cv.width=fxc.width=VW;cv.height=fxc.height=VH;resize();
   resetSessionUi();
   cx.fillStyle="#0a0a18";cx.fillRect(0,0,VW,VH);
-  g={p:{x:MW/2,y:MH/2,hp:MC.startHp,maxHp:MC.startHp,atk:MC.startAtk,speed:MC.startSpeed,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,hasBH:false,hasTS:false,ultLv:0,pierce:0,homing:0,homingR:200,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,bossDmg:1,mobDmg:1,poisonBossMul:1,burnBoost:1,crateVis:1,mapExpand:0,pickCount:2,face:1,_iFrameEnd:0,_healFlash:0},
+  const _mw=MC.mapW||MW,_mh=MC.mapH||MH;
+  g={p:{x:_mw/2,y:_mh/2,hp:MC.startHp,maxHp:MC.startHp,atk:MC.startAtk,speed:MC.startSpeed,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,hasBH:false,hasTS:false,ultLv:0,pierce:0,homing:0,homingR:200,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,bossDmg:1,mobDmg:1,poisonBossMul:1,burnBoost:1,crateVis:1,mapExpand:0,pickCount:2,face:1,_iFrameEnd:0,_healFlash:0},
     ene:[],bul:[],par:[],dn:[],orbs:[],ltn:[],ebul:[],crates:genCrates(),
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
     lastKill:performance.now(),lastHunt:0,
-    time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,pickOpen:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1,_startTime:performance.now(),_stageBossActive:false,_stageBossLv:0,_boss20:false,_boss30:false,_bigChestTotal:0,_bigChestLeft:0,_angelOffered:false,_pendingStageBoss:0};
+    time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,pickOpen:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1,_startTime:performance.now(),_stageBossActive:false,_stageBossLv:0,_boss20:false,_boss30:false,_bigChestTotal:0,_bigChestLeft:0,_angelOffered:false,_pendingStageBoss:0,_ew:null};
   inv=[];par=[];_ltnRingIdx=0;_dashGhosts=[];_stageBoss=null;bossBgmStop();_hitFlash=0;_shakeT=0;_phoenixT=0;g._wb=[];g._wbSpawnT=0;
   joy={a:0,dx:0,dy:0,id:null,sx:null,sy:null};aim={a:0,dx:0,dy:0,id:null,sx:null,sy:null,tn:0,lt:0};
   show("play");if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
