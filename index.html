@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.05</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.07</div>
 </div>
 </div>
 
@@ -147,25 +147,25 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 <div class="panel" id="victoryPanel" style="background:transparent;border:none;z-index:2;position:relative"></div>
 </div>
 
-<!-- Practice Mode: 不遮擋遊戲畫面，可收合的側邊欄 -->
+<!-- Practice Mode -->
 <div id="practiceOv" style="display:none;position:fixed;inset:0;pointer-events:none;z-index:200">
-  <!-- 頂部工具列 -->
-  <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);pointer-events:auto;display:flex;gap:6px;z-index:202">
-    <button onclick="pracTogglePanel('cards')" id="pracBtnCards" style="padding:5px 10px;font-size:10px;border-radius:6px;background:rgba(255,215,0,.2);color:#FFD43B;font-weight:700;border:1px solid rgba(255,215,0,.3);cursor:pointer">🃏 卡片</button>
-    <button onclick="pracTogglePanel('enemies')" id="pracBtnEne" style="padding:5px 10px;font-size:10px;border-radius:6px;background:rgba(255,107,107,.2);color:#FF6B6B;font-weight:700;border:1px solid rgba(255,107,107,.3);cursor:pointer">👾 敵人</button>
-    <button onclick="pracTogglePanel('stats')" style="padding:5px 10px;font-size:10px;border-radius:6px;background:rgba(116,192,252,.2);color:#74C0FC;font-weight:700;border:1px solid rgba(116,192,252,.3);cursor:pointer">📊 能力值</button>
-    <button onclick="pracSpawn()" style="padding:5px 10px;font-size:10px;border-radius:6px;background:#51CF66;color:#000;font-weight:700;border:none;cursor:pointer">▶ 出怪</button>
-    <button onclick="pracClear()" style="padding:5px 10px;font-size:10px;border-radius:6px;background:#FF6B6B;color:#fff;font-weight:700;border:none;cursor:pointer">清場</button>
-    <button onclick="exitPractice()" style="padding:5px 10px;font-size:10px;border-radius:6px;background:rgba(255,255,255,.15);color:#fff;font-weight:700;border:none;cursor:pointer">✕</button>
+  <!-- 頂部工具列：兩行，避免擋到面板 -->
+  <div id="pracToolbar" style="position:absolute;top:4px;left:50%;transform:translateX(-50%);pointer-events:auto;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:320px;z-index:203">
+    <button onclick="pracTogglePanel('cards')" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,215,0,.2);color:#FFD43B;font-weight:700;border:1px solid rgba(255,215,0,.3);cursor:pointer">🃏卡片</button>
+    <button onclick="pracTogglePanel('enemies')" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,107,107,.2);color:#FF6B6B;font-weight:700;border:1px solid rgba(255,107,107,.3);cursor:pointer">👾敵人</button>
+    <button onclick="pracTogglePanel('stats')" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(116,192,252,.2);color:#74C0FC;font-weight:700;border:1px solid rgba(116,192,252,.3);cursor:pointer">📊能力值</button>
+    <button onclick="pracSpawn()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:#51CF66;color:#000;font-weight:700;border:none;cursor:pointer">▶出怪</button>
+    <button onclick="pracClear()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:#FF6B6B;color:#fff;font-weight:700;border:none;cursor:pointer">清場</button>
+    <button onclick="exitPractice()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,255,255,.15);color:#fff;font-weight:700;border:none;cursor:pointer">退出練習</button>
   </div>
   <!-- 左側卡片抽屜 -->
-  <div id="pracCards" style="display:none;pointer-events:auto;position:absolute;left:0;top:32px;bottom:0;width:52%;max-width:220px;overflow-y:auto;padding:6px;background:rgba(10,10,24,.92);border-right:1px solid rgba(255,255,255,.1);font-size:10px;-webkit-overflow-scrolling:touch;z-index:201">
+  <div id="pracCards" style="display:none;pointer-events:auto;position:absolute;left:0;top:0;bottom:0;width:52%;max-width:220px;overflow-y:scroll;overflow-x:hidden;padding:28px 6px 6px;background:rgba(10,10,24,.93);border-right:1px solid rgba(255,255,255,.1);font-size:10px;-webkit-overflow-scrolling:touch;touch-action:pan-y;z-index:202">
   </div>
   <!-- 右側敵人抽屜 -->
-  <div id="pracEnemies" style="display:none;pointer-events:auto;position:absolute;right:0;top:32px;bottom:0;width:48%;max-width:200px;overflow-y:auto;padding:6px;background:rgba(10,10,24,.92);border-left:1px solid rgba(255,255,255,.1);font-size:10px;-webkit-overflow-scrolling:touch;z-index:201">
+  <div id="pracEnemies" style="display:none;pointer-events:auto;position:absolute;right:0;top:0;bottom:0;width:48%;max-width:200px;overflow-y:scroll;overflow-x:hidden;padding:28px 6px 6px;background:rgba(10,10,24,.93);border-left:1px solid rgba(255,255,255,.1);font-size:10px;-webkit-overflow-scrolling:touch;touch-action:pan-y;z-index:202">
   </div>
   <!-- 底部能力值面板 -->
-  <div id="pracStats" style="display:none;pointer-events:auto;position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:92%;max-width:400px;max-height:45%;overflow-y:auto;padding:10px;background:rgba(10,10,24,.94);border:1px solid rgba(116,192,252,.2);border-radius:10px;font-size:10px;-webkit-overflow-scrolling:touch;z-index:201">
+  <div id="pracStats" style="display:none;pointer-events:auto;position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:92%;max-width:400px;max-height:50%;overflow-y:scroll;padding:10px;background:rgba(10,10,24,.94);border:1px solid rgba(116,192,252,.2);border-radius:10px;font-size:10px;-webkit-overflow-scrolling:touch;touch-action:pan-y;z-index:202">
   </div>
 </div>
 
@@ -3004,20 +3004,20 @@ function showOver(){
 /* ═══════════ PRACTICE MODE ═══════════ */
 let _practiceMode=false,_pracEnemySel=new Set(),_pracCardSel=new Set();
 const PRAC_ENEMIES=[
-  {id:"small",name:"小怪 ●",emoji:"●",tier:0,boss:false,mega:false},
-  {id:"tri",name:"惡魔 ▲",emoji:"▲",tier:1,boss:false,mega:false},
-  {id:"sq",name:"魔像 ◆",emoji:"◆",tier:2,boss:false,mega:false},
-  {id:"pent",name:"長老 ⬠",emoji:"⬠",tier:3,boss:false,mega:false},
-  {id:"star",name:"遠古 ★",emoji:"★",tier:4,boss:false,mega:false},
-  {id:"elite",name:"精英怪",emoji:"🔴",tier:2,boss:false,mega:false,elite:true},
-  {id:"shield",name:"盾兵 🛡️",emoji:"🛡️",tier:1,boss:false,mega:false,role:5},
-  {id:"shooter",name:"射手 🎯",emoji:"🎯",tier:1,boss:false,mega:false,role:2},
-  {id:"dasher",name:"衝刺者 💨",emoji:"💨",tier:1,boss:false,mega:false,role:3},
-  {id:"flanker",name:"包圍者 🌀",emoji:"🌀",tier:1,boss:false,mega:false,role:1},
-  {id:"boss",name:"小王 ⭐",emoji:"⭐",tier:3,boss:true,mega:false},
-  {id:"mega",name:"巨王 👑",emoji:"👑",tier:4,boss:true,mega:true},
-  {id:"poo",name:"💩 中場Boss",emoji:"💩",stage:20},
-  {id:"devil",name:"😈 最終魔王",emoji:"😈",stage:30},
+  {id:"small",name:"小怪 ●",emoji:"●",tier:0,boss:false,mega:false,desc:"基礎敵人，直線追擊"},
+  {id:"tri",name:"惡魔 ▲",emoji:"▲",tier:1,boss:false,mega:false,desc:"Tier1 稍快稍硬"},
+  {id:"sq",name:"魔像 ◆",emoji:"◆",tier:2,boss:false,mega:false,desc:"Tier2 更硬"},
+  {id:"pent",name:"長老 ⬠",emoji:"⬠",tier:3,boss:false,mega:false,desc:"Tier3 高血高攻"},
+  {id:"star",name:"遠古 ★",emoji:"★",tier:4,boss:false,mega:false,desc:"Tier4 最強小怪"},
+  {id:"elite",name:"精英怪",emoji:"🔴",tier:2,boss:false,mega:false,elite:true,desc:"衝刺/護盾/震波 物理抗性 元素有效"},
+  {id:"shield",name:"盾兵 🛡️",emoji:"🛡️",tier:1,boss:false,mega:false,role:5,desc:"正面擋75%傷害 需繞背攻擊"},
+  {id:"shooter",name:"射手 🎯",emoji:"🎯",tier:1,boss:false,mega:false,role:2,desc:"保持距離 發射遠程子彈"},
+  {id:"dasher",name:"衝刺者 💨",emoji:"💨",tier:1,boss:false,mega:false,role:3,desc:"蓄力後高速衝刺 有預警動作"},
+  {id:"flanker",name:"包圍者 🌀",emoji:"🌀",tier:1,boss:false,mega:false,role:1,desc:"環繞玩家軌道移動 逐漸逼近"},
+  {id:"boss",name:"小王 ⭐",emoji:"⭐",tier:3,boss:true,mega:false,desc:"隨機韌性/防禦 散射/召喚/彈幕技能 有DPS上限"},
+  {id:"mega",name:"巨王 👑",emoji:"👑",tier:4,boss:true,mega:true,desc:"小王加強版 3倍體型 更高DPS上限"},
+  {id:"poo",name:"💩 中場Boss",emoji:"💩",stage:20,desc:"護盾/散射/增生 半血狂暴召喚20便便 防禦型"},
+  {id:"devil",name:"😈 最終魔王",emoji:"😈",stage:30,desc:"3階段 瞬移/彈幕/暗黑脈衝 惡魔交易 韌性型"},
 ];
 window.pracTogglePanel=function(which){
   const cards=$("pracCards"),ene=$("pracEnemies"),stats=$("pracStats");
@@ -3056,14 +3056,39 @@ window.pracRefreshStats=function(){
   // 場上敵人
   if(g.ene.length>0){
     h+='<div style="color:#FF6B6B;font-weight:900;font-size:12px;margin:6px 0 4px">👾 場上敵人</div>';
+    const angelMul=g.p._angelBuff?1.6:1;
+    const acm=1+(g.p.armorCapBonus||0);
     g.ene.forEach((e,i)=>{
       if(i>8){if(i===9)h+='<div style="color:rgba(255,255,255,.3)">...還有'+(g.ene.length-9)+'個</div>';return;}
       const type=e.stageBoss?"Stage Boss":e.ragePoo?"狂暴便便":e.miniPoo?"增生便便":e.miniDemon?"小惡魔":e.eliteEnemy?"精英怪":e.boss?(e.mega?"巨王":"小王"):"小怪";
-      const btype=e.bossType?` [${e.bossType}]`:"";
       const hpPct=e.mhp>99999?"--":Math.round(e.hp/e.mhp*100)+"%";
-      h+=`<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-        <span style="color:rgba(255,255,255,.7)">${type}${btype}</span>
-        <span><span style="color:#FF6B6B">${e.mhp>99999?"INF":Math.round(e.hp)}/${e.mhp>99999?"INF":e.mhp}</span> <span style="color:rgba(255,255,255,.3)">(${hpPct})</span></span>
+      const hpStr=e.mhp>99999?"INF":Math.round(e.hp)+"/"+e.mhp;
+      // 每秒傷害上限
+      let capStr="--";
+      if(e.boss&&_mode==="elite"){
+        const armMul=e.bossType==="armor"?acm:1;
+        let cap;
+        if(e.stageBoss===20)cap=e.mhp/120*angelMul*armMul;
+        else if(e.stageBoss===30)cap=e.mhp/180*angelMul*armMul;
+        else cap=e.mhp/(e.mega?30:15)*angelMul*armMul;
+        capStr=Math.round(cap)+"/秒";
+      }
+      // 防禦類型
+      const def=e.bossType==="armor"?"🛡️防禦":e.bossType==="tough"?"💪韌性":"--";
+      // 特殊能力描述
+      let abilities=[];
+      if(e.stageBoss===20)abilities=["環形散射","召喚增生","護盾(普攻無效)","半血狂暴(20便便)"];
+      else if(e.stageBoss===30){const ph=e.sbPhase||1;abilities=["Phase"+ph,"暗影彈幕"];if(ph>=2)abilities.push("十字波","瞬移+抖動","小惡魔","惡魔交易");if(ph>=3)abilities.push("無預警瞬移","暗黑脈衝");}
+      else if(e.eliteEnemy)abilities=["衝刺突進","能量護盾","範圍震波","物理抗性"];
+      else if(e.ragePoo)abilities=["不可摧毀","撞擊扣1/3血"];
+      else if(e.miniDemon)abilities=["瞬移追擊",e.bossType==="armor"?"防禦型":"韌性型"];
+      else{const r=e.role;if(r===5)abilities=["正面擋75%傷害"];if(r===2)abilities=["遠程射擊"];if(r===3)abilities=["蓄力衝刺"];if(r===1)abilities=["環繞軌道"];}
+      if(e.boss&&!e.stageBoss&&!e.miniPoo&&!e.miniDemon)abilities.push("散射","召喚","彈幕");
+      const abilStr=abilities.length?abilities.join(" / "):"無";
+      h+=`<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+        <div style="display:flex;justify-content:space-between"><span style="color:rgba(255,255,255,.8)">${type}</span><span style="color:#FF6B6B">${hpStr} <span style="color:rgba(255,255,255,.3)">(${hpPct})</span></span></div>
+        <div style="display:flex;gap:10px;color:rgba(255,255,255,.45);font-size:9px"><span>DPS上限: ${capStr}</span><span>防禦: ${def}</span></div>
+        <div style="color:rgba(255,255,255,.35);font-size:8px;margin-top:1px">能力: ${abilStr}</div>
       </div>`;
     });
   }else{
@@ -3091,10 +3116,9 @@ window.openPractice=function(){
   const ec=$("pracEnemies");
   let ehtml='<div style="color:#FF6B6B;font-weight:900;font-size:11px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(10,10,24,.95);z-index:1">👾 敵人（勾選後按出怪）</div>';
   PRAC_ENEMIES.forEach(pe=>{
-    ehtml+=`<label style="display:flex;align-items:center;gap:3px;padding:3px;margin:1px 0;border-radius:4px;background:rgba(255,255,255,.04);cursor:pointer;color:rgba(255,255,255,.8)">
-      <input type="checkbox" data-eid="${pe.id}" onchange="pracToggleEnemy('${pe.id}',this.checked)" style="margin:0;width:13px;height:13px">
-      <span style="font-size:13px">${pe.emoji}</span>
-      <span style="font-size:10px">${pe.name}</span>
+    ehtml+=`<label style="display:flex;align-items:start;gap:3px;padding:4px;margin:2px 0;border-radius:5px;background:rgba(255,255,255,.04);cursor:pointer;color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.06)">
+      <input type="checkbox" data-eid="${pe.id}" onchange="pracToggleEnemy('${pe.id}',this.checked)" style="margin:2px 0 0;width:13px;height:13px;flex-shrink:0">
+      <div><div style="font-size:10px">${pe.emoji} ${pe.name}</div><div style="font-size:8px;color:rgba(255,255,255,.4);line-height:1.3;margin-top:1px">${pe.desc}</div></div>
     </label>`;
   });
   ec.innerHTML=ehtml;
