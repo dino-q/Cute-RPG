@@ -71,6 +71,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div id="rbtns">
     <div id="combo"></div>
     <div id="ultW"><div id="ultR"><div id="ultI">💎</div></div><div id="ultL">長壓集氣</div></div>
+    <div id="dodgeBtn" style="width:52px;height:52px;border-radius:50%;background:radial-gradient(circle,rgba(116,192,252,.2),rgba(20,20,40,.9));border:2px solid rgba(116,192,252,.4);display:flex;justify-content:center;align-items:center;font-size:18px;cursor:pointer;touch-action:manipulation;box-shadow:0 0 12px rgba(116,192,252,.25)">💨</div>
     <div class="joyW" id="jzR" style="width:120px;height:120px"><div class="joyR"><div class="joyK jkR" id="jkR"></div></div></div>
   </div>
 </div>
@@ -92,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.05</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.07</div>
 </div>
 </div>
 
@@ -180,7 +181,7 @@ const MODE={
     eliteHpBase:800,eliteHpPerWave:40, // 精英非常耐打
     eliteChance:.2, // 精英出現機率提高
     eliteStartWave:5, // 更早出精英
-    enemySpdCap:1.6,
+    enemySpdCap:2.0, // 加快怪物，搭配弧線移動更有壓力
   }
 };
 // early levels need less XP so first card pick comes fast
@@ -319,7 +320,7 @@ function pks(n,excludeIds){
     at++;
     const v=Math.random()*100;
     let r=v<RW.SSR?"SSR":v<RW.SSR+RW.SR?"SR":"R";
-    const pool=C.filter(c=>c.r===r&&!u.has(c.id)&&!ex.has(c.id)&&(c.once?getCardLv(c.id)<0:getCardLv(c.id)<2));
+    const pool=C.filter(c=>c.r===r&&!u.has(c.id)&&!ex.has(c.id)&&(c.once?getCardLv(c.id)<0:getCardLv(c.id)<2)&&!(c.n==="命運轉輪"&&inv.length===0));
     if(!pool.length)continue;
     const c=pool[pool.length*Math.random()|0];
     p.push(c);u.add(c.id);
@@ -565,6 +566,9 @@ window.addEventListener("resize",resize);
 
 /* ═══ HUD ═══ */
 function hud(){if(!g)return;
+  // 閃避按鈕 CD 視覺
+  const _db=$("dodgeBtn"),_dReady=!g.p._dodgeCD||performance.now()>=g.p._dodgeCD;
+  if(_db){_db.style.opacity=_dReady?"1":".4";_db.style.borderColor=_dReady?"rgba(116,192,252,.6)":"rgba(255,255,255,.15)";}
   $("hl").textContent="❤️"+Math.floor(g.p.hp)+"/"+g.p.maxHp;
   $("hb").style.width=(g.p.hp/g.p.maxHp*100)+"%";
   $("ll").textContent="Lv."+g.level;
@@ -591,8 +595,7 @@ function hud(){if(!g)return;
     $("ultR").style.background="conic-gradient(#BE4BDB "+(pct*360)+"deg,rgba(190,78,219,.1) "+(pct*360)+"deg)";
     const _lsReady=pct>=1&&g.p.lStep;
     $("ultI").textContent=pct>=1?(_lsReady?"⚡":"💥"):"💎";
-    const _dodgeReady=!g.p._dodgeCD||performance.now()>=g.p._dodgeCD;
-    $("ultL").textContent=pct>=1?(_lsReady?"⬇ 閃電步就緒 ⬇":"⬇ 長壓放大招 ⬇"):g.ultHold?"集氣中...":(_dodgeReady?"點擊閃避 / 長壓集氣":"閃避冷卻中");
+    $("ultL").textContent=pct>=1?(_lsReady?"⬇ 閃電步就緒 ⬇":"⬇ 大招就緒 ⬇"):g.ultHold?"集氣中...":"長壓集氣";
     $("ub").style.width=(pct*100)+"%";
     $("ulbl").textContent=pct>=1?"💥MAX":`💎${Math.floor(pct*100)}%`;
     $("ulr").textContent=pct>=1?"💥 READY":"💎"+Math.floor(pct*100)+"%";
@@ -1446,16 +1449,20 @@ function loop(){
       e.x+=(dx/d*es*cs*ts+Math.sin(e.t*2.5)*.3*ts)*dt;
       e.y+=(dy/d*es*cs*ts)*dt;
     }
-    // anti-clump jitter — 精英模式更強，避免怪物全部疊在一起
-    const jw=_mode==="elite"?1.2:.18*hs;
-    e.x+=Math.sin(e.t*3.7+(e.flankA||0)*2)*jw*dt;
-    e.y+=Math.cos(e.t*3.1+(e.flankA||0)*2)*jw*dt;
-    // 精英模式：定期隨機切換追擊角度偏移
+    // anti-clump — 精英模式大弧線繞行，經典模式小抖動
     if(_mode==="elite"){
-      if(!e._randAng)e._randAng=rn(-1,1);
-      if(Math.random()<.005*dt)e._randAng=rn(-1.2,1.2); // 隨機改變方向
-      e.x+=Math.cos(Math.atan2(dy,dx)+e._randAng)*es*.3*dt;
-      e.y+=Math.sin(Math.atan2(dy,dx)+e._randAng)*es*.3*dt;
+      // 每隻怪有獨立的繞行角度，緩慢變化形成弧線包抄
+      if(!e._orbAng)e._orbAng=rn(0,Math.PI*2);
+      if(!e._orbDir)e._orbDir=Math.random()>.5?1:-1;
+      e._orbAng+=e._orbDir*.02*dt; // 緩慢旋轉
+      if(Math.random()<.003*dt)e._orbDir*=-1; // 偶爾反向
+      const orbStr=es*.6; // 繞行力度
+      e.x+=Math.cos(e._orbAng)*orbStr*dt;
+      e.y+=Math.sin(e._orbAng)*orbStr*dt;
+    }else{
+      const jw=.18*hs;
+      e.x+=Math.sin(e.t*3.7+(e.flankA||0))*jw*dt;
+      e.y+=Math.cos(e.t*3.1+(e.flankA||0))*jw*dt;
     }
 
     // === Boss skills (wave 10+) ===
@@ -1534,21 +1541,29 @@ function loop(){
     let dmg=b.dmg*(g.p.elemBoost||1)*(g.p.levelDmgMul||1);if(b.crit)dmg*=2;
     if(e.boss||e.mega){if(g.p.bossDmg>1)dmg*=g.p.bossDmg;} // 穿透箭：對Boss(小王+巨王)加傷
     if(!e.mega){if(g.p.mobDmg>1)dmg*=g.p.mobDmg;} // 雷擊鏈：對小怪+小王加傷
-    // Stage Boss 減傷（越戰越勇：隨時間遞減）
+    // Stage Boss 傷害系統
     if(e.stageBoss){
-      const baseDR=e.stageBoss===20?.1:.01;
-      if(g.p._angelBuff&&e._spawnTime){
-        const elapsed=(now-e._spawnTime)/1000;
-        const timeBonus=Math.min(.89,Math.floor(elapsed/30)*.15); // 每30秒+15%穿透，最高+89%
-        dmg*=Math.min(.9,baseDR+timeBonus);
-      }else{dmg*=baseDR;}
+      if(_mode==="elite"){
+        // 精英模式：cap 制（每發上限 Boss 最大HP 的 0.05%，天使卡 0.08%）
+        const capPct=g.p._angelBuff?.0008:.0005;
+        dmg=Math.min(dmg,e.mhp*capPct);
+      }else{
+        // 經典模式：DR 制（越戰越勇：隨時間遞減）
+        const baseDR=e.stageBoss===20?.1:.01;
+        if(g.p._angelBuff&&e._spawnTime){
+          const elapsed=(now-e._spawnTime)/1000;
+          const timeBonus=Math.min(.89,Math.floor(elapsed/30)*.15);
+          dmg*=Math.min(.9,baseDR+timeBonus);
+        }else{dmg*=baseDR;}
+      }
     }
-    // 精英怪物理抗性：無元素純攻擊 -50%，有元素 +20%
+    // 物理抗性
     if(e.eliteEnemy||e.boss){
       const hasElem=!!(fx.fire||fx.ice||fx.lightning||fx.poison||fx.dragon);
-      if(hasElem)dmg*=1.2; // 元素弱點
-      else dmg*=.5; // 物理抗性
+      if(hasElem)dmg*=1.2;else dmg*=.5;
     }
+    // 精英模式全局傷害壓制（非Boss用）
+    if(_mode==="elite"&&!e.stageBoss)dmg*=.6;
     if(fx.ice)dmg*=.95;
     // shield enemy: frontal hits deal only 25% damage
     if(e.role===ROLE_SHIELD){const ba=Math.atan2(b.vy,b.vx),fa=e.shieldAng+Math.PI,ad=Math.abs(((ba-fa)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);if(ad<Math.PI*.55)dmg*=.25;}
@@ -2036,16 +2051,25 @@ function loop(){
     cx.restore();
   }
 
-  // 風刃視覺
+  // 風刃視覺（龍捲風造型）
   if(g._wb&&g._wb.length>0){
     g._wb.forEach(wb=>{
-      cx.save();cx.translate(wb.x,wb.y);cx.rotate(wb.rot);
-      cx.globalAlpha=.7+Math.sin(now/100)*.15;
-      cx.fillStyle="#99E9F2";cx.beginPath();cx.ellipse(0,0,12,4,0,0,Math.PI*2);cx.fill();
-      cx.fillStyle="#fff";cx.globalAlpha=.5;cx.beginPath();cx.ellipse(0,0,6,2,0,0,Math.PI*2);cx.fill();
+      cx.save();cx.translate(wb.x,wb.y);
+      const spin=now/60;
+      // 三層旋轉弧線組成龍捲風
+      for(let layer=0;layer<3;layer++){
+        const lr=8+layer*5,la=spin+layer*2.1;
+        cx.globalAlpha=.5-.12*layer;cx.strokeStyle=layer===0?"#fff":"#99E9F2";
+        cx.lineWidth=2.5-layer*.5;
+        cx.beginPath();cx.arc(0,0,lr,la,la+Math.PI*1.2);cx.stroke();
+      }
+      // 中心亮點
+      cx.globalAlpha=.6;cx.fillStyle="#fff";cx.beginPath();cx.arc(0,0,3,0,Math.PI*2);cx.fill();
       cx.restore();
-      if(par.length<MAX_PARTICLES&&Math.random()<.2){
-        par.push({x:wb.x+rn(-4,4),y:wb.y+rn(-4,4),vx:rn(-.5,.5),vy:rn(-.5,.5),life:.3,color:"#99E9F2",sz:rn(1,2.5)});}
+      // 風粒子
+      if(par.length<MAX_PARTICLES&&Math.random()<.35){
+        const a=Math.random()*Math.PI*2;
+        par.push({x:wb.x+Math.cos(a)*rn(3,10),y:wb.y+Math.sin(a)*rn(3,10),vx:Math.cos(a+1.5)*rn(.5,1.5),vy:Math.sin(a+1.5)*rn(.5,1.5),life:.4,color:Math.random()>.5?"#99E9F2":"#fff",sz:rn(1,3)});}
     });
   }
   // orbiters visual（召喚球）
@@ -2711,25 +2735,13 @@ $("jzR").addEventListener("touchstart",e=>{
   tapAtk();
 },{passive:false});
 
-let _ultPressTimer=null,_ultWasHeld=false;
 function startUltPress(){
   if(!g)return;
-  _ultWasHeld=false;
-  // 短按/長按判定：200ms 內放開 = 閃避，超過 = 集氣/放大招
-  _ultPressTimer=setTimeout(()=>{
-    _ultWasHeld=true;
-    if(g.p.hasBH||g.p.hasTS){if(performance.now()>=(g.ultCdEnd||0))doUlt();}
-    else if(g.ultCharge>=ULT_CHARGE_NEED)doUlt();
-    else g.ultHold=true;
-  },200);
+  if(g.p.hasBH||g.p.hasTS){if(performance.now()>=(g.ultCdEnd||0))doUlt();}
+  else if(g.ultCharge>=ULT_CHARGE_NEED)doUlt();
+  else g.ultHold=true;
 }
-function endUltPress(){
-  if(!g)return;
-  g.ultHold=false;
-  if(_ultPressTimer){clearTimeout(_ultPressTimer);_ultPressTimer=null;}
-  if(!_ultWasHeld)doDodge(); // 短按 = 閃避位移
-  _ultWasHeld=false;
-}
+function endUltPress(){if(g)g.ultHold=false;}
 // 短距離閃避位移
 function doDodge(){
   if(!g||!g.run)return;
@@ -2756,6 +2768,9 @@ $("ultR").addEventListener("touchend",e=>{e.preventDefault();endUltPress();},{pa
 $("ultR").addEventListener("touchcancel",e=>{endUltPress();},{passive:false});
 $("ultR").addEventListener("mousedown",e=>{e.preventDefault();startUltPress();});
 window.addEventListener("mouseup",()=>endUltPress());
+// 閃避按鈕
+$("dodgeBtn").addEventListener("touchstart",e=>{e.preventDefault();e.stopPropagation();doDodge();},{passive:false});
+$("dodgeBtn").addEventListener("click",e=>{e.preventDefault();doDodge();});
 
 // global touchmove — always fires, handles both joysticks
 document.addEventListener("touchmove",e=>{
@@ -2802,12 +2817,13 @@ window.addEventListener("keydown",e=>{
   uK();
   if(c==="Space"||e.key===" "){e.preventDefault();if(!aim.a||aim.id!=="kb"){aim.a=1;aim.id="kb";tapAtk();}}
   if(c==="KeyE"||e.key==="e"||e.key==="E"){startUltPress();}
+  if(c==="KeyQ"||e.key==="q"||e.key==="Q"){doDodge();}
   if(c.startsWith("Arrow"))e.preventDefault();
 },{capture:true});
 window.addEventListener("keyup",e=>{
   const c=e.code||e.key;ks[c]=false;ks[e.key]=false;uK();
   if((c==="Space"||e.key===" ")&&aim.id==="kb"){aim.a=0;aim.id=null;}
-  if((c==="KeyE"||e.key==="e"||e.key==="E")&&g)endUltPress();
+  if((c==="KeyE"||e.key==="e"||e.key==="E")&&g){endUltPress();}
 },{capture:true});
 function uK(){let dx=0,dy=0;
   if(ks.ArrowLeft||ks.KeyA||ks.a)dx--;
