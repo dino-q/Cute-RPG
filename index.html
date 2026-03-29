@@ -93,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.08</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.12</div>
 </div>
 </div>
 
@@ -234,7 +234,7 @@ card("生命果","🍎","R","pas",["HP+15","HP+35","HP+60"],[s=>{s.maxHp+=15;s.h
 card("疾風靴","👟","R","pas",["移速+0.4","移速+0.9","移速+1.5"],[s=>{s.speed+=.4},s=>{s.speed+=.9},s=>{s.speed+=1.5}],"#74C0FC");
 card("連弩","🏹","R","atk",["攻速+12%","攻速+25%","攻速+40%"],[s=>{s.fr*=.88},s=>{s.fr*=.75},s=>{s.fr*=.6}],"#FFA94D");
 card("鏡盾","🪞","R","pas",["受傷-10%","受傷-22%","受傷-35%"],[s=>{s.armor=1-(1-s.armor)*.9},s=>{s.armor=1-(1-s.armor)*.78},s=>{s.armor=1-(1-s.armor)*.65}],"#B2F2BB");
-card("自癒術","💗","R","pas",["每秒回1HP","回2.5HP","回5HP"],[s=>{s.regen=(s.regen||0)+1},s=>{s.regen=(s.regen||0)+2.5},s=>{s.regen=(s.regen||0)+5}],"#FFC9C9");
+card("自癒術","💗","R","pas",["每秒回5HP","每秒回10HP","每秒回15HP"],[s=>{s.regen=(s.regen||0)+5},s=>{s.regen=(s.regen||0)+10},s=>{s.regen=(s.regen||0)+15}],"#FFC9C9");
 card("學者帽","🎓","R","pas",["經驗+20%","經驗+45%","經驗+80%"],[s=>{s.expMul=(s.expMul||1)*1.2},s=>{s.expMul=(s.expMul||1)*1.45},s=>{s.expMul=(s.expMul||1)*1.8}],"#D0BFFF");
 card("幸運幣","🍀","R","pas",["額外三選一","額外三選一","額外三選一"],[s=>{s._luckyPick=true},s=>{s._luckyPick=true},s=>{s._luckyPick=true}],"#8CE99A",null,1);
 card("石膚術","🪨","R","pas",["被撞傷-15%","被撞傷-30%","被撞傷-50%"],[s=>{s.armor=1-(1-s.armor)*.85},s=>{s.armor=1-(1-s.armor)*.7},s=>{s.armor=1-(1-s.armor)*.5}],"#ADB5BD");
@@ -244,7 +244,7 @@ card("毒刺","🌿","R","atk",["中毒3秒 毒傷+2 王毒+50%","中毒5秒 毒
 card("穿透箭","🔱","R","atk",["穿透1個 攻+2 王傷+20%","穿透2個 攻+4 王傷+40%","穿透全部 攻+7 王傷+60%"],[s=>{s.pierce=(s.pierce||0)+1;s.atk+=2;s.bossDmg=(s.bossDmg||1)*1.2},s=>{s.pierce=(s.pierce||0)+2;s.atk+=4;s.bossDmg=(s.bossDmg||1)*1.4},s=>{s.pierce=99;s.atk+=7;s.bossDmg=(s.bossDmg||1)*1.6}],"#F08C00");
 card("蓄力拳","👊","R","atk",["攻+3","攻+6","攻+10"],[s=>{s.atk+=3},s=>{s.atk+=6},s=>{s.atk+=10}],"#E8590C");
 card("回血斬","💉","R","pas",["擊殺回5HP","回12HP","回22HP"],[s=>{s.ls=(s.ls||0)+5},s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+22}],"#E64980");
-card("探索靴","🗺️","R","pas",["移速+0.3 吸取+25%","移速+0.7 吸取+55%","移速+1.2 吸取+100%"],[s=>{s.speed+=.3;s.expR=(s.expR||1)*1.25},s=>{s.speed+=.7;s.expR=(s.expR||1)*1.55},s=>{s.speed+=1.2;s.expR=(s.expR||1)*2}],"#12B886");
+card("探索靴","🗺️","R","pas",["移速+0.3 經驗範圍+25%","移速+0.7 經驗範圍+55%","移速+1.2 經驗範圍+100%"],[s=>{s.speed+=.3;s.expR=(s.expR||1)*1.25},s=>{s.speed+=.7;s.expR=(s.expR||1)*1.55},s=>{s.speed+=1.2;s.expR=(s.expR||1)*2}],"#12B886");
 card("堅韌心","🫀","R","pas",["最大HP+10 攻+1","HP+20 攻+2","HP+35 攻+4"],[s=>{s.maxHp+=10;s.hp=Math.min(s.hp+10,s.maxHp);s.atk+=1},s=>{s.maxHp+=20;s.hp=Math.min(s.hp+20,s.maxHp);s.atk+=2},s=>{s.maxHp+=35;s.hp=Math.min(s.hp+35,s.maxHp);s.atk+=4}],"#FF922B");
 // --- SR: 20 cards ---
 card("雷擊鏈","⚡","SR","atk",["連鎖雷電 鏈傷+30% 小怪+30%","鏈傷+50% 小怪+50%","鏈傷+80% 小怪+80%"],[s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.3;s.mobDmg=(s.mobDmg||1)*1.3;s.fx.lightning=1},s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.5;s.mobDmg=(s.mobDmg||1)*1.5;s.fx.lightning=2},s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.8;s.mobDmg=(s.mobDmg||1)*1.8;s.fx.lightning=3}],"#FAB005","lightning");
@@ -262,7 +262,7 @@ card("旋風斬","🌪️","SR","atk",["風刃追擊3秒","2道風刃追擊","3�
 card("狂暴之力","💢","SR","pas",["HP<30%時 攻擊翻倍","HP<40%時 攻擊翻倍","HP<50%時 攻擊翻倍"],[s=>{s.berserk=.3},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
 card("連鎖爆破","💥","SR","atk",["敵人死亡後爆炸 周圍傷8","敵人死亡 周圍傷18","敵人死亡 周圍傷30"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
 card("閃電步","💫","SR","pas",["大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招"],[s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8}],"#FFE066",null,1);
-card("元素精通","🔮","SR","pas",["所有屬性效果+15%","效果+30%","效果+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
+card("元素精通","🔮","SR","pas",["元素傷害+15%","元素傷害+30%","元素傷害+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
 card("大招增幅","☄️","SR","pas",["大招傷害+30%","傷害+60%","傷害+100%"],[s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.3},s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.6},s=>{s.ultDmgMul=(s.ultDmgMul||1)*2}],"#BE4BDB");
 card("彈幕之王","🎆","SR","atk",["子彈+1 攻速+8%","子彈+2 攻速+15%","子彈+3 攻速+25%"],[s=>{s.split=(s.split||1)+1;s.fr*=.92},s=>{s.split=(s.split||1)+2;s.fr*=.85},s=>{s.split=(s.split||1)+3;s.fr*=.75}],"#FF6B6B");
 // --- SSR: 14 cards ---
@@ -566,9 +566,15 @@ window.addEventListener("resize",resize);
 
 /* ═══ HUD ═══ */
 function hud(){if(!g)return;
-  // 閃避按鈕 CD 視覺
-  const _db=$("dodgeBtn"),_dReady=!g.p._dodgeCD||performance.now()>=g.p._dodgeCD;
-  if(_db){_db.style.opacity=_dReady?"1":".4";_db.style.borderColor=_dReady?"rgba(116,192,252,.6)":"rgba(255,255,255,.15)";}
+  // 閃避按鈕 CD 外圈
+  const _db=$("dodgeBtn");
+  if(_db){
+    const _dn=performance.now(),_dCD=g.p._dodgeCD||0,_dReady=_dn>=_dCD;
+    const _dPct=_dReady?1:Math.max(0,1-((_dCD-_dn)/2000));
+    _db.style.background=`conic-gradient(rgba(116,192,252,.5) ${_dPct*360}deg,rgba(20,20,40,.9) ${_dPct*360}deg)`;
+    _db.style.borderColor=_dReady?"rgba(116,192,252,.6)":"rgba(255,255,255,.15)";
+    _db.style.opacity=_dReady?"1":".6";
+  }
   $("hl").textContent="❤️"+Math.floor(g.p.hp)+"/"+g.p.maxHp;
   $("hb").style.width=(g.p.hp/g.p.maxHp*100)+"%";
   $("ll").textContent="Lv."+g.level;
@@ -1065,7 +1071,8 @@ function spawn(boss,opts={}){
     dashState:0,dashTimer:0,dashDx:0,dashDy:0, // dasher: 0=approach,1=charge,2=dash,3=cooldown
     shieldAng:0, // shield facing angle (toward player)
     // boss skill data
-    bossSkillCD:boss?rn(2500,4000):0,bossSkill:0
+    bossSkillCD:boss?rn(2500,4000):0,bossSkill:0,
+    bossType:boss?(Math.random()>.5?"tough":"armor"):"" // 韌性或防禦隨機
   });
 }
 
@@ -1562,25 +1569,36 @@ function loop(){
         }else{dmg*=baseDR;}
       }
     }
-    // 物理抗性
-    if(e.eliteEnemy||e.boss){
+    // === 小王/巨王：韌性 OR 防禦（隨機二選一）===
+    const isBossUnit=e.boss&&!e.stageBoss;
+    const bType=e.bossType||"";
+    if(isBossUnit&&bType==="armor"){
+      // 防禦型：普攻 cap 0.05%，元素傷害減半，但元素效果正常
+      const hasElem=!!(fx.fire||fx.ice||fx.lightning||fx.poison||fx.dragon);
+      if(hasElem)dmg*=.5;else dmg=Math.min(dmg,e.mhp*.0005);
+    }else if(isBossUnit&&bType==="tough"){
+      // 韌性型：傷害正常（不減），但免疫元素控制效果
+      // （毒仍可生效 — 毒是設計來打王的）
+    }else if(e.eliteEnemy){
       const hasElem=!!(fx.fire||fx.ice||fx.lightning||fx.poison||fx.dragon);
       if(hasElem)dmg*=1.2;else dmg*=.5;
     }
-    // 精英模式全局傷害壓制（非Boss用）
-    if(_mode==="elite"&&!e.stageBoss)dmg*=.6;
-    if(fx.ice)dmg*=.95;
-    // shield enemy: frontal hits deal only 25% damage
+    if(_mode==="elite"&&!e.stageBoss&&!isBossUnit)dmg*=.6;
+    if(fx.ice&&!(isBossUnit&&bType==="tough"))dmg*=.95;
     if(e.role===ROLE_SHIELD){const ba=Math.atan2(b.vy,b.vx),fa=e.shieldAng+Math.PI,ad=Math.abs(((ba-fa)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);if(ad<Math.PI*.55)dmg*=.25;}
     e.hp-=dmg;sfxHit();
-    if(g.p.slow<1)e.st=1800;
-    if(fx.fire){e.burnT=Math.max(e.burnT||0,(1400+fxLv*600)*(g.p.elemBoost||1));e.burnLv=fxLv;} // fire: burn DoT
-    if(fx.ice){
-      const iceMul=g.p.elemBoost||1;
-      if(Math.random()<Math.min(.95,(.12+.08*fxLv)*iceMul))e.frozen=Math.max(e.frozen||0,(350+fxLv*260)*iceMul);
-      else e.st=Math.max(e.st||0,(800+fxLv*450)*iceMul);
-    } // ice: freeze/slow control
-    if(g.p.poison>0){e.poisonT=g.p.poison*1e3*(g.p.elemBoost||1);e.poisonLv=fxLv;} // poison: %HP vs boss handled in tick
+    if(g.p.slow<1&&!(isBossUnit&&bType==="tough"))e.st=1800;
+    // 元素效果：韌性型免疫燃燒/凍結（但毒可以），防禦型全部正常
+    const toughImmune=isBossUnit&&bType==="tough";
+    if(!toughImmune||fx.poison){
+      if(fx.fire&&!toughImmune){e.burnT=Math.max(e.burnT||0,(1400+fxLv*600)*(g.p.elemBoost||1));e.burnLv=fxLv;}
+      if(fx.ice&&!toughImmune){
+        const iceMul=g.p.elemBoost||1;
+        if(Math.random()<Math.min(.95,(.12+.08*fxLv)*iceMul))e.frozen=Math.max(e.frozen||0,(350+fxLv*260)*iceMul);
+        else e.st=Math.max(e.st||0,(800+fxLv*450)*iceMul);
+      }
+      if(g.p.poison>0){e.poisonT=g.p.poison*1e3*(g.p.elemBoost||1);e.poisonLv=fxLv;} // 毒永遠有效
+    }
     if(g.p.bulletHeal>0){g.p.hp=Math.min(g.p.hp+g.p.bulletHeal,g.p.maxHp);g.p._healFlash=now;}
     // splash — with explosion visual
     if(g.p.splash>0){
@@ -2760,19 +2778,16 @@ function endUltPress(){if(g)g.ultHold=false;}
 function doDodge(){
   if(!g||!g.run)return;
   const now=performance.now();
-  if(g.p._dodgeCD&&now<g.p._dodgeCD)return; // 冷卻中
-  g.p._dodgeCD=now+2000; // 2 秒冷卻
+  if(g.p._dodgeCD&&now<g.p._dodgeCD)return;
+  if(g.p._dashEnd&&now<g.p._dashEnd)return; // 已在衝刺中
+  g.p._dodgeCD=now+2000;
   const hasJoy=joy.a&&(Math.abs(joy.dx)>.2||Math.abs(joy.dy)>.2);
   const ddx=hasJoy?joy.dx:g.ad.x,ddy=hasJoy?joy.dy:g.ad.y;
   const dd=Math.sqrt(ddx*ddx+ddy*ddy)||1;
-  // 短距離位移（50px）
-  const dist=50;
-  g.p.x+=ddx/dd*dist;g.p.y+=ddy/dd*dist;
-  g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
-  // 殘影
-  _dashGhosts.push({x:g.p.x-ddx/dd*dist*.5,y:g.p.y-ddy/dd*dist*.5,face:g.p.face,life:1});
-  _dashGhosts.push({x:g.p.x-ddx/dd*dist,y:g.p.y-ddy/dd*dist,face:g.p.face,life:.7});
-  // 短暫無敵 200ms
+  // 用 dash 系統做平滑位移（150ms，速度6）
+  g.p._dashEnd=now+150;
+  g.p._dashDx=ddx/dd;g.p._dashDy=ddy/dd;
+  g.p._dashSpd=6;
   g.p._iFrameEnd=Math.max(g.p._iFrameEnd||0,now+200);
   burst(g.p.x,g.p.y,"#74C0FC",5);
   sfx("shoot");
