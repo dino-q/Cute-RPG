@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.13</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.17</div>
 </div>
 </div>
 
@@ -291,7 +291,7 @@ card("旋風斬","🌪️","SR","atk",["風刃追擊3秒","2道風刃追擊","3�
 card("狂暴之力","💢","SR","pas",["HP<30%時 攻擊翻倍","HP<40%時 攻擊翻倍","HP<50%時 攻擊翻倍"],[s=>{s.berserk=.3},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
 card("連鎖爆破","💥","SR","atk",["敵人死亡後爆炸 周圍傷8","敵人死亡 周圍傷18","敵人死亡 周圍傷30"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
 card("破甲箭","🪡","SR","atk",["攻+3 armor cap+25%","攻+4 armor cap+35%","攻+5 armor cap+50% 穿透+1"],[s=>{s.atk+=3;s.armorCapBonus=(s.armorCapBonus||0)+.25},s=>{s.atk+=4;s.armorCapBonus=(s.armorCapBonus||0)+.35},s=>{s.atk+=5;s.armorCapBonus=(s.armorCapBonus||0)+.5;s.pierce=(s.pierce||0)+1}],"#D4A017");
-card("迴力鏢","🪃","SR","atk",["攻+2 射出迴力鏢","攻+5 飛行距離↑","攻+8 雙迴力鏢 穿透+1"],[s=>{s.atk+=2;s.boomerang=(s.boomerang||0)+1},s=>{s.atk+=5;s.boomerang=Math.max(s.boomerang||1,1);s.homingR=(s.homingR||200)+80},s=>{s.atk+=8;s.boomerang=(s.boomerang||0)+1;s.pierce=(s.pierce||0)+1}],"#20C997");
+card("迴力鏢","🪃","SR","atk",["攻+2 1個迴力鏢","攻+5 2個迴力鏢","攻+8 3個迴力鏢 穿透+1"],[s=>{s.atk+=2;s.boomerang=1},s=>{s.atk+=5;s.boomerang=2;s.homingR=(s.homingR||200)+40},s=>{s.atk+=8;s.boomerang=3;s.pierce=(s.pierce||0)+1}],"#20C997");
 card("機關槍","🔫","SR","atk",["攻速+30% 攻-3","攻速+60% 攻-5 無過熱","攻速+100% 攻-8 狂暴模式"],[s=>{s.fr*=.7;s.atk=Math.max(1,s.atk-3);s._minigun=1},s=>{s.fr*=.4;s.atk=Math.max(1,s.atk-5);s._minigun=2;s._noOverheat=true},s=>{s.fr*=.5*.4;s.atk=Math.max(1,s.atk-8);s._minigun=3;s._noOverheat=true;s._minigunBerserk=true}],"#FF8C00");
 card("閃電步","💫","SR","pas",["大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招"],[s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8}],"#FFE066",null,1);
 card("元素精通","🔮","SR","pas",["元素傷害+15%","元素傷害+30%","元素傷害+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
@@ -1190,11 +1190,12 @@ function doUlt(){if(!g||!g.run)return;
   const baseDmg=(ULT_D+g.p.atk*6+g.level*5)*(g.p.ultDmgMul||1)*(1+ultLv*.35);
   // 計算複合CD：取最長的
   const cdVal=isBH?BH_COOLDOWN_MS:(g.p.tsCd||15e3);
-  // 黑洞效果
+  // 黑洞效果：先發普通大招傷害，再延遲吸引
   if(isBH){
-    g.bhEnd=now+BH_DURATION_MS;
+    g.bhEnd=now+300+BH_DURATION_MS; // 延遲0.3秒後開始吸引
     g.bhPow=1+ultLv*.45;
-    g.p.bhSafeEnd=now+BH_DURATION_MS+800;
+    g.p.bhSafeEnd=now+300+BH_DURATION_MS+800;
+    g._bhStartAt=now+300; // 吸引開始時間
   }
   // 時間停止效果
   if(isTS){
@@ -1270,7 +1271,7 @@ function loop(){
   for(let i=_dashGhosts.length-1;i>=0;i--){_dashGhosts[i].life-=.06*dt;if(_dashGhosts[i].life<=0)_dashGhosts.splice(i,1);}
 
   // black-hole ult field: 3s duration, pull + stylish execute for non-boss enemies
-  if(g.bhEnd&&now<g.bhEnd){
+  if(g.bhEnd&&now<g.bhEnd&&now>=(g._bhStartAt||0)){
     const bhLv=(g.p.ultLv||0),bhR=170+bhLv*30;
     g.ene.forEach(e=>{
       if(e.boss)return; // mini-boss/boss and above are not affected by black-hole pull
@@ -1873,9 +1874,14 @@ function loop(){
       const fade=wb.life<1000;// 最後 1 秒為消散期
       // 消散期不追擊不傷害，只漂浮
       if(!fade){
-        let nr=null,nd=1e9;
-        g.ene.forEach(e=>{if(e.hp>0){const d2=di(wb,e);if(d2<nd){nd=d2;nr=e;}}});
-        if(nr){
+        // 每3幀搜尋最近敵人（降低CPU負擔）
+        if(!wb._searchSkip||wb._searchSkip<=0){wb._searchSkip=3;
+          let nr=null,nd=1e9;
+          g.ene.forEach(e=>{if(e.hp>0&&!e.ragePoo){const d2=di(wb,e);if(d2<nd){nd=d2;nr=e;}}});
+          wb._target=nr;wb._targetDist=nd;
+        }else wb._searchSkip--;
+        const nr=wb._target,nd=wb._targetDist||1e9;
+        if(nr&&nr.hp>0){
           const dx=nr.x-wb.x,dy=nr.y-wb.y,d2=Math.sqrt(dx*dx+dy*dy)||1;
           const spd=4.5*dt;
           wb.x+=dx/d2*spd;wb.y+=dy/d2*spd;
@@ -2123,7 +2129,9 @@ function loop(){
   }
 
   // enemies
-  g.ene.forEach(e=>{const dx=e.x-g.p.x,dy=e.y-g.p.y;if(Math.abs(dx)>VW*.6||Math.abs(dy)>VH*.6)return;
+  g.ene.forEach(e=>{const dx=e.x-g.p.x,dy=e.y-g.p.y;
+    const cullR=e.stageBoss?VW:e.boss?VW*.85:VW*.7;const cullRy=e.stageBoss?VH:e.boss?VH*.85:VH*.7;
+    if(Math.abs(dx)>cullR||Math.abs(dy)>cullRy)return;
     // burn aura — scales with burnLv
     if(e.burnT>0){
       const blv=e.burnLv||1;
@@ -2805,23 +2813,72 @@ function updateStageBoss(e,now,dt){
       burst(e.x,e.y,"#9B59B6",30);
       if(newPhase===2){
         bossBgmSetBpm(140);
-        // 惡魔的交易：破鐵壁金身 + 賦予吸血
+        // 惡魔的交易：暫停 + 吸取能量動畫
         g.run=false;
+        const _dealOv=document.createElement("div");
+        _dealOv.id="_demonDealOv";
+        _dealOv.style.cssText="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0);transition:background 0.5s;pointer-events:none;display:flex;align-items:center;justify-content:center;flex-direction:column";
+        document.body.appendChild(_dealOv);
+        // 淡入暗幕
+        requestAnimationFrame(()=>_dealOv.style.background="rgba(0,0,0,.65)");
+        // 吸取能量粒子動畫
+        const _dealCv=document.createElement("canvas");
+        _dealCv.width=VW;_dealCv.height=VH;_dealCv.style.cssText="position:absolute;inset:0";
+        _dealOv.appendChild(_dealCv);
+        const _dctx=_dealCv.getContext("2d");
+        let _dealPar=[],_dealRaf,_dealT=0;
+        const px=VW/2,py=VH/2; // 玩家在畫面中心
+        function dealLoop(){
+          _dctx.clearRect(0,0,VW,VH);_dealT+=16;
+          // 從玩家身上吸出紫色能量粒子飛向上方
+          if(_dealT<2000&&Math.random()<.4){
+            for(let i=0;i<3;i++){
+              const a=rn(0,Math.PI*2),sp=rn(1.5,3.5);
+              _dealPar.push({x:px+rn(-12,12),y:py+rn(-12,12),vx:Math.cos(a)*sp*.3,vy:-sp,life:1,sz:rn(3,7),color:Math.random()>.5?"#9B59B6":"#E74C3C"});
+            }
+          }
+          _dealPar.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy-=.02;p.life-=.015;p.sz*=.98;
+            _dctx.globalAlpha=Math.max(0,p.life);_dctx.fillStyle=p.color;
+            _dctx.beginPath();_dctx.arc(p.x,p.y,p.sz,0,Math.PI*2);_dctx.fill();});
+          _dealPar=_dealPar.filter(p=>p.life>0);
+          // 玩家位置脈動光環（被吸取感）
+          const pulse=Math.sin(_dealT/150)*.3;
+          _dctx.globalAlpha=.2+pulse;_dctx.strokeStyle="#9B59B6";_dctx.lineWidth=3;
+          _dctx.beginPath();_dctx.arc(px,py,20+Math.sin(_dealT/100)*5,0,Math.PI*2);_dctx.stroke();
+          _dctx.globalAlpha=1;
+          _dealRaf=requestAnimationFrame(dealLoop);
+        }
+        dealLoop();
+        // 0.5秒後顯示文字
         setTimeout(()=>{
-          g.dn.push({x:g.p.x,y:g.p.y-70,d:"😈 惡魔的交易",life:3.5,color:"#9B59B6",big:1});
-          g.dn.push({x:g.p.x,y:g.p.y-45,d:"🚫 鐵壁金身被打破！遠距攻擊必定命中",life:4,color:"#FF4040"});
-          g.dn.push({x:g.p.x,y:g.p.y-20,d:"🩸 賦予武器吸血：攻擊5秒回復5HP",life:4,color:"#69DB7C"});
+          const txt=document.createElement("div");
+          txt.style.cssText="position:relative;z-index:1;text-align:center;animation:fadeIn .5s both";
+          txt.innerHTML=`
+            <div style="font-size:28px;margin-bottom:6px">😈</div>
+            <div style="font-size:18px;font-weight:900;color:#9B59B6;text-shadow:0 0 15px #9B59B6;margin-bottom:8px">惡魔的交易</div>
+            <div style="font-size:12px;color:#FF4040;margin-bottom:4px">🚫 鐵壁金身被打破！遠距攻擊必定命中</div>
+            <div style="font-size:12px;color:#69DB7C">🩸 賦予武器吸血：攻擊5秒回復5HP</div>
+          `;
+          _dealOv.appendChild(txt);
           g.p.projImmune=false;g.p._demonDeal=true;
           g.p._demonLifesteal={accT:0,healPer5:5};
-          e.sbAtkCD=now+2000;e.sbSpawnCD=now+3000;e.sbTeleCD=now+4000;
-          // 召喚2隻小惡魔（巨王韌性/防禦）
+          e.sbAtkCD=now+4000;e.sbSpawnCD=now+5000;e.sbTeleCD=now+6000;
+        },500);
+        // 2秒後召喚小惡魔
+        setTimeout(()=>{
           for(let i=0;i<2;i++){const a=Math.PI*2*i/2+Math.random(),mx=cl(e.x+Math.cos(a)*60,20,mapW()-20),my=cl(e.y+Math.sin(a)*60,20,mapH()-20);
             const mhp3=800+g.wave*50;
-            g.ene.push({x:mx,y:my,hp:mhp3,mhp:mhp3,speed:1.2,color:"#8E44AD",t:rn(0,10),r:14,st:0,boss:true,mega:false,tier:2,face:1,xp:15,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:2,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniDemon:true,bossType:Math.random()>.5?"tough":"armor",_demonTeleCD:now+5000});}
+            g.ene.push({x:mx,y:my,hp:mhp3,mhp:mhp3,speed:1.2,color:"#8E44AD",t:rn(0,10),r:14,st:0,boss:true,mega:false,tier:2,face:1,xp:15,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:2,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniDemon:true,bossType:Math.random()>.5?"tough":"armor",_demonTeleCD:performance.now()+5000});}
           sfxBossAtk("spawn");
           g.dn.push({x:e.x,y:e.y-e.r-10,d:"👿 小惡魔降臨！",life:2,color:"#8E44AD",big:1});
-          setTimeout(()=>{if(g)g.run=true;const n=performance.now();g.lf=n;g.lS=n;g.laF=n;},2500);
-        },500);
+        },2000);
+        // 3秒後恢復遊戲
+        setTimeout(()=>{
+          if(_dealRaf)cancelAnimationFrame(_dealRaf);
+          _dealOv.style.background="rgba(0,0,0,0)";
+          setTimeout(()=>{if(_dealOv.parentNode)_dealOv.parentNode.removeChild(_dealOv);},500);
+          if(g){g.run=true;const n=performance.now();g.lf=n;g.lS=n;g.laF=n;}
+        },3000);
       }
       if(newPhase===3){
         bossBgmSetBpm(160);
@@ -2956,9 +3013,15 @@ function drawStageBoss(e,now){
     cx.globalAlpha=.6;cx.strokeStyle="#4DABF7";cx.lineWidth=1.5;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2.2+Math.sin(now/120)*3,0,Math.PI*2);cx.stroke();
     cx.globalAlpha=1;
   }
-  if(lv===30){const phase=e.sbPhase,gc=phase===1?"rgba(155,89,182,.2)":phase===2?"rgba(231,76,60,.25)":"rgba(192,57,43,.35)";
-    cx.globalAlpha=.4+Math.sin(now/150)*.15;cx.fillStyle=gc;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*1.6,0,Math.PI*2);cx.fill();
-    if(phase===3){cx.globalAlpha=.2+Math.sin(now/80)*.1;cx.fillStyle="#E74C3C";cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2,0,Math.PI*2);cx.fill();}}
+  if(lv===30){const phase=e.sbPhase;
+    // 外圈亮光（所有階段都有，讓 😈 在暗背景中可見）
+    const gc1=phase===1?"rgba(190,120,255,.25)":phase===2?"rgba(231,76,60,.3)":"rgba(220,50,50,.4)";
+    cx.globalAlpha=.5+Math.sin(now/150)*.15;cx.fillStyle=gc1;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*1.8,0,Math.PI*2);cx.fill();
+    // 內圈脈動
+    const gc2=phase===1?"rgba(155,89,182,.15)":phase===2?"rgba(231,76,60,.2)":"rgba(192,57,43,.3)";
+    cx.globalAlpha=.35;cx.fillStyle=gc2;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*1.4,0,Math.PI*2);cx.fill();
+    if(phase>=2){cx.globalAlpha=.15+Math.sin(now/100)*.08;cx.strokeStyle=phase===2?"#E74C3C":"#FF4040";cx.lineWidth=2;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2.2+Math.sin(now/80)*3,0,Math.PI*2);cx.stroke();}
+    if(phase===3){cx.globalAlpha=.15+Math.sin(now/60)*.1;cx.fillStyle="#E74C3C";cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2.5,0,Math.PI*2);cx.fill();}}
   cx.globalAlpha=e.st>0?.85:1;cx.font=`${lv===20?e.r*1.8:e.r*2}px 'Nunito',sans-serif`;cx.textAlign="center";cx.textBaseline="middle";
   cx.save();cx.translate(e.x,e.y+bounce);cx.scale(scaleX,scaleY);
   if(lv===20){const rageShake=e._pooRage?(Math.random()-.5)*.15:0;cx.rotate(Math.sin(now/500)*.06+rageShake);cx.fillText("💩",0,0);}
