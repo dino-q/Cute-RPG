@@ -47,10 +47,10 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 .jkR{background:radial-gradient(circle,rgba(255,107,107,.35),rgba(255,107,107,.08));border:2px solid rgba(255,107,107,.4)}
 #rbtns{display:flex;flex-direction:column;gap:7px;align-items:center;pointer-events:auto}
 #combo{color:#FFD43B;font-size:11px;font-weight:900;text-shadow:0 0 8px #FFD43B;min-height:16px;text-align:center}
-#ultW{position:relative;width:86px;height:86px}
-#ultR{width:86px;height:86px;border-radius:50%;display:flex;justify-content:center;align-items:center;cursor:pointer;touch-action:none;box-shadow:0 0 24px rgba(190,78,219,.45)}
-#ultI{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle,rgba(190,78,219,.24),rgba(20,20,40,.95));border:2.5px solid rgba(190,78,219,.6);display:flex;justify-content:center;align-items:center;font-size:30px}
-#ultL{position:absolute;top:-18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.9);font-size:10px;text-align:center;font-weight:900;letter-spacing:.5px;white-space:nowrap;text-shadow:0 0 10px rgba(190,78,219,.6)}
+#ultW{position:relative;width:min(86px,20vw);height:min(86px,20vw)}
+#ultR{width:min(86px,20vw);height:min(86px,20vw);border-radius:50%;display:flex;justify-content:center;align-items:center;cursor:pointer;touch-action:none;box-shadow:0 0 24px rgba(190,78,219,.45)}
+#ultI{width:min(64px,15vw);height:min(64px,15vw);border-radius:50%;background:radial-gradient(circle,rgba(190,78,219,.24),rgba(20,20,40,.95));border:2.5px solid rgba(190,78,219,.6);display:flex;justify-content:center;align-items:center;font-size:min(30px,7vw)}
+#ultL{position:absolute;top:-18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.9);font-size:min(10px,2.5vw);text-align:center;font-weight:900;letter-spacing:.5px;white-space:nowrap;text-shadow:0 0 10px rgba(190,78,219,.6)}
 #minimap{position:absolute;top:52px;right:8px;z-index:10;pointer-events:none;border:1px solid rgba(255,255,255,.1);border-radius:4px;display:none}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
 </style>
@@ -67,12 +67,12 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div id="hud2"><span id="sl" style="color:#FFD43B">⭐0</span><span id="ulr" style="color:rgba(190,78,219,.7)">💎0%</span><span id="kl" style="color:rgba(255,255,255,.2)">💀0</span></div>
 </div>
 <div id="ctl">
-  <div class="joyW" id="jzL" style="width:140px;height:140px;margin-bottom:14px"><div class="joyR"><div class="joyK jkL" id="jkL"></div></div></div>
+  <div class="joyW" id="jzL" style="width:min(140px,34vw);height:min(140px,34vw);margin-bottom:14px"><div class="joyR"><div class="joyK jkL" id="jkL"></div></div></div>
   <div id="rbtns">
     <div id="combo"></div>
     <div id="ultW"><div id="ultR"><div id="ultI">💎</div></div><div id="ultL">長壓集氣</div></div>
-    <div id="dodgeBtn" style="width:52px;height:52px;border-radius:50%;background:radial-gradient(circle,rgba(116,192,252,.2),rgba(20,20,40,.9));border:2px solid rgba(116,192,252,.4);display:flex;justify-content:center;align-items:center;font-size:18px;cursor:pointer;touch-action:manipulation;box-shadow:0 0 12px rgba(116,192,252,.25)">💨</div>
-    <div class="joyW" id="jzR" style="width:120px;height:120px"><div class="joyR"><div class="joyK jkR" id="jkR"></div></div></div>
+    <div id="dodgeBtn" style="width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(116,192,252,.2),rgba(20,20,40,.9));border:2px solid rgba(116,192,252,.4);display:flex;justify-content:center;align-items:center;font-size:18px;cursor:pointer;touch-action:manipulation;box-shadow:0 0 12px rgba(116,192,252,.25)">💨</div>
+    <div class="joyW" id="jzR" style="width:min(120px,29vw);height:min(120px,29vw)"><div class="joyR"><div class="joyK jkR" id="jkR"></div></div></div>
   </div>
 </div>
 
@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.17</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.18</div>
 </div>
 </div>
 
