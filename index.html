@@ -93,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.07</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.08</div>
 </div>
 </div>
 
@@ -1111,6 +1111,11 @@ function _startDash(now){
   // 閃電步CD同步大招，不再設獨立CD
   burst(g.p.x,g.p.y,"#FFE066",6);
   g.dn.push({x:g.p.x,y:g.p.y-20,d:"⚡衝刺",life:1,color:"#FFE066"});
+  // 閃電步對附近 Boss 造成傷害（最高 5% maxHP）
+  g.ene.forEach(e=>{if((e.boss||e.stageBoss)&&e.hp>0&&di(e,g.p)<80){
+    const ld=Math.min(g.p.atk*3,e.mhp*.05);e.hp-=ld;
+    burst(e.x,e.y,"#FFE066",8);g.dn.push({x:e.x,y:e.y-e.r,d:"⚡"+Math.floor(ld),life:1,color:"#FFE066",big:1});
+  }});
 }
 function doUlt(){if(!g||!g.run)return;
   const isBH=!!g.p.hasBH;
@@ -1134,7 +1139,7 @@ function doUlt(){if(!g||!g.run)return;
   if(isTS){
     const frzDur=g.p.tsFrzDur||2e3;
     const tsDmg=baseDmg*.5; // 時停也造成50%大招傷害
-    g.ene.forEach(e=>{e.frozen=Math.max(e.frozen||0,frzDur);e.hp-=tsDmg;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(tsDmg),life:1.3,color:"#74C0FC"});if(e.hp<=0)burst(e.x,e.y,e.color,10);});
+    g.ene.forEach(e=>{e.frozen=Math.max(e.frozen||0,frzDur);const td=(_mode==="elite"&&e.stageBoss)?Math.min(tsDmg,e.mhp*.05):tsDmg;e.hp-=td;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(td),life:1.3,color:"#74C0FC"});if(e.hp<=0)burst(e.x,e.y,e.color,10);});
     settleEnemyDeaths();
     burst(g.p.x,g.p.y,"#74C0FC",25);
     g.dn.push({x:g.p.x,y:g.p.y-30,d:isBH?"🕳️⏸️黑洞+時停":"⏸️時間停止+凍結傷害",life:1.5,color:"#74C0FC",big:1});
@@ -1145,7 +1150,7 @@ function doUlt(){if(!g||!g.run)return;
   if(isCd) g.ultCdEnd=now+cdVal;
   // 非純CD制（普通大招 or 只有閃電步）也做傷害+特效
   if(!isTS||isBH){
-    g.ene.forEach(e=>{e.hp-=baseDmg;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(baseDmg),life:1.3,color:isBH?"#868E96":"#FFD43B",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,14);});
+    g.ene.forEach(e=>{const ud=(_mode==="elite"&&e.stageBoss)?Math.min(baseDmg,e.mhp*.05):baseDmg;e.hp-=ud;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(ud),life:1.3,color:isBH?"#868E96":"#FFD43B",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,14);});
     settleEnemyDeaths();
   }
   const cols=isBH?["#495057","#868E96","#CED4DA","#fff"]:isTS?["#74C0FC","#4DABF7","#339AF0","#fff"]:["#BE4BDB","#FFD43B","#FF6B6B","#74C0FC","#fff"];
@@ -2481,11 +2486,20 @@ function sfxVictory(){
 // 估算玩家對Boss的DPS
 function estimateBossDPS(lv){
   const p=g.p,fr=p.fr||1;
-  const bulletDmg=(2.2+p.atk*.7)*(p.elemBoost||1)*(p.levelDmgMul||1)*(p.bossDmg||1);
-  const shotsPerSec=1000/(200*fr); // 200ms base hold interval
+  const shotsPerSec=1000/(200*fr);
   const split=p.split||1;
+  const hitsPerSec=shotsPerSec*split;
+  if(_mode==="elite"){
+    // cap 制：每發上限 0.05% boss HP
+    const _bossEliteMul=10;
+    const bHp=(1500+g.wave*100)*_bossEliteMul*(lv===20?1.2:3.5);
+    const capPerHit=bHp*.0005;
+    const bulletDmg=(2.2+p.atk*.7)*(p.elemBoost||1)*(p.levelDmgMul||1);
+    return Math.min(bulletDmg,capPerHit)*hitsPerSec;
+  }
+  const bulletDmg=(2.2+p.atk*.7)*(p.elemBoost||1)*(p.levelDmgMul||1)*(p.bossDmg||1);
   const bossDR=lv===20?.1:.01;
-  return bulletDmg*shotsPerSec*split*bossDR;
+  return bulletDmg*hitsPerSec*bossDR;
 }
 
 function triggerStageBoss(lv){
@@ -2495,8 +2509,8 @@ function triggerStageBoss(lv){
   const baseHp=(1500+g.wave*100)*_bossEliteMul,hpMul=lv===20?1.2:3.5;
   const bossHp=baseHp*hpMul;
   const estTime=bossHp/Math.max(dps,0.1);
-  if(estTime>240&&!g._angelOffered){
-    // 預估超過4分鐘，出天使寶箱
+  if(estTime>120&&!g._angelOffered){
+    // 預估超過2分鐘，出天使寶箱
     g._angelOffered=true;
     g._pendingStageBoss=lv;
     g.run=false;
