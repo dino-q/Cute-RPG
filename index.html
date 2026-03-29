@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.23</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.26</div>
 </div>
 </div>
 
@@ -2917,36 +2917,47 @@ function updateStageBoss(e,now,dt){
           _dealRaf=requestAnimationFrame(dealLoop);
         }
         dealLoop();
-        // 0.5秒後顯示文字
+        // 0.5秒後顯示文字 + 確認按鈕
         setTimeout(()=>{
           const txt=document.createElement("div");
-          txt.style.cssText="position:relative;z-index:1;text-align:center;animation:fadeIn .5s both";
+          txt.style.cssText="position:relative;z-index:1;text-align:center;animation:fadeIn .5s both;pointer-events:auto";
           txt.innerHTML=`
             <div style="font-size:28px;margin-bottom:6px">😈</div>
-            <div style="font-size:18px;font-weight:900;color:#9B59B6;text-shadow:0 0 15px #9B59B6;margin-bottom:8px">惡魔的交易</div>
-            <div style="font-size:12px;color:#FF4040;margin-bottom:4px">🚫 鐵壁金身被打破！遠距攻擊必定命中</div>
-            <div style="font-size:12px;color:#69DB7C">🩸 賦予武器吸血：攻擊5秒回復5HP</div>
+            <div style="font-size:18px;font-weight:900;color:#9B59B6;text-shadow:0 0 15px #9B59B6;margin-bottom:10px">惡魔的交易</div>
+            <div style="font-size:12px;color:#FF4040;margin-bottom:6px">🚫 鐵壁金身被打破！遠距攻擊必定命中</div>
+            <div style="font-size:12px;color:#69DB7C;margin-bottom:14px">🩸 賦予武器吸血：攻擊5秒回復5HP</div>
+            <button id="_dealConfirm" style="padding:10px 28px;font-size:14px;font-weight:900;border:2px solid #9B59B6;border-radius:12px;background:rgba(155,89,182,.2);color:#fff;cursor:pointer;touch-action:manipulation;box-shadow:0 0 20px rgba(155,89,182,.4);animation:gw .8s infinite">接受交易</button>
           `;
           _dealOv.appendChild(txt);
+          _dealOv.style.pointerEvents="auto";
           g.p.projImmune=false;g.p._demonDeal=true;
           g.p._demonLifesteal={accT:0,healPer5:5};
-          e.sbAtkCD=now+4000;e.sbSpawnCD=now+5000;e.sbTeleCD=now+6000;
+          // 按下確認後才繼續
+          const confirmBtn=document.getElementById("_dealConfirm");
+          const doDealConfirm=()=>{
+            confirmBtn.removeEventListener("click",doDealConfirm);
+            confirmBtn.removeEventListener("touchstart",doDealTap);
+            sfx("chest");
+            // 召喚小惡魔
+            for(let i=0;i<2;i++){const a2=Math.PI*2*i/2+Math.random(),mx=cl(e.x+Math.cos(a2)*60,20,mapW()-20),my=cl(e.y+Math.sin(a2)*60,20,mapH()-20);
+              const mhp3=800+g.wave*50;
+              g.ene.push({x:mx,y:my,hp:mhp3,mhp:mhp3,speed:1.2,color:"#8E44AD",t:rn(0,10),r:14,st:0,boss:true,mega:false,tier:2,face:1,xp:15,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:2,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniDemon:true,bossType:Math.random()>.5?"tough":"armor",_demonTeleCD:performance.now()+5000});}
+            sfxBossAtk("spawn");
+            g.dn.push({x:e.x,y:e.y-e.r-10,d:"👿 小惡魔降臨！",life:2,color:"#8E44AD",big:1});
+            // 淡出 + 恢復遊戲
+            if(_dealRaf)cancelAnimationFrame(_dealRaf);
+            _dealOv.style.background="rgba(0,0,0,0)";_dealOv.style.pointerEvents="none";
+            setTimeout(()=>{if(_dealOv.parentNode)_dealOv.parentNode.removeChild(_dealOv);},500);
+            if(g){
+              const n2=performance.now();
+              e.sbAtkCD=n2+3000;e.sbSpawnCD=n2+4000;e.sbTeleCD=n2+5000;
+              g.run=true;g.lf=n2;g.lS=n2;g.laF=n2;
+            }
+          };
+          const doDealTap=(ev)=>{ev.preventDefault();ev.stopPropagation();doDealConfirm();};
+          confirmBtn.addEventListener("click",doDealConfirm);
+          confirmBtn.addEventListener("touchstart",doDealTap,{passive:false});
         },500);
-        // 2秒後召喚小惡魔
-        setTimeout(()=>{
-          for(let i=0;i<2;i++){const a=Math.PI*2*i/2+Math.random(),mx=cl(e.x+Math.cos(a)*60,20,mapW()-20),my=cl(e.y+Math.sin(a)*60,20,mapH()-20);
-            const mhp3=800+g.wave*50;
-            g.ene.push({x:mx,y:my,hp:mhp3,mhp:mhp3,speed:1.2,color:"#8E44AD",t:rn(0,10),r:14,st:0,boss:true,mega:false,tier:2,face:1,xp:15,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:2,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniDemon:true,bossType:Math.random()>.5?"tough":"armor",_demonTeleCD:performance.now()+5000});}
-          sfxBossAtk("spawn");
-          g.dn.push({x:e.x,y:e.y-e.r-10,d:"👿 小惡魔降臨！",life:2,color:"#8E44AD",big:1});
-        },2000);
-        // 3秒後恢復遊戲
-        setTimeout(()=>{
-          if(_dealRaf)cancelAnimationFrame(_dealRaf);
-          _dealOv.style.background="rgba(0,0,0,0)";
-          setTimeout(()=>{if(_dealOv.parentNode)_dealOv.parentNode.removeChild(_dealOv);},500);
-          if(g){g.run=true;const n=performance.now();g.lf=n;g.lS=n;g.laF=n;}
-        },3000);
       }
       if(newPhase===3){
         bossBgmSetBpm(160);
@@ -2995,11 +3006,12 @@ function updateStageBoss(e,now,dt){
   // 😈 Attacks
   if(lv===30){
     const phase=e.sbPhase,brgCD=phase===1?3000:phase===2?2200:1600;
-    if(now>e.sbAtkCD){e.sbAtkCD=now+brgCD;sfxBossAtk("darkshot");
-      const fqMul=phase>=2?1.5:1;
+    // Phase 3 循環中（非 idle/free）停止所有遠程攻擊
+    const p3inCycle=phase===3&&e._p3cycle&&e._p3cycle!=="idle"&&e._p3cycle!=="free";
+    if(!p3inCycle&&now>e.sbAtkCD){e.sbAtkCD=now+brgCD;sfxBossAtk("darkshot");
       const n=phase===1?5:phase===2?8:10,baseA=Math.atan2(dy,dx),spread=Math.PI/(phase===1?4:3);
       for(let i=0;i<n;i++){const a=baseA-spread/2+spread*i/(n-1),sp=3+phase*.5;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:12+g.wave*1.5+phase*5,life:1.5,color:"#9B59B6"});}}
-    if(phase>=2&&now>e.sbSpawnCD){e.sbSpawnCD=now+6000;sfxBossAtk("crosswave");
+    if(!p3inCycle&&phase>=2&&now>e.sbSpawnCD){e.sbSpawnCD=now+6000;sfxBossAtk("crosswave");
       [0,Math.PI/2,Math.PI,Math.PI*1.5].forEach(a=>{for(let j=0;j<5;j++){const sp=2+j*.6;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:18+g.wave*1.5,life:2,color:"#E74C3C"});}});burst(e.x,e.y,"#E74C3C",20);}
     // === Phase 2 瞬移（獨立，不走循環）===
     if(phase===2&&now>e.sbTeleCD&&!e._p3cycle){
@@ -3068,29 +3080,8 @@ function updateStageBoss(e,now,dt){
       // 脈衝預告（2.5秒蓄力，Boss 固定站位）
       if(e._p3cycle==="pulse_warn"){
         const elapsed=now-e._p3t;
-        // Boss 不移動，畫脈衝蓄力圈（2秒）
-        const prog=Math.min(1,elapsed/2000);
-        const pulseR=100+prog*80; // 蓄力圈逐漸擴大
-        // 內圈收縮（暗能量匯聚）
-        cx.save();
-        cx.globalAlpha=.1+prog*.25;cx.fillStyle="#9B59B6";
-        cx.beginPath();cx.arc(e.x,e.y,pulseR*(1-prog*.5),0,Math.PI*2);cx.fill();
-        // 外圈擴張（衝擊波預告）
-        cx.globalAlpha=.15+prog*.2;cx.strokeStyle="#E74C3C";cx.lineWidth=3+prog*4;
-        cx.beginPath();cx.arc(e.x,e.y,pulseR,0,Math.PI*2);cx.stroke();
-        // 能量線條匯聚
-        for(let i=0;i<8;i++){
-          const la=Math.PI*2*i/8+now/300;
-          const lr=pulseR*(1.2-prog*.4);
-          cx.globalAlpha=.3*prog;cx.strokeStyle="#DA77F2";cx.lineWidth=1.5;
-          cx.beginPath();cx.moveTo(e.x+Math.cos(la)*lr,e.y+Math.sin(la)*lr);
-          cx.lineTo(e.x+Math.cos(la)*20,e.y+Math.sin(la)*20);cx.stroke();
-        }
-        // 安全區提示圈
-        cx.globalAlpha=.2+Math.sin(now/100)*.1;cx.strokeStyle="#51CF66";cx.lineWidth=2;cx.setLineDash([4,4]);
-        cx.beginPath();cx.arc(e.x,e.y,100,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
-        cx.restore();
-        // 粒子匯聚
+        // 粒子匯聚（邏輯層，視覺在 drawStageBoss）
+        const prog=Math.min(1,elapsed/2000),pulseR=100+prog*80;
         if(par.length<MAX_PARTICLES&&Math.random()<.4+prog*.3){
           const pa=rn(0,Math.PI*2),pr=pulseR+rn(0,30);
           par.push({x:e.x+Math.cos(pa)*pr,y:e.y+Math.sin(pa)*pr,vx:-Math.cos(pa)*rn(2,4),vy:-Math.sin(pa)*rn(2,4),life:.5,color:Math.random()>.5?"#9B59B6":"#E74C3C",sz:rn(2,5)});
@@ -3216,6 +3207,29 @@ function drawStageBoss(e,now){
   const hpCol=lv===20?"#8B6914":(e.sbPhase===1?"#9B59B6":e.sbPhase===2?"#E74C3C":"#C0392B");
   cx.fillStyle=hpCol;cx.fillRect(bx2,by2,barW*Math.max(0,e.hp/e.mhp),barH);
   cx.globalAlpha=.8;cx.strokeStyle="#fff";cx.lineWidth=.5;cx.strokeRect(bx2,by2,barW,barH);
+  // 暗黑脈衝蓄力視覺（Phase 3 循環中）
+  if(e._p3cycle==="pulse_warn"&&e._p3t){
+    const elapsed=now-e._p3t,prog=Math.min(1,elapsed/2000);
+    const pulseR=100+prog*80;
+    // 內圈收縮（暗能量匯聚）
+    cx.globalAlpha=.1+prog*.25;cx.fillStyle="#9B59B6";
+    cx.beginPath();cx.arc(e.x,e.y,pulseR*(1-prog*.5),0,Math.PI*2);cx.fill();
+    // 外圈擴張（衝擊波預告）
+    cx.globalAlpha=.15+prog*.2;cx.strokeStyle="#E74C3C";cx.lineWidth=3+prog*4;
+    cx.beginPath();cx.arc(e.x,e.y,pulseR,0,Math.PI*2);cx.stroke();
+    // 能量線條匯聚
+    for(let i=0;i<8;i++){
+      const la=Math.PI*2*i/8+now/300,lr=pulseR*(1.2-prog*.4);
+      cx.globalAlpha=.3*prog;cx.strokeStyle="#DA77F2";cx.lineWidth=1.5;
+      cx.beginPath();cx.moveTo(e.x+Math.cos(la)*lr,e.y+Math.sin(la)*lr);
+      cx.lineTo(e.x+Math.cos(la)*20,e.y+Math.sin(la)*20);cx.stroke();
+    }
+    // 安全區提示圈（綠色虛線 + 文字）
+    cx.globalAlpha=.3+Math.sin(now/100)*.15;cx.strokeStyle="#51CF66";cx.lineWidth=2.5;cx.setLineDash([5,4]);
+    cx.beginPath();cx.arc(e.x,e.y,100,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
+    cx.globalAlpha=.7;cx.font="bold 10px 'Nunito',sans-serif";cx.textAlign="center";cx.fillStyle="#51CF66";
+    cx.fillText("← 安全區 →",e.x,e.y+100+14);
+  }
   cx.restore();
 }
 
@@ -3244,7 +3258,9 @@ function checkStageBossDeath(){
       g.ene=g.ene.filter(oe=>{if(oe.miniPoo||oe.ragePoo){burst(oe.x,oe.y,"#A0822A",5);return false;}return true;});
       _stageBoss=null;
     }else if(lv===30){
-      g.run=false;bgmStop();
+      bgmStop();
+      // 清除殘留 DOM overlay
+      const dov=document.getElementById("_demonDealOv");if(dov&&dov.parentNode)dov.parentNode.removeChild(dov);
       g.ene.forEach(oe=>burst(oe.x,oe.y,oe.color,8));g.ene=[];g.ebul=[];_stageBoss=null;
       triggerVictory(e);
     }
@@ -3258,6 +3274,7 @@ function triggerVictory(bossE){
   sfxVictory();
   // 讓 game loop 繼續跑（播粒子動畫），1.5 秒後才進結算
   g.run=true;g._victoryPending=true;
+  const vn=performance.now();g.lf=vn;g.lS=vn;g.laF=vn; // 重設時間避免大 dt 卡頓
   setTimeout(()=>{g.run=false;showVictoryScreen();},1500);
 }
 
@@ -3325,7 +3342,10 @@ const PRAC_ENEMIES=[
   {id:"boss",name:"小王 ⭐",emoji:"⭐",tier:3,boss:true,mega:false,desc:"隨機韌性/防禦 散射/召喚/彈幕技能 有DPS上限"},
   {id:"mega",name:"巨王 👑",emoji:"👑",tier:4,boss:true,mega:true,desc:"小王加強版 3倍體型 更高DPS上限"},
   {id:"poo",name:"💩 中場Boss",emoji:"💩",stage:20,desc:"護盾/散射/增生 半血狂暴召喚20便便 防禦型"},
-  {id:"devil",name:"😈 最終魔王",emoji:"😈",stage:30,desc:"3階段 瞬移/彈幕/暗黑脈衝 惡魔交易 韌性型"},
+  {id:"poo_rage",name:"💩 中場Boss(狂暴)",emoji:"💩",stage:20,pooRage:true,desc:"直接進入半血狂暴狀態"},
+  {id:"devil1",name:"😈 魔王 Phase1",emoji:"😈",stage:30,devilPhase:1,desc:"彈幕+十字波"},
+  {id:"devil2",name:"😈 魔王 Phase2",emoji:"😈",stage:30,devilPhase:2,desc:"惡魔交易+瞬移+小惡魔"},
+  {id:"devil3",name:"😈 魔王 Phase3",emoji:"😈",stage:30,devilPhase:3,desc:"衝刺循環+暗黑脈衝"},
 ];
 window.pracTogglePanel=function(which){
   const cards=$("pracCards"),ene=$("pracEnemies"),stats=$("pracStats");
@@ -3477,8 +3497,32 @@ window.pracSpawn=function(){
   _pracEnemySel.forEach(eid=>{
     const pe=PRAC_ENEMIES.find(p=>p.id===eid);if(!pe)return;
     if(pe.stage){
-      // Stage Boss
-      if(!g._stageBossActive)triggerStageBoss(pe.stage);
+      // Stage Boss（含階段選擇）
+      if(!g._stageBossActive){
+        triggerStageBoss(pe.stage);
+        // 等 Boss 生成後設定階段
+        if(pe.devilPhase||pe.pooRage){
+          const _waitBoss=setInterval(()=>{
+            if(!_stageBoss)return;clearInterval(_waitBoss);
+            if(pe.pooRage){
+              // 直接觸發狂暴
+              _stageBoss.hp=Math.floor(_stageBoss.mhp*.45);
+            }
+            if(pe.devilPhase&&pe.devilPhase>=2){
+              // 設定 HP 觸發對應階段
+              _stageBoss.hp=pe.devilPhase===2?Math.floor(_stageBoss.mhp*.6):Math.floor(_stageBoss.mhp*.3);
+              _stageBoss.sbPhase=pe.devilPhase;
+              if(pe.devilPhase===3){_stageBoss._p3cycle="idle";_stageBoss.sbTeleCD=performance.now()+2000;}
+              // Phase 2 直接給惡魔交易效果（不播動畫）
+              if(pe.devilPhase>=2){
+                g.p.projImmune=false;g.p._demonDeal=true;
+                g.p._demonLifesteal={accT:0,healPer5:5};
+                bossBgmSetBpm(pe.devilPhase===2?140:160);
+              }
+            }
+          },100);
+        }
+      }
       return;
     }
     const opts={};
