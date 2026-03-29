@@ -82,19 +82,19 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <canvas id="heroCanvas" width="160" height="60" style="margin:0 auto;display:block;filter:drop-shadow(0 0 20px rgba(116,192,252,.55))"></canvas>
   <h1 style="font-size:30px;font-weight:900;color:#fff;margin:4px 0 0;text-shadow:0 0 25px rgba(116,192,252,.3)">Dino真是個小天才</h1>
   <p style="color:rgba(255,255,255,.35);font-size:12px;margin:0 0 20px;letter-spacing:2px">Cute Dungeon Adventure</p>
-  <div style="display:flex;gap:10px;justify-content:center;margin-bottom:8px">
+  <div style="display:flex;gap:10px;justify-content:center;margin-bottom:4px">
     <button class="btn btn-b" onclick="startGame('classic')" style="padding:11px 24px;font-size:14px">⚔️ 經典模式</button>
     <button class="btn btn-g" onclick="startGame('elite')" style="padding:11px 24px;font-size:14px">👑 精英模式</button>
   </div>
-  <div style="margin-bottom:8px"><button class="btn" onclick="openPractice()" style="padding:8px 20px;font-size:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6)">🎯 練習模式</button></div>
-  <div style="display:flex;gap:12px;justify-content:center;color:rgba(255,255,255,.4);font-size:9px;margin-bottom:8px">
+  <div style="display:flex;gap:12px;justify-content:center;color:rgba(255,255,255,.4);font-size:9px;margin-bottom:10px">
     <span>⚔️ 大量敵人 AOE爽快</span>
     <span>👑 少量精英 走位策略</span>
   </div>
+  <div style="margin-bottom:8px"><button class="btn" onclick="openPractice()" style="padding:7px 18px;font-size:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.45)">🎯 練習模式</button></div>
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.0</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.01</div>
 </div>
 </div>
 
@@ -3017,11 +3017,12 @@ const PRAC_ENEMIES=[
   {id:"poo",name:"💩 中場Boss",emoji:"💩",stage:20},
   {id:"devil",name:"😈 最終魔王",emoji:"😈",stage:30},
 ];
-function openPractice(){
+window.openPractice=function(){
   _practiceMode=true;_pracEnemySel.clear();_pracCardSel.clear();
   startGame("elite");
   g.p.hp=99999;g.p.maxHp=99999;g.level=12;g.wave=12;g.p.atk=30;
-  $("practiceOv").style.display="flex";
+  // startGame 的 show("play") 會隱藏 practiceOv，延遲一幀再顯示
+  requestAnimationFrame(()=>{$("practiceOv").style.display="flex";});
   // 建立卡片列表
   const cc=$("pracCards");
   let html='<div style="color:#FFD43B;font-weight:900;font-size:12px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(0,0,0,.8);z-index:1">🃏 卡片選擇</div>';
@@ -3045,8 +3046,8 @@ function openPractice(){
     </label>`;
   });
   ec.innerHTML=ehtml;
-}
-function pracToggleCard(cid,on){
+};
+window.pracToggleCard=function(cid,on){
   if(on)_pracCardSel.add(cid);else _pracCardSel.delete(cid);
   // 重建玩家卡牌
   inv.length=0;
@@ -3059,9 +3060,9 @@ function pracToggleCard(cid,on){
     if(lv>=0)cd.ap[Math.min(lv,2)](g.p);
   });
   g.p.hp=99999;g.p.maxHp=99999;g.p.expR=99;
-}
-function pracToggleEnemy(eid,on){if(on)_pracEnemySel.add(eid);else _pracEnemySel.delete(eid);}
-function pracSpawn(){
+};
+window.pracToggleEnemy=function(eid,on){if(on)_pracEnemySel.add(eid);else _pracEnemySel.delete(eid);}
+window.pracSpawn=function(){
   if(!g||!_practiceMode)return;
   _pracEnemySel.forEach(eid=>{
     const pe=PRAC_ENEMIES.find(p=>p.id===eid);if(!pe)return;
@@ -3086,19 +3087,21 @@ function pracSpawn(){
     }
   });
 }
-function pracClear(){
+};
+window.pracClear=function(){
   if(!g)return;
   g.ene.forEach(e=>burst(e.x,e.y,e.color,5));
   g.ene=[];g.ebul=[];g.bul=[];_stageBoss=null;g._stageBossActive=false;
   g.p.hp=99999;
 }
-function exitPractice(){
+};
+window.exitPractice=function(){
   _practiceMode=false;
   if(g)g.run=false;
   bgmStop();bossBgmStop();
   $("practiceOv").style.display="none";
   show("title");
-}
+};
 
 window.startGame=window.SG=function(mode){
   _mode=mode||_mode||"classic";const MC=MODE[_mode];
