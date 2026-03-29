@@ -93,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.18</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.20</div>
 </div>
 </div>
 
@@ -1041,7 +1041,8 @@ function spawn(boss,opts={}){
   const bhp=(20+w*11)*(1+w*.018)*tierHp;
   const hp=Math.floor(bhp*(boss?8.5:1)*(mega?3.3:1)*ENEMY_HP_SCALE*grow.hp*earlyMul);
   const _spdCap=MODE[_mode].enemySpdCap||2.4;
-  const spd=(.92+Math.min(w*.13,_spdCap))*tierSpd*grow.spd*(mega?.85:1)*(w<8?.92:1);
+  const spdW=(_mode==="elite")?Math.min(w,12):w; // 精英模式：速度成長在12等封頂
+  const spd=(.92+Math.min(spdW*.13,_spdCap))*tierSpd*enemyGrowth(spdW).spd*(mega?.85:1)*(w<8?.92:1);
   const rm=(boss?1.85:1)*(mega?1.9:1)*(1+tier*.11)*grow.size;
   const a=rn(0,Math.PI*2),d=SPAWN_R+rn(0,80);
   let x=g.p.x+Math.cos(a)*d,y=g.p.y+Math.sin(a)*d;
@@ -1420,6 +1421,12 @@ function loop(){
     if(Math.abs(dx)>2)e.face=dx>0?1:-1;
     e.shieldAng=Math.atan2(dy,dx); // always face player for shield calc
 
+    // 撞擊後退開 1.5 秒
+    if(e._retreatEnd&&now<e._retreatEnd){
+      e.x+=(-dx/d*es*.6)*dt;e.y+=(-dy/d*es*.6)*dt;
+      e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
+    } else {
+    if(e._retreatEnd)e._retreatEnd=0;
     const role=e.role||ROLE_NORMAL;
     if(role===ROLE_FLANKER&&ts){
       // orbit around player at ~120-160px, slowly closing in
@@ -1502,6 +1509,7 @@ function loop(){
       e.x+=Math.sin(e.t*3.7+(e.flankA||0))*jw*dt;
       e.y+=Math.cos(e.t*3.1+(e.flankA||0))*jw*dt;
     }
+    } // end retreat else
 
     // === Boss skills (wave 10+) ===
     if(e.boss&&g.wave>=10&&ts){
@@ -1737,7 +1745,7 @@ function loop(){
     g.p._iFrameEnd=now+400; // 400ms i-frame after contact damage
     if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;g.p._iFrameEnd=now+1500;_phoenixT=1.2;sfx("phoenix");burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🔥 不死鳥復活！",life:2,color:"#FF922B",big:1});g.ene.forEach(oe=>{const rdx=oe.x-g.p.x,rdy=oe.y-g.p.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;oe.x+=rdx/rd*SPAWN_R;oe.y+=rdy/rd*SPAWN_R;oe.frozen=1500;});}else{g.run=false;showOver();return false;}}
     if(MODE[_mode].enemyContactVanish){awardEnemyKill(e);return false;}
-    else{g.p._iFrameEnd=now+500;return e.hp>0||(awardEnemyKill(e),false);}
+    else{g.p._iFrameEnd=now+500;if(e.hp>0)e._retreatEnd=now+1500;return e.hp>0||(awardEnemyKill(e),false);}
     }return true;});}
 
   // level up
@@ -2544,7 +2552,7 @@ function estimateBossDPS(lv){
   if(_mode==="elite"){
     // cap 制：每發上限 0.05% boss HP
     const _bossEliteMul=10;
-    const bHp=(1500+g.wave*100)*_bossEliteMul*(lv===20?1.2:3.5);
+    const bHp=(1500+g.wave*100)*_bossEliteMul*(lv===20?3.6:3.5);
     const capPerHit=bHp*.0005;
     const bulletDmg=(2.2+p.atk*.7)*(p.elemBoost||1)*(p.levelDmgMul||1);
     return Math.min(bulletDmg,capPerHit)*hitsPerSec;
@@ -2558,7 +2566,7 @@ function triggerStageBoss(lv){
   // 計算是否需要天使卡
   const dps=estimateBossDPS(lv);
   const _bossEliteMul=_mode==="elite"?10:1;
-  const baseHp=(1500+g.wave*100)*_bossEliteMul,hpMul=lv===20?1.2:3.5;
+  const baseHp=(1500+g.wave*100)*_bossEliteMul,hpMul=lv===20?3.6:3.5;
   const bossHp=baseHp*hpMul;
   const estTime=bossHp/Math.max(dps,0.1);
   const angelKey="_angelOffer"+lv;
@@ -2691,7 +2699,8 @@ function checkStageBossDeath(){
     const lv=_stageBoss.stageBoss,e=_stageBoss;
     g._stageBossActive=false;bossBgmStop();
     // 波次制：Boss 擊敗後給休息時間，避免立刻出怪
-    if(g._ew){g._ew.active=false;g._ew.restEnd=performance.now()+3000;}
+    if(g._ew){g._ew.active=false;g._ew.restEnd=performance.now()+4000;}
+    g.ebul=[]; // 清空敵彈
     if(lv===20){burst(e.x,e.y,"#8B6914",30);burst(e.x,e.y,"#FFD43B",20);sfx("phoenix");
       g.dn.push({x:e.x,y:e.y-40,d:"💩 Boss 擊敗！",life:3,color:"#FFD43B",big:1});
       g.dn.push({x:g.p.x,y:g.p.y-60,d:"📦 寶箱獎勵！",life:2.5,color:"#FFD43B",big:1});
