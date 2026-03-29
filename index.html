@@ -93,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.25</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.27</div>
 </div>
 </div>
 
@@ -578,7 +578,8 @@ function hud(){if(!g)return;
   if(_db){
     const _dn=performance.now(),_dCD=g.p._dodgeCD||0,_dReady=_dn>=_dCD;
     const _dPct=_dReady?1:Math.max(0,1-((_dCD-_dn)/2000));
-    _db.style.background=`conic-gradient(rgba(116,192,252,.5) ${_dPct*360}deg,rgba(20,20,40,.9) ${_dPct*360}deg)`;
+    const _dDeg=_dPct*360;
+    _db.style.background=_dReady?'radial-gradient(circle,rgba(116,192,252,.2),rgba(20,20,40,.9))':`conic-gradient(rgba(116,192,252,.45) ${_dDeg-1}deg,rgba(116,192,252,.2) ${_dDeg}deg,rgba(20,20,40,.9) ${_dDeg+1}deg)`;
     _db.style.borderColor=_dReady?"rgba(116,192,252,.6)":"rgba(255,255,255,.15)";
     _db.style.opacity=_dReady?"1":".6";
   }
@@ -856,6 +857,12 @@ function addLtn(x1,y1,x2,y2,life=1){
   }
 }
 
+// 選卡結束後平滑恢復遊戲（延遲一幀讓 DOM reflow 完成再跑邏輯）
+function resumeGame(cb){
+  requestAnimationFrame(()=>{show("play");resetControls();
+    requestAnimationFrame(()=>{g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();if(cb)cb();});
+  });
+}
 function show(n){["titleOv","tutOv","pickOv","overOv","victoryOv"].forEach(id=>$(id).style.display="none");
   if(n==="title")$("titleOv").style.display="flex";
   else if(n==="tut")$("tutOv").style.display="flex";
@@ -1063,8 +1070,8 @@ function spawn(boss,opts={}){
   if(_mode==="elite"){
     const eMC=MODE.elite;
     if(boss){
-      // 波次 Boss/巨王：高 HP 配合每秒傷害上限
-      finalHp=Math.floor((36000+w*400)*(mega?2:1));
+      // 波次 Boss/巨王：HP 隨波次成長，配合每秒傷害上限
+      finalHp=Math.floor((3000+w*800)*(mega?2:1));
     }else{
       const earlyRamp=Math.min(1,.3+(w-1)*.14); // Lv1=0.3 → Lv6+=1.0
       if(w>=eMC.eliteStartWave&&Math.random()<eMC.eliteChance){
@@ -1329,8 +1336,8 @@ function loop(){
     }
     triggerHuntPressure(now);
   }
-  // boss spawn
-  if(g.kills>0&&g.kills>=g.nextBoss){
+  // boss spawn（經典模式專用，精英模式由波次制控制）
+  if(_mode!=="elite"&&g.kills>0&&g.kills>=g.nextBoss){
     g.bossCount=(g.bossCount||0)+1;
     const mega=g.bossCount%3===0;
     sfx("boss");spawn(true,mega?{mega:true}:{});
@@ -2387,7 +2394,7 @@ function buildCard(cd,w,i,wrap){
       _phoenixT=0;_hitFlash=0;_shakeT=0;_shakePow=0;
       g.pickOpen=false;
       if(rerollCount>0){g._fateQueue=rerollCount;setTimeout(()=>showPick("fate"),80);}
-      else{g.pickOpen=false;requestAnimationFrame(()=>{show("play");resetControls();g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();});}
+      else{g.pickOpen=false;resumeGame();}
       return;}
     // --- 命運轉輪後續輪次 ---
     if(g._fateQueue>0){g.pickOpen=false;setTimeout(()=>showPick("fate"),80);return;}
@@ -2395,7 +2402,7 @@ function buildCard(cd,w,i,wrap){
     if(g._bigChestLeft>0){g._bigChestLeft--;
       if(g._bigChestLeft>0){g.pickOpen=false;setTimeout(()=>showPick("bigchest"),80);return;}}
     g.pickOpen=false;g._bigChestTotal=0;g._bigChestLeft=0;
-    requestAnimationFrame(()=>{show("play");resetControls();g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();});
+    resumeGame();
   };
   b.onclick=e=>{e.preventDefault();doPick();};
   b.ontouchstart=e=>{e.stopPropagation();e.preventDefault();doPick();};
@@ -2433,10 +2440,7 @@ function showAngelCard(){
       g.dn.push({x:g.p.x,y:g.p.y-40,d:"💪 靠自己！",life:2,color:"#fff",big:1});
     }
     g.pickOpen=false;
-    requestAnimationFrame(()=>{show("play");resetControls();g.run=true;
-      const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;rebindActiveTouches();
-      triggerStageBoss(g._pendingStageBoss);
-    });
+    resumeGame(()=>triggerStageBoss(g._pendingStageBoss));
   };
   const yb=$("_angelYes"),nb=$("_angelNo");
   yb.onclick=()=>doChoice(true);yb.ontouchstart=e=>{e.stopPropagation();e.preventDefault();doChoice(true);};
