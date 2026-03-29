@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.26</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.28</div>
 </div>
 </div>
 
@@ -1796,12 +1796,14 @@ function loop(){
       g.p._iFrameEnd=now+800;showPlayerDmg(rpDmg);
       if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;g.p._iFrameEnd=now+1500;_phoenixT=1.2;sfx("phoenix");}else{g.run=false;showOver();}}
     }return true;}
-    // Stage Boss：接觸造成傷害但Boss不消失
-    if(e.stageBoss){if(di(e,g.p)<PR+e.r-4){
+    // Stage Boss：接觸造成傷害但Boss不消失（脈衝蓄力期間免撞傷）
+    if(e.stageBoss){const _pulseWarn=e._p3cycle==="pulse_warn"||e._p3cycle==="pulse_boom";
+    if(!_pulseWarn&&di(e,g.p)<PR+e.r-4){
       const lateMul=1+Math.max(0,g.wave-10)*.07;
       let dmg=(12+g.wave*3)*(e.dmgMul||1)*lateMul*(1-g.p.armor);
       g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",8);_hitFlash=1;_shakeT=.5;_shakePow=8;sfx("hurt");
       g.p._iFrameEnd=now+600;showPlayerDmg(dmg);
+      e._retreatEnd=now+1500; // 撞擊後退開1.5秒
       if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;g.p._iFrameEnd=now+1500;_phoenixT=1.2;sfx("phoenix");burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🔥 不死鳥復活！",life:2,color:"#FF922B",big:1});}else{g.run=false;showOver();}}
     }return true;}
     if(di(e,g.p)<PR+e.r-4){
@@ -2973,10 +2975,17 @@ function updateStageBoss(e,now,dt){
       g.dn.push({x:g.p.x,y:g.p.y-PR-8,d:"🩸+"+heal,life:.8,color:"#69DB7C"});}
   }
 
-  // Move
-  const spd=e.speed*(e.frozen>0?0:1)*(e.st>0?.5:1);
-  e.x+=dx/d*spd*dt;e.y+=dy/d*spd*dt;
-  e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);e.t+=.02*dt;
+  // Move（撞擊後退開）
+  e.t+=.02*dt;
+  if(e._retreatEnd&&now<e._retreatEnd){
+    e.x+=(-dx/d*.8)*dt;e.y+=(-dy/d*.8)*dt;
+    e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
+  }else{
+    if(e._retreatEnd)e._retreatEnd=0;
+    const spd=e.speed*(e.frozen>0?0:1)*(e.st>0?.5:1);
+    e.x+=dx/d*spd*dt;e.y+=dy/d*spd*dt;
+    e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
+  }
 
   // 💩 半血狂暴：抖動 + 召喚20個半透明便便散佈地圖
   if(lv===20&&e.hp<e.mhp*.5&&!e._pooRageSpawned){
@@ -3090,7 +3099,7 @@ function updateStageBoss(e,now,dt){
           // 脈衝爆發！
           e._p3cycle="pulse_boom";e._p3t=now;
           _hitFlash=.8;_shakeT=.6;_shakePow=10;sfxBossAtk("slam");
-          const pulseDist=di(e,g.p),safe=pulseDist<100;
+          const pulseDist=di(e,g.p),safe=pulseDist<150;
           if(!safe&&!g.p._inv&&!(g.p._iFrameEnd>0)){
             const dmg=(30+g.wave*2)*(1-g.p.armor);g.p.hp-=dmg;sfx("hurt");_hitFlash=1;showPlayerDmg(dmg);g.p._iFrameEnd=performance.now()+600;
           }else if(safe){g.dn.push({x:g.p.x,y:g.p.y-30,d:"安全！",life:1.5,color:"#51CF66",big:1});}
@@ -3107,9 +3116,9 @@ function updateStageBoss(e,now,dt){
         }
       }
       // 脈衝後短暫休息 → 自由攻擊 → 回到 idle
-      if(e._p3cycle==="pulse_boom"&&now-e._p3t>800){
+      if(e._p3cycle==="pulse_boom"&&now-e._p3t>1000){
         e._p3cycle="free";e._p3t=now;
-        e.sbAtkCD=now+1000; // 短暫恢復彈幕
+        e.sbAtkCD=now+1500; // 脈衝後 Boss 靜止，玩家有時間離開
       }
       if(e._p3cycle==="free"&&now-e._p3t>5000){
         e._p3cycle="idle";e._p3dashN=0;
@@ -3226,9 +3235,10 @@ function drawStageBoss(e,now){
     }
     // 安全區提示圈（綠色虛線 + 文字）
     cx.globalAlpha=.3+Math.sin(now/100)*.15;cx.strokeStyle="#51CF66";cx.lineWidth=2.5;cx.setLineDash([5,4]);
-    cx.beginPath();cx.arc(e.x,e.y,100,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
+    cx.beginPath();cx.arc(e.x,e.y,150,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
+    cx.globalAlpha=.08;cx.fillStyle="#51CF66";cx.beginPath();cx.arc(e.x,e.y,150,0,Math.PI*2);cx.fill();
     cx.globalAlpha=.7;cx.font="bold 10px 'Nunito',sans-serif";cx.textAlign="center";cx.fillStyle="#51CF66";
-    cx.fillText("← 安全區 →",e.x,e.y+100+14);
+    cx.fillText("← 安全區 →",e.x,e.y+150+14);
   }
   cx.restore();
 }
@@ -3274,8 +3284,12 @@ function triggerVictory(bossE){
   sfxVictory();
   // 讓 game loop 繼續跑（播粒子動畫），1.5 秒後才進結算
   g.run=true;g._victoryPending=true;
-  const vn=performance.now();g.lf=vn;g.lS=vn;g.laF=vn; // 重設時間避免大 dt 卡頓
-  setTimeout(()=>{g.run=false;showVictoryScreen();},1500);
+  const vn=performance.now();g.lf=vn;g.lS=vn;g.laF=vn;
+  setTimeout(()=>{
+    g.run=false;
+    // 延遲兩幀再載入結算畫面，避免與最後一幀渲染撞在一起造成卡頓
+    requestAnimationFrame(()=>requestAnimationFrame(()=>showVictoryScreen()));
+  },1500);
 }
 
 function showVictoryScreen(){
@@ -3502,24 +3516,28 @@ window.pracSpawn=function(){
         triggerStageBoss(pe.stage);
         // 等 Boss 生成後設定階段
         if(pe.devilPhase||pe.pooRage){
+          let _waitAttempts=0;
           const _waitBoss=setInterval(()=>{
-            if(!_stageBoss)return;clearInterval(_waitBoss);
-            if(pe.pooRage){
-              // 直接觸發狂暴
-              _stageBoss.hp=Math.floor(_stageBoss.mhp*.45);
-            }
-            if(pe.devilPhase&&pe.devilPhase>=2){
-              // 設定 HP 觸發對應階段
-              _stageBoss.hp=pe.devilPhase===2?Math.floor(_stageBoss.mhp*.6):Math.floor(_stageBoss.mhp*.3);
-              _stageBoss.sbPhase=pe.devilPhase;
-              if(pe.devilPhase===3){_stageBoss._p3cycle="idle";_stageBoss.sbTeleCD=performance.now()+2000;}
-              // Phase 2 直接給惡魔交易效果（不播動畫）
-              if(pe.devilPhase>=2){
-                g.p.projImmune=false;g.p._demonDeal=true;
-                g.p._demonLifesteal={accT:0,healPer5:5};
-                bossBgmSetBpm(pe.devilPhase===2?140:160);
+            _waitAttempts++;
+            if(!_stageBoss){if(_waitAttempts>50)clearInterval(_waitBoss);return;}
+            clearInterval(_waitBoss);
+            // 延遲一幀確保 Boss 完全初始化
+            requestAnimationFrame(()=>{
+              if(!_stageBoss)return;
+              if(pe.pooRage){
+                _stageBoss.hp=Math.floor(_stageBoss.mhp*.45);
               }
-            }
+              if(pe.devilPhase&&pe.devilPhase>=2){
+                _stageBoss.hp=pe.devilPhase===2?Math.floor(_stageBoss.mhp*.6):Math.floor(_stageBoss.mhp*.3);
+                _stageBoss.sbPhase=pe.devilPhase;
+                if(pe.devilPhase===3){_stageBoss._p3cycle="idle";_stageBoss.sbTeleCD=performance.now()+2000;}
+                if(pe.devilPhase>=2){
+                  g.p.projImmune=false;g.p._demonDeal=true;
+                  g.p._demonLifesteal={accT:0,healPer5:5};
+                  bossBgmSetBpm(pe.devilPhase===2?140:160);
+                }
+              }
+            });
           },100);
         }
       }
