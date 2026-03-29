@@ -92,7 +92,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.04</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.05</div>
 </div>
 </div>
 
@@ -591,7 +591,8 @@ function hud(){if(!g)return;
     $("ultR").style.background="conic-gradient(#BE4BDB "+(pct*360)+"deg,rgba(190,78,219,.1) "+(pct*360)+"deg)";
     const _lsReady=pct>=1&&g.p.lStep;
     $("ultI").textContent=pct>=1?(_lsReady?"⚡":"💥"):"💎";
-    $("ultL").textContent=pct>=1?(_lsReady?"⬇ 閃電步就緒 ⬇":"⬇ 大招就緒 ⬇"):g.ultHold?"集氣中...":"長壓集氣";
+    const _dodgeReady=!g.p._dodgeCD||performance.now()>=g.p._dodgeCD;
+    $("ultL").textContent=pct>=1?(_lsReady?"⬇ 閃電步就緒 ⬇":"⬇ 長壓放大招 ⬇"):g.ultHold?"集氣中...":(_dodgeReady?"點擊閃避 / 長壓集氣":"閃避冷卻中");
     $("ub").style.width=(pct*100)+"%";
     $("ulbl").textContent=pct>=1?"💥MAX":`💎${Math.floor(pct*100)}%`;
     $("ulr").textContent=pct>=1?"💥 READY":"💎"+Math.floor(pct*100)+"%";
@@ -1325,6 +1326,9 @@ function loop(){
       if(e._eDashing&&now<e._eDashEnd){
         e.x+=e._eDashDx*7*dt;e.y+=e._eDashDy*7*dt;
         e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
+        // 衝刺殘影
+        if(par.length<MAX_PARTICLES&&Math.random()<.5)
+          par.push({x:e.x,y:e.y,vx:0,vy:0,life:.4,color:"rgba(231,76,60,.4)",sz:e.r*.8});
       }else if(e._eDashing){e._eDashing=false;e._eDashCD=now+5000;}
       // 能量護盾：HP<60% 時觸發，持續3秒，每15秒一次
       if(!e._eShieldCD)e._eShieldCD=now+8000;
@@ -2707,16 +2711,45 @@ $("jzR").addEventListener("touchstart",e=>{
   tapAtk();
 },{passive:false});
 
+let _ultPressTimer=null,_ultWasHeld=false;
 function startUltPress(){
   if(!g)return;
-  if(g.p.hasBH||g.p.hasTS){
-    if(performance.now()>=(g.ultCdEnd||0))doUlt();
-  }else if(g.ultCharge>=ULT_CHARGE_NEED){
-    doUlt();
-  }else g.ultHold=true;
+  _ultWasHeld=false;
+  // 短按/長按判定：200ms 內放開 = 閃避，超過 = 集氣/放大招
+  _ultPressTimer=setTimeout(()=>{
+    _ultWasHeld=true;
+    if(g.p.hasBH||g.p.hasTS){if(performance.now()>=(g.ultCdEnd||0))doUlt();}
+    else if(g.ultCharge>=ULT_CHARGE_NEED)doUlt();
+    else g.ultHold=true;
+  },200);
 }
 function endUltPress(){
-  if(g)g.ultHold=false;
+  if(!g)return;
+  g.ultHold=false;
+  if(_ultPressTimer){clearTimeout(_ultPressTimer);_ultPressTimer=null;}
+  if(!_ultWasHeld)doDodge(); // 短按 = 閃避位移
+  _ultWasHeld=false;
+}
+// 短距離閃避位移
+function doDodge(){
+  if(!g||!g.run)return;
+  const now=performance.now();
+  if(g.p._dodgeCD&&now<g.p._dodgeCD)return; // 冷卻中
+  g.p._dodgeCD=now+2000; // 2 秒冷卻
+  const hasJoy=joy.a&&(Math.abs(joy.dx)>.2||Math.abs(joy.dy)>.2);
+  const ddx=hasJoy?joy.dx:g.ad.x,ddy=hasJoy?joy.dy:g.ad.y;
+  const dd=Math.sqrt(ddx*ddx+ddy*ddy)||1;
+  // 短距離位移（50px）
+  const dist=50;
+  g.p.x+=ddx/dd*dist;g.p.y+=ddy/dd*dist;
+  g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
+  // 殘影
+  _dashGhosts.push({x:g.p.x-ddx/dd*dist*.5,y:g.p.y-ddy/dd*dist*.5,face:g.p.face,life:1});
+  _dashGhosts.push({x:g.p.x-ddx/dd*dist,y:g.p.y-ddy/dd*dist,face:g.p.face,life:.7});
+  // 短暫無敵 200ms
+  g.p._iFrameEnd=Math.max(g.p._iFrameEnd||0,now+200);
+  burst(g.p.x,g.p.y,"#74C0FC",5);
+  sfx("shoot");
 }
 $("ultR").addEventListener("touchstart",e=>{e.preventDefault();startUltPress();},{passive:false});
 $("ultR").addEventListener("touchend",e=>{e.preventDefault();endUltPress();},{passive:false});
@@ -2768,18 +2801,13 @@ window.addEventListener("keydown",e=>{
   ks[e.key]=true;
   uK();
   if(c==="Space"||e.key===" "){e.preventDefault();if(!aim.a||aim.id!=="kb"){aim.a=1;aim.id="kb";tapAtk();}}
-  if(c==="KeyE"||e.key==="e"||e.key==="E"){
-    if(!g)return;
-    if(g.p.hasBH||g.p.hasTS){if(performance.now()>=(g.ultCdEnd||0))doUlt();}
-    else if(g.ultCharge>=ULT_CHARGE_NEED)doUlt();
-    else g.ultHold=true;
-  }
+  if(c==="KeyE"||e.key==="e"||e.key==="E"){startUltPress();}
   if(c.startsWith("Arrow"))e.preventDefault();
 },{capture:true});
 window.addEventListener("keyup",e=>{
   const c=e.code||e.key;ks[c]=false;ks[e.key]=false;uK();
   if((c==="Space"||e.key===" ")&&aim.id==="kb"){aim.a=0;aim.id=null;}
-  if((c==="KeyE"||e.key==="e"||e.key==="E")&&g)g.ultHold=false;
+  if((c==="KeyE"||e.key==="e"||e.key==="E")&&g)endUltPress();
 },{capture:true});
 function uK(){let dx=0,dy=0;
   if(ks.ArrowLeft||ks.KeyA||ks.a)dx--;
