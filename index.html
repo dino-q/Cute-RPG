@@ -93,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.16</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.18</div>
 </div>
 </div>
 
@@ -186,7 +186,12 @@ const MODE={
 };
 // early levels need less XP so first card pick comes fast
 function expForLevel(lv){
-  if(_mode==="elite")return 150; // 精英模式：平坦經驗曲線
+  if(_mode==="elite"){ // 精英模式：前期快節奏，後期平坦
+    if(lv<=2)return 50;
+    if(lv<=4)return 80;
+    if(lv<=6)return 110;
+    return 150;
+  }
   if(lv<=1)return 25;
   if(lv<=2)return 35;
   if(lv<=3)return 50;
@@ -1271,8 +1276,8 @@ function loop(){
     const ew=g._ew;
     const aliveEnemies=g.ene.filter(e=>e.hp>0&&!e.stageBoss).length;
     if(ew.active&&aliveEnemies===0){
-      // 波次清完 → 休息 2 秒
-      ew.active=false;ew.restEnd=now+2000;
+      // 波次清完 → 休息（前期短，後期長）
+      ew.active=false;ew.restEnd=now+(ew.num<6?1200:2000);
       g.dn.push({x:g.p.x,y:g.p.y-40,d:"✨ 波次清除！",life:1.5,color:"#51CF66",big:1});
     }
     if(!ew.active&&now>=ew.restEnd){
@@ -1292,7 +1297,7 @@ function loop(){
         sfx("boss");
         for(let i=0;i<2;i++)spawn(false); // 精英機率 20%，大概 1 隻精英+1 小怪
       }else{
-        const waveSize=Math.min(4,2+Math.floor(ew.num/8));
+        const waveSize=Math.min(4,ew.num<4?3:2+Math.floor(ew.num/8));
         g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${ew.num}波`,life:1.5,color:"#FF6B6B"});
         for(let i=0;i<waveSize;i++)spawn(false);
       }
@@ -1516,10 +1521,11 @@ function loop(){
         } else if(sk==="summon"){
           // spawn 2-3 minions near boss
           const cnt=2+Math.min(Math.floor(g.wave/8),2);
-          for(let i=0;i<cnt&&g.ene.length<MAX_ENEMIES;i++){
+          const _mxE=MODE[_mode].maxEnemies||MAX_ENEMIES;
+          for(let i=0;i<cnt&&g.ene.length<_mxE;i++){
             const sa=rn(0,Math.PI*2),sd=40+rn(0,30);
             const mx2=cl(e.x+Math.cos(sa)*sd,30,MW-30),my2=cl(e.y+Math.sin(sa)*sd,30,MH-30);
-            const mhp2=Math.floor((10+g.wave*5)*tierHpFor(e.tier));
+            const mhp2=(_mode==="elite")?Math.floor(MODE.elite.smallHpBase+g.wave*MODE.elite.smallHpPerWave):Math.floor((10+g.wave*5)*tierHpFor(e.tier));
             const mc=TC[e.tier][TC[e.tier].length*Math.random()|0];
             g.ene.push({x:mx2,y:my2,hp:mhp2,mhp:mhp2,speed:e.speed*1.5,color:mc,t:rn(0,10),r:ER*.8,st:0,boss:false,mega:false,tier:Math.max(0,e.tier-1),face:1,xp:2+Math.floor(g.wave/3),poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:e.dmgMul*.6,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0});
           }
@@ -2464,7 +2470,7 @@ let _stageBoss=null,_bossBgmInterval=null;
 function bossBgmStart(bpm){
   bossBgmStop();
   const ac=sfxCtx();if(!ac)return;
-  if(_bgm)_bgm.volume=.08;
+  if(_bgm)_bgm.volume=.18;
   const interval=60000/bpm;
   _bossBgmInterval=setInterval(()=>{
     const ac=sfxCtx();if(!ac)return;const now=ac.currentTime;
@@ -2555,9 +2561,10 @@ function triggerStageBoss(lv){
   const baseHp=(1500+g.wave*100)*_bossEliteMul,hpMul=lv===20?1.2:3.5;
   const bossHp=baseHp*hpMul;
   const estTime=bossHp/Math.max(dps,0.1);
-  if(estTime>120&&!g._angelOffered){
-    // 預估超過2分鐘，出天使寶箱
-    g._angelOffered=true;
+  const angelKey="_angelOffer"+lv;
+  if(estTime>120&&!g[angelKey]){
+    // 預估超過2分鐘，出天使寶箱（每個Boss各一次機會）
+    g[angelKey]=true;
     g._pendingStageBoss=lv;
     g.run=false;
     showAngelCard();
@@ -2648,15 +2655,19 @@ function updateStageBoss(e,now,dt){
 function drawStageBoss(e,now){
   if(!e||e.hp<=0)return;
   const lv=e.stageBoss,shielded=e._spawnShield&&now<e._spawnShield;cx.save();
-  const bounce=Math.sin(now/(lv===20?200:300))*4,squash=e.st>0?1.2:1,breathe=1+Math.sin(now/400)*.06,scale=breathe*squash;
+  const bounce=Math.sin(now/(lv===20?200:300))*4,breathe=1+Math.sin(now/400)*.06;
+  // 受擊反饋：短暫縮放脈衝（快速恢復，不會持續變形）
+  const hitPulse=e.st>0?1+Math.max(0,1-e.st/300)*.12:0;
+  const scaleX=breathe+(hitPulse>0?hitPulse*.04:0);
+  const scaleY=breathe-(hitPulse>0?hitPulse*.03:0);
   // 出生護盾視覺
   if(shielded){cx.globalAlpha=.3+Math.sin(now/80)*.15;cx.strokeStyle="#fff";cx.lineWidth=3;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*1.8,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;}
   if(lv===30){const phase=e.sbPhase,gc=phase===1?"rgba(155,89,182,.2)":phase===2?"rgba(231,76,60,.25)":"rgba(192,57,43,.35)";
     cx.globalAlpha=.4+Math.sin(now/150)*.15;cx.fillStyle=gc;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*1.6,0,Math.PI*2);cx.fill();
     if(phase===3){cx.globalAlpha=.2+Math.sin(now/80)*.1;cx.fillStyle="#E74C3C";cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2,0,Math.PI*2);cx.fill();}}
-  cx.globalAlpha=1;cx.font=`${lv===20?e.r*1.8:e.r*2}px 'Nunito',sans-serif`;cx.textAlign="center";cx.textBaseline="middle";
-  cx.save();cx.translate(e.x,e.y+bounce);cx.scale(scale,1/squash);
-  if(lv===20){cx.rotate(Math.sin(now/300)*.12);cx.fillText("💩",0,0);}
+  cx.globalAlpha=e.st>0?.85:1;cx.font=`${lv===20?e.r*1.8:e.r*2}px 'Nunito',sans-serif`;cx.textAlign="center";cx.textBaseline="middle";
+  cx.save();cx.translate(e.x,e.y+bounce);cx.scale(scaleX,scaleY);
+  if(lv===20){cx.rotate(Math.sin(now/500)*.06);cx.fillText("💩",0,0);}
   else{if(e.sbPhase>=2)cx.translate((Math.random()-.5)*2,(Math.random()-.5)*2);cx.fillText("😈",0,0);}
   cx.restore();
   // HP bar
@@ -2679,6 +2690,8 @@ function checkStageBossDeath(){
   if(_stageBoss.hp<=0){
     const lv=_stageBoss.stageBoss,e=_stageBoss;
     g._stageBossActive=false;bossBgmStop();
+    // 波次制：Boss 擊敗後給休息時間，避免立刻出怪
+    if(g._ew){g._ew.active=false;g._ew.restEnd=performance.now()+3000;}
     if(lv===20){burst(e.x,e.y,"#8B6914",30);burst(e.x,e.y,"#FFD43B",20);sfx("phoenix");
       g.dn.push({x:e.x,y:e.y-40,d:"💩 Boss 擊敗！",life:3,color:"#FFD43B",big:1});
       g.dn.push({x:g.p.x,y:g.p.y-60,d:"📦 寶箱獎勵！",life:2.5,color:"#FFD43B",big:1});
