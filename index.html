@@ -93,7 +93,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.12</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v3.13</div>
 </div>
 </div>
 
@@ -186,10 +186,11 @@ const MODE={
 };
 // early levels need less XP so first card pick comes fast
 function expForLevel(lv){
-  if(lv<=1)return 25;  // Lv1→2: 25 (was 50)
-  if(lv<=2)return 35;  // Lv2→3: 35 (was 77)
-  if(lv<=3)return 50;  // Lv3→4: 50 (was 120)
-  return Math.floor(EXP_BASE*Math.pow(EXP_SCALE,lv-1)); // normal curve from Lv4+
+  if(_mode==="elite")return 150; // 精英模式：平坦經驗曲線
+  if(lv<=1)return 25;
+  if(lv<=2)return 35;
+  if(lv<=3)return 50;
+  return Math.floor(EXP_BASE*Math.pow(EXP_SCALE,lv-1));
 }
 const MAX_PARTICLES=300;
 const MAX_BULLETS=120;
@@ -1275,12 +1276,26 @@ function loop(){
       g.dn.push({x:g.p.x,y:g.p.y-40,d:"✨ 波次清除！",life:1.5,color:"#51CF66",big:1});
     }
     if(!ew.active&&now>=ew.restEnd){
-      // 休息結束 → 出下一波
       ew.num++;ew.active=true;
-      const waveSize=Math.min(5,3+Math.floor(ew.num/5)); // 3~5隻
-      g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${ew.num}波！`,life:2,color:"#FF6B6B",big:1});
-      sfx("boss");
-      for(let i=0;i<waveSize;i++)spawn(false);
+      // 特殊波次
+      const isBossWave=ew.num%8===0;
+      const isMegaWave=ew.num%12===0;
+      const isEliteWave=ew.num%4===0&&!isBossWave;
+      if(isMegaWave){
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:`👑 第${ew.num}波 — 巨王！`,life:2.5,color:"#FFD43B",big:1});
+        sfx("boss");spawn(true,{mega:true});spawn(false);spawn(false);
+      }else if(isBossWave){
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⭐ 第${ew.num}波 — 小王！`,life:2.5,color:"#FF922B",big:1});
+        sfx("boss");spawn(true);
+      }else if(isEliteWave){
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${ew.num}波 — 精英！`,life:2,color:"#E74C3C",big:1});
+        sfx("boss");
+        for(let i=0;i<2;i++)spawn(false); // 精英機率 20%，大概 1 隻精英+1 小怪
+      }else{
+        const waveSize=Math.min(4,2+Math.floor(ew.num/8));
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${ew.num}波`,life:1.5,color:"#FF6B6B"});
+        for(let i=0;i<waveSize;i++)spawn(false);
+      }
     }
   }else{
     // === 經典模式：持續出怪 ===
@@ -1583,7 +1598,8 @@ function loop(){
       const hasElem=!!(fx.fire||fx.ice||fx.lightning||fx.poison||fx.dragon);
       if(hasElem)dmg*=1.2;else dmg*=.5;
     }
-    if(_mode==="elite"&&!e.stageBoss&&!isBossUnit)dmg*=.6;
+    // 精英模式全局 cap：每發最多打 4% enemy maxHP（Boss 有獨立 cap）
+    if(_mode==="elite"&&!e.stageBoss&&!isBossUnit)dmg=Math.min(dmg,e.mhp*.04);
     if(fx.ice&&!(isBossUnit&&bType==="tough"))dmg*=.95;
     if(e.role===ROLE_SHIELD){const ba=Math.atan2(b.vy,b.vx),fa=e.shieldAng+Math.PI,ad=Math.abs(((ba-fa)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);if(ad<Math.PI*.55)dmg*=.25;}
     e.hp-=dmg;sfxHit();
@@ -1674,7 +1690,7 @@ function loop(){
   const c_=cam();
   let crateOpened=false;
   g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;g.run=false;
-    if(cr.bigChest){const _bcp=_mode==="elite"?3:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
+    if(cr.bigChest){const _bcp=_mode==="elite"?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
     else{showPick("crate");}
   }}});});
 
@@ -1732,10 +1748,10 @@ function loop(){
     if(g.level>=12&&((g.p.armor||0)+(g.p.dodge||0))<.25)showHint("🛡️ 後期建議補防禦/閃避，不然很痛！");
     // 寶箱系統（依模式不同）
     if(_mode==="elite"){
-      // 精英模式：每3等1個大寶箱
-      if(g.level%3===0&&g.level<=27){triggerBigChest(1);showHint("👑 大寶箱出現！");}
-      if(g.level===20&&!g._boss20){g._boss20=true;triggerStageBoss(20);}
-      if(g.level===30&&!g._boss30){g._boss30=true;triggerStageBoss(30);}
+      // 精英模式：Lv20通關，5次寶箱(各4選)=20張卡
+      if(g.level===4||g.level===8||g.level===16){triggerBigChest(1);showHint("👑 大寶箱出現！");}
+      if(g.level===12&&!g._boss20){g._boss20=true;triggerStageBoss(20);} // 💩Boss Lv12
+      if(g.level===20&&!g._boss30){g._boss30=true;triggerStageBoss(30);} // 😈Boss Lv20(最終)
     }else{
       // 經典模式：3個前期小寶箱 + 3個大寶箱(各5選) = 18張卡
       if(g.level>=2&&g.level<=4){spawnBonusCrates(1);showHint("📦 寶箱出現！");}
