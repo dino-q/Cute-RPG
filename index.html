@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.18</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.20</div>
 </div>
 </div>
 
@@ -2777,19 +2777,87 @@ function triggerStageBoss(lv){
   g.ene.forEach(e=>{if(!e.stageBoss)burst(e.x,e.y,e.color,5);});
   g.ene=g.ene.filter(e=>e.stageBoss);
   g.ebul=[];g.bul=[];g._stageBossActive=true;g._stageBossLv=lv;
-  sfxBossEntrance(lv);
-  const now=performance.now(),px=g.p.x,py=g.p.y;
-  const bx=px+(Math.random()>.5?1:-1)*180,by=py+(Math.random()>.5?1:-1)*180;
-  const bHp=baseHp*hpMul;
-  const sb={x:cl(bx,60,mapW()-60),y:cl(by,60,mapH()-60),hp:bHp,mhp:bHp,
-    speed:lv===20?0.6:0.45,color:lv===20?"#8B6914":"#9B59B6",t:0,r:lv===20?54:48,st:0,
-    boss:true,mega:true,tier:4,face:1,xp:lv===20?200:500,
-    poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:lv===20?2:3.5,
-    role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
-    stageBoss:lv,bossType:lv===20?"armor":"tough",sbPhase:1,sbAtkCD:now+2500,sbSpawnCD:now+10000,sbTeleCD:now+8000,sbPulseCD:now+12000,deadHandled:false,_pendingPulse:0,_spawnShield:now+2000,_spawnTime:now};
-  g.ene.push(sb);_stageBoss=sb;
-  g.dn.push({x:g.p.x,y:g.p.y-70,d:lv===20?"💩 中場Boss登場！":"😈 最終魔王降臨！",life:3,color:lv===20?"#8B6914":"#9B59B6",big:1});
-  setTimeout(()=>bossBgmStart(120),1800);
+
+  // === Boss 登場動畫 ===
+  g.run=false;
+  const isPoo=lv===20;
+  const bossCol=isPoo?"#8B6914":"#9B59B6";
+  const bossEmoji=isPoo?"💩":"😈";
+  const bossTitle=isPoo?"中場 Boss 登場！":"最終魔王降臨！";
+
+  // 暫停 + 暗幕
+  const _entOv=document.createElement("div");
+  _entOv.style.cssText="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0);transition:background .4s;pointer-events:none;display:flex;align-items:center;justify-content:center;flex-direction:column";
+  document.body.appendChild(_entOv);
+  requestAnimationFrame(()=>_entOv.style.background="rgba(0,0,0,.6)");
+
+  // 粒子 canvas
+  const _entCv=document.createElement("canvas");
+  _entCv.width=VW;_entCv.height=VH;_entCv.style.cssText="position:absolute;inset:0";
+  _entOv.appendChild(_entCv);
+  const _ectx=_entCv.getContext("2d");
+  let _entPar=[],_entRaf,_entT=0;
+  function entLoop(){
+    _ectx.clearRect(0,0,VW,VH);_entT+=16;
+    // 粒子從四周匯聚到中心
+    if(_entT<1800&&Math.random()<.6){
+      for(let i=0;i<4;i++){
+        const edge=Math.random()*4|0;
+        const sx=edge===0?0:edge===1?VW:rn(0,VW);
+        const sy=edge===2?0:edge===3?VH:rn(0,VH);
+        const dx2=VW/2-sx,dy2=VH/2-sy,dd=Math.sqrt(dx2*dx2+dy2*dy2)||1;
+        _entPar.push({x:sx,y:sy,vx:dx2/dd*rn(3,6),vy:dy2/dd*rn(3,6),life:1,sz:rn(2,5),color:isPoo?(Math.random()>.5?"#8B6914":"#D4A017"):(Math.random()>.5?"#9B59B6":"#E74C3C")});
+      }
+    }
+    _entPar.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=.012;p.sz*=.99;
+      _ectx.globalAlpha=Math.max(0,p.life);_ectx.fillStyle=p.color;
+      _ectx.beginPath();_ectx.arc(p.x,p.y,p.sz,0,Math.PI*2);_ectx.fill();});
+    _entPar=_entPar.filter(p=>p.life>0);
+    // 中心脈動光球
+    const pulse=Math.sin(_entT/120)*.2;
+    _ectx.globalAlpha=.3+pulse;_ectx.fillStyle=bossCol;
+    _ectx.beginPath();_ectx.arc(VW/2,VH/2,30+_entT*.02,0,Math.PI*2);_ectx.fill();
+    _ectx.globalAlpha=1;
+    _entRaf=requestAnimationFrame(entLoop);
+  }
+  entLoop();
+
+  // 0.6秒：顯示 Boss emoji + 名稱
+  setTimeout(()=>{
+    const txt=document.createElement("div");
+    txt.style.cssText="position:relative;z-index:1;text-align:center";
+    txt.innerHTML=`
+      <div style="font-size:60px;animation:fl 1.5s ease-in-out infinite;filter:drop-shadow(0 0 20px ${bossCol})">${bossEmoji}</div>
+      <div style="font-size:20px;font-weight:900;color:${bossCol};text-shadow:0 0 20px ${bossCol};margin-top:8px;animation:fadeIn .5s both">${bossTitle}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;animation:fadeIn .8s .3s both">${isPoo?"🛡️ 防禦型 — 物理傷害降低":"💪 韌性型 — 免疫控制效果"}</div>
+    `;
+    _entOv.appendChild(txt);
+  },600);
+
+  // 2.5秒：淡出 + 生成 Boss + 開始遊戲
+  setTimeout(()=>{
+    if(_entRaf)cancelAnimationFrame(_entRaf);
+    _entOv.style.background="rgba(0,0,0,0)";
+    setTimeout(()=>{if(_entOv.parentNode)_entOv.parentNode.removeChild(_entOv);},500);
+
+    sfxBossEntrance(lv);
+    const now2=performance.now(),px=g.p.x,py=g.p.y;
+    const bx=px+(Math.random()>.5?1:-1)*180,by=py+(Math.random()>.5?1:-1)*180;
+    const bHp=baseHp*hpMul;
+    const sb={x:cl(bx,60,mapW()-60),y:cl(by,60,mapH()-60),hp:bHp,mhp:bHp,
+      speed:lv===20?0.6:0.45,color:bossCol,t:0,r:lv===20?54:48,st:0,
+      boss:true,mega:true,tier:4,face:1,xp:lv===20?200:500,
+      poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:lv===20?2:3.5,
+      role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
+      stageBoss:lv,bossType:lv===20?"armor":"tough",sbPhase:1,sbAtkCD:now2+3000,sbSpawnCD:now2+10000,sbTeleCD:now2+8000,sbPulseCD:now2+12000,deadHandled:false,_pendingPulse:0,_spawnShield:now2+2500,_spawnTime:now2};
+    g.ene.push(sb);_stageBoss=sb;
+    // 登場爆發特效
+    burst(sb.x,sb.y,bossCol,25);
+    for(let i=0;i<20&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/20,v=rn(2,5);par.push({x:sb.x,y:sb.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,color:isPoo?"#D4A017":"#DA77F2",sz:rn(3,7)});}
+    g.dn.push({x:sb.x,y:sb.y-sb.r-20,d:bossEmoji+" "+bossTitle,life:3,color:bossCol,big:1});
+    g.run=true;const n=performance.now();g.lf=n;g.lS=n;g.laF=n;
+    setTimeout(()=>bossBgmStart(120),500);
+  },2500);
 }
 
 function updateStageBoss(e,now,dt){
@@ -2943,24 +3011,58 @@ function updateStageBoss(e,now,dt){
     }
     // 執行瞬移
     if(e._teleExe&&now>=e._teleExe){e._teleExe=0;sfxBossAtk("teleport");
-      // 殘影
+      // 殘影（舊位置）
       for(let gi=0;gi<4;gi++){par.push({x:e.x+rn(-5,5),y:e.y+rn(-5,5),vx:0,vy:0,life:.5,color:"rgba(155,89,182,.5)",sz:e.r*1.2});}
       burst(e.x,e.y,"#9B59B6",15);
-      const ta=Math.random()*Math.PI*2,tr=60+Math.random()*40;
       const oldX=e.x,oldY=e.y;
+      // Phase 2: 瞬移到較遠處（可閃避）
+      // Phase 3: 瞬移到中距離，接著衝刺
+      const tr=phase===2?(120+rn(0,40)):(90+rn(0,30));
+      const ta=Math.random()*Math.PI*2;
       e.x=cl(g.p.x+Math.cos(ta)*tr,e.r,mapW()-e.r);e.y=cl(g.p.y+Math.sin(ta)*tr,e.r,mapH()-e.r);
       // 瞬移軌跡殘影
-      const tdx=e.x-oldX,tdy=e.y-oldY,td=Math.sqrt(tdx*tdx+tdy*tdy)||1;
+      const tdx=e.x-oldX,tdy=e.y-oldY;
       for(let gi=0;gi<6;gi++){const t2=gi/6;par.push({x:oldX+tdx*t2,y:oldY+tdy*t2,vx:0,vy:0,life:.4,color:"rgba(155,89,182,.35)",sz:e.r*.8});}
       burst(e.x,e.y,"#9B59B6",15);
-      // Phase 3 撞擊檢測
-      if(phase===3&&di(e,g.p)<e.r+PR){
-        e._retreatEnd=now+1000; // 撞到後退1秒
+      if(phase===3){
+        // Phase 3：瞬移後短暫停頓 → 高速衝刺向玩家
+        e._dashChargeEnd=now+400; // 0.4秒蓄力
+        g.dn.push({x:e.x,y:e.y-e.r-10,d:"⚠️",life:0.5,color:"#FF4040"});
+      }
+      // 瞬移後散射（Phase 2 立即，Phase 3 衝刺後）
+      if(phase===2){setTimeout(()=>{if(!g||!g.run||e.hp<=0)return;sfxBossAtk("slam");_shakeT=.3;_shakePow=6;
+        for(let i=0;i<8;i++){const a=Math.PI*2*i/8;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,dmg:10+g.wave,life:1,color:"#8E44AD"});}burst(e.x,e.y,"#8E44AD",20);},400);}
+    }
+    // Phase 3 蓄力衝刺
+    if(e._dashChargeEnd&&now<e._dashChargeEnd){
+      // 蓄力抖動
+      e.x+=(Math.random()-.5)*4;e.y+=(Math.random()-.5)*4;
+    }else if(e._dashChargeEnd&&now>=e._dashChargeEnd){
+      e._dashChargeEnd=0;
+      // 高速衝向玩家當前位置
+      const cdx=g.p.x-e.x,cdy=g.p.y-e.y,cd=Math.sqrt(cdx*cdx+cdy*cdy)||1;
+      e._chargeDx=cdx/cd;e._chargeDy=cdy/cd;e._chargeEnd=now+350; // 0.35秒衝刺
+      sfxBossAtk("slam");
+    }
+    if(e._chargeEnd&&now<e._chargeEnd){
+      const cspd=8*dt;
+      e.x+=e._chargeDx*cspd;e.y+=e._chargeDy*cspd;
+      e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
+      // 衝刺殘影
+      if(par.length<MAX_PARTICLES&&Math.random()<.5)par.push({x:e.x,y:e.y,vx:0,vy:0,life:.3,color:"rgba(155,89,182,.4)",sz:e.r*.9});
+      // 撞擊檢測
+      if(di(e,g.p)<e.r+PR+5){
+        e._chargeEnd=0;e._retreatEnd=now+1000;
         const rdx2=e.x-g.p.x,rdy2=e.y-g.p.y,rd2=Math.sqrt(rdx2*rdx2+rdy2*rdy2)||1;
         e._retDx=rdx2/rd2;e._retDy=rdy2/rd2;
+        _shakeT=.4;_shakePow=8;burst(e.x,e.y,"#8E44AD",15);
+        for(let i=0;i<8;i++){const a=Math.PI*2*i/8;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,dmg:10+g.wave,life:1,color:"#8E44AD"});}
       }
-      setTimeout(()=>{if(!g||!g.run||e.hp<=0)return;sfxBossAtk("slam");_shakeT=.3;_shakePow=6;
-        for(let i=0;i<8;i++){const a=Math.PI*2*i/8;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,dmg:10+g.wave,life:1,color:"#8E44AD"});}burst(e.x,e.y,"#8E44AD",20);},400);}
+    }else if(e._chargeEnd){e._chargeEnd=0;
+      // 衝刺結束沒撞到：散射
+      burst(e.x,e.y,"#8E44AD",10);
+      for(let i=0;i<6;i++){const a=Math.PI*2*i/6;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*2,vy:Math.sin(a)*2,dmg:8+g.wave,life:1,color:"#8E44AD"});}
+    }
     // 瞬移前抖動視覺
     if(e._teleShake&&now<e._teleShake){
       e.x+=(Math.random()-.5)*3;e.y+=(Math.random()-.5)*3;}
