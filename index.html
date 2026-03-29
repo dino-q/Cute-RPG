@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.10</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.13</div>
 </div>
 </div>
 
@@ -291,7 +291,7 @@ card("旋風斬","🌪️","SR","atk",["風刃追擊3秒","2道風刃追擊","3�
 card("狂暴之力","💢","SR","pas",["HP<30%時 攻擊翻倍","HP<40%時 攻擊翻倍","HP<50%時 攻擊翻倍"],[s=>{s.berserk=.3},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
 card("連鎖爆破","💥","SR","atk",["敵人死亡後爆炸 周圍傷8","敵人死亡 周圍傷18","敵人死亡 周圍傷30"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
 card("破甲箭","🪡","SR","atk",["攻+3 armor cap+25%","攻+4 armor cap+35%","攻+5 armor cap+50% 穿透+1"],[s=>{s.atk+=3;s.armorCapBonus=(s.armorCapBonus||0)+.25},s=>{s.atk+=4;s.armorCapBonus=(s.armorCapBonus||0)+.35},s=>{s.atk+=5;s.armorCapBonus=(s.armorCapBonus||0)+.5;s.pierce=(s.pierce||0)+1}],"#D4A017");
-card("迴力鏢","🪃","SR","atk",["攻+2 子彈折返","攻+5 折返+範圍↑","攻+8 折返兩次 穿透+1"],[s=>{s.atk+=2;s.boomerang=1},s=>{s.atk+=5;s.boomerang=1;s.homingR=(s.homingR||200)+80},s=>{s.atk+=8;s.boomerang=2;s.pierce=(s.pierce||0)+1}],"#20C997");
+card("迴力鏢","🪃","SR","atk",["攻+2 射出迴力鏢","攻+5 飛行距離↑","攻+8 雙迴力鏢 穿透+1"],[s=>{s.atk+=2;s.boomerang=(s.boomerang||0)+1},s=>{s.atk+=5;s.boomerang=Math.max(s.boomerang||1,1);s.homingR=(s.homingR||200)+80},s=>{s.atk+=8;s.boomerang=(s.boomerang||0)+1;s.pierce=(s.pierce||0)+1}],"#20C997");
 card("機關槍","🔫","SR","atk",["攻速+30% 攻-3","攻速+60% 攻-5 無過熱","攻速+100% 攻-8 狂暴模式"],[s=>{s.fr*=.7;s.atk=Math.max(1,s.atk-3);s._minigun=1},s=>{s.fr*=.4;s.atk=Math.max(1,s.atk-5);s._minigun=2;s._noOverheat=true},s=>{s.fr*=.5*.4;s.atk=Math.max(1,s.atk-8);s._minigun=3;s._noOverheat=true;s._minigunBerserk=true}],"#FF8C00");
 card("閃電步","💫","SR","pas",["大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招"],[s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8}],"#FFE066",null,1);
 card("元素精通","🔮","SR","pas",["元素傷害+15%","元素傷害+30%","元素傷害+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
@@ -596,6 +596,12 @@ function resize(){const s=Math.min(window.innerWidth/VW,window.innerHeight/VH,2)
   $("minimap").style.display=g?"block":"none";
 }
 window.addEventListener("resize",resize);
+
+// 玩家受傷紅色拋物線數字
+function showPlayerDmg(dmg){
+  if(!g||dmg<1)return;
+  g.dn.push({x:g.p.x,y:g.p.y-PR-5,d:"-"+Math.floor(dmg),life:1.2,color:"#FF4040",big:1,_playerDmg:true});
+}
 
 /* ═══ HUD ═══ */
 function hud(){if(!g)return;
@@ -1058,7 +1064,7 @@ function fire(dmg,dx,dy,sp){
     const count=Math.min(shots,12);
     for(let i=0;i<count;i++){
       const a=dir+(i-(count-1)/2)*.16+rn(-sp,sp);
-      g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(g.p.crit||.05),bc,trail:[],_tw:0,pierce:g.p.pierce||0,hm:g.p.homing||0,_boomerang:g.p.boomerang||0,_minigun:g.p._minigun||0,_armorPen:g.p.armorCapBonus||0});
+      g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(g.p.crit||.05),bc,trail:[],_tw:0,pierce:g.p.pierce||0,hm:g.p.homing||0,_minigun:g.p._minigun||0,_armorPen:g.p.armorCapBonus||0});
     }
   });
 }
@@ -1393,16 +1399,6 @@ function loop(){
     for(let ti=0;ti<b.trail.length;ti++)b.trail[ti].life-=.18*dt;
     // homing
     if(b.hm>0){const hmR=g.p.homingR||200;let nr=null,nd=1e9;g.ene.forEach(e=>{const d=di(b,e);if(d<nd){nd=d;nr=e;}});if(nr&&nd<hmR){const dx=nr.x-b.x,dy=nr.y-b.y,d=Math.sqrt(dx*dx+dy*dy)||1;b.vx+=(dx/d)*b.hm*dt*60;b.vy+=(dy/d)*b.hm*dt*60;const bs=Math.sqrt(b.vx*b.vx+b.vy*b.vy);if(bs>8){b.vx=b.vx/bs*8;b.vy=b.vy/bs*8;}}}
-    // 迴力鏢：折返
-    if(b._boomerang&&!b._returning&&b.life<.5){
-      b.vx*=-1;b.vy*=-1;b._returning=1;b.life=.5;
-      if(b._boomerang>=2)b._returnCount=(b._returnCount||0)+1;
-      burst(b.x,b.y,"#20C997",4);
-    }
-    if(b._boomerang>=2&&b._returning&&b._returnCount<2&&b.life<.25){
-      b.vx*=-1;b.vy*=-1;b._returnCount++;b.life=.25;
-      burst(b.x,b.y,"#20C997",3);
-    }
     b.x+=b.vx*dt;b.y+=b.vy*dt;
     return b.x>g.p.x-VW&&b.x<g.p.x+VW&&b.y>g.p.y-VH&&b.y<g.p.y+VH&&b.life>0;
   });
@@ -1634,7 +1630,7 @@ function loop(){
         const survMit=1-Math.min(.42,surv*.36);
         let dmg=b.dmg*(1-g.p.armor)*lateMul*survMit;
         if(g.p.thorns>0){/* thorns don't apply to projectiles */}
-        g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",4);_hitFlash=1;_shakeT=.35;_shakePow=Math.min(6,2+dmg/15);sfx("hurt");
+        g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",4);_hitFlash=1;_shakeT=.35;_shakePow=Math.min(6,2+dmg/15);sfx("hurt");showPlayerDmg(dmg);
         g.dn.push({x:g.p.x,y:g.p.y-20,d:Math.floor(dmg),life:1,color:"#FF6B6B"});
         if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;g.p._iFrameEnd=now+1500;_phoenixT=1.2;sfx("phoenix");burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🔥 不死鳥復活！",life:2,color:"#FF922B",big:1});g.ene.forEach(oe=>{const rdx=oe.x-g.p.x,rdy=oe.y-g.p.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;oe.x+=rdx/rd*SPAWN_R;oe.y+=rdy/rd*SPAWN_R;oe.frozen=1500;});}else{g.run=false;showOver();}}
         return false;
@@ -1775,10 +1771,10 @@ function loop(){
   }}});
   settleEnemyDeaths();
 
-  // bullet-crate hit
+  // bullet-crate hit (練習模式跳過)
   const c_=cam();
   let crateOpened=false;
-  g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;g.run=false;
+  if(!_practiceMode)g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;g.run=false;
     if(cr.bigChest){const _bcp=_mode==="elite"?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
     else{showPick("crate");}
   }}});});
@@ -1796,7 +1792,7 @@ function loop(){
     // 狂暴便便：撞到扣剩餘HP 1/3，不可摧毀
     if(e.ragePoo){if(di(e,g.p)<PR+e.r-4){
       const rpDmg=Math.floor(g.p.hp/3);g.p.hp-=rpDmg;burst(g.p.x,g.p.y,"#8B6914",6);_hitFlash=1;sfx("hurt");
-      g.p._iFrameEnd=now+800;g.dn.push({x:g.p.x,y:g.p.y-20,d:"-"+rpDmg,life:1,color:"#8B6914",big:1});
+      g.p._iFrameEnd=now+800;showPlayerDmg(rpDmg);
       if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;g.p._iFrameEnd=now+1500;_phoenixT=1.2;sfx("phoenix");}else{g.run=false;showOver();}}
     }return true;}
     // Stage Boss：接觸造成傷害但Boss不消失
@@ -1804,8 +1800,7 @@ function loop(){
       const lateMul=1+Math.max(0,g.wave-10)*.07;
       let dmg=(12+g.wave*3)*(e.dmgMul||1)*lateMul*(1-g.p.armor);
       g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",8);_hitFlash=1;_shakeT=.5;_shakePow=8;sfx("hurt");
-      g.p._iFrameEnd=now+600;
-      g.dn.push({x:g.p.x,y:g.p.y-20,d:Math.floor(dmg),life:1,color:"#FF6B6B"});
+      g.p._iFrameEnd=now+600;showPlayerDmg(dmg);
       if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;g.p._iFrameEnd=now+1500;_phoenixT=1.2;sfx("phoenix");burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🔥 不死鳥復活！",life:2,color:"#FF922B",big:1});}else{g.run=false;showOver();}}
     }return true;}
     if(di(e,g.p)<PR+e.r-4){
@@ -1816,7 +1811,7 @@ function loop(){
     const survMit=1-Math.min(.42,surv*.36);
     let dmg=(8+g.wave*2)*(1-g.p.armor)*(e.dmgMul||1)*lateMul*survMit;
     if(g.p.thorns>0){const td=dmg*g.p.thorns;e.hp-=td;}
-    g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",6);_hitFlash=1;_shakeT=.4;_shakePow=Math.min(8,3+dmg/12);sfx("hurt");
+    g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",6);_hitFlash=1;_shakeT=.4;_shakePow=Math.min(8,3+dmg/12);sfx("hurt");showPlayerDmg(dmg);
     g.p._iFrameEnd=now+400; // 400ms i-frame after contact damage
     if(g.p.hp<=0){if(g.p.revive>0){g.p.revive--;g.p.hp=g.p.maxHp;g.p._iFrameEnd=now+1500;_phoenixT=1.2;sfx("phoenix");burst(g.p.x,g.p.y,"#BE4BDB",20);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🔥 不死鳥復活！",life:2,color:"#FF922B",big:1});g.ene.forEach(oe=>{const rdx=oe.x-g.p.x,rdy=oe.y-g.p.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;oe.x+=rdx/rd*SPAWN_R;oe.y+=rdy/rd*SPAWN_R;oe.frozen=1500;});}else{g.run=false;showOver();return false;}}
     if(MODE[_mode].enemyContactVanish){awardEnemyKill(e);return false;}
@@ -1896,6 +1891,48 @@ function loop(){
   // 揮武器動畫衰減
   if(g._wbSwing>0)g._wbSwing=Math.max(0,g._wbSwing-dt*2.5);
 
+  // 迴力鏢系統
+  if(g.p.boomerang>0){
+    if(!g._booms)g._booms=[];
+    g._boomCD=(g._boomCD||0)-dt*16.67;
+    if(g._boomCD<=0&&g._booms.length<g.p.boomerang*2){
+      g._boomCD=1500;
+      const ad=g.ad||{x:0,y:-1},spd=5.5;
+      const cnt=Math.min(g.p.boomerang,2);
+      for(let i=0;i<cnt;i++){
+        const spread=(i-(cnt-1)/2)*.3;
+        const a=Math.atan2(ad.y,ad.x)+spread;
+        g._booms.push({x:g.p.x,y:g.p.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,
+          ox:g.p.x,oy:g.p.y,phase:"out",dist:0,maxDist:220+(g.p.homingR-200)*.5,
+          dmg:(g.p.atk*.45+3)*(g.p.elemBoost||1),rot:0,hitOut:new Set(),hitRet:new Set()});
+      }
+      sfx("shoot");
+    }
+    g._booms=g._booms.filter(bm=>{
+      bm.rot+=.25*dt;
+      if(bm.phase==="out"){
+        bm.x+=bm.vx*dt;bm.y+=bm.vy*dt;
+        bm.dist+=Math.sqrt(bm.vx*bm.vx+bm.vy*bm.vy)*dt;
+        // 穿透傷害（去程）
+        g.ene.forEach(e=>{if(e.hp<=0||e.ragePoo||bm.hitOut.has(e))return;
+          if(di(bm,e)<e.r+10){bm.hitOut.add(e);e.hp-=bm.dmg;burst(bm.x,bm.y,"#20C997",4);
+            g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(bm.dmg),life:.8,color:"#20C997"});}});
+        if(bm.dist>=bm.maxDist){bm.phase="return";burst(bm.x,bm.y,"#20C997",6);}
+      }else{
+        // 回程：朝玩家飛回
+        const dx=g.p.x-bm.x,dy=g.p.y-bm.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+        const rspd=6.5*dt;
+        bm.x+=dx/d*rspd;bm.y+=dy/d*rspd;
+        // 穿透傷害（回程）
+        g.ene.forEach(e=>{if(e.hp<=0||e.ragePoo||bm.hitRet.has(e))return;
+          if(di(bm,e)<e.r+10){bm.hitRet.add(e);e.hp-=bm.dmg*1.2;burst(bm.x,bm.y,"#fff",4);
+            g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(bm.dmg*1.2),life:.8,color:"#fff"});}});
+        if(d<PR+12)return false; // 回到主角身邊消失
+      }
+      return true;
+    });
+  }
+
   // orbiters（召喚球）
   const passiveCnt=g.p.orbiters||0,totalOrb=passiveCnt,passiveOrbPos=[];
   if(totalOrb>0){for(let i=0;i<totalOrb;i++){
@@ -1941,8 +1978,8 @@ function loop(){
   // particles
   par=par.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=.03*dt;p.sz*=.98;return p.life>0;});
   g.dn=g.dn.filter(d=>{
-    if(d.color==="#fff"&&typeof d.d==="number"){
-      if(!d._arc){d._arc=1;d.vx=rn(-.38,.38);d.vy=rn(-2.8,-2.1);d.g=.16;}
+    if(d._arc||(d.color==="#fff"&&typeof d.d==="number")||(d._playerDmg)){
+      if(!d._arc){d._arc=1;d.vx=rn(-.5,.5);d.vy=rn(-2.8,-2.0);d.g=.14;}
       d.x+=d.vx*dt;d.vy+=d.g*dt;d.y+=d.vy*dt;
     }else d.y-=1.1*dt;
     d.life-=.025*dt;
@@ -2043,13 +2080,6 @@ function loop(){
       cx.fillStyle=mgBerserk?"#FF4500":"#FFA94D";
       cx.fillRect(-sz*1.5,-sz*.25,sz*3,sz*.5);
       if(mgBerserk){cx.globalAlpha=.3;cx.fillStyle="#FF0000";cx.fillRect(-sz*2,-sz*.4,sz*4,sz*.8);}
-    }else if(b._boomerang){
-      // 迴力鏢：旋轉弧形
-      cx.translate(b.x,b.y);cx.rotate(now/80);
-      cx.fillStyle=b._returning?"#fff":"#20C997";
-      cx.beginPath();cx.arc(0,0,sz*1.3,0,Math.PI);cx.lineTo(0,0);cx.closePath();cx.fill();
-      cx.fillStyle=b._returning?"#20C997":"#12B886";
-      cx.beginPath();cx.arc(0,0,sz*1.3,Math.PI,Math.PI*2);cx.lineTo(0,0);cx.closePath();cx.fill();
     }else if(b._armorPen>0){
       // 破甲箭：金色尖銳箭型
       const a=Math.atan2(b.vy,b.vx);cx.translate(b.x,b.y);cx.rotate(a);
@@ -2259,6 +2289,31 @@ function loop(){
         par.push({x:wb.x+rn(-10,10),y:wb.y+rn(-12,8),vx:rn(-1.2,1.2),vy:rn(-1.5,-.4),life:.45,color:"#99E9F2",sz:pSz});}
     });
   }
+  // 迴力鏢視覺
+  if(g._booms&&g._booms.length>0){
+    g._booms.forEach(bm=>{
+      cx.save();cx.translate(bm.x,bm.y);cx.rotate(bm.rot);
+      const sz=12,ret=bm.phase==="return";
+      // 外圈光暈
+      cx.globalAlpha=.2;cx.fillStyle=ret?"#fff":"#20C997";
+      cx.beginPath();cx.arc(0,0,sz+4,0,Math.PI*2);cx.fill();
+      // 迴力鏢本體（V形）
+      cx.globalAlpha=ret?.95:.85;
+      cx.fillStyle=ret?"#fff":"#20C997";cx.strokeStyle=ret?"#20C997":"#12B886";cx.lineWidth=2;
+      cx.beginPath();
+      cx.moveTo(sz,0);cx.quadraticCurveTo(sz*.3,-sz*.6,-sz*.2,-sz);
+      cx.lineTo(0,-sz*.3);
+      cx.lineTo(-sz*.2,sz);cx.quadraticCurveTo(sz*.3,sz*.6,sz,0);
+      cx.closePath();cx.fill();cx.stroke();
+      // 中心高光
+      cx.fillStyle="#fff";cx.globalAlpha=.6;
+      cx.beginPath();cx.arc(sz*.2,0,2.5,0,Math.PI*2);cx.fill();
+      cx.restore();
+      // 拖尾粒子
+      if(par.length<MAX_PARTICLES&&Math.random()<.4){
+        par.push({x:bm.x+rn(-4,4),y:bm.y+rn(-4,4),vx:rn(-.5,.5),vy:rn(-.5,.5),life:.3,color:ret?"#fff":"#20C997",sz:rn(2,4)});}
+    });
+  }
   // orbiters visual（召喚球）
   if(totalOrb>0){for(let i=0;i<totalOrb;i++){
     const orbR=42;
@@ -2341,7 +2396,14 @@ function loop(){
   // particles
   par.forEach(p=>{cx.globalAlpha=p.life;cx.fillStyle=p.color;cx.beginPath();cx.arc(p.x,p.y,p.sz,0,Math.PI*2);cx.fill();});cx.globalAlpha=1;
   // dmg nums
-  g.dn.forEach(d=>{cx.save();cx.globalAlpha=d.life;cx.fillStyle=d.color||"#fff";cx.font=(d.big?"bold 15px":"bold 11px")+" 'Nunito',sans-serif";cx.textAlign="center";cx.fillText(typeof d.d==="number"?"-"+d.d:d.d,d.x,d.y);cx.restore();});
+  g.dn.forEach(d=>{cx.save();cx.globalAlpha=Math.min(1,d.life);
+    const isPlayerDmg=d._playerDmg;
+    cx.font=(isPlayerDmg?"bold 18px":d.big?"bold 15px":"bold 11px")+" 'Nunito',sans-serif";
+    cx.textAlign="center";
+    const txt=typeof d.d==="number"?"-"+d.d:d.d;
+    if(isPlayerDmg){cx.strokeStyle="rgba(0,0,0,.6)";cx.lineWidth=3;cx.strokeText(txt,d.x,d.y);}
+    cx.fillStyle=d.color||"#fff";cx.fillText(txt,d.x,d.y);
+    cx.restore();});
 
   cx.restore();
 
@@ -2854,7 +2916,7 @@ function updateStageBoss(e,now,dt){
       g.dn.push({x:g.p.x,y:g.p.y-50,d:"⚠️ 暗黑脈衝！靠近Boss！",life:2.5,color:"#FF4040",big:1});e._pendingPulse=now+2000;}
     if(e._pendingPulse&&now>=e._pendingPulse){e._pendingPulse=0;_hitFlash=.8;_shakeT=.5;_shakePow=8;
       const pulseDist=di(e,g.p),safe=pulseDist<55;
-      if(!safe&&!g.p._inv&&!(g.p._iFrameEnd>0)){const dmg=(30+g.wave*2)*(1-g.p.armor);g.p.hp-=dmg;sfx("hurt");_hitFlash=1;g.dn.push({x:g.p.x,y:g.p.y-20,d:Math.floor(dmg),life:1,color:"#9B59B6"});g.p._iFrameEnd=performance.now()+600;}
+      if(!safe&&!g.p._inv&&!(g.p._iFrameEnd>0)){const dmg=(30+g.wave*2)*(1-g.p.armor);g.p.hp-=dmg;sfx("hurt");_hitFlash=1;showPlayerDmg(dmg);g.p._iFrameEnd=performance.now()+600;}
       else if(safe){g.dn.push({x:g.p.x,y:g.p.y-30,d:"安全！",life:1,color:"#51CF66",big:1});}
       burst(e.x,e.y,"#9B59B6",30);
     }
@@ -3160,7 +3222,7 @@ window.pracRebuildCards=function(){
     }
   });
   g.p.hp=99999;g.p.maxHp=99999;g.p.expR=99;
-  g._wb=[];g._wbSpawnT=0;
+  g._wb=[];g._wbSpawnT=0;g._booms=[];g._boomCD=0;
   if($("pracStats").style.display!=="none")pracRefreshStats();
 };
 window.pracToggleEnemy=function(eid,on){if(on)_pracEnemySel.add(eid);else _pracEnemySel.delete(eid);}
@@ -3216,7 +3278,7 @@ window.startGame=window.SG=function(mode){
   cx.fillStyle="#0a0a18";cx.fillRect(0,0,VW,VH);
   const _mw=MC.mapW||MW,_mh=MC.mapH||MH;
   g={p:{x:_mw/2,y:_mh/2,hp:MC.startHp,maxHp:MC.startHp,atk:MC.startAtk,speed:MC.startSpeed,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,hasBH:false,hasTS:false,ultLv:0,pierce:0,homing:0,homingR:200,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,bossDmg:1,mobDmg:1,poisonBossMul:1,burnBoost:1,crateVis:1,mapExpand:0,pickCount:2,face:1,_iFrameEnd:0,_healFlash:0},
-    ene:[],bul:[],par:[],dn:[],orbs:[],ltn:[],ebul:[],crates:genCrates(),
+    ene:[],bul:[],par:[],dn:[],orbs:[],ltn:[],ebul:[],crates:_practiceMode?[]:genCrates(),
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
     lastKill:performance.now(),lastHunt:0,
