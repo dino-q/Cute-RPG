@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.36</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.37</div>
 </div>
 </div>
 
@@ -1193,12 +1193,11 @@ function doUlt(){if(!g||!g.run)return;
   const baseDmg=(ULT_D+g.p.atk*6+g.level*5)*(g.p.ultDmgMul||1)*(1+ultLv*.35);
   // 計算複合CD：取最長的
   const cdVal=isBH?BH_COOLDOWN_MS:(g.p.tsCd||15e3);
-  // 黑洞效果：先發普通大招傷害，再延遲吸引
+  // 黑洞效果：立刻開始吸引（跟舊版一致）
   if(isBH){
-    g.bhEnd=now+300+BH_DURATION_MS; // 延遲0.3秒後開始吸引
+    g.bhEnd=now+BH_DURATION_MS;
     g.bhPow=1+ultLv*.45;
-    g.p.bhSafeEnd=now+300+BH_DURATION_MS+800;
-    g._bhStartAt=now+300; // 吸引開始時間
+    g.p.bhSafeEnd=now+BH_DURATION_MS+800;
   }
   // 時間停止效果
   if(isTS){
@@ -1216,7 +1215,7 @@ function doUlt(){if(!g||!g.run)return;
   // 非純CD制（普通大招 or 只有閃電步）也做傷害+特效
   if(!isTS||isBH){
     g.ene.forEach(e=>{const ud=(_mode==="elite"&&e.stageBoss)?Math.min(baseDmg,e.mhp*.05):baseDmg;e.hp-=ud;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(ud),life:1.3,color:isBH?"#868E96":"#FFD43B",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,14);});
-    if(!isBH)settleEnemyDeaths(); // 黑洞模式延遲清怪，讓吸引先執行
+    settleEnemyDeaths();
   }
   const cols=isBH?["#495057","#868E96","#CED4DA","#fff"]:isTS?["#74C0FC","#4DABF7","#339AF0","#fff"]:["#BE4BDB","#FFD43B","#FF6B6B","#74C0FC","#fff"];
   const burstCount=40+ultLv*12;
@@ -1274,7 +1273,7 @@ function loop(){
   for(let i=_dashGhosts.length-1;i>=0;i--){_dashGhosts[i].life-=.06*dt;if(_dashGhosts[i].life<=0)_dashGhosts.splice(i,1);}
 
   // black-hole ult field: 3s duration, pull + stylish execute for non-boss enemies
-  if(g.bhEnd&&now<g.bhEnd&&now>=(g._bhStartAt||0)){
+  if(g.bhEnd&&now<g.bhEnd){
     const bhLv=(g.p.ultLv||0),bhR=170+bhLv*30;
     g.ene.forEach(e=>{
       if(e.stageBoss||(e.boss&&!e.miniPoo&&!e.miniDemon))return; // 真Boss免疫吸引，召喚怪可被吸
