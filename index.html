@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.38</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.45</div>
 </div>
 </div>
 
@@ -862,6 +862,16 @@ function drawEnemy(e){
     cx.strokeStyle=e.mega?"#FF6B6B":"#FFD43B";cx.lineWidth=e.mega?3:2;cx.setLineDash([3,3]);cx.beginPath();cx.arc(x,cy,r+5,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
     if(e.mega){cx.globalAlpha=.6;cx.strokeStyle="#fff";cx.lineWidth=1.5;cx.beginPath();cx.arc(x,cy,r+12,0,Math.PI*2);cx.stroke();}
   }
+  // 暴走視覺：紅色閃爍光環 + 蓄力虛線
+  if(e._rage&&e._rageDashes<3){
+    const enow=performance.now();
+    cx.globalAlpha=.3+Math.sin(enow/60)*.15;cx.strokeStyle="#FF4040";cx.lineWidth=2;
+    cx.beginPath();cx.arc(x,cy,r+4,0,Math.PI*2);cx.stroke();
+    if(e._rageState==="charge"){
+      cx.globalAlpha=.4+Math.sin(enow/80)*.2;cx.setLineDash([4,3]);cx.strokeStyle="#FF0000";cx.lineWidth=2;
+      cx.beginPath();cx.moveTo(x,cy);cx.lineTo(x+e._rageDx*60,cy+e._rageDy*60);cx.stroke();cx.setLineDash([]);
+    }
+  }
   cx.restore();
 }
 
@@ -1076,13 +1086,14 @@ function spawn(boss,opts={}){
   const earlyMobNerf=w<8?.82:1;
   const earlyBossNerf=w<8?.72:1;
   const earlyMul=boss?earlyBossNerf:earlyMobNerf;
-  const tierHp=[1,1.45,2.05,3.05,4.4][tier]||1;
+  const tierHp=(_mode==="elite"?[1,1.45,2.05,3.05,4.4]:[1,1.3,1.7,2.2,2.8])[tier]||1;
   const tierSpd=[1,.98,1.03,1.08,1.14][tier]||1;
   const tierDmg=[1,1.15,1.35,1.6,1.9][tier]||1;
   const bhp=(20+w*11)*(1+w*.018)*tierHp;
-  const _bossMul=_mode==="elite"?1:(boss?8.5:1); // 經典原始倍率
-  const _megaMul=_mode==="elite"?1:(mega?3.3:1);
-  const hp=Math.floor(bhp*_bossMul*_megaMul*ENEMY_HP_SCALE*grow.hp*earlyMul);
+  const _bossMul=_mode==="elite"?1:(boss?4.25:1); // 經典小王砍半(8.5→4.25)
+  const _megaMul=_mode==="elite"?1:(mega?1.1:1); // 經典巨王再減2/3(3.3→1.1)
+  const _classicMobNerf=(_mode!=="elite"&&!boss)?.25:1; // 經典小怪HP砍75%，Boss不變
+  const hp=Math.floor(bhp*_bossMul*_megaMul*ENEMY_HP_SCALE*grow.hp*earlyMul*_classicMobNerf);
   const _spdCap=MODE[_mode].enemySpdCap||2.4;
   const spdW=(_mode==="elite")?Math.min(w,12):w; // 精英模式：速度成長在12等封頂
   const spd=(.92+Math.min(spdW*.13,_spdCap))*tierSpd*enemyGrowth(spdW).spd*(mega?.85:1)*(w<8?.92:1);
@@ -1239,6 +1250,7 @@ function loop(){
   if(g.heatCD>0){g.heatCD-=dt*16.67;if(g.heatCD<=0){g.heatCD=0;g.heat=0;$("combo").textContent="";}
     else{const sec=Math.ceil(g.heatCD/1000);$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FF6B6B,#C92A2A);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;letter-spacing:.5px;box-shadow:0 0 14px #FF6B6Baa;animation:gw .65s infinite">🔥 攻擊冷卻 '+sec+'s</span>';}}
   else if(g.huntModeUntil&&now<g.huntModeUntil){$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FA5252,#C92A2A);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;box-shadow:0 0 14px #FA5252aa;animation:gw .55s infinite">⚠️ 獵殺模式</span>';}
+  else if(g._cw&&g._cw.raged&&g.ene.some(e=>e._rage&&e._rageDashes<3)){$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FF6B6B,#E03131);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;box-shadow:0 0 14px #FF6B6Baa;animation:gw .6s infinite">⚠️ 敵人暴走中！</span>';}
 
   // ult charge — hold to charge, tap when full to detonate (non-black-hole)
   else if($("combo").innerHTML.includes("#FA5252aa")){$("combo").textContent="";}
@@ -1363,30 +1375,58 @@ function loop(){
       }
     }
   }else{
-    // === 經典模式：持續出怪 ===
-    const MC=MODE[_mode];
-    const si=Math.max(380,MC.spawnBase-g.wave*MC.spawnWaveMul);
-    const targetEnemies=spawnTargetForWave(g.wave);
-    triggerSpikeWave(g.wave);
-    if(now-g.lS>si){
-      const missing=Math.max(0,targetEnemies-g.ene.length);
-      if(missing>0){
-        const batch=Math.min(missing,g.wave<3?2:g.wave<6?2:g.wave<10?3:g.wave<16?4:5);
-        for(let i=0;i<batch;i++)spawn(false);
-        if(g.wave>=8&&missing>batch&&Math.random()<.5)spawn(false);
-        if(g.wave>=14&&missing>batch+1&&Math.random()<.35)spawn(false);
-      }
-      g.lS=now;
+    // === 經典模式：大波次漸進制 ===
+    if(!g._cw)g._cw={num:0,restEnd:0,phase:"rest",target:0,spawned:0,spawnT:0,waveStart:0,raged:false};
+    const cw=g._cw;
+    const aliveClassic=g.ene.filter(e=>e.hp>0&&!e.stageBoss).length;
+    // 波次清完 → 休息
+    if(cw.phase==="active"&&aliveClassic===0&&cw.spawned>=cw.target){
+      cw.phase="rest";cw.restEnd=now+1500;
+      g.dn.push({x:g.p.x,y:g.p.y-40,d:"✨ 波次清除！",life:1.5,color:"#51CF66",big:1});
     }
-    triggerHuntPressure(now);
-  }
-  // boss spawn（經典模式專用，精英模式由波次制控制）
-  if(_mode!=="elite"&&g.kills>0&&g.kills>=g.nextBoss){
-    g.bossCount=(g.bossCount||0)+1;
-    const mega=g.bossCount%3===0;
-    sfx("boss");spawn(true,mega?{mega:true}:{});
-    if(mega)g.dn.push({x:g.p.x,y:g.p.y-70,d:"🗿 巨王現身！",life:1.8,color:"#FF6B6B",big:1});
-    g.nextBoss+=BOSS_EVERY+Math.floor(g.level/2);
+    // 休息結束 → 開始新波次
+    if(cw.phase==="rest"&&now>=cw.restEnd){
+      cw.num++;cw.phase="active";cw.spawned=0;cw.spawnT=now;cw.waveStart=now;cw.raged=false;
+      g.wave=cw.num; // 同步 wave（影響敵人成長）
+      // 計算這波數量
+      const wn=cw.num;
+      const isBossWave=wn%8===0;
+      const isMegaWave=wn%12===0;
+      const isStrongWave=wn%4===0&&!isBossWave;
+      if(isMegaWave){
+        cw.target=spawnTargetForWave(wn);
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:`👑 第${wn}波 — 巨王！(${cw.target}隻)`,life:2.5,color:"#FFD43B",big:1});
+        sfx("boss");spawn(true,{mega:true});
+      }else if(isBossWave){
+        cw.target=spawnTargetForWave(wn);
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⭐ 第${wn}波 — 小王！(${cw.target}隻)`,life:2.5,color:"#FF922B",big:1});
+        sfx("boss");spawn(true);
+      }else if(isStrongWave){
+        cw.target=Math.floor(spawnTargetForWave(wn)*1.2);
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${wn}波 — 強化！(${cw.target}隻)`,life:2,color:"#E74C3C",big:1});
+      }else{
+        cw.target=spawnTargetForWave(wn);
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${wn}波 (${cw.target}隻)`,life:1.5,color:"#FF6B6B"});
+      }
+    }
+    // 漸進出怪：每0.3秒出2-3隻
+    if(cw.phase==="active"&&cw.spawned<cw.target&&now-cw.spawnT>300){
+      cw.spawnT=now;
+      const batch=Math.min(cw.target-cw.spawned,cw.num<6?2:3);
+      for(let i=0;i<batch;i++){spawn(false);cw.spawned++;}
+    }
+    // 暴走觸發：波次開始15秒後還有小怪存活
+    if(cw.phase==="active"&&!cw.raged&&cw.spawned>=cw.target&&now-cw.waveStart>15000&&aliveClassic>0){
+      cw.raged=true;
+      g.dn.push({x:g.p.x,y:g.p.y-50,d:"⚠️ 敵人暴走！",life:2.5,color:"#FF4040",big:1});
+      g.ene.forEach(e=>{
+        if(e.hp<=0||e.boss||e.stageBoss)return;
+        e._rage=1;e._rageDashes=0;e._rageState="charge";e._rageT=now+400;
+        // 鎖定衝刺方向
+        const rdx=g.p.x-e.x,rdy=g.p.y-e.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
+        e._rageDx=rdx/rd;e._rageDy=rdy/rd;
+      });
+    }
   }
 
   // bullets update
@@ -1482,6 +1522,45 @@ function loop(){
     if(Math.abs(dx)>2)e.face=dx>0?1:-1;
     e.shieldAng=Math.atan2(dy,dx); // always face player for shield calc
 
+    // 經典模式暴走 AI（3次衝刺循環）
+    if(e._rage&&e._rageDashes<3){
+      const rcs=e._rageState;
+      if(rcs==="charge"&&now<e._rageT){
+        // 蓄力：原地抖動 + 紅色閃爍
+        e.x+=(Math.random()-.5)*3;e.y+=(Math.random()-.5)*3;
+      }else if(rcs==="charge"&&now>=e._rageT){
+        // 開始衝刺
+        e._rageState="dash";e._rageT=now+300;e._rageDist=0;
+        // 重新鎖定方向
+        const rdx2=g.p.x-e.x,rdy2=g.p.y-e.y,rd2=Math.sqrt(rdx2*rdx2+rdy2*rdy2)||1;
+        e._rageDx=rdx2/rd2;e._rageDy=rdy2/rd2;
+      }else if(rcs==="dash"&&e._rageDist<120&&now<e._rageT){
+        // 衝刺中：固定距離120px
+        const rspd=6*dt;
+        e.x+=e._rageDx*rspd;e.y+=e._rageDy*rspd;
+        e._rageDist+=rspd;
+        e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
+        // 殘影
+        if(par.length<MAX_PARTICLES&&Math.random()<.4)par.push({x:e.x,y:e.y,vx:0,vy:0,life:.25,color:"rgba(255,68,68,.4)",sz:e.r*.8});
+      }else if(rcs==="dash"){
+        // 衝刺結束 → 停頓
+        e._rageState="pause";e._rageT=now+800;e._rageDashes++;
+      }else if(rcs==="pause"&&now>=e._rageT){
+        if(e._rageDashes>=3){
+          // 3次完成 → 恢復冷靜
+          e._rage=0;
+          g.dn.push({x:e.x,y:e.y-e.r-10,d:"😮‍💨",life:1,color:"#ADB5BD"});
+        }else{
+          // 下一次蓄力
+          e._rageState="charge";e._rageT=now+400;
+        }
+      }
+    }else if(e._rage&&e._rageDashes>=3){
+      e._rage=0;
+      if(!g.ene.some(oe=>oe!==e&&oe._rage&&oe._rageDashes<3&&oe.hp>0)){
+        g.dn.push({x:g.p.x,y:g.p.y-40,d:"😮‍💨 敵人已恢復冷靜",life:2,color:"#ADB5BD",big:1});
+      }
+    }else{
     // 撞擊後退開 1.5 秒
     if(e._retreatEnd&&now<e._retreatEnd){
       e.x+=(-dx/d*es*.6)*dt;e.y+=(-dy/d*es*.6)*dt;
@@ -1571,6 +1650,7 @@ function loop(){
       e.y+=Math.cos(e.t*3.1+(e.flankA||0))*jw*dt;
     }
     } // end retreat else
+    } // end rage else
 
     // === Boss skills (wave 10+) ===
     if(e.boss&&g.wave>=10&&ts){
@@ -1823,13 +1903,21 @@ function loop(){
     }return true;});}
 
   // level up
-  while(g.exp>=g.expTo){g.exp-=g.expTo;g.level++;g.wave=g.level;g.expTo=expForLevel(g.level);sfx("levelup");
+  while(g.exp>=g.expTo){g.exp-=g.expTo;g.level++;if(_mode==="elite")g.wave=g.level;g.expTo=expForLevel(g.level);sfx("levelup");
     // NOTE 未來可考慮方案D — 升級解鎖能力：Lv5解鎖衝刺、Lv10解鎖第二武器等，增加階段感
     // stat boost on level up
     const _mc=MODE[_mode];g.p.atk+=_mc.atkPerLv;g.p.maxHp+=_mc.hpPerLv;g.p.hp=g.p.maxHp;
     if(g.level%5===0){g.p.levelDmgMul=(g.p.levelDmgMul||1)+.1;} // 每5等全傷害+10%
     if(g.level%10===0){g.p.pierce=(g.p.pierce||0)+1;showHint("🔱 穿透+1！子彈可貫穿更多敵人");} // 每10等基礎穿透+1
     // milestone hints — non-intrusive floating text
+    // 經典模式 Lv2 送免費 R 攻擊卡
+    if(_mode==="classic"&&g.level===2&&!g._freeCard){
+      g._freeCard=true;g.run=false;
+      const rAtk=C.filter(c=>c.r==="R"&&c.tp==="atk");
+      const freeCard=rAtk[rAtk.length*Math.random()|0];
+      if(freeCard){showPick("crate",freeCard);}
+      else{g.run=true;}
+    }
     if(g.level===3&&!g._hint3){g._hint3=1;showHint("📦 探索地圖找寶箱，打開獲得卡牌！");}
     if(g.level===6&&!g._hint6){g._hint6=1;showHint("⚠️ 新型敵人出現了！小心包圍！");}
     if(g.level===8&&!g._hint8){g._hint8=1;showHint("🎯 遠程射手出沒，注意閃避子彈！");}
@@ -1970,18 +2058,23 @@ function loop(){
       });
     }
   }
-  // 精英模式：所有 Boss 統一每秒傷害上限（含 Stage Boss）
-  if(_mode==="elite"){const angelMul=g.p._angelBuff?1.6:1;const armorCapMul=1+(g.p.armorCapBonus||0);g.ene.forEach(e=>{
+  // 每秒傷害上限（精英=全 Boss，經典=僅 Stage Boss）
+  const _capAngelMul=g.p._angelBuff?1.6:1;
+  const _capArmorMul=1+(g.p.armorCapBonus||0);
+  g.ene.forEach(e=>{
     if(!e.boss)return;
+    // 經典模式：只保護 Stage Boss
+    if(_mode!=="elite"&&!e.stageBoss)return;
     if(!e._secReset||now-e._secReset>=1000){e._secSnap=e.hp;e._secReset=now;}
-    const acm=(e.bossType==="armor")?armorCapMul:1; // 破甲箭：提升 armor 型 cap
+    const acm=(e.bossType==="armor")?_capArmorMul:1;
     let cap;
-    if(e.stageBoss===20)cap=e.mhp/120*angelMul*acm;      // 💩：最快2分鐘
-    else if(e.stageBoss===30)cap=e.mhp/180*angelMul*acm;  // 😈：最快3分鐘
-    else cap=e.mhp/(e.mega?30:15)*angelMul*acm;            // 小王15秒/巨王30秒
+    if(e.stageBoss===20)cap=e.mhp/(_mode==="elite"?120:60)*_capAngelMul*acm;  // 💩：精英2分/經典1分
+    else if(e.stageBoss===30)cap=e.mhp/(_mode==="elite"?180:90)*_capAngelMul*acm; // 😈：精英3分/經典1.5分
+    else if(_mode==="elite")cap=e.mhp/(e.mega?30:15)*_capAngelMul*acm; // 精英波次Boss
+    else return; // 經典波次Boss不限制
     const taken=Math.max(0,e._secSnap-e.hp);
     if(taken>cap){e.hp=e._secSnap-cap;}
-  });}
+  });
   settleEnemyDeaths();
 
   // particles
@@ -3608,9 +3701,10 @@ window.startGame=window.SG=function(mode){
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
     lastKill:performance.now(),lastHunt:0,
-    time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,pickOpen:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1,_startTime:performance.now(),_stageBossActive:false,_stageBossLv:0,_boss20:false,_boss30:false,_bigChestTotal:0,_bigChestLeft:0,_angelOffered:false,_pendingStageBoss:0,_ew:null};
+    time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,pickOpen:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1,_startTime:performance.now(),_stageBossActive:false,_stageBossLv:0,_boss20:false,_boss30:false,_bigChestTotal:0,_bigChestLeft:0,_angelOffered:false,_pendingStageBoss:0,_ew:null,_cw:null};
   inv=[];par=[];_ltnRingIdx=0;_dashGhosts=[];_stageBoss=null;bossBgmStop();_hitFlash=0;_shakeT=0;_phoenixT=0;g._wb=[];g._wbSpawnT=0;
   if(_mode==="elite"){g.p.expR=99;} // 精英模式內建全螢幕磁力吸經驗
+  if(_mode==="classic"){g.p.splash=20;} // 經典模式內建基礎濺射（20px）
   joy={a:0,dx:0,dy:0,id:null,sx:null,sy:null};aim={a:0,dx:0,dy:0,id:null,sx:null,sy:null,tn:0,lt:0};
   show("play");if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
   setTimeout(resetControls,60);setTimeout(resetControls,180);
