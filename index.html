@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.34</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.36</div>
 </div>
 </div>
 
@@ -188,10 +188,10 @@ const EXP_BASE=50,EXP_SCALE=1.20;
 let _mode="classic";
 const MODE={
   classic:{
-    startAtk:2.5,startHp:120,startSpeed:PS,
-    maxEnemies:140,spawnBase:1280,spawnWaveMul:65,
+    startAtk:3.5,startHp:150,startSpeed:PS,
+    maxEnemies:160,spawnBase:1100,spawnWaveMul:55,
     enemyContactVanish:true, // 接觸後敵人消失
-    atkPerLv:2,hpPerLv:10,
+    atkPerLv:2.5,hpPerLv:12,
     smallHpBase:null, // 使用原始 tierHp 系統
   },
   elite:{
@@ -1009,9 +1009,9 @@ function enemyGrowth(w){
   const postSurge=w>10?w-10:0;
   const dmgMax=MODE[_mode].dmgCap||1.8;
   return{
-    hp:1+Math.min(4,w*.09+postSurge*.035),
-    spd:1+Math.min(.65,w*.02),
-    dmg:1+Math.min(dmgMax,w*.04+postSurge*.015),
+    hp:_mode==="elite"?(1+Math.min(3.5,w*.07+postSurge*.025)):(1+Math.min(2.2,w*.05+postSurge*.015)),
+    spd:1+Math.min(.55,w*.018),
+    dmg:_mode==="elite"?(1+Math.min(dmgMax,w*.035+postSurge*.012)):(1+Math.min(1.2,w*.025+postSurge*.008)),
     size:1+Math.min(.32,w*.008)
   };
 }
@@ -1039,9 +1039,9 @@ function spawnTargetForWave(w){
     if(w<4)return 3;if(w<8)return 4;if(w<15)return 5;
     if(w<22)return 6;return Math.min(8,7);
   }
-  if(w<2)return 12;if(w<4)return 16;if(w<6)return 20;
-  if(w<10)return 26;if(w<14)return 36;if(w<18)return 50;
-  return Math.min(MAX_ENEMIES,54+(w-18)*4);
+  if(w<2)return 14;if(w<4)return 20;if(w<6)return 28;
+  if(w<10)return 38;if(w<14)return 52;if(w<18)return 70;
+  return Math.min(MAX_ENEMIES,75+(w-18)*5);
 }
 
 function spikeConfigForWave(w){
@@ -1079,9 +1079,10 @@ function spawn(boss,opts={}){
   const tierHp=[1,1.45,2.05,3.05,4.4][tier]||1;
   const tierSpd=[1,.98,1.03,1.08,1.14][tier]||1;
   const tierDmg=[1,1.15,1.35,1.6,1.9][tier]||1;
-  const bhp=(20+w*11)*(1+w*.018)*tierHp;
-  const _bossMul=_mode==="elite"?1:(boss?5:1); // 精英Boss HP由專屬公式算
-  const _megaMul=_mode==="elite"?1:(mega?2.5:1);
+  const _hpWaveMul=_mode==="elite"?1:.7; // 經典模式小怪更脆
+  const bhp=(20+w*11)*(1+w*.018)*tierHp*_hpWaveMul;
+  const _bossMul=_mode==="elite"?1:(boss?3.5:1); // 經典Boss脆一點，割草爽感
+  const _megaMul=_mode==="elite"?1:(mega?2:1);
   const hp=Math.floor(bhp*_bossMul*_megaMul*ENEMY_HP_SCALE*grow.hp*earlyMul);
   const _spdCap=MODE[_mode].enemySpdCap||2.4;
   const spdW=(_mode==="elite")?Math.min(w,12):w; // 精英模式：速度成長在12等封頂
@@ -1372,10 +1373,10 @@ function loop(){
     if(now-g.lS>si){
       const missing=Math.max(0,targetEnemies-g.ene.length);
       if(missing>0){
-        const batch=Math.min(missing,g.wave<3?2:g.wave<6?2:g.wave<10?3:g.wave<16?4:5);
+        const batch=Math.min(missing,g.wave<3?2:g.wave<6?3:g.wave<10?4:g.wave<16?5:6);
         for(let i=0;i<batch;i++)spawn(false);
-        if(g.wave>=8&&missing>batch&&Math.random()<.5)spawn(false);
-        if(g.wave>=14&&missing>batch+1&&Math.random()<.35)spawn(false);
+        if(g.wave>=6&&missing>batch&&Math.random()<.5)spawn(false);
+        if(g.wave>=12&&missing>batch+1&&Math.random()<.4)spawn(false);
       }
       g.lS=now;
     }
@@ -1814,7 +1815,8 @@ function loop(){
     const lateMul=1+Math.max(0,g.wave-10)*.07;
     const surv=(g.p.armor||0)+(g.p.dodge||0)*.9;
     const survMit=1-Math.min(.42,surv*.36);
-    let dmg=(8+g.wave*2)*(1-g.p.armor)*(e.dmgMul||1)*lateMul*survMit;
+    const _contactMul=_mode==="elite"?1:.6; // 經典模式接觸傷害低，鼓勵站A
+    let dmg=(8+g.wave*2)*(1-g.p.armor)*(e.dmgMul||1)*lateMul*survMit*_contactMul;
     if(g.p.thorns>0){const td=dmg*g.p.thorns;e.hp-=td;}
     g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",6);_hitFlash=1;_shakeT=.4;_shakePow=Math.min(8,3+dmg/12);sfx("hurt");showPlayerDmg(dmg);
     g.p._iFrameEnd=now+400; // 400ms i-frame after contact damage
