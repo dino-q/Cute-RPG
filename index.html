@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.29</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.34</div>
 </div>
 </div>
 
@@ -1080,7 +1080,9 @@ function spawn(boss,opts={}){
   const tierSpd=[1,.98,1.03,1.08,1.14][tier]||1;
   const tierDmg=[1,1.15,1.35,1.6,1.9][tier]||1;
   const bhp=(20+w*11)*(1+w*.018)*tierHp;
-  const hp=Math.floor(bhp*(boss?8.5:1)*(mega?3.3:1)*ENEMY_HP_SCALE*grow.hp*earlyMul);
+  const _bossMul=_mode==="elite"?1:(boss?5:1); // 精英Boss HP由專屬公式算
+  const _megaMul=_mode==="elite"?1:(mega?2.5:1);
+  const hp=Math.floor(bhp*_bossMul*_megaMul*ENEMY_HP_SCALE*grow.hp*earlyMul);
   const _spdCap=MODE[_mode].enemySpdCap||2.4;
   const spdW=(_mode==="elite")?Math.min(w,12):w; // 精英模式：速度成長在12等封頂
   const spd=(.92+Math.min(spdW*.13,_spdCap))*tierSpd*enemyGrowth(spdW).spd*(mega?.85:1)*(w<8?.92:1);
@@ -1213,7 +1215,7 @@ function doUlt(){if(!g||!g.run)return;
   // 非純CD制（普通大招 or 只有閃電步）也做傷害+特效
   if(!isTS||isBH){
     g.ene.forEach(e=>{const ud=(_mode==="elite"&&e.stageBoss)?Math.min(baseDmg,e.mhp*.05):baseDmg;e.hp-=ud;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(ud),life:1.3,color:isBH?"#868E96":"#FFD43B",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,14);});
-    settleEnemyDeaths();
+    if(!isBH)settleEnemyDeaths(); // 黑洞模式延遲清怪，讓吸引先執行
   }
   const cols=isBH?["#495057","#868E96","#CED4DA","#fff"]:isTS?["#74C0FC","#4DABF7","#339AF0","#fff"]:["#BE4BDB","#FFD43B","#FF6B6B","#74C0FC","#fff"];
   const burstCount=40+ultLv*12;
@@ -1274,7 +1276,7 @@ function loop(){
   if(g.bhEnd&&now<g.bhEnd&&now>=(g._bhStartAt||0)){
     const bhLv=(g.p.ultLv||0),bhR=170+bhLv*30;
     g.ene.forEach(e=>{
-      if(e.boss)return; // mini-boss/boss and above are not affected by black-hole pull
+      if(e.stageBoss||(e.boss&&!e.miniPoo&&!e.miniDemon))return; // 真Boss免疫吸引，召喚怪可被吸
       const dx=g.p.x-e.x,dy=g.p.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
       if(d>bhR)return;
       const pull=(1-d/bhR)*(4+bhLv*1.2)*dt*16.67;
@@ -2237,6 +2239,18 @@ function loop(){
   cx.save();
   if(g.p._iFrameEnd>0&&now<g.p._iFrameEnd){cx.globalAlpha=Math.sin(now/30)*0.35+0.55;}
   cx.shadowColor=pCol;cx.shadowBlur=20;drawPlayer(g.p.x,g.p.y,PR,g.time/1000,pCol,g.p.face);cx.restore();
+  // 黑洞持續效果：主角周圍暗能量漩渦
+  if(_bhActive){
+    cx.save();
+    const bhProg=Math.sin(now/100);
+    cx.globalAlpha=.35+bhProg*.1;cx.strokeStyle="#495057";cx.lineWidth=2.5;
+    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+10+bhProg*3,0,Math.PI*2);cx.stroke();
+    cx.globalAlpha=.2;cx.strokeStyle="#CED4DA";cx.lineWidth=1.5;cx.setLineDash([3,3]);
+    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+18+Math.sin(now/150)*4,0,Math.PI*2);cx.stroke();
+    cx.setLineDash([]);cx.restore();
+    if(par.length<MAX_PARTICLES&&Math.random()<.3){
+      const ba=rn(0,Math.PI*2);par.push({x:g.p.x+Math.cos(ba)*(PR+15),y:g.p.y+Math.sin(ba)*(PR+15),vx:-Math.cos(ba)*rn(.5,1.5),vy:-Math.sin(ba)*rn(.5,1.5),life:.4,color:"#495057",sz:rn(2,4)});}
+  }
   // 機關槍狂暴光環
   if(g.p._mgBerserkEnd&&now<g.p._mgBerserkEnd){
     cx.save();cx.globalAlpha=.25+Math.sin(now/60)*.1;cx.strokeStyle="#FF4500";cx.lineWidth=3;
@@ -3221,7 +3235,17 @@ function drawStageBoss(e,now){
   cx.globalAlpha=e.st>0?.85:1;cx.font=`${lv===20?e.r*1.8:e.r*2}px 'Nunito',sans-serif`;cx.textAlign="center";cx.textBaseline="middle";
   cx.save();cx.translate(e.x,e.y+bounce);cx.scale(scaleX,scaleY);
   if(lv===20){const rageShake=e._pooRage?(Math.random()-.5)*.15:0;cx.rotate(Math.sin(now/500)*.06+rageShake);cx.fillText("💩",0,0);}
-  else{if(e.sbPhase>=2)cx.translate((Math.random()-.5)*2,(Math.random()-.5)*2);cx.fillText("😈",0,0);}
+  else{
+    if(e.sbPhase>=2)cx.translate((Math.random()-.5)*2,(Math.random()-.5)*2);
+    // 亮色光暈底層（讓 emoji 從暗背景中突出）
+    const gPhase=e.sbPhase||1;
+    const glowCol=gPhase===1?"rgba(190,120,255,.6)":gPhase===2?"rgba(231,100,100,.6)":"rgba(255,80,80,.7)";
+    cx.shadowColor=glowCol;cx.shadowBlur=20;
+    cx.fillText("😈",0,0);
+    // 再疊一層加強亮度
+    cx.shadowBlur=35;cx.globalAlpha=.5;cx.fillText("😈",0,0);
+    cx.shadowBlur=0;
+  }
   cx.restore();
   // HP bar
   const barW=e.r*2.5,barH=5,bx2=e.x-barW/2,by2=e.y-e.r-16+bounce;
