@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
+:root{--sat:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none}
 html,body{margin:0;padding:0;overflow:hidden;touch-action:none;background:#0a0a18;font-family:'Nunito','Segoe UI',sans-serif;height:100%;width:100%}
 #app{width:100%;height:100%;position:relative}
@@ -69,6 +70,16 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 </style>
 </head>
 <body>
+<!-- 卡片詳細說明彈窗 -->
+<div id="cardTip" style="display:none;position:fixed;z-index:9999;inset:0;background:rgba(0,0,0,.6);justify-content:center;align-items:center;pointer-events:auto" onclick="this.style.display='none'">
+  <div id="cardTipBox" style="background:rgba(16,16,36,.97);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:18px 20px;max-width:300px;width:88%;text-align:center;pointer-events:auto" onclick="event.stopPropagation()">
+    <div id="ctEmoji" style="font-size:36px"></div>
+    <div id="ctName" style="font-size:16px;font-weight:900;margin:4px 0"></div>
+    <div id="ctMeta" style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:10px"></div>
+    <div id="ctLevels" style="text-align:left;font-size:11px;line-height:1.8"></div>
+    <button onclick="document.getElementById('cardTip').style.display='none'" style="margin-top:12px;padding:8px 28px;font-size:12px;font-weight:700;border:none;border-radius:10px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);cursor:pointer;touch-action:manipulation">關閉</button>
+  </div>
+</div>
 <div id="app">
 <canvas id="cv"></canvas>
 <canvas id="fx"></canvas>
@@ -88,7 +99,10 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div id="rbtns">
     <div id="combo"></div>
     <div id="ultW"><div id="ultR"><div id="ultI">💎</div></div><div id="ultL">長壓集氣</div></div>
-    <div id="dodgeBtn" style="width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(116,192,252,.2),rgba(20,20,40,.9));border:2px solid rgba(116,192,252,.4);display:flex;justify-content:center;align-items:center;font-size:18px;cursor:pointer;touch-action:manipulation;box-shadow:0 0 12px rgba(116,192,252,.25)">💨</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div id="skillBtn" onclick="useCharSkill()" style="width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(255,212,59,.15),rgba(20,20,40,.9));border:2px solid rgba(255,212,59,.4);display:flex;justify-content:center;align-items:center;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;box-shadow:0 0 12px rgba(255,212,59,.25);color:#FFD43B;position:relative"><span id="skillIcon">🎯</span><div id="skillCd" style="position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;font-size:10px;color:#fff"></div></div>
+      <div id="dodgeBtn" style="width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(116,192,252,.2),rgba(20,20,40,.9));border:2px solid rgba(116,192,252,.4);display:flex;justify-content:center;align-items:center;font-size:18px;cursor:pointer;touch-action:manipulation;box-shadow:0 0 12px rgba(116,192,252,.25)">💨</div>
+    </div>
     <div class="joyW" id="jzR" style="width:min(120px,29vw);height:min(120px,29vw)"><div class="joyR"><div class="joyK jkR" id="jkR"></div></div></div>
   </div>
 </div>
@@ -100,18 +114,50 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <h1 style="font-size:30px;font-weight:900;color:#fff;margin:4px 0 0;text-shadow:0 0 25px rgba(116,192,252,.3)">Dino真是個小天才</h1>
   <p style="color:rgba(255,255,255,.35);font-size:12px;margin:0 0 20px;letter-spacing:2px">Cute Dungeon Adventure</p>
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:10px">
-    <button class="btn btn-b" onclick="startGame('classic')" style="width:210px;padding:12px;font-size:14px">⚔️ 經典模式</button>
+    <button class="btn btn-b" onclick="showCharSelect('classic')" style="width:210px;padding:12px;font-size:14px">⚔️ 經典模式</button>
     <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">大量敵人 AOE爽快</div>
-    <button class="btn btn-g" onclick="startGame('elite')" style="width:210px;padding:12px;font-size:14px">👑 精英模式</button>
+    <button class="btn btn-g" onclick="showCharSelect('elite')" style="width:210px;padding:12px;font-size:14px">👑 精英模式</button>
     <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">少量精英 走位策略</div>
     <button class="btn btn-p" onclick="window._showCoopLobby()" style="width:210px;padding:12px;font-size:14px">🤝 雙人通關</button>
     <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">兩人連線合作打Boss</div>
-    <button class="btn btn-d" onclick="openPractice()" style="width:210px;padding:12px;font-size:14px">🎯 練習模式</button>
+    <button class="btn btn-d" onclick="showCharSelect('practice')" style="width:210px;padding:12px;font-size:14px">🎯 練習模式</button>
   </div>
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
-    左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
+    左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.10</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.21</div>
+</div>
+</div>
+
+<!-- Character Select -->
+<div id="charSelectOv" class="ov" style="display:none;background:linear-gradient(140deg,#141428,#1a1a35 40%,#0f1a2e)">
+<div class="panel" style="background:transparent;border:none;max-width:420px">
+  <h2 style="color:#FFD43B;font-size:20px;margin:0 0 4px;text-align:center">選擇角色</h2>
+  <p style="color:rgba(255,255,255,.3);font-size:10px;text-align:center;margin:0 0 14px">每個角色有不同的攻擊方式和被動技能</p>
+  <div style="display:flex;gap:6px;justify-content:center">
+    <div onclick="pickChar('gunner')" style="cursor:pointer;flex:1;max-width:115px;background:rgba(116,192,252,.06);border:2px solid rgba(116,192,252,.2);border-radius:12px;padding:10px 6px;text-align:center">
+      <div style="font-size:28px">🔫</div>
+      <div style="color:#74C0FC;font-weight:900;font-size:12px">槍手</div>
+      <div style="color:rgba(255,255,255,.35);font-size:8px;margin:2px 0">遠程射擊</div>
+      <div style="font-size:7px;color:rgba(255,255,255,.25);line-height:1.3">HP100 攻2.5 暴擊5%</div>
+      <div style="font-size:7px;color:#74C0FC;margin-top:3px">🎯 狙擊</div>
+    </div>
+    <div onclick="pickChar('swordsman')" style="cursor:pointer;flex:1;max-width:115px;background:rgba(255,146,43,.06);border:2px solid rgba(255,146,43,.2);border-radius:12px;padding:10px 6px;text-align:center">
+      <div style="font-size:28px">⚔️</div>
+      <div style="color:#FF922B;font-weight:900;font-size:12px">劍士</div>
+      <div style="color:rgba(255,255,255,.35);font-size:8px;margin:2px 0">近戰範圍</div>
+      <div style="font-size:7px;color:rgba(255,255,255,.25);line-height:1.3">HP150 攻3 閃避8%</div>
+      <div style="font-size:7px;color:#FF922B;margin-top:3px">⚔️ 鬼斬</div>
+    </div>
+    <div onclick="pickChar('tank')" style="cursor:pointer;flex:1;max-width:115px;background:rgba(81,207,102,.06);border:2px solid rgba(81,207,102,.2);border-radius:12px;padding:10px 6px;text-align:center">
+      <div style="font-size:28px">🛡️</div>
+      <div style="color:#51CF66;font-weight:900;font-size:12px">坦克</div>
+      <div style="color:rgba(255,255,255,.35);font-size:8px;margin:2px 0">盾擊格擋</div>
+      <div style="font-size:7px;color:rgba(255,255,255,.25);line-height:1.3">HP200 攻2 減傷15%</div>
+      <div style="font-size:7px;color:#51CF66;margin-top:3px">🛡️ 嘲諷</div>
+    </div>
+  </div>
+  <button onclick="$('charSelectOv').style.display='none';$('titleOv').style.display='flex'" style="margin-top:14px;padding:6px 16px;font-size:10px;border:none;border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);cursor:pointer">← 返回</button>
 </div>
 </div>
 
@@ -160,7 +206,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   </div>
   <div style="background:rgba(116,192,252,.08);border-radius:10px;padding:10px 14px;margin-bottom:10px">
     <div style="color:#74C0FC;font-weight:700;font-size:13px;margin-bottom:4px">⌨️ 電腦操作</div>
-    <b>WASD</b> — 移動 ｜ <b>Space</b> — 射擊 ｜ <b>E長壓</b> — 集氣 ｜ <b>E點擊</b> — 引爆大招
+    <b>方向鍵</b> — 移動 ｜ <b>Space</b> — 射擊 ｜ <b>E</b> — 集氣/大招 ｜ <b>Q</b> — 閃避 ｜ <b>W</b> — 技能
   </div>
   <div style="background:rgba(255,215,75,.06);border-radius:10px;padding:10px 14px;margin-bottom:10px">
     <div style="color:#FFD43B;font-weight:700;font-size:13px;margin-bottom:4px">🎮 遊戲玩法</div>
@@ -196,7 +242,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:18px;padding:24px 28px;min-width:260px;max-width:320px;border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 32px rgba(0,0,0,.5)">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
     <div style="font-size:18px;font-weight:900;color:#fff">⚙️ 設定</div>
-    <button onclick="closeSettings()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation">✕</button>
+    <button onclick="closeSettings()" style="width:44px;height:44px;min-width:44px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;font-size:20px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation">✕</button>
   </div>
   <div id="settingsBody">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)">
@@ -246,6 +292,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
     <button id="pracCoopBtn" onclick="pracToggleCoop()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🤝雙人(AI)</button>
     <button id="pracRoomBtn" onclick="pracCoopRoom()" style="display:none;padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🔗建房</button>
     <button id="pracJoinBtn" onclick="pracCoopJoin()" style="display:none;padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🔗加入</button>
+    <button id="pracCharBtn" onclick="pracSwitchChar()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,212,59,.15);color:#FFD43B;font-weight:700;border:1px solid rgba(255,212,59,.3);cursor:pointer">🔄角色</button>
     <button onclick="exitPractice()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,255,255,.15);color:#fff;font-weight:700;border:none;cursor:pointer">退出練習</button>
   </div>
   <!-- 左側卡片抽屜 -->
@@ -263,6 +310,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 <script>
 (function(){"use strict";
 /* ═══════════════ CONFIG ═══════════════ */
+const PI=Math.PI,TAU=PI*2;
 let VW=400,VH=700; // viewport (動態：橫屏時交換)
 function _isElite(){return _mode==="elite"||_mode==="coop";} // coop 共用 elite 邏輯
 const MW=1900,MH=1900; // map size (smaller for higher pressure)
@@ -277,6 +325,15 @@ const EXP_BASE=50,EXP_SCALE=1.20;
 
 // 模式配置
 let _mode="classic";
+let _charType="gunner"; // "gunner" | "swordsman" | "tank"
+const CHAR={
+  gunner:    {startHp:100,startAtk:2.5,startSpeed:5, fr:1,   crit:.05, dodge:0,   armor:0,   col:"#74C0FC",colMid:"#d4e8ff",colDark:"#4DABF7",
+              passive:"狙擊：子彈穿透全部 傷害1.5倍 CD5秒",passiveKey:"none"},
+  swordsman: {startHp:150,startAtk:3,  startSpeed:5.5,fr:1,  crit:.05, dodge:.08, armor:0,   col:"#FF922B",colMid:"#ffe0b2",colDark:"#E8590C",
+              passive:"劍氣：每5次攻擊釋放穿透劍氣(200%傷害)",passiveKey:"swordqi"},
+  tank:      {startHp:200,startAtk:2,  startSpeed:4, fr:1.2, crit:.05, dodge:0,   armor:.15, col:"#51CF66",colMid:"#c8e6c9",colDark:"#2E7D32",
+              passive:"鐵壁：受傷反彈15%+每5秒回10HP",passiveKey:"ironwall"}
+};
 const MODE={
   classic:{
     startAtk:2.5,startHp:120,startSpeed:PS,
@@ -375,22 +432,22 @@ card("幸運幣","🍀","R","pas",["額外三選一","額外三選一","額外�
 card("集氣珠","🔋","R","pas",["集氣速度+20%","集氣速度+40%","集氣速度+70%"],[s=>{s.ultRate=(s.ultRate||1)*1.2},s=>{s.ultRate=(s.ultRate||1)*1.4},s=>{s.ultRate=(s.ultRate||1)*1.7}],"#E599F7");
 card("磁力場","🧲","R","pas",["全螢幕吸取經驗","全螢幕吸取經驗","全螢幕吸取經驗"],[s=>{s.expR=99},s=>{s.expR=99},s=>{s.expR=99}],"#339AF0",null,1);
 card("毒刺","🌿","R","atk",["中毒3秒 毒傷+2 王毒+30%","中毒5秒 毒傷+4 王毒+60%","劇毒7秒 毒傷+6 王毒+100%"],[s=>{s.poison=3;s.poisonDmg=2;s.poisonBossMul=1.3;s.fx.poison=1},s=>{s.poison=5;s.poisonDmg=4;s.poisonBossMul=1.6;s.fx.poison=2},s=>{s.poison=7;s.poisonDmg=6;s.poisonBossMul=2;s.fx.poison=3}],"#A9E34B","poison");
-card("穿透箭","🔱","R","atk",["穿透1個 攻+2 王傷+20%","穿透2個 攻+4 王傷+40%","穿透全部 攻+7 王傷+60%"],[s=>{s.pierce=(s.pierce||0)+1;s.atk+=2;s.bossDmg=(s.bossDmg||1)*1.2},s=>{s.pierce=(s.pierce||0)+2;s.atk+=4;s.bossDmg=(s.bossDmg||1)*1.4},s=>{s.pierce=99;s.atk+=7;s.bossDmg=(s.bossDmg||1)*1.6}],"#F08C00");
+card("穿透之力","🔱","R","atk",["穿透+1 攻+2 王傷+20%","穿透+2 攻+4 王傷+40%","穿透極 攻+7 王傷+60%"],[s=>{s.pierce=(s.pierce||0)+1;s.atk+=2;s.bossDmg=(s.bossDmg||1)*1.2},s=>{s.pierce=(s.pierce||0)+2;s.atk+=4;s.bossDmg=(s.bossDmg||1)*1.4},s=>{s.pierce=99;s.atk+=7;s.bossDmg=(s.bossDmg||1)*1.6}],"#F08C00");
 card("蓄力拳","👊","R","atk",["攻+5 每5次重擊×2","攻+10 每4次重擊×2","攻+16 每3次重擊×2"],[s=>{s.atk+=5;s.heavyEvery=5},s=>{s.atk+=10;s.heavyEvery=4},s=>{s.atk+=16;s.heavyEvery=3}],"#E8590C");
 card("回血斬","💉","R","pas",["擊殺回5HP","回12HP","回22HP"],[s=>{s.ls=(s.ls||0)+5},s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+22}],"#E64980");
 card("探索靴","🗺️","R","pas",["閃避+4% 經驗範圍+25%","閃避+8% 經驗範圍+55%","閃避+15% 經驗範圍+100%"],[s=>{s.dodge=Math.min(1,(s.dodge||0)+.04);s.expR=(s.expR||1)*1.25},s=>{s.dodge=Math.min(1,(s.dodge||0)+.08);s.expR=(s.expR||1)*1.55},s=>{s.dodge=Math.min(1,(s.dodge||0)+.15);s.expR=(s.expR||1)*2}],"#12B886");
 card("堅韌心","🫀","R","pas",["HP+50 回血+8/秒","HP+100 回血+15/秒","HP+150 回血+20/秒"],[s=>{s.maxHp+=50;s.hp=Math.min(s.hp+50,s.maxHp);s.regen=(s.regen||0)+8},s=>{s.maxHp+=100;s.hp=Math.min(s.hp+100,s.maxHp);s.regen=(s.regen||0)+15},s=>{s.maxHp+=150;s.hp=Math.min(s.hp+150,s.maxHp);s.regen=(s.regen||0)+20}],"#FF922B");
 // --- SR: 21 cards ---
-card("石膚術","🪨","SR","pas",["撞擊傷害上限40"],[s=>{s.contactCap=40}],"#ADB5BD");
+card("石膚術","🪨","SR","pas",["撞擊傷害上限40"],[s=>{s.contactCap=40}],"#ADB5BD",null,1);
 card("雷擊鏈","⚡","SR","atk",["連鎖雷電 鏈傷+30% 小怪+30%","鏈傷+50% 小怪+50%","鏈傷+80% 小怪+80%"],[s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.3;s.mobDmg=(s.mobDmg||1)*1.3;s.fx.lightning=1},s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.5;s.mobDmg=(s.mobDmg||1)*1.5;s.fx.lightning=2},s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.8;s.mobDmg=(s.mobDmg||1)*1.8;s.fx.lightning=3}],"#FAB005","lightning");
-card("分裂彈","💎","SR","atk",["3發","5發","7發彈幕"],[s=>{s.split=(s.split||1)+2},s=>{s.split=(s.split||1)+4},s=>{s.split=(s.split||1)+6}],"#845EF7");
+card("分裂彈","💎","SR","atk",["3發","5發","7發彈幕"],[s=>{s.split=(s.split||1)+2},s=>{s.split=(s.split||1)+4},s=>{s.split=(s.split||1)+6}],"#845EF7");C[C.length-1].charReq="gunner";
 card("閃避斗篷","🌀","SR","pas",["12%閃避","25%閃避","40%閃避"],[s=>{s.dodge=(s.dodge||0)+.12},s=>{s.dodge=(s.dodge||0)+.25},s=>{s.dodge=(s.dodge||0)+.4}],"#B197FC");
 card("鐵壁金身","🔔","SR","pas",["完全免疫遠程攻擊","完全免疫遠程攻擊","完全免疫遠程攻擊"],[s=>{s.projImmune=true},s=>{s.projImmune=true},s=>{s.projImmune=true}],"#CED4DA",null,1);
 card("守護星","🛡️","SR","pas",["每20秒自動護盾","每20秒自動護盾","每20秒自動護盾"],[s=>{s.shieldCD=20e3;s._sh=true;s._shT=0;s._shSpawn=performance.now()},s=>{s.shieldCD=20e3;s._sh=true;s._shT=0;s._shSpawn=performance.now()},s=>{s.shieldCD=20e3;s._sh=true;s._shT=0;s._shSpawn=performance.now()}],"#4DABF7",null,1);
 card("影分身","👥","SR","pas",["100%前後攻擊","100%前後攻擊","100%前後攻擊"],[s=>{s.dblAtk=1},s=>{s.dblAtk=1},s=>{s.dblAtk=1}],"#868E96",null,1);
 card("烈焰風暴","🌋","SR","atk",["攻+4 濺射 王燃+50%","攻+8 大濺射 王燃+80%","攻+14 超大濺射 王燃+120%"],[s=>{s.atk+=4;s.splash=(s.splash||0)+30;s.burnBossMul=Math.max(s.burnBossMul||1,1.5);s.fx.fire=Math.max(s.fx.fire||0,2)},s=>{s.atk+=8;s.splash=(s.splash||0)+45;s.burnBossMul=Math.max(s.burnBossMul||1,1.8);s.fx.fire=3},s=>{s.atk+=14;s.splash=(s.splash||0)+60;s.burnBossMul=Math.max(s.burnBossMul||1,2.2);s.fx.fire=3}],"#E03131","fire");
 card("暴風雪","🌨️","SR","atk",["攻+3 凍結50% 冰脆+20%","攻+6 凍結70% 冰脆+30%","攻+10 凍結80% 冰脆+40%"],[s=>{s.atk+=3;s.slow=Math.max((s.slow||1)*.5,.2);s.iceFrag=Math.max(s.iceFrag||0,.2);s.fx.ice=2},s=>{s.atk+=6;s.slow=.3;s.iceFrag=Math.max(s.iceFrag||0,.3);s.fx.ice=3},s=>{s.atk+=10;s.slow=.2;s.iceFrag=Math.max(s.iceFrag||0,.4);s.fx.ice=3}],"#339AF0","ice");
-card("追蹤彈","🎯","SR","atk",["微追蹤","強追蹤 範圍↑ 攻+3","完美追蹤 攻+6 穿透1"],[s=>{s.homing=.03;s.homingR=200},s=>{s.homing=.06;s.homingR=320;s.atk+=3},s=>{s.homing=.1;s.homingR=400;s.atk+=6;s.pierce=(s.pierce||0)+1}],"#F06595");
+card("追蹤彈","🎯","SR","atk",["微追蹤","強追蹤 範圍↑ 攻+3","完美追蹤 攻+6 穿透1"],[s=>{s.homing=.03;s.homingR=200},s=>{s.homing=.06;s.homingR=320;s.atk+=3},s=>{s.homing=.1;s.homingR=400;s.atk+=6;s.pierce=(s.pierce||0)+1}],"#F06595");C[C.length-1].charReq="gunner";
 card("吸血領主","🦇","SR","pas",["擊殺回12HP","回25HP","回40HP+攻+5"],[s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+25},s=>{s.ls=(s.ls||0)+40;s.atk+=5}],"#C2255C");
 card("召喚球","🪐","SR","atk",["1顆環繞守護球","2顆環繞守護球","3顆環繞守護球"],[s=>{s.orbiters=(s.orbiters||0)+1},s=>{s.orbiters=(s.orbiters||0)+2},s=>{s.orbiters=(s.orbiters||0)+3}],"#FCC419");
 card("旋風斬","🌪️","SR","atk",["風刃追擊3秒","2道風刃追擊","3道風刃追擊"],[s=>{s.windBlades=1;s.fx.whirl=1},s=>{s.windBlades=2;s.fx.whirl=2},s=>{s.windBlades=3;s.fx.whirl=3}],"#99E9F2");
@@ -398,11 +455,11 @@ card("狂暴之力","💢","SR","pas",["HP<30%時 攻擊翻倍","HP<40%時 攻�
 card("連鎖爆破","💥","SR","atk",["敵人死亡後爆炸 周圍傷8","敵人死亡 周圍傷18","敵人死亡 周圍傷30"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
 card("破甲箭","🪡","SR","atk",["攻+3 armor cap+25%","攻+4 armor cap+35%","攻+5 armor cap+50% 穿透+1"],[s=>{s.atk+=3;s.armorCapBonus=(s.armorCapBonus||0)+.25},s=>{s.atk+=4;s.armorCapBonus=(s.armorCapBonus||0)+.35},s=>{s.atk+=5;s.armorCapBonus=(s.armorCapBonus||0)+.5;s.pierce=(s.pierce||0)+1}],"#D4A017");
 card("迴力鏢","🪃","SR","atk",["攻+2 1個迴力鏢","攻+5 2個迴力鏢","攻+8 3個迴力鏢 穿透+1"],[s=>{s.atk+=2;s.boomerang=1},s=>{s.atk+=5;s.boomerang=2;s.homingR=(s.homingR||200)+40},s=>{s.atk+=8;s.boomerang=3;s.pierce=(s.pierce||0)+1}],"#20C997");
-card("機關槍","🔫","SR","atk",["攻速+30% 攻-3","攻速+60% 攻-5 無過熱","攻速+100% 攻-8 狂暴模式"],[s=>{s.fr*=.7;s.atk=Math.max(1,s.atk-3);s._minigun=1},s=>{s.fr*=.4;s.atk=Math.max(1,s.atk-5);s._minigun=2;s._noOverheat=true},s=>{s.fr*=.5*.4;s.atk=Math.max(1,s.atk-8);s._minigun=3;s._noOverheat=true;s._minigunBerserk=true}],"#FF8C00");
+card("機關槍","🔫","SR","atk",["攻速+30% 攻-3","攻速+60% 攻-5 無過熱","攻速+100% 攻-8 狂暴模式"],[s=>{s.fr*=.7;s.atk=Math.max(1,s.atk-3);s._minigun=1},s=>{s.fr*=.4;s.atk=Math.max(1,s.atk-5);s._minigun=2;s._noOverheat=true},s=>{s.fr*=.5*.4;s.atk=Math.max(1,s.atk-8);s._minigun=3;s._noOverheat=true;s._minigunBerserk=true}],"#FF8C00");C[C.length-1].charReq="gunner";
 card("閃電步","💫","SR","pas",["大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招"],[s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8}],"#FFE066",null,1);
 card("元素精通","🔮","SR","pas",["元素傷害+15%","元素傷害+30%","元素傷害+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
 card("大招增幅","☄️","SR","pas",["大招傷害+30%","傷害+60%","傷害+100%"],[s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.3},s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.6},s=>{s.ultDmgMul=(s.ultDmgMul||1)*2}],"#BE4BDB");
-card("彈幕之王","🎆","SR","atk",["子彈+1 攻速+8%","子彈+2 攻速+15%","子彈+3 攻速+25%"],[s=>{s.split=(s.split||1)+1;s.fr*=.92},s=>{s.split=(s.split||1)+2;s.fr*=.85},s=>{s.split=(s.split||1)+3;s.fr*=.75}],"#FF6B6B");
+card("彈幕之王","🎆","SR","atk",["子彈+1 攻速+8%","子彈+2 攻速+15%","子彈+3 攻速+25%"],[s=>{s.split=(s.split||1)+1;s.fr*=.92},s=>{s.split=(s.split||1)+2;s.fr*=.85},s=>{s.split=(s.split||1)+3;s.fr*=.75}],"#FF6B6B");C[C.length-1].charReq="gunner";
 // --- SSR: 13 cards ---
 card("龍之心","🐉","SSR","atk",["攻+6 HP+30 閃避+4%","攻+12 HP+60 閃避+6%","攻+20 HP+100 滿血 閃避+10%"],[s=>{s.atk+=6;s.maxHp+=30;s.hp=Math.min(s.hp+30,s.maxHp);s.dodge=Math.min(1,(s.dodge||0)+.04);s.fx.dragon=1},s=>{s.atk+=12;s.maxHp+=60;s.hp=Math.min(s.hp+60,s.maxHp);s.dodge=Math.min(1,(s.dodge||0)+.06);s.fx.dragon=2},s=>{s.atk+=20;s.maxHp+=100;s.hp=s.maxHp;s.dodge=Math.min(1,(s.dodge||0)+.1);s.fx.dragon=3}],"#FF922B","dragon");
 card("星辰劍","⭐","SSR","atk",["攻+8 暴擊+20%","攻+16 暴擊+35%","攻+28 暴擊+50%"],[s=>{s.atk+=8;s.crit=(s.crit||.05)+.2;s.fx.star=1},s=>{s.atk+=16;s.crit=(s.crit||.05)+.35;s.fx.star=2},s=>{s.atk+=28;s.crit=(s.crit||.05)+.5;s.fx.star=3}],"#F06595","star");
@@ -416,6 +473,15 @@ card("虛空步","🌑","SSR","pas",["35%閃避+反擊傷10","50%閃避+反擊�
 card("命運轉輪","🎰","SSR","pas",["重抽所有能力+強化","重抽所有能力+強化","重抽所有能力+強化"],[s=>{s._fateWheel=true},s=>{s._fateWheel=true},s=>{s._fateWheel=true}],"#F59F00",null,1);
 card("混沌核心","⚛️","SSR","atk",["隨機3項能力提升","隨機5項能力提升","隨機8項能力提升"],[s=>{for(let i=0;i<3;i++)rndBuff(s)},s=>{for(let i=0;i<5;i++)rndBuff(s)},s=>{for(let i=0;i<8;i++)rndBuff(s)}],"#E599F7");
 card("時間停止","⏸️","SSR","pas",["大招：凍結全敵2秒 CD15秒","大招：凍結全敵2秒 CD15秒","大招：凍結全敵2秒 CD15秒"],[s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;g.ultCharge=0;g.ultCdEnd=0},s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;g.ultCharge=0;g.ultCdEnd=0},s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;g.ultCharge=0;g.ultCdEnd=0}],"#74C0FC",null,1);
+// ═══ 劍士專屬卡 ═══
+card("殘影斬","👻","SR","atk",["攻擊留殘影(50%傷害)","殘影傷害75%","殘影傷害100%"],[s=>{s._ghostSlash=.5},s=>{s._ghostSlash=.75},s=>{s._ghostSlash=1}],"#DA77F2");C[C.length-1].charReq="swordsman";
+card("劍氣強化","🌊","R","atk",["劍氣每4次觸發","劍氣每3次+250%傷害","劍氣每2次+400%傷害"],[s=>{s._qiEvery=4;s._qiMul=2},s=>{s._qiEvery=3;s._qiMul=2.5},s=>{s._qiEvery=2;s._qiMul=4}],"#74C0FC");C[C.length-1].charReq="swordsman";
+card("拔刀術","🩸","SR","atk",["範圍+30% 20%流血","範圍+50% 30%流血","範圍+80% 40%流血"],[s=>{s._drawSlash=1;s._bleedChance=.2},s=>{s._drawSlash=2;s._bleedChance=.3},s=>{s._drawSlash=3;s._bleedChance=.4}],"#FF6B6B");C[C.length-1].charReq="swordsman";
+// ═══ 坦克專屬卡 ═══
+card("荊棘之盾","🌵","R","pas",["反彈15%傷害","反彈25%傷害","反彈40%傷害"],[s=>{s.thorns=(s.thorns||0)+.15},s=>{s.thorns=(s.thorns||0)+.25},s=>{s.thorns=(s.thorns||0)+.4}],"#51CF66");C[C.length-1].charReq="tank";
+card("大地震擊","🌋","SR","atk",["盾擊+地震波(Boss最高80)","地震波傷害+50%","地震波傷害+100%"],[s=>{s._quake=1},s=>{s._quake=2},s=>{s._quake=3}],"#FF922B");C[C.length-1].charReq="tank";
+card("鋼鐵意志","💪","R","pas",["<30%HP自動減傷30%+回血","<30%HP減傷40%+回血","<30%HP減傷50%+回血"],[s=>{s._ironWill=.3},s=>{s._ironWill=.4},s=>{s._ironWill=.5}],"#868E96");C[C.length-1].charReq="tank";
+card("守護者光環","✨","SR","pas",["周圍減傷10%+自己5%","周圍減傷15%+自己10%","周圍減傷20%+自己15%"],[s=>{s._guardAura=1;s.armor=(s.armor||0)+.05},s=>{s._guardAura=2;s.armor=(s.armor||0)+.1},s=>{s._guardAura=3;s.armor=(s.armor||0)+.15}],"#FFD43B");C[C.length-1].charReq="tank";
 card("萬物吞噬","🌀","SSR","atk",["攻+8 命中回0.5HP","攻+15 命中回1HP","攻+25 命中回2HP"],[s=>{s.atk+=8;s.bulletHeal=(s.bulletHeal||0)+.5},s=>{s.atk+=15;s.bulletHeal=(s.bulletHeal||0)+1},s=>{s.atk+=25;s.bulletHeal=(s.bulletHeal||0)+2}],"#845EF7");
 card("創世神力","✨","SSR","atk",["攻+15 速+30% 暴+15%","攻+25 速+45% 暴+30% 閃避+6%","攻+40 速+60% 暴+45% HP+50 閃避+10%"],[s=>{s.atk+=15;s.fr*=.7;s.crit=(s.crit||.05)+.15;s.fx.star=Math.max(s.fx.star||0,2)},s=>{s.atk+=25;s.fr*=.55;s.crit=(s.crit||.05)+.3;s.dodge=Math.min(1,(s.dodge||0)+.06);s.fx.star=3},s=>{s.atk+=40;s.fr*=.4;s.crit=(s.crit||.05)+.45;s.dodge=Math.min(1,(s.dodge||0)+.1);s.maxHp+=50;s.hp=Math.min(s.hp+50,s.maxHp);s.fx.star=3}],"#FFD43B","star");
 
@@ -459,7 +525,12 @@ function pks(n,excludeIds){
     const v=Math.random()*100;
     let r=v<RW.SSR?"SSR":v<RW.SSR+RW.SR?"SR":"R";
     const _eliteExpBan=_isElite()&&(c=>c.n==="學者帽"||c.n==="磁力場"||c.n==="探索靴");
-    const pool=C.filter(c=>c.r===r&&!u.has(c.id)&&!ex.has(c.id)&&(c.once?getCardLv(c.id)<0:getCardLv(c.id)<2)&&!(c.n==="命運轉輪"&&inv.length===0)&&!(_eliteExpBan&&_eliteExpBan(c)));
+    const _ct2=g?g.charType:"gunner";
+    const _charBan=c=>{
+      if(c.charReq&&c.charReq!==_ct2)return true; // 專屬卡不符合角色
+      return false;
+    };
+    const pool=C.filter(c=>c.r===r&&!u.has(c.id)&&!ex.has(c.id)&&(c.once?getCardLv(c.id)<0:getCardLv(c.id)<2)&&!(c.n==="命運轉輪"&&inv.length===0)&&!(_eliteExpBan&&_eliteExpBan(c))&&!_charBan(c));
     if(!pool.length)continue;
     const c=pool[pool.length*Math.random()|0];
     p.push(c);u.add(c.id);
@@ -585,12 +656,19 @@ window.toggleStatsPanel=function(){
   if(inv.length){
     h+='<div style="display:flex;gap:4px;flex-wrap:wrap">';
     inv.forEach(function(ci){var cd=C.find(function(c){return c.id===ci.id;});if(!cd)return;
-      h+='<span style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:6px;padding:3px 7px;font-size:11px;border:1px solid '+RC[cd.r]+'30;color:'+RC[cd.r]+'">'+cd.e+cd.n+'<span style="font-size:9px;font-weight:900;background:'+LVC[ci.lv]+';color:#000;border-radius:3px;padding:0 4px;margin-left:2px">Lv'+(ci.lv+1)+'</span></span>';
+      h+='<span data-cid="'+cd.id+'" oncontextmenu="event.preventDefault();showCardTip('+cd.id+')" style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:6px;padding:3px 7px;font-size:11px;border:1px solid '+RC[cd.r]+'30;color:'+RC[cd.r]+';cursor:pointer">'+cd.e+cd.n+'<span style="font-size:9px;font-weight:900;background:'+LVC[ci.lv]+';color:#000;border-radius:3px;padding:0 4px;margin-left:2px">Lv'+(ci.lv+1)+'</span></span>';
     });
     h+='</div>';
   }else{h+='<div style="color:rgba(255,255,255,.3);font-size:11px">尚無卡片</div>';}
   el.innerHTML=h;el.style.display="block";
-}
+  // 長按觸發卡片說明（手機）
+  el.querySelectorAll('[data-cid]').forEach(function(el2){
+    var _t=0;
+    el2.addEventListener('touchstart',function(ev){_t=setTimeout(function(){ev.preventDefault();showCardTip(parseInt(el2.dataset.cid));},500);},{passive:false});
+    el2.addEventListener('touchend',function(){clearTimeout(_t);});
+    el2.addEventListener('touchmove',function(){clearTimeout(_t);});
+  });
+};
 
 /* ═══════════ SFX — Web Audio 合成音效 ═══════════ */
 let _actx=null,_sfxOn=true;
@@ -815,8 +893,11 @@ function bothPlayers(){return(_isCoopMode&&g.p2)?[g.p,g.p2]:[g.p];}
 function resize(){
   const sw=window.innerWidth,sh=window.innerHeight;
   const isLand=sw>sh;
-  // 動態計算 VW/VH 以匹配螢幕比例，消除黑邊
-  const ratio=sw/sh;
+  // 直式：上方留安全區（瀏海/鏡頭），橫式：不留
+  const safeTop=isLand?0:(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat'))||0);
+  const topPad=isLand?0:Math.max(safeTop,12);
+  const ah=sh-topPad;
+  const ratio=sw/ah;
   const newVW=isLand?Math.round(400*ratio):400;
   const newVH=isLand?400:Math.round(400/ratio);
   if(VW!==newVW||VH!==newVH){
@@ -824,8 +905,7 @@ function resize(){
     if(cv){cv.width=VW;cv.height=VH;}
     if(fxc){fxc.width=VW;fxc.height=VH;}
   }
-  // 直接填滿螢幕
-  [cv,fxc].forEach(c=>{if(c){c.style.width=sw+"px";c.style.height=sh+"px";c.style.left="0";c.style.top="0";}});
+  [cv,fxc].forEach(c=>{if(c){c.style.width=sw+"px";c.style.height=ah+"px";c.style.left="0";c.style.top=topPad+"px";}});
   $("minimap").style.display=g?"block":"none";
 }
 window.addEventListener("resize",resize);
@@ -925,7 +1005,7 @@ function drawMinimap(){
   // enemies
   g.ene.forEach(e=>{mx.fillStyle=e.boss?"#FF6B6B":e.role===ROLE_SHOOTER?"#FFA94D":e.role===ROLE_SHIELD?"#4DABF7":"rgba(255,100,100,.5)";mx.fillRect(e.x*sx-1,e.y*sy-1,e.boss?3:2,e.boss?3:2);});
   // player
-  mx.fillStyle="#74C0FC";mx.fillRect(g.p.x*sx-2,g.p.y*sy-2,4,4);
+  mx.fillStyle=(CHAR[g.charType]||CHAR.gunner).col;mx.fillRect(g.p.x*sx-2,g.p.y*sy-2,4,4);
   // P2 co-op
   if(_isCoopMode&&g.p2){
     // P2 小地圖：脈動圓點 + 外圈，永遠可見
@@ -971,43 +1051,261 @@ function getWpn(fx){
 }
 
 /* ═══ draw player (hero) ═══ */
+// 迷你手槍繪製（槍手用，縮小版 pixel art）
+function _drawMiniGun(cx,fxObj){
+  const f=fxObj||{};
+  const hasE=f.fire||f.ice||f.lightning||f.poison||f.dragon||f.star;
+  const SD=hasE?f.fire?"#5a2020":f.ice?"#2a4a5a":f.lightning?"#4a3a10":f.poison?"#1a3a1a":f.dragon?"#4a2a10":"#3a1a3a":"#3a3a3a";
+  const SM=hasE?f.fire?"#8B3030":f.ice?"#3a6a7a":f.lightning?"#6a5520":f.poison?"#2a5a2a":f.dragon?"#7a4a1a":"#5a2a5a":"#4a4a4a";
+  const SL=hasE?f.fire?"#C04040":f.ice?"#7ac4d8":f.lightning?"#c0a030":f.poison?"#5a9a3a":f.dragon?"#c08030":"#a050a0":"#5a5a5a";
+  const SE=hasE?f.fire?"#3a1515":f.ice?"#1a3545":f.lightning?"#3a2a08":f.poison?"#0a2a0a":f.dragon?"#3a1a08":"#2a0a2a":"#2a2a2a";
+  const MZ=hasE?f.fire?"#FF4500":f.ice?"#66D9E8":f.lightning?"#FAB005":f.poison?"#A9E34B":f.dragon?"#FF922B":f.star?"#F06595":"#74C0FC":"#74C0FC";
+  // 滑套
+  cx.fillStyle=SD;cx.fillRect(0,0,150,28);
+  cx.fillStyle=SL;cx.fillRect(2,1,146,3);
+  cx.fillStyle=SM;cx.fillRect(2,5,146,8);
+  cx.fillStyle=SE;cx.fillRect(0,25,150,3);
+  // 鋸齒紋
+  cx.fillStyle=SE;for(let i=0;i<7;i++)cx.fillRect(8+i*6,4,2,20);
+  for(let i=0;i<3;i++)cx.fillRect(110+i*6,6,2,16);
+  // 退殼口
+  cx.fillStyle=SE;cx.fillRect(55,4,18,10);cx.fillStyle=SM;cx.fillRect(56,5,16,8);
+  // 前準星（元素色）
+  cx.fillStyle=MZ;cx.globalAlpha=.8;cx.fillRect(140,-5,5,6);cx.globalAlpha=1;
+  cx.fillStyle="#fff";cx.globalAlpha=.5;cx.fillRect(141,-5,3,2);cx.globalAlpha=1;
+  // 後準星
+  cx.fillStyle=SE;cx.fillRect(3,-4,4,5);cx.fillRect(13,-4,4,5);
+  cx.fillStyle=SD;cx.fillRect(7,-3,6,4);
+  // 下機匣
+  cx.fillStyle="#444";cx.fillRect(18,28,100,12);
+  cx.fillStyle=SE;cx.fillRect(55,36,40,4);
+  // 扳機護圈
+  cx.strokeStyle="#1a1a1a";cx.lineWidth=3;
+  cx.beginPath();cx.moveTo(42,28);cx.lineTo(42,44);cx.arc(56,44,14,Math.PI,0,false);cx.lineTo(70,28);cx.stroke();
+  cx.fillStyle="rgba(30,30,30,.3)";cx.fill();
+  // 扳機
+  cx.strokeStyle="#555";cx.lineWidth=2.5;cx.beginPath();cx.moveTo(57,30);cx.lineTo(54,42);cx.stroke();
+  cx.fillStyle="#555";cx.beginPath();cx.arc(54,43,2,0,Math.PI*2);cx.fill();
+  // 握把
+  cx.fillStyle="#1a1a1a";cx.beginPath();cx.moveTo(18,28);cx.lineTo(42,28);cx.lineTo(39,76);cx.lineTo(11,76);cx.closePath();cx.fill();
+  cx.fillStyle="#2a2a2a";for(let r2=0;r2<6;r2++)for(let c2=0;c2<3;c2++)cx.fillRect(17+c2*7+(r2%2)*3,36+r2*7,3,3);
+  cx.fillStyle="#353535";cx.beginPath();cx.moveTo(18,28);cx.lineTo(22,28);cx.lineTo(14,76);cx.lineTo(11,76);cx.closePath();cx.fill();
+  // 彈匣底板
+  cx.fillStyle="#2a2a2a";cx.fillRect(11,73,29,5);cx.fillStyle="#404040";cx.fillRect(12,74,27,2);
+  // 槍口
+  cx.fillStyle="#111";cx.fillRect(148,6,4,18);
+  cx.fillStyle="#000";cx.beginPath();cx.arc(150,15,5,0,Math.PI*2);cx.fill();
+  cx.strokeStyle=MZ;cx.globalAlpha=.4;cx.lineWidth=2;cx.beginPath();cx.arc(150,15,6.5,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;
+  cx.strokeStyle="#444";cx.lineWidth=1;cx.beginPath();cx.arc(150,15,5.5,0,Math.PI*2);cx.stroke();
+  // 輪廓
+  cx.strokeStyle="#1a1a1a";cx.lineWidth=2;cx.strokeRect(0,0,150,28);
+  // 元素紋路發光線
+  cx.strokeStyle=MZ;cx.lineWidth=.8;cx.globalAlpha=.15;
+  cx.beginPath();cx.moveTo(50,14);cx.lineTo(135,14);cx.stroke();cx.globalAlpha=1;
+  // 高光
+  cx.fillStyle=SL;cx.globalAlpha=.3;cx.fillRect(30,2,40,2);cx.fillRect(90,2,30,2);cx.globalAlpha=1;
+}
+// 迷你盾牌繪製（坦克用）
+// 劍繪製（直接移植自 sword-swing-preview）
+function _drawSword(cx,r,fxObj){
+  const f=fxObj||{};
+  const gc=f.fire?"#FF4500":f.ice?"#66D9E8":f.lightning?"#FAB005":f.poison?"#A9E34B":f.dragon?"#FF922B":f.star?"#F06595":"#FFD43B";
+  const bm=f.fire?"#C04040":f.ice?"#8abace":f.lightning?"#c0a030":f.poison?"#5a9a3a":f.dragon?"#c08030":f.star?"#a050a0":"#E8E8E8";
+  const bl2=f.fire?"#8B3030":f.ice?"#3a6a7a":f.lightning?"#6a5520":f.poison?"#2a5a2a":f.dragon?"#7a4a1a":f.star?"#5a2a5a":"#CED4DA";
+  const be=f.fire?"#5a2020":f.ice?"#2a4a5a":f.lightning?"#4a3a10":f.poison?"#1a3a1a":f.dragon?"#4a2a10":f.star?"#3a1a3a":"#ADB5BD";
+  cx.save();
+  cx.shadowColor=gc;cx.shadowBlur=10;
+  const bg2=cx.createLinearGradient(0,-r*2,0,0);
+  bg2.addColorStop(0,"#fff");bg2.addColorStop(.2,bm);bg2.addColorStop(.6,bl2);bg2.addColorStop(1,be);
+  cx.fillStyle=bg2;
+  cx.beginPath();cx.moveTo(-2.8,0);cx.lineTo(-2.2,-r*1.7);cx.lineTo(0,-r*2);cx.lineTo(2.2,-r*1.7);cx.lineTo(2.8,0);cx.closePath();cx.fill();
+  cx.shadowBlur=0;
+  cx.strokeStyle="rgba(255,255,255,.4)";cx.lineWidth=.6;
+  cx.beginPath();cx.moveTo(0,-r*.2);cx.lineTo(0,-r*1.85);cx.stroke();
+  cx.strokeStyle="rgba(255,255,255,.2)";cx.lineWidth=.8;
+  cx.beginPath();cx.moveTo(-2.5,-r*.1);cx.lineTo(-2,-r*1.6);cx.lineTo(0,-r*1.95);cx.stroke();
+  // guard
+  cx.fillStyle=gc;
+  cx.beginPath();cx.moveTo(-8,-1);cx.lineTo(-7,2.5);cx.lineTo(7,2.5);cx.lineTo(8,-1);cx.closePath();cx.fill();
+  cx.strokeStyle="rgba(0,0,0,.3)";cx.lineWidth=.5;cx.stroke();
+  cx.fillStyle="#FF6B6B";cx.beginPath();cx.arc(0,.8,1.8,0,TAU);cx.fill();
+  cx.fillStyle="rgba(255,255,255,.4)";cx.beginPath();cx.arc(-.5,.3,.7,0,TAU);cx.fill();
+  // handle
+  cx.fillStyle="#5C3A1E";cx.fillRect(-2.5,2.5,5,r*.4);
+  cx.strokeStyle="#8B6914";cx.lineWidth=.8;
+  for(let i=0;i<4;i++){cx.beginPath();cx.moveTo(-2.5,4+i*2.5);cx.lineTo(2.5,5.5+i*2.5);cx.stroke();}
+  cx.fillStyle=gc;cx.beginPath();cx.arc(0,2.5+r*.4+2,2.5,0,TAU);cx.fill();
+  cx.restore();
+}
+function _drawMiniShield(cx,fxObj){
+  const ec=fxObj&&fxObj.fire?"#FF4500":fxObj&&fxObj.ice?"#66D9E8":fxObj&&fxObj.lightning?"#FAB005":fxObj&&fxObj.poison?"#A9E34B":fxObj&&fxObj.dragon?"#FF922B":fxObj&&fxObj.star?"#F06595":"#51CF66";
+  cx.fillStyle="#868E96";cx.beginPath();
+  cx.moveTo(0,-12);cx.lineTo(10,-6);cx.lineTo(9,6);cx.lineTo(0,13);cx.lineTo(-9,6);cx.lineTo(-10,-6);cx.closePath();cx.fill();
+  cx.shadowColor=ec;cx.shadowBlur=6;cx.strokeStyle=ec;cx.lineWidth=1.5;cx.stroke();cx.shadowBlur=0;
+  cx.strokeStyle="rgba(255,255,255,.12)";cx.lineWidth=.6;
+  cx.beginPath();cx.moveTo(0,-9);cx.lineTo(7,-4);cx.lineTo(6,4);cx.lineTo(0,10);cx.lineTo(-6,4);cx.lineTo(-7,-4);cx.closePath();cx.stroke();
+  cx.fillStyle=ec;cx.beginPath();cx.arc(0,1,2,0,Math.PI*2);cx.fill();
+}
+
 function drawPlayer(x,y,r,t,col,face){
   cx.save();const f=face||1,bob=Math.sin(t*3)*1.5,cy=y+bob;
-  const fx=g?g.p.fx:{},wt=getWpn(fx),w=WP[wt]||WP.sword;
+  const fx=g?g.p.fx:{};
+  const ct=g?g.charType:"gunner";
+  const cc=CHAR[ct]||CHAR.gunner;
   // shadow
-  cx.fillStyle="rgba(0,0,0,.2)";cx.beginPath();cx.ellipse(x,y+r+2,r*.6,2.5,0,0,Math.PI*2);cx.fill();
-  // weapon
-  cx.save();cx.translate(x+f*r*.92,cy-r*.1);cx.rotate(f>0?-.45:.45+Math.PI);
-  const _wbS=g&&g._wbSwing||0;if(_wbS>0)cx.rotate(f*(1-_wbS)*-1.2); // 旋風斬揮武器
-  cx.rotate(Math.sin(t*5)*.06);cx.shadowColor=w[1];cx.shadowBlur=10;
-  cx.fillStyle=w[0];const bl=r*w[2]*1.15,bw=w[3]*1.35;
-  cx.fillRect(-bw/2,-bl,bw,bl);
-  cx.beginPath();cx.moveTo(-bw/2,-bl);cx.lineTo(0,-bl-r*.18);cx.lineTo(bw/2,-bl);cx.fill();
-  cx.strokeStyle="rgba(255,255,255,.45)";cx.lineWidth=1;cx.strokeRect(-bw/2,-bl,bw,bl*.95);
-  cx.shadowBlur=0;cx.fillStyle=w[4];cx.fillRect(-6,0,12,3.2);
-  cx.fillStyle="#5C3A1E";cx.fillRect(-2,3.2,4,r*.36);cx.restore();
-  // 守護星盾牌（持劍同側前方，灰色金屬質感）
-  if(g&&g.p._sh){
+  cx.fillStyle="rgba(0,0,0,.2)";cx.beginPath();cx.ellipse(x,y+r+2,r*(ct==="tank"?.75:.6),2.5,0,0,Math.PI*2);cx.fill();
+
+  // 攻擊動畫進度
+  const _atkA=g&&g._atkAnim&&g._atkAnim.active;
+  const _atkEl=_atkA?(performance.now()-g._atkAnim.startT):0;
+  const _wbS=g&&g._wbSwing||0;
+
+  if(ct==="gunner"){
+    // ─── 槍手：身體 + 槍（含後座力動畫）───
+    const bg=cx.createRadialGradient(x-f*r*.1,cy-r*.3,r*.1,x,cy,r);
+    bg.addColorStop(0,"#fff");bg.addColorStop(.3,cc.colMid);bg.addColorStop(1,cc.col);
+    cx.beginPath();cx.arc(x,cy,r,0,TAU);cx.fillStyle=bg;cx.fill();
+    cx.strokeStyle="rgba(0,0,0,.06)";cx.lineWidth=1;cx.stroke();
+    // gun
+    const _gAd=(g&&g.ad)?g.ad:{x:f,y:0};
+    const _gAng=Math.atan2(_gAd.y,_gAd.x);
+    const _gLeft=Math.abs(_gAng)>PI/2;
+    const _gDist=r*.85;
+    // 後座力：射擊時槍往後退再回來（普攻也有微後座力）
+    const _now2=performance.now();
+    const _lastFire=g?_now2-g.lhF:999;
+    const recoil=_lastFire<120?Math.max(0,1-_lastFire/120)*4:0;
+    // 槍口閃光（每次射擊都顯示）
+    const mzDist2=r*1.2;
+    const mzX=x+Math.cos(_gAng)*mzDist2,mzY=cy+Math.sin(_gAng)*mzDist2;
+    if(_lastFire<60){
+      const fp=_lastFire/60;
+      cx.save();cx.globalAlpha=(1-fp)*.7;
+      cx.fillStyle="#FFE066";cx.beginPath();cx.arc(mzX,mzY,4+fp*6,0,TAU);cx.fill();
+      cx.fillStyle="#fff";cx.beginPath();cx.arc(mzX,mzY,2,0,TAU);cx.fill();
+      cx.restore();
+    }
+    // 槍 — 以角色中心為基準，旋轉到瞄準方向
+    // _drawMiniGun 的 local space: 滑套(0,0)→(150,28)，槍口x=150，中心約(40,14)
+    cx.save();
+    cx.translate(x,cy); // 移到角色中心
+    cx.rotate(_gAng);   // 旋轉到瞄準方向
+    if(_gLeft)cx.scale(1,-1); // 朝左時 Y 翻轉（修正上下顛倒）
+    cx.translate(r*.3-recoil,0); // 把槍推到身體邊緣
+    cx.scale(.09,.09);
+    cx.translate(0,-14); // 居中：槍高28px，往上移14
+    _drawMiniGun(cx,fx);
+    cx.restore();
+  } else if(ct==="swordsman"){
+    // ─── 劍士（參考 sword-swing-preview）：劍在後面 → 身體覆蓋 ───
+    const wt=getWpn(fx),w=WP[wt]||WP.sword;
+    const baseAng=f*.5; // idle 劍尖朝右上（f=1）或左上（f=-1）
+    const pivotX=x+f*r*.9,pivotY=cy-r*.15;
+    // 攻擊動畫 transform
+    let sRot=0,sOx=0,sOy=0,sPhase="idle";
+    const _isQiSpin=_atkA&&g._atkAnim&&g._atkAnim._qiSpin;
+    if(_atkA&&_isQiSpin){
+      // 劍氣：360度旋風斬（參考 sword-swing-preview 旋風斬）
+      const t1=60,t2=280,t3=60; // 蓄力→360旋轉→回收 = 400ms
+      if(_atkEl<t1){const p=_atkEl/t1,e2=p*p;sRot=-e2*.3*f;sPhase="raise";}
+      else if(_atkEl<t1+t2){const p=(_atkEl-t1)/t2,e2=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;sRot=(-.3+e2*(TAU+.3))*f;sPhase="slash";}
+      else if(_atkEl<t1+t2+t3){const p=(_atkEl-t1-t2)/t3,e2=p*p;sRot=TAU*f*(1-e2)*.05;sPhase="recover";}
+    }else if(_atkA){
+      // 普通：上劈下斬
+      const t1=100,t2=140,t3=160;
+      if(_atkEl<t1){const p=_atkEl/t1,e2=p*p;sRot=-e2*1.8*f;sOx=-e2*4*f;sOy=-e2*8;sPhase="raise";}
+      else if(_atkEl<t1+t2){const p=(_atkEl-t1)/t2,e2=1-(1-p)*(1-p);sRot=(-1.8+e2*4.3)*f;sOx=(-4+e2*10)*f;sOy=-8+e2*18;sPhase="slash";}
+      else if(_atkEl<t1+t2+t3){const p=(_atkEl-t1-t2)/t3,e2=p*p;sRot=2.5*f*(1-e2);sOx=6*f*(1-e2);sOy=10*(1-e2);sPhase="recover";}
+    }
+    // 劍（身體後面，使用 _drawSword 同預覽）
+    cx.save();cx.translate(pivotX+sOx,pivotY+sOy);
+    cx.rotate(baseAng+sRot);
+    if(sPhase==="idle")cx.rotate(Math.sin(t*5)*.06);
+    _drawSword(cx,r,fx);
+    cx.restore();
+    // 斬擊弧線（slash 階段）
+    if(sPhase==="slash"){
+      const totalAng=baseAng+sRot;
+      cx.save();
+      if(_isQiSpin){
+        // 劍氣旋風：金色完整圓弧
+        cx.globalAlpha=.4;cx.strokeStyle="#FFD43B";cx.lineWidth=3;
+        cx.shadowColor="#FFD43B";cx.shadowBlur=10;
+        cx.beginPath();cx.arc(pivotX,pivotY,r*2.2,totalAng-PI/2-1.2,totalAng-PI/2+.1);cx.stroke();
+        // 旋轉超過半圈後顯示完整環
+        if(Math.abs(sRot)>PI){
+          cx.globalAlpha=.15;cx.strokeStyle="#FFD43B";cx.lineWidth=2;
+          cx.beginPath();cx.arc(pivotX,pivotY,r*2,0,TAU);cx.stroke();
+        }
+        cx.shadowBlur=0;
+      }else{
+        cx.globalAlpha=.5;cx.strokeStyle="rgba(255,255,255,.6)";cx.lineWidth=2.5;
+        cx.beginPath();cx.arc(pivotX+sOx,pivotY+sOy,r*2,totalAng-PI/2-.6,totalAng-PI/2+.3);cx.stroke();
+        cx.strokeStyle="rgba(255,213,75,.3)";cx.lineWidth=4;
+        cx.beginPath();cx.arc(pivotX+sOx,pivotY+sOy,r*2.2,totalAng-PI/2-.4,totalAng-PI/2+.2);cx.stroke();
+      }
+      cx.restore();
+    }
+    // 身體（覆蓋劍底部）
+    const bg=cx.createRadialGradient(x-f*r*.1,cy-r*.3,r*.1,x,cy,r);
+    bg.addColorStop(0,"#fff");bg.addColorStop(.3,cc.colMid);bg.addColorStop(1,cc.col);
+    cx.beginPath();cx.arc(x,cy,r,0,TAU);cx.fillStyle=bg;cx.fill();
+    cx.strokeStyle="rgba(255,255,255,.12)";cx.lineWidth=1;cx.stroke();
+    // headband
+    cx.save();cx.strokeStyle="#FF922B";cx.lineWidth=2.5;cx.globalAlpha=.8;
+    cx.beginPath();cx.arc(x,cy-1,r+1,-PI*.8,-PI*.55);cx.stroke();
+    const hbx=x-f*r*.8,hby=cy-r*.5;
+    cx.lineWidth=1.8;cx.lineCap="round";
+    cx.beginPath();cx.moveTo(hbx,hby);
+    cx.quadraticCurveTo(hbx-f*8,hby+4+Math.sin(t*4)*3,hbx-f*14,hby+9+Math.sin(t*3)*4);
+    cx.stroke();cx.restore();
+  } else {
+    // ─── 坦克：身體 + 盾（盾擊推出動畫）───
+    const tr=r*1.1;
+    cx.strokeStyle="rgba(81,207,102,.15)";cx.lineWidth=1.5;
+    cx.beginPath();cx.arc(x,cy,tr+2,0,TAU);cx.stroke();
+    const bg=cx.createRadialGradient(x-f*r*.1,cy-r*.3,r*.15,x,cy,tr);
+    bg.addColorStop(0,"#fff");bg.addColorStop(.25,cc.colMid);bg.addColorStop(.7,cc.col);bg.addColorStop(1,cc.colDark);
+    cx.beginPath();cx.arc(x,cy,tr,0,TAU);cx.fillStyle=bg;cx.fill();
+    cx.strokeStyle="rgba(0,0,0,.06)";cx.lineWidth=1;cx.stroke();
+    // shield — 盾擊推出（參考 tank-preview）
+    const _tAd=(g&&g.ad)?g.ad:{x:f,y:0};
+    const _tAng=Math.atan2(_tAd.y,_tAd.x);
+    let tPush=0,tScale=1;
+    if(_atkA){
+      const t1=80,t2=220;
+      if(_atkEl<t1){const p=_atkEl/t1;tPush=p*18;tScale=1+p*.15;} // 推出
+      else if(_atkEl<t1+t2){const p=(_atkEl-t1)/t2;tPush=18*(1-p);tScale=1+.15*(1-p);} // 收回
+    }
+    cx.save();
+    cx.translate(x+Math.cos(_tAng)*(tr*.55+tPush),cy+Math.sin(_tAng)*(tr*.35+tPush*.6));
+    cx.rotate(_tAng+Math.sin(t*3)*.03);
+    if(tScale!==1)cx.scale(tScale,tScale);
+    _drawMiniShield(cx,fx);cx.restore();
+    // 衝擊波（推出階段）
+    if(_atkA&&_atkEl>30&&_atkEl<200){
+      const sp=(_atkEl-30)/170;
+      cx.save();cx.globalAlpha=(1-sp)*.4;
+      cx.strokeStyle="#51CF66";cx.lineWidth=2.5*(1-sp);cx.shadowColor="#51CF66";cx.shadowBlur=6;
+      const wR=tr+sp*30;
+      cx.beginPath();cx.arc(x+Math.cos(_tAng)*tPush,cy+Math.sin(_tAng)*tPush*.6,wR,_tAng-PI*.3,_tAng+PI*.3);cx.stroke();
+      cx.shadowBlur=0;cx.restore();
+    }
+  }
+
+  // 守護星盾牌（卡牌效果，所有角色通用）
+  if(g&&g.p._sh&&ct!=="tank"){
     cx.save();cx.translate(x+f*r*.55,cy+r*.15);cx.rotate(f>0?-.15:.15);
     cx.globalAlpha=.9;
-    // 盾牌本體
     cx.fillStyle="#868E96";cx.beginPath();
     cx.moveTo(0,-8);cx.lineTo(7,-4);cx.lineTo(6,4);cx.lineTo(0,9);cx.lineTo(-6,4);cx.lineTo(-7,-4);cx.closePath();cx.fill();
-    // 邊框
     cx.strokeStyle="#ADB5BD";cx.lineWidth=1.2;cx.stroke();
-    // 十字紋
     cx.strokeStyle="#CED4DA";cx.lineWidth=.8;
     cx.beginPath();cx.moveTo(0,-5);cx.lineTo(0,6);cx.stroke();
     cx.beginPath();cx.moveTo(-4,0);cx.lineTo(4,0);cx.stroke();
-    // 高光
     cx.fillStyle="#fff";cx.globalAlpha=.3;cx.beginPath();cx.arc(-1.5,-2,2,0,Math.PI*2);cx.fill();
     cx.restore();
   }
-  // body
-  const bg=cx.createRadialGradient(x-f*r*.1,cy-r*.3,r*.1,x,cy,r);
-  bg.addColorStop(0,"#fff");bg.addColorStop(.3,"#d4e8ff");bg.addColorStop(1,col);
-  cx.beginPath();cx.arc(x,cy,r,0,Math.PI*2);cx.fillStyle=bg;cx.fill();
-  cx.strokeStyle="rgba(0,0,0,.06)";cx.lineWidth=1;cx.stroke();
   cx.restore();
 }
 
@@ -1186,7 +1484,7 @@ function resumeGame(cb){
       g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();if(cb)cb();});
   });
 }
-function show(n){["titleOv","tutOv","pickOv","overOv","victoryOv","practiceOv","coopOv"].forEach(id=>{const el=$(id);if(el)el.style.display="none";});
+function show(n){["titleOv","charSelectOv","tutOv","pickOv","overOv","victoryOv","practiceOv","coopOv"].forEach(id=>{const el=$(id);if(el)el.style.display="none";});
   if(n==="title")$("titleOv").style.display="flex";
   else if(n==="tut")$("tutOv").style.display="flex";
   else if(n==="pick")$("pickOv").style.display="flex";
@@ -1208,11 +1506,12 @@ let _titlePar=[],_titleSlash=0,_titleSlashX=0,_titleSlashFace=1;
   try{
     const hctx=hc.getContext("2d");
     const _origCx=cx;cx=hctx;
-    const _origG=g;g={p:{fx:{},_sh:false}};
+    const _origG=g;
     const t=performance.now()/1000;
     const now=performance.now();
     const walkX=80+Math.sin(t*.8)*55;
     const face=Math.cos(t*.8)>0?1:-1;
+    g={charType:"swordsman",p:{fx:{},_sh:false},ad:{x:face,y:0},_wbSwing:0,_atkAnim:{active:false,startT:0}};
     hctx.clearRect(0,0,160,60);
 
     // 粒子更新+渲染
@@ -1238,6 +1537,7 @@ let _titlePar=[],_titleSlash=0,_titleSlashX=0,_titleSlashFace=1;
     // 定期劍氣斬擊
     if(_titleSlash<=0&&Math.random()<.008){
       _titleSlash=1;_titleSlashX=walkX;_titleSlashFace=face;
+      g._atkAnim={active:true,startT:now};g.ad={x:face,y:0};
       // 斬擊粒子爆發
       for(let i=0;i<8;i++){
         const a=-Math.PI*.3+Math.PI*.6*i/8;
@@ -1355,6 +1655,25 @@ function fire(dmg,dx,dy,sp,p){
   if(pp.heavyEvery>0){pp._heavyCount=(pp._heavyCount||0)+1;if(pp._heavyCount>=pp.heavyEvery){pp._heavyCount=0;heavy=true;dmg*=2;}}
   const shots=pp.split||1,ba=Math.atan2(dy,dx),bc=heavy?{f:"#FF922B",g:"#FF4500",t:"#FF922B"}:(p===g.p2?{f:"#F06595",g:"#DA77F2",t:"#F06595"}:bCol());
   const dbl=Math.random()<(pp.dblAtk||0);
+  // 槍口火花（槍手角色，跟隨瞄準方向）
+  const _ct=g?g.charType:"gunner";
+  if(_ct==="gunner"&&par.length<MAX_PARTICLES-6){
+    const _fAd=(g&&g.ad)?g.ad:{x:pp.face||1,y:0};
+    const _fAng=Math.atan2(_fAd.y,_fAd.x);
+    const mzDist=PR*1.2; // 槍口在角色邊緣外
+    const mzX=pp.x+Math.cos(_fAng)*mzDist,mzY=pp.y+Math.sin(_fAng)*mzDist;
+    const mzC=bc.f||"#FFE066";
+    // 白色中心閃光
+    par.push({x:mzX,y:mzY,vx:Math.cos(_fAng)*rn(1,3),vy:Math.sin(_fAng)*rn(1,3),life:.2,color:"#fff",sz:rn(3,5)});
+    // 元素色火花（朝射擊方向噴）
+    for(let _fi=0;_fi<3;_fi++){
+      const sa=_fAng+rn(-.4,.4);
+      par.push({x:mzX,y:mzY,vx:Math.cos(sa)*rn(2,4),vy:Math.sin(sa)*rn(2,4),life:.18+_fi*.04,color:_fi%2?mzC:"#FFE066",sz:rn(1.5,3.5)});
+    }
+    // 側向小火花
+    par.push({x:mzX,y:mzY,vx:Math.cos(_fAng+PI/2)*rn(.5,1.5),vy:Math.sin(_fAng+PI/2)*rn(.5,1.5),life:.15,color:"#FFE066",sz:rn(1,2)});
+    par.push({x:mzX,y:mzY,vx:Math.cos(_fAng-PI/2)*rn(.5,1.5),vy:Math.sin(_fAng-PI/2)*rn(.5,1.5),life:.15,color:"#FFE066",sz:rn(1,2)});
+  }
   const dirs=dbl?[ba,ba+Math.PI]:[ba];
   dirs.forEach(dir=>{
     const count=Math.min(shots,12);
@@ -1478,7 +1797,326 @@ function triggerHuntPressure(now){
   pack.forEach(role=>{const pre=g.ene.length;if(pre<MAX_ENEMIES){spawn(false,{role,tier});if(g.ene.length>pre){const ne=g.ene[g.ene.length-1];ne._huntStart=now+Math.random()*1200;ne._huntEnd=ne._huntStart+1800+Math.random()*1500;}}});
   g.dn.push({x:g.p.x,y:g.p.y-60,d:"⚠️ 被獵殺！快擊殺敵人止壓",life:1.6,color:"#FF6B6B",big:1});
 }
-function tapAtk(){if(!g||!g.run||g.heatCD>0)return;const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;const berserkMul=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;fire((3.5+g.p.atk+bonus)*berserkMul,g.ad.x,g.ad.y,.03);if(!g.heatCD)$("combo").textContent=aim.tn>2?aim.tn+"x COMBO!":"";
+// ═══ 劍士近戰：弧形範圍傷害 ═══
+function swordSwing(){
+  if(!g||!g.run)return;
+  const now=performance.now();
+  const splitBonus=Math.max(1,(g.p.split||1)*.5+.5); // 分裂卡→傷害倍率(1發=1x,3發=2x,7發=4x)
+  const dmg=(3.5+g.p.atk)*splitBonus*(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk?2:1)*(g.p.elemBoost||1)*(g.p.levelDmgMul||1);
+  const pierceRange=(g.p.pierce||0)>0?30:0;
+  const _drawSlashMul=g.p._drawSlash?[1,1.3,1.5,1.8][g.p._drawSlash]||1:1; // 拔刀術範圍加成
+  const range=(PR*4+pierceRange)*_drawSlashMul;
+  const atkAngle=Math.atan2(g.ad.y,g.ad.x);
+  const _dblMelee=Math.random()<(g.p.dblAtk||0); // 影分身：前後攻擊
+  const arc=_dblMelee?PI:PI*(.6+Math.min(.4,(g.p.split||1)*.05)); // 影分身=全方位
+  sfxShoot();
+  if(_dblMelee){burst(g.p.x,g.p.y,"#868E96",6);} // 影分身視覺
+  // 劍氣被動：劍氣強化卡改變觸發頻率和倍率
+  g.p._swordQiCount=(g.p._swordQiCount||0)+1;
+  const qiEvery=g.p._qiEvery||5;
+  const isQi=g.p._swordQiCount%qiEvery===0;
+  const qiMul=isQi?(g.p._qiMul||2):1;
+  g.ene.forEach(e=>{
+    if(e.hp<=0)return;
+    const dx=e.x-g.p.x,dy=e.y-g.p.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d>range+(isQi?40:0))return; // 劍氣加 40 範圍
+    const ea=Math.atan2(dy,dx);
+    let da=Math.abs(((ea-atkAngle)%(PI*2)+PI*3)%(PI*2)-PI);
+    if(da>arc&&!isQi)return; // 劍氣無角度限制（穿透全方位）
+    const hitDmg=dmg*qiMul;
+    // Boss 判定同子彈系統
+    const isBoss=e.boss&&!e.stageBoss;
+    let fd=hitDmg;
+    if(isBoss&&e.bossType==="armor")fd*=.7;
+    if(g.p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+g.p.iceFrag);
+    // 精英怪物抗（近戰至少 1 傷害）
+    if(e.eliteEnemy){const hasEl=!!(g.p.fx.fire||g.p.fx.ice||g.p.fx.lightning||g.p.fx.poison||g.p.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
+    e.hp-=fd;
+    e.st=Math.max(e.st||0,800); // 短暫減速
+    // 元素效果
+    const fx=g.p.fx;
+    if(fx.fire){e.burnT=Math.max(e.burnT||0,1400+Math.max(fx.fire||0,1)*600);e.burnLv=Math.max(fx.fire||0,1);}
+    if(fx.poison&&g.p.poison>0){e.poisonT=g.p.poison*1000*(g.p.elemBoost||1);e.poisonLv=Math.max(fx.poison||0,1);}
+    if(fx.ice){if(Math.random()<.25)e.frozen=Math.max(e.frozen||0,500);else e.st=Math.max(e.st||0,1200);}
+    // 拔刀術：流血效果
+    if(g.p._bleedChance&&Math.random()<g.p._bleedChance){
+      e._bleedEnd=now+2000;e._bleedDmg=g.p.atk*.3;
+      // 流血特效：紅色水滴粒子
+      for(let bi=0;bi<3;bi++)par.push({x:e.x+rn(-5,5),y:e.y+rn(-5,5),vx:rn(-.5,.5),vy:rn(.5,1.5),life:.5,color:"#FF4040",sz:rn(1.5,3),g:.05});
+      g.dn.push({x:e.x+rn(-8,8),y:e.y-e.r-12,d:"🩸",life:.8,color:"#FF4040"});
+    }
+    // 近戰吸血（劍士自帶每次命中回 3 HP）
+    const _meleeHeal=3+(g.p.ls>0?g.p.ls*.3:0);
+    if(g.p.hp<g.p.maxHp){g.p.hp=Math.min(g.p.hp+_meleeHeal,g.p.maxHp);}
+    // VFX
+    burst(e.x,e.y,isQi?"#FFD43B":"#FF922B",5);
+    g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:isQi?"#FFD43B":"#fff",big:isQi});
+    sfxHit();
+    // 連鎖雷電（近戰觸發）
+    if(g.p.chain>0||fx.lightning){
+      const cMul=(g.p.chainDmg||1)*(fx.lightning?.58:.3);
+      const cd2=fd*cMul;
+      g.ene.forEach(t=>{if(t===e||t.hp<=0)return;if(di(e,t)<80){
+        t.hp-=cd2;addLtn(e.x,e.y,t.x,t.y,.7);burst(t.x,t.y,"#FAB005",3);
+        g.dn.push({x:t.x,y:t.y-t.r,d:Math.floor(cd2),life:.7,color:"#FAB005"});
+      }});
+    }
+  });
+  // 殘影斬：延遲 150ms 再打一次（殘影）
+  if(g.p._ghostSlash){
+    const gsMul=g.p._ghostSlash;
+    setTimeout(()=>{
+      if(!g||!g.run)return;
+      // 殘影粒子（紫色半透明劍形）
+      for(let gi=0;gi<5;gi++){const a=atkAngle+rn(-.3,.3);par.push({x:g.p.x+Math.cos(a)*rn(10,30),y:g.p.y+Math.sin(a)*rn(10,30),vx:Math.cos(a)*2,vy:Math.sin(a)*2,life:.4,color:"#DA77F2",sz:rn(2,4)});}
+      g.ene.forEach(e=>{
+        if(e.hp<=0)return;
+        const dx2=e.x-g.p.x,dy2=e.y-g.p.y,d2=Math.sqrt(dx2*dx2+dy2*dy2);
+        if(d2>range)return;
+        const ea2=Math.atan2(dy2,dx2);
+        let da2=Math.abs(((ea2-atkAngle)%(PI*2)+PI*3)%(PI*2)-PI);
+        if(da2>arc)return;
+        const gd=dmg*gsMul;e.hp-=gd;
+        burst(e.x,e.y,"#DA77F2",3);
+        g.dn.push({x:e.x+rn(-6,6),y:e.y-e.r-5,d:Math.floor(gd),life:.8,color:"#DA77F2"});
+      });
+    },150);
+  }
+  // 近戰打寶箱
+  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(g.p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
+    if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
+      if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
+      if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
+      else{showPick("crate");}
+    }}});
+  // 揮劍視覺弧線
+  if(!g._atkAnim)g._atkAnim={active:false,startT:0};
+  g._atkAnim.active=true;g._atkAnim.startT=performance.now();g._atkAnim._qiSpin=false; // 預設普通揮擊
+  if(isQi){
+    // 劍氣：360 度旋風斬動畫（覆蓋普通動畫）
+    g._atkAnim._qiSpin=true;
+    // 更帥的金色粒子爆發（3 層環）
+    for(let ring=0;ring<3;ring++){
+      const cnt=10+ring*4,spd=3+ring*1.5;
+      for(let i=0;i<cnt;i++){
+        const a=TAU*i/cnt+ring*.2;
+        par.push({x:g.p.x+Math.cos(a)*(15+ring*8),y:g.p.y+Math.sin(a)*(15+ring*8),
+          vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:.8+ring*.15,
+          color:["#FFD43B","#fff","#FF922B","#FFE066"][i%4],sz:rn(2.5,5+ring)});
+      }
+    }
+    burst(g.p.x,g.p.y,"#FFD43B",15);burst(g.p.x,g.p.y,"#fff",8);
+    g.dn.push({x:g.p.x,y:g.p.y-35,d:"⚔️ 劍氣！",life:1.5,color:"#FFD43B",big:1});
+    _shakeT=.2;_shakePow=4;
+  }
+}
+
+// ═══ 坦克盾擊：擊退+反彈傷害 ═══
+function shieldBash(){
+  if(!g||!g.run)return;
+  const now=performance.now();
+  const splitBonus=Math.max(1,(g.p.split||1)*.4+.6); // 分裂→衝擊波傷害
+  const _tauntMul=(g.p._tauntAtkEnd&&now<g.p._tauntAtkEnd)?2:1; // 嘲諷期間攻擊翻倍
+  const dmg=(3+g.p.atk)*splitBonus*(g.p.elemBoost||1)*(g.p.levelDmgMul||1)*_tauntMul;
+  const pierceRange=(g.p.pierce||0)>0?25:0;
+  const range=PR*3+pierceRange;
+  const atkAngle=Math.atan2(g.ad.y,g.ad.x);
+  const _dblMelee2=Math.random()<(g.p.dblAtk||0);
+  const arc=_dblMelee2?PI:PI*(.5+Math.min(.3,(g.p.split||1)*.04));
+  sfxShoot();
+  if(_dblMelee2){burst(g.p.x,g.p.y,"#868E96",6);}
+  g.ene.forEach(e=>{
+    if(e.hp<=0)return;
+    const dx=e.x-g.p.x,dy=e.y-g.p.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d>range)return;
+    const ea=Math.atan2(dy,dx);
+    let da=Math.abs(((ea-atkAngle)%(PI*2)+PI*3)%(PI*2)-PI);
+    if(da>arc)return;
+    let fd=dmg;
+    if(e.boss&&e.bossType==="armor")fd*=.7;
+    if(g.p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+g.p.iceFrag);
+    // 精英怪物抗（近戰至少 1 傷害）
+    if(e.eliteEnemy){const hasEl=!!(g.p.fx.fire||g.p.fx.ice||g.p.fx.lightning||g.p.fx.poison||g.p.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
+    e.hp-=fd;
+    // 擊退
+    const pushDist=d>0?30/d:0;
+    e.x+=dx*pushDist;e.y+=dy*pushDist;
+    e.st=Math.max(e.st||0,1000);
+    // 元素效果
+    const fx=g.p.fx;
+    if(fx.fire){e.burnT=Math.max(e.burnT||0,1400+Math.max(fx.fire||0,1)*600);e.burnLv=Math.max(fx.fire||0,1);}
+    if(fx.poison&&g.p.poison>0){e.poisonT=g.p.poison*1000*(g.p.elemBoost||1);e.poisonLv=Math.max(fx.poison||0,1);}
+    if(fx.ice){if(Math.random()<.3)e.frozen=Math.max(e.frozen||0,600);else e.st=Math.max(e.st||0,1500);}
+    burst(e.x,e.y,"#51CF66",6);
+    g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:"#51CF66"});
+    sfxHit();
+    // 連鎖雷電（近戰觸發）
+    if(g.p.chain>0||fx.lightning){
+      const cMul2=(g.p.chainDmg||1)*(fx.lightning?.58:.3);
+      const cd3=fd*cMul2;
+      g.ene.forEach(t=>{if(t===e||t.hp<=0)return;if(di(e,t)<80){
+        t.hp-=cd3;addLtn(e.x,e.y,t.x,t.y,.7);burst(t.x,t.y,"#FAB005",3);
+        g.dn.push({x:t.x,y:t.y-t.r,d:Math.floor(cd3),life:.7,color:"#FAB005"});
+      }});
+    }
+  });
+  // 近戰打寶箱
+  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(g.p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
+    if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
+      if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
+      if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
+      else{showPick("crate");}
+    }}});
+  // 盾擊衝擊波視覺
+  if(!g._atkAnim)g._atkAnim={active:false,startT:0};g._atkAnim.active=true;g._atkAnim.startT=performance.now();
+  for(let i=0;i<6;i++){
+    const a=atkAngle-arc+arc*2*i/5;
+    par.push({x:g.p.x+Math.cos(a)*15,y:g.p.y+Math.sin(a)*15,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:.4,color:"#51CF66",sz:rn(2,4)});
+  }
+  // 內建基礎震波（盾擊範圍外的小範圍 AOE）
+  const baseQuakeR=range+40; // 盾擊範圍外再 +40px
+  const baseQuakeDmg=g.p.atk*.5;
+  g.ene.forEach(e=>{
+    if(e.hp<=0)return;
+    const qd2=di(g.p,e);
+    if(qd2>range&&qd2<=baseQuakeR){
+      let bqd=baseQuakeDmg;if(e.boss)bqd=Math.min(bqd,30);
+      e.hp-=bqd;e.st=Math.max(e.st||0,400);
+      burst(e.x,e.y,"#51CF66",2);
+    }
+  });
+  // 基礎震波視覺（小環）
+  g._quakeRingT=now;g._quakeRingSmall=true;
+  // 大地震擊：盾擊額外全螢幕地震波（卡片強化）
+  if(g.p._quake&&(!g.p._quakeCD||now>=g.p._quakeCD)){
+    g.p._quakeCD=now+3000;
+    const qMul=[0,1,1.5,2][g.p._quake]||1;
+    const qDmg=g.p.atk*2*qMul;
+    g.ene.forEach(e=>{
+      if(e.hp<=0)return;
+      let qd=qDmg;if(e.boss)qd=Math.min(qd,80);
+      e.hp-=qd;e.st=Math.max(e.st||0,600);
+      burst(e.x,e.y,"#FF922B",3);
+      g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(qd),life:.8,color:"#FF922B"});
+    });
+    g._quakeRingSmall=false; // 大地震擊用大環
+    g._quakeRingT=now;
+    _shakeT=.4;_shakePow=6;
+    burst(g.p.x,g.p.y,"#FF922B",20);
+    g.dn.push({x:g.p.x,y:g.p.y-35,d:"🌋 地震波！",life:1.5,color:"#FF922B",big:1});
+  }
+}
+
+// ═══ 角色技能系統 ═══
+const SKILL_CDS={gunner:3000,swordsman:3000,tank:5000};
+let _skillCdEnd=0;
+
+function useCharSkill(){
+  if(!g||!g.run)return;
+  const now=performance.now();
+  if(now<_skillCdEnd)return;
+  const cd=SKILL_CDS[g.charType]||5000;
+  _skillCdEnd=now+cd;
+  if(g.charType==="gunner")skillSnipe(now);
+  else if(g.charType==="swordsman")skillGhostSlash(now);
+  else if(g.charType==="tank")skillTaunt(now);
+  const cdEl=$("skillCd");if(cdEl)cdEl.style.display="flex";
+  const _cdI=setInterval(()=>{const left=Math.max(0,_skillCdEnd-performance.now());if(left<=0){if(cdEl)cdEl.style.display="none";clearInterval(_cdI);}else if(cdEl)cdEl.textContent=(left/1000).toFixed(1);},100);
+}
+
+// 槍手：狙擊（穿透全部 傷害1.5倍）
+function skillSnipe(now){
+  // 蓄力階段（0.4秒瞄準線+蓄力圈）→ 射擊
+  g.p._snipeT=now; // 記錄開始時間，渲染區畫蓄力特效
+  g.p._iFrameEnd=now+600; // 蓄力期間短暫保護
+  const ba=Math.atan2(g.ad.y,g.ad.x);
+  // 延遲 400ms 後發射
+  setTimeout(()=>{
+    if(!g||!g.run)return;
+    const bm=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;
+    const dmg=(3.5+g.p.atk)*2.5*bm; // 狙擊高傷害
+    sfxShoot();sfx("ult");
+    const ba2=Math.atan2(g.ad.y,g.ad.x);
+    g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(ba2)*12,vy:Math.sin(ba2)*12,dmg:dmg*PLAYER_DMG_SCALE,life:1,crit:true,bc:{f:"#FFD43B",g:"#FF922B",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0});
+    // 穿透藍色光束
+    g.p._snipeBeamT=performance.now();g.p._snipeBeamAng=ba2;
+    // 大火花
+    const mzX=g.p.x+Math.cos(ba2)*PR,mzY=g.p.y+Math.sin(ba2)*PR;
+    burst(mzX,mzY,"#FFD43B",12);burst(mzX,mzY,"#fff",6);
+    _shakeT=.3;_shakePow=5;
+    g.dn.push({x:g.p.x,y:g.p.y-30,d:"🎯 狙擊！",life:1.5,color:"#FFD43B",big:1});
+  },400);
+}
+
+// 劍士：鬼斬（旋風斬+位移 兩倍距離+殘影）
+function skillGhostSlash(now){
+  const dmg=(3.5+g.p.atk)*2*(g.p.elemBoost||1)*(g.p.levelDmgMul||1);
+  const dashDist=PR*8;
+  const dx=g.ad.x,dy=g.ad.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+  const ndx=dx/d,ndy=dy/d;
+  sfxShoot();
+  const startX=g.p.x,startY=g.p.y;
+  const hitRange=PR*4;
+  g.ene.forEach(e=>{
+    if(e.hp<=0)return;
+    const ex2=e.x-startX,ey2=e.y-startY;
+    const proj=ex2*ndx+ey2*ndy;
+    if(proj<-hitRange||proj>dashDist+hitRange)return;
+    const perp=Math.abs(ex2*ndy-ey2*ndx);
+    if(perp>hitRange)return;
+    let fd=dmg;
+    if(!e.boss&&!e.stageBoss)fd+=e.mhp*.1; // 非Boss額外扣10%最大HP
+    if(e.boss&&e.bossType==="armor")fd*=.7;
+    if(g.p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+g.p.iceFrag);
+    e.hp-=fd;e.st=Math.max(e.st||0,1200);
+    const fx=g.p.fx;
+    if(fx.fire){e.burnT=Math.max(e.burnT||0,2000);e.burnLv=Math.max(fx.fire||0,1);}
+    if(fx.poison&&g.p.poison>0){e.poisonT=g.p.poison*1000;e.poisonLv=Math.max(fx.poison||0,1);}
+    burst(e.x,e.y,"#FF922B",8);
+    g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:"#FFD43B",big:1});
+  });
+  g.p.x=cl(startX+ndx*dashDist,PR+4,mapW()-PR-4);
+  g.p.y=cl(startY+ndy*dashDist,PR+4,mapH()-PR-4);
+  g.p._iFrameEnd=now+300; // 只用 i-frame，不設 _inv（避免卡住天使之翼）
+  for(let i=0;i<6;i++){const p=i/5;_dashGhosts.push({x:startX+ndx*dashDist*p,y:startY+ndy*dashDist*p,face:g.p.face,life:1});}
+  for(let i=0;i<16;i++){const a=PI*2*i/16;par.push({x:g.p.x+Math.cos(a)*15,y:g.p.y+Math.sin(a)*15,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:.6,color:i%2?"#FF922B":"#FFD43B",sz:rn(2,5)});}
+  g.dn.push({x:g.p.x,y:g.p.y-30,d:"⚔️ 鬼斬",life:1.2,color:"#FF922B",big:1});
+  if(!g._atkAnim)g._atkAnim={active:false,startT:0};g._atkAnim.active=true;g._atkAnim.startT=performance.now();
+}
+
+// 坦克：嘲諷吼叫（仇恨拉到自己+攻擊+2持續3秒）
+function skillTaunt(now){
+  sfxShoot();sfx("ult");
+  g.ene.forEach(e=>{
+    if(e.hp<=0)return;
+    e._tauntEnd=now+3000;e.st=0;
+    g.dn.push({x:e.x,y:e.y-e.r-8,d:"⚠️",life:1,color:"#FF6B6B",big:1});
+  });
+  g.p._tauntAtkEnd=now+3000;g.p._tauntAtkBonus=2;g.p.atk+=2;
+  // 大範圍擴散粒子（4層環，更多更遠）
+  for(let ring=0;ring<4;ring++){
+    const rOff=ring*8,spd=4+ring*2.5,cnt=14+ring*6;
+    for(let i=0;i<cnt;i++){
+      const a=TAU*i/cnt+ring*.25;
+      const cols=["#51CF66","#FFD43B","#FF6B6B","#fff","#FF4040"];
+      par.push({x:g.p.x+Math.cos(a)*(12+rOff),y:g.p.y+Math.sin(a)*(12+rOff),vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:1+ring*.25,color:cols[(i+ring)%5],sz:rn(2.5,6+ring)});
+    }
+  }
+  // 敵人頭上的 ❗ 已經有了，不再額外飛散 ⚠️
+  g.dn.push({x:g.p.x,y:g.p.y-40,d:"🛡️ 嘲諷！",life:2.5,color:"#51CF66",big:1});
+  burst(g.p.x,g.p.y,"#51CF66",30);burst(g.p.x,g.p.y,"#FFD43B",20);burst(g.p.x,g.p.y,"#FF4040",10);
+  // 嘲諷擴散環動畫（存到 g 讓渲染區畫）
+  g._tauntRingT=now;
+  _shakeT=.3;_shakePow=5;
+}
+
+// ═══ tapAtk：根據角色類型分流攻擊 ═══
+function tapAtk(){if(!g||!g.run||g.heatCD>0)return;const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;
+// 根據角色攻擊
+if(g.charType==="swordsman"){swordSwing();}
+else if(g.charType==="tank"){shieldBash();}
+else{const berserkMul=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;fire((3.5+g.p.atk+bonus)*berserkMul,g.ad.x,g.ad.y,.03);}
+if(!g.heatCD)$("combo").textContent=aim.tn>2?aim.tn+"x COMBO!":"";
 // combo 漸進集氣：combo 數 / 50 = 集氣條比例
 if(aim.tn>0&&!g.p.hasBH&&!g.p.hasTS){
   const _comboPct=Math.min((aim.tn%50)/50,1);const _prevUlt3=g.ultCharge;
@@ -1850,9 +2488,12 @@ function loop(){
     }else{g.p._mgFireT=0;g.p._mgBerserkEnd=0;}
   }
   const mgBerserkMul=(g.p._mgBerserkEnd&&now<g.p._mgBerserkEnd)?.5:1;
-  if(aim.a&&!g.heatCD&&now-g.lhF>HOLD_CD*(g.p.fr||1)*mgBerserkMul){
-    const bm=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;
-    fire((2.2+g.p.atk*.7)*bm,g.ad.x,g.ad.y,g.p._minigun?.12:.07);
+  // 攻擊間隔：近戰用動畫時長，槍手用 HOLD_CD
+  const _atkCD=g.charType==="swordsman"?400:g.charType==="tank"?350:HOLD_CD*(g.p.fr||1)*mgBerserkMul;
+  if(aim.a&&!g.heatCD&&now-g.lhF>_atkCD){
+    if(g.charType==="swordsman"){swordSwing();}
+    else if(g.charType==="tank"){shieldBash();}
+    else{const bm=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;fire((2.2+g.p.atk*.7)*bm,g.ad.x,g.ad.y,g.p._minigun?.12:.07);}
     g.lhF=now;g.heat+=1;
   }
 
@@ -1900,6 +2541,27 @@ function loop(){
   // passive regen
   if(g.p.regen>0&&g.p.hp<g.p.maxHp)g.p.hp=Math.min(g.p.hp+g.p.regen*dt/60,g.p.maxHp);
   if(_isCoopMode&&g.p2&&g.p2.regen>0&&g.p2.hp<g.p2.maxHp&&!g.p2._downed)g.p2.hp=Math.min(g.p2.hp+g.p2.regen*dt/60,g.p2.maxHp);
+  // ═══ 角色被動技能 ═══
+  if(g.charType==="tank"){
+    // 鐵壁被動：每5秒回10HP
+    g.p._ironwallT=(g.p._ironwallT||0)+dt*16.67;
+    if(g.p._ironwallT>=5000){g.p._ironwallT=0;if(g.p.hp<g.p.maxHp){g.p.hp=Math.min(g.p.hp+10,g.p.maxHp);g.dn.push({x:g.p.x,y:g.p.y-25,d:"+10",life:.6,color:"#51CF66"});}}
+  }
+  // 劍士被動（劍氣）在 swordSwing() 內處理
+  // 坦克嘲諷攻擊加成到期
+  if(g.p._tauntAtkEnd&&now>=g.p._tauntAtkEnd){g.p.atk-=(g.p._tauntAtkBonus||0);g.p._tauntAtkEnd=0;g.p._tauntAtkBonus=0;}
+  // 鋼鐵意志：<30% HP 自動減傷+回血
+  if(g.p._ironWill&&g.p.hp>0){
+    const iwActive=g.p.hp/g.p.maxHp<.3;
+    if(iwActive&&!g.p._iwActive){g.p._iwActive=true;g.dn.push({x:g.p.x,y:g.p.y-30,d:"💪 鋼鐵意志！",life:1.5,color:"#868E96",big:1});}
+    if(!iwActive&&g.p._iwActive&&g.p.hp/g.p.maxHp>=.5)g.p._iwActive=false;
+    if(g.p._iwActive){g.p.hp=Math.min(g.p.hp+g.p.maxHp*.03*dt/60,g.p.maxHp);}
+  }
+  // 守護者光環特效
+  if(g.p._guardAura&&g.p._guardAura>0){
+    // coop: P2 在範圍內減傷（在碰撞區處理）
+    // 視覺光環在渲染區處理
+  }
   // shield timer (守護星)
   if(g.p.shieldCD>0){g.p._shT=(g.p._shT||0)+dt*16.67;if(g.p._shT>=g.p.shieldCD&&!g.p._sh){g.p._sh=true;g.p._shT=0;g.p._shSpawn=now;burst(g.p.x,g.p.y,"#4DABF7",12);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🛡️守護星",life:1,color:"#4DABF7"});}}
   // invincibility timer (天使之翼) — 用 game-time 計時，暫停時不消耗
@@ -2080,6 +2742,11 @@ function loop(){
       const pd=e.boss?e.mhp*(0.0006*lv+pBonus*.00015)*elemMul*pbm:((g.p.atk*.18)+.8*lv+pBonus)*elemMul;
       e.hp-=pd*dt;
     }
+    // 流血（拔刀術）
+    if(e._bleedEnd&&now<e._bleedEnd){
+      e.hp-=(e._bleedDmg||1)*dt;
+      if(Math.random()<.08*dt&&par.length<MAX_PARTICLES)par.push({x:e.x+rn(-4,4),y:e.y+rn(-2,4),vx:0,vy:rn(.3,.8),life:.35,color:"#FF4040",sz:rn(1,2.5)});
+    }
     if(e.burnT>0){
       e.burnT-=dt*16.67;
       const blv=e.burnLv||1;
@@ -2090,6 +2757,20 @@ function loop(){
       if(Math.random()<bRate&&par.length<MAX_PARTICLES){
         const bc=blv>=3?"#FFD43B":blv>=2?"#FF922B":"#FF6B6B";
         par.push({x:e.x+rn(-e.r,e.r),y:e.y+rn(-e.r,e.r),vx:rn(-.4,.4),vy:rn(-1.2,-.3)-.2*blv,life:.4+blv*.1,color:bc,sz:rn(2,3.5+blv)});
+      }
+      // 王燃特效：Boss 燃燒時額外橘金大粒子 + 定時顯示傷害數字
+      if(e.boss&&bbm>1){
+        if(Math.random()<.15&&par.length<MAX_PARTICLES){
+          par.push({x:e.x+rn(-e.r*.6,e.r*.6),y:e.y-e.r*.5,vx:rn(-.3,.3),vy:rn(-1.8,-.8),life:.6,color:"#FFD43B",sz:rn(3.5,6)});
+          par.push({x:e.x+rn(-e.r*.4,e.r*.4),y:e.y-e.r*.3,vx:rn(-.2,.2),vy:rn(-1.5,-.6),life:.5,color:"#FF922B",sz:rn(2.5,4.5)});
+        }
+        // 每 0.5 秒顯示一次累計燃燒傷害
+        e._burnDmgAcc=(e._burnDmgAcc||0)+bd;
+        e._burnDmgT=(e._burnDmgT||0)+dt*16.67;
+        if(e._burnDmgT>=500){
+          g.dn.push({x:e.x+rn(-6,6),y:e.y-e.r-5,d:Math.floor(e._burnDmgAcc),life:.7,color:"#FF922B"});
+          e._burnDmgAcc=0;e._burnDmgT=0;
+        }
       }
     }
     const rawSlow=g.p.slow||1;
@@ -2344,7 +3025,7 @@ function loop(){
     // tough 型不減傷，但免疫控制（見下方 toughImmune）
     if(!isBossUnit&&!e.stageBoss&&e.eliteEnemy){
       const hasElem=!!(fx.fire||fx.ice||fx.lightning||fx.poison||fx.dragon);
-      if(hasElem)dmg*=1.2;else dmg*=.5;
+      if(hasElem)dmg*=1.2;else{dmg*=.5;dmg=Math.max(dmg,.3);} // 槍手至少 0.3
     }
     // 精英模式：小怪 per-hit cap（Boss 改用每秒上限制，見 settleEnemyDeaths 前）
     if(_isElite()&&!e.stageBoss&&!isBossUnit){
@@ -2504,7 +3185,11 @@ function loop(){
     const surv=(g.p.armor||0)+(g.p.dodge||0)*.9;
     const survMit=1-Math.min(.42,surv*.36);
     let dmg=Math.min(g.p.contactCap||100,(8+g.wave*2)*(e.dmgMul||1)*lateMul)*(1-g.p.armor)*survMit;
-    if(g.p.thorns>0){const td=dmg*g.p.thorns;e.hp-=td;}
+    if(g.p._iwActive)dmg*=(1-g.p._ironWill); // 鋼鐵意志減傷
+    if(g.p.thorns>0){const td=dmg*g.p.thorns;e.hp-=td;g._thornFlash=now;
+      burst(g.p.x,g.p.y,"#51CF66",4);g.dn.push({x:e.x,y:e.y-e.r-5,d:Math.floor(td),life:.7,color:"#51CF66"});}
+    // 坦克被動：受傷反彈15%
+    if(g.charType==="tank"){const td2=dmg*.15;e.hp-=td2;burst(e.x,e.y,"#51CF66",3);g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(td2),life:.6,color:"#51CF66"});}
     g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",6);_hitFlash=1;_shakeT=.4;_shakePow=Math.min(8,3+dmg/12);sfx("hurt");showPlayerDmg(dmg);
     g.p._iFrameEnd=now+400; // 400ms i-frame after contact damage
     if(g.p.hp<=0){
@@ -2572,7 +3257,7 @@ function loop(){
     // 經典模式 Lv2 送免費 R 攻擊卡
     if(_mode==="classic"&&g.level===2&&!g._freeCard){
       g._freeCard=true;g.run=false;
-      const rAtk=C.filter(c=>c.r==="R"&&c.tp==="atk");
+      const rAtk=C.filter(c=>c.r==="R"&&c.tp==="atk"&&(!c.charReq||c.charReq===g.charType));
       const freeCard=rAtk[rAtk.length*Math.random()|0];
       if(freeCard){showPick("crate",freeCard);}
       else{g.run=true;}
@@ -2615,7 +3300,7 @@ function loop(){
         const a=Math.PI*2*i/g.p.windBlades;
         g._wb.push({x:g.p.x+Math.cos(a)*20,y:g.p.y+Math.sin(a)*20,life:4000,target:null,rot:a});
       }
-      g._wbSwing=1; // 觸發揮武器動畫
+      if(!g._atkAnim)g._atkAnim={active:false,startT:0};g._atkAnim.active=true;g._atkAnim.startT=performance.now(); // 觸發揮武器動畫
       sfx("shoot");
     }
     // 更新風刃
@@ -2644,8 +3329,14 @@ function loop(){
       return true;
     });
   }
-  // 揮武器動畫衰減
-  if(g._wbSwing>0)g._wbSwing=Math.max(0,g._wbSwing-dt*2.5);
+  // 攻擊動畫系統（時間制）
+  if(!g._atkAnim)g._atkAnim={active:false,startT:0};
+  if(g._atkAnim.active){
+    const el=now-g._atkAnim.startT;
+    const dur=g.charType==="gunner"?200:g.charType==="swordsman"?400:350;
+    if(el>=dur){g._atkAnim.active=false;g._atkAnim._qiSpin=false;}
+    g._wbSwing=g._atkAnim.active?Math.max(0,1-el/dur):0;
+  }else{g._wbSwing=0;}
 
   // 迴力鏢系統
   if(g.p.boomerang>0){
@@ -3075,6 +3766,29 @@ function loop(){
       cx.fillText("🃏 挑卡中...",g.p2.x,g.p2.y-PR-18);cx.restore();
     }
   }
+  // 劍士揮劍弧線 / 坦克盾擊衝擊波
+  if(g._wbSwing>0&&g.charType!=="gunner"){
+    const sw=g._wbSwing,aa=Math.atan2(g.ad.y,g.ad.x);
+    cx.save();
+    if(g.charType==="swordsman"){
+      // 橘色弧形斬擊
+      const swArc=PI*.7,swR=PR*3.5*(1-sw*.3);
+      cx.globalAlpha=sw*.6;cx.strokeStyle="#FF922B";cx.lineWidth=3*sw;
+      cx.shadowColor="#FFD43B";cx.shadowBlur=8*sw;
+      cx.beginPath();cx.arc(g.p.x,g.p.y,swR,aa-swArc/2,aa+swArc/2);cx.stroke();
+      // 內層白色弧
+      cx.globalAlpha=sw*.35;cx.strokeStyle="#fff";cx.lineWidth=1.5*sw;cx.shadowBlur=0;
+      cx.beginPath();cx.arc(g.p.x,g.p.y,swR*.75,aa-swArc*.4,aa+swArc*.4);cx.stroke();
+    }else if(g.charType==="tank"){
+      // 綠色衝擊波扇形
+      const swArc=PI*.5,swR=PR*2.5*(1-sw*.2);
+      cx.globalAlpha=sw*.5;cx.fillStyle="rgba(81,207,102,.25)";
+      cx.beginPath();cx.moveTo(g.p.x,g.p.y);cx.arc(g.p.x,g.p.y,swR,aa-swArc/2,aa+swArc/2);cx.closePath();cx.fill();
+      cx.strokeStyle="#51CF66";cx.lineWidth=2.5*sw;cx.shadowColor="#51CF66";cx.shadowBlur=6*sw;
+      cx.beginPath();cx.arc(g.p.x,g.p.y,swR,aa-swArc/2,aa+swArc/2);cx.stroke();
+    }
+    cx.shadowBlur=0;cx.restore();
+  }
   // 過熱條：長按攻擊時顯示在主角下方
   if(g.heat>0&&!g.p._noOverheat){
     const heatPct=g.heat/HOLD_COOLDOWN_NEED;
@@ -3114,6 +3828,146 @@ function loop(){
     cx.fillText(label,g.p.x,g.p.y-PR-12);
     cx.restore();
   }else if(g._ultReadyUntil&&now>=g._ultReadyUntil){g._ultReadyUntil=0;}
+  // 嘲諷擴散環動畫（施放瞬間 1.2 秒）
+  if(g._tauntRingT&&now-g._tauntRingT<1200){
+    const tp=(now-g._tauntRingT)/1200;
+    cx.save();
+    // 6 層擴散環（更大範圍）
+    for(let i=0;i<6;i++){
+      const rp=Math.min(1,Math.max(0,(tp-i*.06)/.5));
+      if(rp<=0||rp>=1)continue;
+      const rr=PR+rp*150+i*20;
+      cx.globalAlpha=(1-rp)*.4;cx.strokeStyle=["#51CF66","#FFD43B","#FF6B6B","#51CF66","#FFD43B","#fff"][i];
+      cx.lineWidth=(4-i*.4)*(1-rp);
+      cx.beginPath();cx.arc(g.p.x,g.p.y,rr,0,TAU);cx.stroke();
+    }
+    // 中心閃光（更大更亮）
+    if(tp<.4){
+      cx.globalAlpha=(1-tp/.4)*.5;
+      const fg=cx.createRadialGradient(g.p.x,g.p.y,0,g.p.x,g.p.y,60+tp*80);
+      fg.addColorStop(0,"#fff");fg.addColorStop(.3,"#FFD43B");fg.addColorStop(.6,"#51CF66");fg.addColorStop(1,"transparent");
+      cx.fillStyle=fg;cx.beginPath();cx.arc(g.p.x,g.p.y,60+tp*80,0,TAU);cx.fill();
+    }
+    // 紅色怒氣波紋
+    if(tp>.1&&tp<.7){
+      const rp2=(tp-.1)/.6;
+      cx.globalAlpha=(1-rp2)*.25;cx.fillStyle="#FF4040";
+      cx.beginPath();cx.arc(g.p.x,g.p.y,rp2*180,0,TAU);cx.fill();
+    }
+    cx.restore();
+  }
+  // 嘲諷持續時間提示
+  if(g.p._tauntAtkEnd&&now<g.p._tauntAtkEnd){
+    const tLeft=Math.ceil((g.p._tauntAtkEnd-now)/1000);
+    const tPct=(g.p._tauntAtkEnd-now)/3000;
+    cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#51CF66";cx.globalAlpha=.7+Math.sin(now/200)*.2;
+    cx.fillText("🛡️ 嘲諷 "+tLeft+"s",g.p.x,g.p.y+PR+16);
+    // 持續時間進度條
+    const bw2=PR*2,bh2=2.5,bx2=g.p.x-bw2/2,by2=g.p.y+PR+19;
+    cx.globalAlpha=.4;cx.fillStyle="rgba(0,0,0,.3)";cx.fillRect(bx2,by2,bw2,bh2);
+    cx.globalAlpha=.8;cx.fillStyle="#51CF66";cx.fillRect(bx2,by2,bw2*tPct,bh2);
+    cx.restore();
+  }
+  // 震波擴散環（基礎=小環綠色，大地震擊=大環橘色）
+  if(g._quakeRingT&&now-g._quakeRingT<500){
+    const qp=(now-g._quakeRingT)/500;
+    const isSmall=g._quakeRingSmall;
+    const maxR=isSmall?50:120,rings=isSmall?2:3;
+    const col1=isSmall?"#51CF66":"#FF922B",col2=isSmall?"#69DB7C":"#FFD43B";
+    cx.save();
+    for(let i=0;i<rings;i++){
+      const rp=Math.min(1,Math.max(0,(qp-i*.1)/.4));
+      if(rp<=0||rp>=1)continue;
+      cx.globalAlpha=(1-rp)*(isSmall?.25:.4);cx.strokeStyle=i%2?col2:col1;cx.lineWidth=(isSmall?2:4)*(1-rp);
+      cx.beginPath();cx.ellipse(g.p.x,g.p.y+PR,rp*maxR+i*(isSmall?10:20),rp*(isSmall?8:20)+i*3+2,0,0,TAU);cx.stroke();
+    }
+    cx.restore();
+  }
+  // 大地震擊 CD 提示
+  if(g.p._quake&&g.p._quakeCD&&now<g.p._quakeCD){
+    const qLeft=Math.ceil((g.p._quakeCD-now)/1000);
+    const qPct=(g.p._quakeCD-now)/3000;
+    cx.save();cx.font="bold 8px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#FF922B";cx.globalAlpha=.6;
+    cx.fillText("🌋 "+qLeft+"s",g.p.x,g.p.y+PR+28);
+    cx.globalAlpha=.3;cx.fillStyle="rgba(0,0,0,.3)";cx.fillRect(g.p.x-PR,g.p.y+PR+30,PR*2,2);
+    cx.globalAlpha=.7;cx.fillStyle="#FF922B";cx.fillRect(g.p.x-PR,g.p.y+PR+30,PR*2*qPct,2);
+    cx.restore();
+  }
+  // 鋼鐵意志持續提示
+  if(g.p._iwActive){
+    cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#868E96";cx.globalAlpha=.7+Math.sin(now/300)*.2;
+    cx.fillText("💪 鋼鐵意志",g.p.x,g.p.y-PR-20);
+    // 灰色防護光圈
+    cx.globalAlpha=.15+Math.sin(now/400)*.08;cx.strokeStyle="#868E96";cx.lineWidth=2;
+    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+6,0,TAU);cx.stroke();
+    cx.restore();
+  }
+  // 守護者光環視覺
+  if(g.p._guardAura){
+    const ga=g.p._guardAura,gaR=PR+25+ga*10;
+    cx.save();cx.globalAlpha=.08+Math.sin(now/500)*.04;
+    const gaG=cx.createRadialGradient(g.p.x,g.p.y,PR,g.p.x,g.p.y,gaR);
+    gaG.addColorStop(0,"#FFD43B");gaG.addColorStop(1,"transparent");
+    cx.fillStyle=gaG;cx.beginPath();cx.arc(g.p.x,g.p.y,gaR,0,TAU);cx.fill();
+    cx.globalAlpha=.12+Math.sin(now/350)*.06;cx.strokeStyle="#FFD43B";cx.lineWidth=1;
+    cx.setLineDash([3,4]);cx.beginPath();cx.arc(g.p.x,g.p.y,gaR,0,TAU);cx.stroke();cx.setLineDash([]);
+    cx.restore();
+  }
+  // 荊棘反彈特效（被打時觸發，存在 g._thornFlash）
+  if(g._thornFlash&&now-g._thornFlash<300){
+    const tp2=(now-g._thornFlash)/300;
+    cx.save();cx.globalAlpha=(1-tp2)*.5;cx.strokeStyle="#51CF66";cx.lineWidth=2.5*(1-tp2);
+    for(let i=0;i<8;i++){
+      const a=TAU*i/8+tp2*2;const d=PR+tp2*25;
+      cx.beginPath();cx.moveTo(g.p.x+Math.cos(a)*PR,g.p.y+Math.sin(a)*PR);
+      cx.lineTo(g.p.x+Math.cos(a)*d,g.p.y+Math.sin(a)*d);cx.stroke();
+    }
+    cx.restore();
+  }
+  // 狙擊蓄力特效（更顯眼）
+  if(g.p._snipeT&&now-g.p._snipeT<400){
+    const sp=(now-g.p._snipeT)/400;
+    const ba=Math.atan2(g.ad.y,g.ad.x);
+    cx.save();
+    // 紅色瞄準線（實線+粗）
+    cx.globalAlpha=sp*.8;cx.strokeStyle="#FF4040";cx.lineWidth=2;cx.shadowColor="#FF4040";cx.shadowBlur=6;
+    cx.beginPath();cx.moveTo(g.p.x+Math.cos(ba)*PR,g.p.y+Math.sin(ba)*PR);
+    cx.lineTo(g.p.x+Math.cos(ba)*(VW*.8)*sp,g.p.y+Math.sin(ba)*(VW*.8)*sp);cx.stroke();
+    // 瞄準線尾端十字準星
+    if(sp>.3){
+      const crX=g.p.x+Math.cos(ba)*(VW*.8)*sp,crY=g.p.y+Math.sin(ba)*(VW*.8)*sp;
+      cx.globalAlpha=sp*.5;cx.lineWidth=1.5;
+      cx.beginPath();cx.moveTo(crX-6,crY);cx.lineTo(crX+6,crY);cx.stroke();
+      cx.beginPath();cx.moveTo(crX,crY-6);cx.lineTo(crX,crY+6);cx.stroke();
+      cx.beginPath();cx.arc(crX,crY,4,0,TAU);cx.stroke();
+    }
+    cx.shadowBlur=0;
+    // 藍色蓄力圈（更亮更大）
+    cx.strokeStyle="#74C0FC";cx.lineWidth=3;cx.globalAlpha=sp*.7;
+    cx.shadowColor="#74C0FC";cx.shadowBlur=8;
+    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+4+sp*8,0,TAU*sp);cx.stroke();
+    // 蓄力內圈
+    cx.globalAlpha=sp*.3;cx.lineWidth=1.5;
+    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+2,0,TAU*sp);cx.stroke();
+    cx.shadowBlur=0;
+    // 蓄力文字
+    if(sp>.5){cx.globalAlpha=(sp-.5)*1.5;cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
+      cx.fillStyle="#FF4040";cx.fillText("🎯",g.p.x,g.p.y-PR-15);}
+    cx.restore();
+  }
+  // 狙擊穿透光束（更粗更亮）
+  if(g.p._snipeBeamT&&now-g.p._snipeBeamT<400){
+    const bp=(now-g.p._snipeBeamT)/400;
+    const ba=g.p._snipeBeamAng||0;
+    cx.save();cx.globalAlpha=(1-bp)*.8;cx.strokeStyle="#74C0FC";cx.lineWidth=5*(1-bp);
+    cx.shadowColor="#74C0FC";cx.shadowBlur=15;
+    cx.beginPath();cx.moveTo(g.p.x,g.p.y);
+    cx.lineTo(g.p.x+Math.cos(ba)*VW,g.p.y+Math.sin(ba)*VW);cx.stroke();
+    cx.shadowBlur=0;cx.restore();
+  }
   // 黑洞持續效果：主角周圍暗能量漩渦
   if(_bhActive){
     cx.save();
@@ -4830,6 +5684,28 @@ function coopStart(){
 }
 // applyCoopState 和 clientRenderLoop 定義在 Co-op Network Sync 區塊
 function showCoopPick(cards){/* P2 自動拿卡，Client 端暫不需要選卡 UI */}
+window.useCharSkill=useCharSkill;
+// 卡片詳細說明
+function showCardTip(cid){
+  const c=C.find(x=>x.id===cid);if(!c)return;
+  const RC2={R:"#74C0FC",SR:"#DA77F2",SSR:"#FFD43B"};
+  const tp2=c.tp==="atk"?"攻擊":"被動";
+  const charLabel=c.charReq?({gunner:"槍手專屬",swordsman:"劍士專屬",tank:"坦克專屬"}[c.charReq]||""):"通用";
+  $("ctEmoji").textContent=c.e;
+  $("ctName").style.color=RC2[c.r]||"#fff";
+  $("ctName").textContent=c.n;
+  $("ctMeta").innerHTML=`<span style="color:${RC2[c.r]}">${c.r}</span> · ${tp2} · ${charLabel}${c.once?" · 限定一次":""}`;
+  let lvHtml="";
+  c.d.forEach((desc,i)=>{
+    const lvCol=i===0?"#74C0FC":i===1?"#DA77F2":"#FFD43B";
+    lvHtml+=`<div style="padding:4px 8px;margin:3px 0;border-radius:6px;background:rgba(255,255,255,.04);border-left:3px solid ${lvCol}">
+      <span style="color:${lvCol};font-weight:900;font-size:10px">Lv.${i+1}</span>
+      <span style="color:rgba(255,255,255,.7);margin-left:6px">${desc}</span></div>`;
+  });
+  $("ctLevels").innerHTML=lvHtml;
+  $("cardTip").style.display="flex";
+}
+window.showCardTip=showCardTip;
 window._showCoopLobby=showCoopLobby;
 window.coopBack=coopBack;
 window.coopCreateRoom=coopCreateRoom;
@@ -4847,15 +5723,28 @@ window.openPractice=function(){
     const hb=$("pracHpBtn");hb.textContent="❤️無限血量";hb.style.background="rgba(255,107,107,.2)";hb.style.color="#FF6B6B";hb.style.borderColor="rgba(255,107,107,.3)";});
   // 建立卡片列表
   const cc=$("pracCards");
-  let html='<div style="color:#FFD43B;font-weight:900;font-size:11px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(10,10,24,.95);z-index:1">🃏 卡片（點擊切換等級）</div>';
-  C.forEach(c=>{
-    html+=`<div id="prc_${c.id}" onclick="pracCycleCard(${c.id})" style="display:flex;align-items:center;gap:3px;padding:3px 4px;margin:1px 0;border-radius:4px;background:rgba(255,255,255,.03);cursor:pointer;border:1px solid ${RC[c.r]}20;color:${RC[c.r]};user-select:none;-webkit-user-select:none">
-      <span style="font-size:12px">${c.e}</span>
-      <span style="font-size:8px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.n}</span>
-      <span class="pracLvBadge" style="font-size:8px;font-weight:900;min-width:24px;text-align:center;border-radius:3px;padding:1px 3px"></span>
-    </div>`;
-  });
-  cc.innerHTML=html;
+  function _buildPracCards(){
+    const cc2=$("pracCards");
+    let h2='<div style="color:#FFD43B;font-weight:900;font-size:11px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(10,10,24,.95);z-index:1">🃏 卡片（點擊切換 / 長按說明）</div>';
+    const _pct=g?g.charType:_charType||"gunner";
+    C.filter(c=>!c.charReq||c.charReq===_pct).forEach(c=>{
+      h2+=`<div id="prc_${c.id}" onclick="pracCycleCard(${c.id})" oncontextmenu="event.preventDefault();showCardTip(${c.id})" data-cid="${c.id}" style="display:flex;align-items:center;gap:3px;padding:3px 4px;margin:1px 0;border-radius:4px;background:rgba(255,255,255,.03);cursor:pointer;border:1px solid ${RC[c.r]}20;color:${RC[c.r]};user-select:none;-webkit-user-select:none">
+        <span style="font-size:12px">${c.e}</span>
+        <span style="font-size:8px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.n}</span>
+        <span class="pracLvBadge" style="font-size:8px;font-weight:900;min-width:24px;text-align:center;border-radius:3px;padding:1px 3px"></span>
+      </div>`;
+    });
+    cc2.innerHTML=h2;
+    // 長按觸發（手機）
+    cc2.querySelectorAll('[data-cid]').forEach(el=>{
+      let _lpT=0;
+      el.addEventListener('touchstart',e=>{_lpT=setTimeout(()=>{e.preventDefault();showCardTip(parseInt(el.dataset.cid));},500);},{passive:false});
+      el.addEventListener('touchend',()=>clearTimeout(_lpT));
+      el.addEventListener('touchmove',()=>clearTimeout(_lpT));
+    });
+  }
+  _buildPracCards();
+  openPractice._rebuildCards=_buildPracCards;
   // 建立敵人列表
   const ec=$("pracEnemies");
   let ehtml='<div style="color:#FF6B6B;font-weight:900;font-size:11px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(10,10,24,.95);z-index:1">👾 敵人（勾選後按出怪）</div>';
@@ -4973,6 +5862,22 @@ window.exitPractice=function(){
   _isCoopMode=false;_p2AI=false;
   if(_net&&_net.peer){_net.peer.destroy();_net=null;}
 };
+window.pracSwitchChar=function(){
+  const chars=["gunner","swordsman","tank"];
+  const names={"gunner":"🔫槍手","swordsman":"⚔️劍士","tank":"🛡️坦克"};
+  const cur=g?g.charType:_charType;
+  const idx=(chars.indexOf(cur)+1)%3;
+  const next=chars[idx];
+  _charType=next;
+  if(g){g.charType=next;
+    const CC=CHAR[next];
+    g.p.speed=CC.startSpeed;g.p.armor=CC.armor;g.p.dodge=CC.dodge;g.p.crit=CC.crit;g.p.fr=CC.fr;
+  }
+  $("pracCharBtn").textContent="🔄"+names[next];
+  g.dn.push({x:g.p.x,y:g.p.y-40,d:"切換："+names[next],life:2,color:"#FFD43B",big:1});
+  // 重建卡片列表（過濾專屬卡）
+  openPractice._rebuildCards&&openPractice._rebuildCards();
+};
 window.pracToggleCoop=function(){
   _isCoopMode=!_isCoopMode;
   _p2AI=_isCoopMode;
@@ -5051,8 +5956,23 @@ window.pracCoopJoin=function(){
   });
 };
 
+// ═══ 角色選擇 ═══
+let _pendingMode="classic";
+window.showCharSelect=function(mode){
+  _pendingMode=mode;
+  $("titleOv").style.display="none";
+  $("charSelectOv").style.display="flex";
+};
+window.pickChar=function(charType){
+  _charType=charType;
+  $("charSelectOv").style.display="none";
+  if(_pendingMode==="practice"){openPractice();}
+  else{startGame(_pendingMode);}
+};
+
 window.startGame=window.SG=function(mode){
   _mode=mode||_mode||"classic";const MC=MODE[_mode];
+  const CC=CHAR[_charType]||CHAR.gunner; // 角色數值
   // 嘗試全螢幕（隱藏網址列）
   const el=document.documentElement;
   if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});
@@ -5065,7 +5985,7 @@ window.startGame=window.SG=function(mode){
   resetSessionUi();
   cx.fillStyle="#0a0a18";cx.fillRect(0,0,VW,VH);
   const _mw=MC.mapW||MW,_mh=MC.mapH||MH;
-  g={p:{x:_mw/2,y:_mh/2,hp:MC.startHp,maxHp:MC.startHp,atk:MC.startAtk,speed:MC.startSpeed,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,hasBH:false,hasTS:false,ultLv:0,pierce:0,homing:0,homingR:200,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,bossDmg:1,mobDmg:1,poisonBossMul:1,burnBoost:1,crateVis:1,mapExpand:0,pickCount:2,face:1,_iFrameEnd:0,_healFlash:0,heavyEvery:0,_heavyCount:0,ultCdReduce:0,_downed:false,_rescueTimer:0,contactCap:100},
+  g={charType:_charType,p:{x:_mw/2,y:_mh/2,hp:CC.startHp,maxHp:CC.startHp,atk:CC.startAtk,speed:CC.startSpeed,fr:CC.fr,armor:CC.armor,chain:0,ls:0,slow:1,split:1,expR:1,crit:CC.crit,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:CC.dodge,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,hasBH:false,hasTS:false,ultLv:0,pierce:0,homing:0,homingR:200,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,bossDmg:1,mobDmg:1,poisonBossMul:1,burnBoost:1,crateVis:1,mapExpand:0,pickCount:2,face:1,_iFrameEnd:0,_healFlash:0,heavyEvery:0,_heavyCount:0,ultCdReduce:0,_downed:false,_rescueTimer:0,contactCap:100,_swingState:null,_sniperStack:0,_sniperTarget:0,_swordQiCount:0,_ironwallT:0,_shieldBlock:false},
     ene:[],bul:[],par:[],dn:[],orbs:[],ltn:[],ebul:[],crates:_practiceMode?[]:genCrates(),
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
@@ -5087,6 +6007,11 @@ window.startGame=window.SG=function(mode){
   }
   joy={a:0,dx:0,dy:0,id:null,sx:null,sy:null};aim={a:0,dx:0,dy:0,id:null,sx:null,sy:null,tn:0,lt:0};
   show("play");if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+  // 設定技能按鈕圖示
+  _skillCdEnd=0;
+  const _si=$("skillIcon"),_sc=$("skillCd");
+  if(_si)_si.textContent=_charType==="gunner"?"🎯":_charType==="swordsman"?"⚔️":"🛡️";
+  if(_sc)_sc.style.display="none";
   setTimeout(resetControls,60);setTimeout(resetControls,180);
 };
 
@@ -5193,6 +6118,7 @@ window.addEventListener("keydown",e=>{
   if(c==="Space"||e.key===" "){e.preventDefault();if(!aim.a||aim.id!=="kb"){aim.a=1;aim.id="kb";tapAtk();}}
   if(c==="KeyE"||e.key==="e"||e.key==="E"){startUltPress();}
   if(c==="KeyQ"||e.key==="q"||e.key==="Q"){doDodge();}
+  if(c==="KeyW"||e.key==="w"||e.key==="W"){useCharSkill();}
   if(c.startsWith("Arrow"))e.preventDefault();
 },{capture:true});
 window.addEventListener("keyup",e=>{
@@ -5201,10 +6127,10 @@ window.addEventListener("keyup",e=>{
   if((c==="KeyE"||e.key==="e"||e.key==="E")&&g){endUltPress();}
 },{capture:true});
 function uK(){let dx=0,dy=0;
-  if(ks.ArrowLeft||ks.KeyA||ks.a)dx--;
-  if(ks.ArrowRight||ks.KeyD||ks.d)dx++;
-  if(ks.ArrowUp||ks.KeyW||ks.w)dy--;
-  if(ks.ArrowDown||ks.KeyS||ks.s)dy++;
+  if(ks.ArrowLeft)dx--;
+  if(ks.ArrowRight)dx++;
+  if(ks.ArrowUp)dy--;
+  if(ks.ArrowDown)dy++;
   if(dx||dy){const d=Math.sqrt(dx*dx+dy*dy);joy.a=1;joy.id="kb";joy.dx=dx/d;joy.dy=dy/d;}
   else if(joy.id==="kb"){joy.a=0;joy.dx=0;joy.dy=0;}
 }
