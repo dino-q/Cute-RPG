@@ -125,7 +125,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.23</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.24</div>
 </div>
 </div>
 
@@ -617,6 +617,8 @@ window.settingsGoHome=function(){
   document.getElementById("settingsOv").style.display="none";
   if(g)g.run=false;
   bgmStop();bossBgmStop();
+  _isCoopMode=false;_p2AI=false;_practiceMode=false;
+  if(_net&&_net.peer){_net.peer.destroy();_net=null;}
   const dov=document.getElementById("_demonDealOv");if(dov&&dov.parentNode)dov.parentNode.removeChild(dov);
   show("title");
 }
@@ -5540,12 +5542,17 @@ function showVictoryScreen(){
   const origSG=window.SG;window.SG=function(){if(_vicRaf)cancelAnimationFrame(_vicRaf);window.SG=origSG;origSG();};
 }
 
+window.overGoHome=function(){
+  _isCoopMode=false;_p2AI=false;_practiceMode=false;
+  if(_net&&_net.peer){_net.peer.destroy();_net=null;}
+  bgmStop();bossBgmStop();show("title");
+};
 function showOver(){
   bgmStop();bossBgmStop();
   const p=$("overPanel");
   let cardsHtml="";
   if(inv.length){cardsHtml='<div style="color:rgba(255,255,255,.3);font-size:10px;margin:8px 0 4px">收集卡牌</div><div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap">'+inv.map(ci=>{const cd=C.find(c=>c.id===ci.id);return`<span style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:5px;padding:2px 6px;font-size:10px;border:1px solid ${RC[cd.r]}25;color:${RC[cd.r]}">${cd.e}${cd.n}<span style="font-size:8px;font-weight:900;background:${LVC[ci.lv]};color:#000;border-radius:2px;padding:0 3px;margin-left:2px">Lv${ci.lv+1}</span></span>`;}).join("")+'</div>';}
-  p.innerHTML=`<div style="font-size:48px;margin-bottom:6px">😵</div><h1 style="font-size:24px;font-weight:900;color:#FF6B6B;margin:0 0 12px">冒險結束！</h1><div style="background:rgba(255,255,255,.03);border-radius:12px;padding:14px 24px;margin-bottom:12px;border:1px solid rgba(255,255,255,.05)"><div style="color:rgba(255,255,255,.4);font-size:11px">最終分數</div><div style="color:#FFD43B;font-size:34px;font-weight:900">${g.score}</div><div style="display:flex;gap:16px;justify-content:center;margin-top:8px"><div><div style="color:rgba(255,255,255,.3);font-size:10px">等級</div><div style="color:#74C0FC;font-size:16px;font-weight:700">${g.level}</div></div><div><div style="color:rgba(255,255,255,.3);font-size:10px">擊殺</div><div style="color:#FF6B6B;font-size:16px;font-weight:700">${g.kills}</div></div></div></div>${cardsHtml}<button class="btn btn-b" style="margin-top:12px" onclick="SG()">🔄 再來一次</button>`;
+  p.innerHTML=`<div style="font-size:48px;margin-bottom:6px">😵</div><h1 style="font-size:24px;font-weight:900;color:#FF6B6B;margin:0 0 12px">冒險結束！</h1><div style="background:rgba(255,255,255,.03);border-radius:12px;padding:14px 24px;margin-bottom:12px;border:1px solid rgba(255,255,255,.05)"><div style="color:rgba(255,255,255,.4);font-size:11px">最終分數</div><div style="color:#FFD43B;font-size:34px;font-weight:900">${g.score}</div><div style="display:flex;gap:16px;justify-content:center;margin-top:8px"><div><div style="color:rgba(255,255,255,.3);font-size:10px">等級</div><div style="color:#74C0FC;font-size:16px;font-weight:700">${g.level}</div></div><div><div style="color:rgba(255,255,255,.3);font-size:10px">擊殺</div><div style="color:#FF6B6B;font-size:16px;font-weight:700">${g.kills}</div></div></div></div>${cardsHtml}<button class="btn btn-b" style="margin-top:12px" onclick="SG()">🔄 再來一次</button><button class="btn" style="margin-top:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)" onclick="overGoHome()">🏠 返回首頁</button>`;
   show("over");
 }
 
