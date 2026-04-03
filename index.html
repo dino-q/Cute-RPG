@@ -41,6 +41,16 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 .hbg{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
 .hfill{height:100%;border-radius:3px;transition:width .2s}
 #hud2{display:flex;justify-content:space-between;margin-top:1px;font-size:9px;font-weight:700}
+@media (orientation:landscape){
+  #hud{padding:2px 10px}
+  .hbar{margin-bottom:0}
+  .hlbl{font-size:7px;min-width:36px}
+  .hbg{height:3px}
+  #hud2{font-size:7px;margin-top:0}
+  #p2hud .hbar{margin-bottom:0}
+  #p2hud .hlbl{font-size:6px}
+  #p2hud .hbg{height:2px}
+}
 /* Controls */
 #ctl{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 12px calc(12px + env(safe-area-inset-bottom,0px));z-index:10;display:none}
 .joyW{position:relative;pointer-events:auto;touch-action:none}
@@ -234,7 +244,8 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
     <button onclick="pracClear()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:#FF6B6B;color:#fff;font-weight:700;border:none;cursor:pointer">清場</button>
     <button id="pracHpBtn" onclick="pracToggleHp()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,107,107,.2);color:#FF6B6B;font-weight:700;border:1px solid rgba(255,107,107,.3);cursor:pointer">❤️無限血量</button>
     <button id="pracCoopBtn" onclick="pracToggleCoop()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🤝雙人(AI)</button>
-    <button id="pracRoomBtn" onclick="pracCoopRoom()" style="display:none;padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🔗房間</button>
+    <button id="pracRoomBtn" onclick="pracCoopRoom()" style="display:none;padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🔗建房</button>
+    <button id="pracJoinBtn" onclick="pracCoopJoin()" style="display:none;padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🔗加入</button>
     <button onclick="exitPractice()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,255,255,.15);color:#fff;font-weight:700;border:none;cursor:pointer">退出練習</button>
   </div>
   <!-- 左側卡片抽屜 -->
@@ -913,7 +924,16 @@ function drawMinimap(){
   // player
   mx.fillStyle="#74C0FC";mx.fillRect(g.p.x*sx-2,g.p.y*sy-2,4,4);
   // P2 co-op
-  if(_isCoopMode&&g.p2){mx.fillStyle="#F06595";mx.fillRect(g.p2.x*sx-2,g.p2.y*sy-2,4,4);}
+  if(_isCoopMode&&g.p2){
+    // P2 小地圖：脈動圓點 + 外圈，永遠可見
+    const p2mx=g.p2.x*sx,p2my=g.p2.y*sy;
+    const pulse=2+Math.sin(performance.now()/400)*.8;
+    mx.fillStyle="#F06595";mx.globalAlpha=1;
+    mx.beginPath();mx.arc(p2mx,p2my,pulse,0,Math.PI*2);mx.fill();
+    mx.strokeStyle="rgba(240,101,149,.5)";mx.lineWidth=1;
+    mx.beginPath();mx.arc(p2mx,p2my,pulse+2,0,Math.PI*2);mx.stroke();
+    mx.globalAlpha=1;
+  }
   // viewport box
   const c=cam();mx.strokeStyle="rgba(255,255,255,.3)";mx.lineWidth=1;mx.strokeRect(c.x*sx,c.y*sy,VW*sx,VH*sy);
 }
@@ -1158,7 +1178,9 @@ function addLtn(x1,y1,x2,y2,life=1){
 // 選卡結束後平滑恢復遊戲（延遲一幀讓 DOM reflow 完成再跑邏輯）
 function resumeGame(cb){
   requestAnimationFrame(()=>{show("play");resetControls();
-    requestAnimationFrame(()=>{g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();if(cb)cb();});
+    requestAnimationFrame(()=>{
+      if(_isCoopMode){g.p._inv=false;g.p._pickPending=false;}
+      g.run=true;const n=performance.now();g.lS=n;g.laF=n;g.lhF=n;g.lf=n;g.lastKill=n;g.lastHunt=0;g.p._iFrameEnd=n+1500;rebindActiveTouches();if(cb)cb();});
   });
 }
 function show(n){["titleOv","tutOv","pickOv","overOv","victoryOv","practiceOv","coopOv"].forEach(id=>{const el=$(id);if(el)el.style.display="none";});
@@ -1418,7 +1440,7 @@ function _coopGenCircles(e){
   const a1=rn(0,Math.PI*2),a2=a1+rn(Math.PI*.4,Math.PI*1.6); // 間隔至少 72 度
   const r1=rn(80,150),r2=rn(80,150);
   e._coopCircles=[{x:e.x+Math.cos(a1)*r1,y:e.y+Math.sin(a1)*r1},{x:e.x+Math.cos(a2)*r2,y:e.y+Math.sin(a2)*r2}];
-  e._coopCircleTimer=performance.now()+8000; // 8 秒後重新定位
+  // 圈位置固定，只有護盾恢復時才重新生成
 }
 
 function triggerSpikeWave(w){
@@ -1671,34 +1693,58 @@ function loop(){
   }
   // AI P2 行為
   if(_p2AI&&g.p2&&!g.p2._downed&&_isCoopMode){
-    // 找最近敵人
-    let aiTarget=null,aiDist=1e9;
-    g.ene.forEach(e=>{if(e.hp<=0||e.ragePoo)return;const d=di(g.p2,e);if(d<aiDist){aiDist=d;aiTarget=e;}});
-    if(aiTarget){
-      // 追敵人但保持 80px 距離
-      const adx=aiTarget.x-g.p2.x,ady=aiTarget.y-g.p2.y,ad=Math.sqrt(adx*adx+ady*ady)||1;
-      if(aiDist>100){g.p2.x+=adx/ad*g.p2.speed*dt*.8;g.p2.y+=ady/ad*g.p2.speed*dt*.8;}
-      else if(aiDist<50){g.p2.x-=adx/ad*g.p2.speed*dt*.5;g.p2.y-=ady/ad*g.p2.speed*dt*.5;}
-      if(Math.abs(adx)>.2)g.p2.face=adx>0?1:-1;
-      // AI 自動射擊
-      _p2Input.aimA=1;
-    }else{
-      // 沒敵人：跟隨 P1，保持 60px
-      const fdx=g.p.x-g.p2.x,fdy=g.p.y-g.p2.y,fd=Math.sqrt(fdx*fdx+fdy*fdy)||1;
-      if(fd>80){g.p2.x+=fdx/fd*g.p2.speed*dt*.6;g.p2.y+=fdy/fd*g.p2.speed*dt*.6;}
-      _p2Input.aimA=0;
+    if(!g.p2._aiWander){g.p2._aiWander={tx:g.p2.x,ty:g.p2.y,nextT:0};}
+    const aw=g.p2._aiWander;
+    const spd2=g.p2.speed*dt;
+    // 找有護盾的 Boss（需要去佔圈）
+    let shieldBoss=null;
+    g.ene.forEach(e=>{if(e.boss&&e._coopShield&&e._coopCircles)shieldBoss=e;});
+    // P1 倒地 → 最優先去救
+    if(g.p._downed){
+      const rdx=g.p.x-g.p2.x,rdy=g.p.y-g.p2.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
+      if(rd>30){g.p2.x+=rdx/rd*spd2;g.p2.y+=rdy/rd*spd2;}
+    }
+    // 有護盾 Boss → 去佔一個圈（選 P1 沒佔的那個）
+    else if(shieldBoss){
+      const c=shieldBoss._coopCircles;
+      const p1on0=di(g.p,c[0])<30,p1on1=di(g.p,c[1])<30;
+      // AI 去 P1 沒站的那個圈；如果 P1 都沒站，AI 去較近的
+      let target=p1on0?c[1]:p1on1?c[0]:(di(g.p2,c[0])<di(g.p2,c[1])?c[0]:c[1]);
+      const tdx=target.x-g.p2.x,tdy=target.y-g.p2.y,td=Math.sqrt(tdx*tdx+tdy*tdy)||1;
+      if(td>20){g.p2.x+=tdx/td*spd2;g.p2.y+=tdy/td*spd2;}
+      // 邊走邊閃：隨機橫向偏移模擬走位閃躲
+      const dodgeT=Math.sin(now/400)*1.5;
+      g.p2.x+=Math.cos(Math.atan2(tdy,tdx)+Math.PI/2)*dodgeT*dt;
+      if(Math.abs(tdx)>.2)g.p2.face=tdx>0?1:-1;
+      _p2Input.aimA=1; // 邊跑邊打
+    }
+    // 有敵人 → 隨機走位 + 射擊
+    else{
+      let aiTarget=null,aiDist=1e9;
+      g.ene.forEach(e=>{if(e.hp<=0||e.ragePoo)return;const d=di(g.p2,e);if(d<aiDist){aiDist=d;aiTarget=e;}});
+      // 隨機漫遊目標：每 1.5~3 秒換一個點
+      if(now>aw.nextT){
+        const cx2=aiTarget?aiTarget.x:g.p.x,cy2=aiTarget?aiTarget.y:g.p.y;
+        const wRange=aiTarget?120:100;
+        aw.tx=cx2+rn(-wRange,wRange);aw.ty=cy2+rn(-wRange,wRange);
+        aw.tx=cl(aw.tx,PR+20,mapW()-PR-20);aw.ty=cl(aw.ty,PR+20,mapH()-PR-20);
+        aw.nextT=now+rn(1500,3000);
+      }
+      // 走向漫遊目標
+      const wdx=aw.tx-g.p2.x,wdy=aw.ty-g.p2.y,wd=Math.sqrt(wdx*wdx+wdy*wdy)||1;
+      if(wd>15){g.p2.x+=wdx/wd*spd2*.7;g.p2.y+=wdy/wd*spd2*.7;}
+      if(aiTarget&&Math.abs(aiTarget.x-g.p2.x)>.2)g.p2.face=(aiTarget.x-g.p2.x)>0?1:-1;
+      _p2Input.aimA=aiTarget?1:0;
+      // 離 P1 太遠（>300）時趨近
+      const p1d=di(g.p,g.p2);
+      if(p1d>300){const fdx=g.p.x-g.p2.x,fdy=g.p.y-g.p2.y,fd=Math.sqrt(fdx*fdx+fdy*fdy)||1;g.p2.x+=fdx/fd*spd2*.4;g.p2.y+=fdy/fd*spd2*.4;}
     }
     g.p2.x=cl(g.p2.x,PR+4,mapW()-PR-4);g.p2.y=cl(g.p2.y,PR+4,mapH()-PR-4);
-    // AI 倒地時靠近 P1 求救
-    if(g.p2._downed&&!g.p._downed){
-      const rdx=g.p.x-g.p2.x,rdy=g.p.y-g.p2.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
-      g.p2.x+=rdx/rd*.5*dt;g.p2.y+=rdy/rd*.5*dt;
-    }
-    // P1 倒地時 AI 去救
-    if(g.p._downed&&!g.p2._downed){
-      const rdx=g.p.x-g.p2.x,rdy=g.p.y-g.p2.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
-      if(rd>30){g.p2.x+=rdx/rd*g.p2.speed*dt;g.p2.y+=rdy/rd*g.p2.speed*dt;}
-    }
+  }
+  // AI 倒地爬向 P1
+  if(_p2AI&&g.p2&&g.p2._downed&&!g.p._downed&&_isCoopMode){
+    const rdx=g.p.x-g.p2.x,rdy=g.p.y-g.p2.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
+    g.p2.x+=rdx/rd*.5*dt;g.p2.y+=rdy/rd*.5*dt;
   }
 
   // heat system
@@ -2376,7 +2422,8 @@ function loop(){
   // bullet-crate hit (練習模式跳過)
   const c_=cam();
   let crateOpened=false;
-  if(!_practiceMode)g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;g.run=false;
+  if(!_practiceMode)g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;
+    if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
     if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
     else{showPick("crate");}
   }}});});
@@ -2646,12 +2693,11 @@ function loop(){
       if(e._coopShieldBrokenEnd>0&&now2<e._coopShieldBrokenEnd)return; // 破盾中，可攻擊
       if(e._coopShieldBrokenEnd>0&&now2>=e._coopShieldBrokenEnd){
         e._coopShield=true;e._coopShieldBrokenEnd=0;
-        _coopGenCircles(e);
-        g.dn.push({x:e.x,y:e.y-e.r-15,d:"🛡️ 護盾恢復！",life:2,color:"#4DABF7",big:1});
+        _coopGenCircles(e); // 護盾恢復時才重新生成圈
+        g.dn.push({x:e.x,y:e.y-e.r-15,d:"🛡️ 護盾恢復！新圈已生成",life:2.5,color:"#4DABF7",big:1});
         return;
       }
-      // 圓點重新定位
-      if(now2>e._coopCircleTimer)_coopGenCircles(e);
+      // 圈位置固定，不自動重新定位
       // 檢查兩人是否各站一個圓點
       if(e._coopShield&&!g.p._downed&&!g.p2._downed){
         const c=e._coopCircles;
@@ -2983,6 +3029,19 @@ function loop(){
     cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/200)*.4;
     cx.fillText("💀 SOS",g.p.x,g.p.y-PR-10);cx.restore();
   }
+  // 挑卡中提示（對方可見）
+  if(_isCoopMode){
+    if(g.p._pickPending){
+      cx.save();cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
+      cx.fillStyle="#FFD43B";cx.globalAlpha=.7+Math.sin(now/300)*.3;
+      cx.fillText("🃏 挑卡中...",g.p.x,g.p.y-PR-18);cx.restore();
+    }
+    if(g.p2&&g.p2._pickPending){
+      cx.save();cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
+      cx.fillStyle="#FFD43B";cx.globalAlpha=.7+Math.sin(now/300)*.3;
+      cx.fillText("🃏 挑卡中...",g.p2.x,g.p2.y-PR-18);cx.restore();
+    }
+  }
   // 過熱條：長按攻擊時顯示在主角下方
   if(g.heat>0&&!g.p._noOverheat){
     const heatPct=g.heat/HOLD_COOLDOWN_NEED;
@@ -3247,6 +3306,38 @@ function loop(){
     });
   }
 
+  // P2 off-screen indicator (co-op)
+  if(_isCoopMode&&g.p2){
+    const _camP=(_net&&_net.role==="client")?g.p2:g.p; // 自己
+    const _camO=(_net&&_net.role==="client")?g.p:g.p2; // 對方
+    const osx=_camO.x-cm.x,osy=_camO.y-cm.y;
+    if(osx<0||osx>VW||osy<0||osy>VH){
+      const edgePad=24,halfW=VW/2,halfH=VH/2;
+      const vx=osx-halfW,vy=osy-halfH;
+      const scale=Math.min(
+        Math.abs(vx)>1?(halfW-edgePad)/Math.abs(vx):Infinity,
+        Math.abs(vy)>1?(halfH-edgePad)/Math.abs(vy):Infinity
+      );
+      const ix=halfW+vx*scale,iy=halfH+vy*scale;
+      const ang=Math.atan2(vy,vx);
+      const pCol2=(_net&&_net.role==="client")?"#74C0FC":"#F06595";
+      const dist=Math.floor(di(_camP,_camO));
+      cx.save();
+      // arrow
+      cx.translate(ix,iy);cx.rotate(ang+Math.PI/2);
+      cx.globalAlpha=.85+Math.sin(now/300)*.15;
+      cx.fillStyle=pCol2;cx.strokeStyle="#fff";cx.lineWidth=1.5;
+      cx.beginPath();cx.moveTo(0,-10);cx.lineTo(8,8);cx.lineTo(-8,8);cx.closePath();cx.fill();cx.stroke();
+      cx.restore();
+      // label
+      cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
+      cx.fillStyle=pCol2;cx.globalAlpha=.9;
+      const lbl=_camO._downed?"💀 SOS "+dist:"🤝 "+dist;
+      cx.fillText(lbl,ix,iy+18);
+      cx.restore();
+    }
+  }
+
   // ult flash overlay + hit vignette
   const _pulseWarn=g._pulseWarnEnd&&now<g._pulseWarnEnd;
   const _needFx=g.ultFlash>0||_hitFlash>0||_phoenixT>0||_pulseWarn;
@@ -3345,8 +3436,8 @@ function serializeCoopState(){
   if(!g||!g.p2)return null;
   const cm=cam();
   return{t:"state",
-    p1:{x:g.p.x,y:g.p.y,hp:g.p.hp,mhp:g.p.maxHp,face:g.p.face,_downed:g.p._downed,_iFrameEnd:g.p._iFrameEnd,_rescueTimer:g.p._rescueTimer||0},
-    p2:{x:g.p2.x,y:g.p2.y,hp:g.p2.hp,mhp:g.p2.maxHp,face:g.p2.face,_downed:g.p2._downed,_iFrameEnd:g.p2._iFrameEnd,_rescueTimer:g.p2._rescueTimer||0},
+    p1:{x:g.p.x,y:g.p.y,hp:g.p.hp,mhp:g.p.maxHp,face:g.p.face,_downed:g.p._downed,_iFrameEnd:g.p._iFrameEnd,_rescueTimer:g.p._rescueTimer||0,_pickPending:g.p._pickPending||false},
+    p2:{x:g.p2.x,y:g.p2.y,hp:g.p2.hp,mhp:g.p2.maxHp,face:g.p2.face,_downed:g.p2._downed,_iFrameEnd:g.p2._iFrameEnd,_rescueTimer:g.p2._rescueTimer||0,_pickPending:g.p2._pickPending||false},
     ene:g.ene.map(e=>({x:e.x,y:e.y,hp:e.hp,mhp:e.mhp,r:e.r,color:e.color,boss:e.boss,mega:e.mega,tier:e.tier,role:e.role,face:e.face,t:e.t,stageBoss:e.stageBoss,sbPhase:e.sbPhase,_coopShield:e._coopShield,_rage:e._rage,eliteEnemy:e.eliteEnemy,_eDashing:e._eDashing,_eShieldEnd:e._eShieldEnd})),
     bul:g.bul.filter(b=>b.life>0).map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,crit:b.crit,life:b.life})),
     ebul:g.ebul.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,life:b.life})),
@@ -4658,7 +4749,13 @@ function _coopDoCreate(code){
       conn.on("close",()=>{_net.connected=false;if(g&&g.run){g.run=false;showOver();}});
     });
   });
-  peer.on("error",err=>{$("coopStatusText").textContent="錯誤："+err.type;});
+  peer.on("error",err=>{
+    if(err.type==="unavailable-id"){
+      $("coopStatusText").textContent="❌ 此密碼已被使用，請換一個";
+      $("coopConnected").style.display="none";
+      setTimeout(()=>{$("coopMenu").style.display="block";$("coopStatus").style.display="none";$("coopCreate").style.display="none";$("coopJoin").style.display="none";},2000);
+    }else{$("coopStatusText").textContent="錯誤："+err.type;}
+  });
 }
 function coopJoinRoom(){
   const code=($("coopCodeInput").value||"").toUpperCase().trim();
@@ -4687,7 +4784,8 @@ function coopJoinRoom(){
       });
       conn.on("close",()=>{_net.connected=false;if(g&&g.run){g.run=false;showOver();}});
     });
-    conn.on("error",err=>{$("coopStatusText").textContent="連線失敗："+err.type;});
+    conn.on("error",err=>{$("coopStatusText").textContent="連線失敗："+err.type;
+      setTimeout(()=>{$("coopMenu").style.display="block";$("coopStatus").style.display="none";$("coopJoin").style.display="none";},2000);});
   });
   peer.on("error",err=>{$("coopStatusText").textContent="錯誤："+err.type;});
 }
@@ -4848,7 +4946,7 @@ window.pracToggleCoop=function(){
   const btn=$("pracCoopBtn"),rbtn=$("pracRoomBtn");
   if(_isCoopMode){
     btn.textContent="🤝雙人(ON)";btn.style.background="rgba(240,101,149,.4)";btn.style.color="#fff";
-    rbtn.style.display="inline-block";
+    rbtn.style.display="inline-block";$("pracJoinBtn").style.display="inline-block";
     // 初始化 P2
     if(g&&!g.p2){
       const MC=MODE[_mode];
@@ -4858,7 +4956,7 @@ window.pracToggleCoop=function(){
     }
   }else{
     btn.textContent="🤝雙人(AI)";btn.style.background="rgba(240,101,149,.15)";btn.style.color="#F06595";
-    rbtn.style.display="none";
+    rbtn.style.display="none";$("pracJoinBtn").style.display="none";
     _p2AI=false;
     if(g)g.p2=null;
     if(_net&&_net.peer){_net.peer.destroy();_net=null;}
@@ -4888,10 +4986,44 @@ window.pracCoopRoom=function(){
       conn.on("close",()=>{_net.connected=false;_p2AI=true;g.dn.push({x:g.p.x,y:g.p.y-40,d:"⚠️ 對方已離線，切換 AI",life:3,color:"#FF6B6B",big:1});});
     });
   });
+  peer.on("error",err=>{
+    if(err.type==="unavailable-id"){
+      g.dn.push({x:g.p.x,y:g.p.y-40,d:"❌ 此密碼已被使用，請換一個",life:3,color:"#FF6B6B",big:1});
+      $("pracRoomBtn").textContent="🔗建房";
+    }else{g.dn.push({x:g.p.x,y:g.p.y-40,d:"❌ 錯誤："+err.type,life:3,color:"#FF6B6B",big:1});}
+  });
+};
+window.pracCoopJoin=function(){
+  if(!_isCoopMode)return;
+  const code=prompt("輸入對方的房間密碼：");
+  if(!code||code.trim().length<2)return;
+  const roomCode=code.trim();
+  if(_net&&_net.peer){_net.peer.destroy();}
+  const peer=new Peer(undefined,{debug:0});
+  _net={role:"client",peer,conn:null,roomCode,connected:false};
+  peer.on("open",()=>{
+    const conn=peer.connect(roomCode,{reliable:true});
+    _net.conn=conn;
+    conn.on("open",()=>{
+      _net.connected=true;_p2AI=false;
+      g.dn.push({x:g.p.x,y:g.p.y-40,d:"✅ 已加入 "+roomCode+"！",life:3,color:"#51CF66",big:1});
+      $("pracJoinBtn").textContent="✅已連線";
+      // Client 送操作、收狀態
+      conn.on("data",data=>{
+        if(data&&data.t==="state"&&g)applyCoopState(data);
+      });
+      conn.on("close",()=>{_net.connected=false;g.dn.push({x:g.p.x,y:g.p.y-40,d:"⚠️ 已斷線",life:3,color:"#FF6B6B",big:1});});
+    });
+    conn.on("error",err=>{g.dn.push({x:g.p.x,y:g.p.y-40,d:"❌ 連線失敗："+err.type,life:3,color:"#FF6B6B",big:1});});
+  });
 };
 
 window.startGame=window.SG=function(mode){
   _mode=mode||_mode||"classic";const MC=MODE[_mode];
+  // 嘗試全螢幕（隱藏網址列）
+  const el=document.documentElement;
+  if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});
+  else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
   sfxCtx();bgmPlay();
   if(_titleUltTimer){clearTimeout(_titleUltTimer);_titleUltTimer=null;}
   cv=$("cv");cx=cv.getContext("2d");fxc=$("fx");fxctx=fxc.getContext("2d");
