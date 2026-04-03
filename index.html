@@ -19,6 +19,8 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 .btn:active{transform:scale(.95)!important}
 .btn-b{background:linear-gradient(135deg,#74C0FC,#4DABF7);box-shadow:0 4px 18px rgba(116,192,252,.35)}
 .btn-g{background:linear-gradient(135deg,#51CF66,#40C057);box-shadow:0 4px 18px rgba(81,207,102,.3)}
+.btn-p{background:linear-gradient(135deg,#F06595,#DA77F2);box-shadow:0 4px 18px rgba(240,101,149,.35)}
+.btn-d{background:rgba(255,255,255,.06);box-shadow:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5)}
 .cb{background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border-radius:14px;padding:14px 10px;cursor:pointer;color:#fff;font-family:inherit;transition:transform .15s;text-align:center;min-width:0;touch-action:manipulation}
 .cb:active{transform:scale(.95)!important}
 .tag{display:inline-block;font-size:8px;font-weight:700;border-radius:3px;padding:1px 4px;margin-left:3px;vertical-align:middle}
@@ -87,22 +89,19 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <canvas id="heroCanvas" width="160" height="60" style="margin:0 auto;display:block;filter:drop-shadow(0 0 20px rgba(116,192,252,.55))"></canvas>
   <h1 style="font-size:30px;font-weight:900;color:#fff;margin:4px 0 0;text-shadow:0 0 25px rgba(116,192,252,.3)">Dino真是個小天才</h1>
   <p style="color:rgba(255,255,255,.35);font-size:12px;margin:0 0 20px;letter-spacing:2px">Cute Dungeon Adventure</p>
-  <div style="display:flex;gap:10px;justify-content:center;margin-bottom:4px">
-    <button class="btn btn-b" onclick="startGame('classic')" style="padding:11px 24px;font-size:14px">⚔️ 經典模式</button>
-    <button class="btn btn-g" onclick="startGame('elite')" style="padding:11px 24px;font-size:14px">👑 精英模式</button>
-  </div>
-  <div style="display:flex;gap:12px;justify-content:center;color:rgba(255,255,255,.4);font-size:9px;margin-bottom:10px">
-    <span>⚔️ 大量敵人 AOE爽快</span>
-    <span>👑 少量精英 走位策略</span>
-  </div>
-  <div style="display:flex;gap:10px;justify-content:center;margin-bottom:8px">
-    <button class="btn" onclick="showCoopLobby()" style="padding:8px 20px;font-size:12px;font-weight:700;background:linear-gradient(135deg,#F06595,#DA77F2);color:#fff;border:none;border-radius:10px;box-shadow:0 4px 14px rgba(218,119,242,.35)">🤝 雙人通關</button>
-    <button class="btn" onclick="openPractice()" style="padding:7px 18px;font-size:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.45)">🎯 練習模式</button>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:10px">
+    <button class="btn btn-b" onclick="startGame('classic')" style="width:210px;padding:12px;font-size:14px">⚔️ 經典模式</button>
+    <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">大量敵人 AOE爽快</div>
+    <button class="btn btn-g" onclick="startGame('elite')" style="width:210px;padding:12px;font-size:14px">👑 精英模式</button>
+    <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">少量精英 走位策略</div>
+    <button class="btn btn-p" onclick="window._showCoopLobby()" style="width:210px;padding:12px;font-size:14px">🤝 雙人通關</button>
+    <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">兩人連線合作打Boss</div>
+    <button class="btn btn-d" onclick="openPractice()" style="width:210px;padding:12px;font-size:14px">🎯 練習模式</button>
   </div>
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.60</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.62</div>
 </div>
 </div>
 
@@ -112,11 +111,20 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <h2 style="color:#F06595;font-size:22px;margin:0 0 6px">🤝 雙人通關</h2>
   <p style="color:rgba(255,255,255,.4);font-size:10px;margin:0 0 20px">WebRTC P2P 連線，一起打 Boss！</p>
   <div id="coopMenu">
-    <button onclick="coopCreateRoom()" style="width:100%;padding:14px;font-size:15px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#F06595,#DA77F2);color:#fff;cursor:pointer;margin-bottom:10px;box-shadow:0 4px 14px rgba(240,101,149,.3)">🏠 建立房間</button>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <input id="coopCodeInput" type="text" maxlength="6" placeholder="輸入房間碼" style="flex:1;padding:12px;font-size:15px;font-weight:700;border:1px solid rgba(240,101,149,.3);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;text-align:center;letter-spacing:4px;text-transform:uppercase;font-family:'Nunito',sans-serif" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-      <button onclick="coopJoinRoom()" style="padding:12px 18px;font-size:14px;font-weight:700;border:none;border-radius:10px;background:rgba(240,101,149,.15);color:#F06595;cursor:pointer;border:1px solid rgba(240,101,149,.3)">加入</button>
-    </div>
+    <button onclick="coopShowCreate()" style="width:100%;padding:14px;font-size:15px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#F06595,#DA77F2);color:#fff;cursor:pointer;margin-bottom:10px;box-shadow:0 4px 14px rgba(240,101,149,.3)">🏠 建立房間</button>
+    <button onclick="coopShowJoin()" style="width:100%;padding:14px;font-size:15px;font-weight:700;border:none;border-radius:12px;background:rgba(240,101,149,.12);color:#F06595;cursor:pointer;border:1px solid rgba(240,101,149,.3)">🔗 加入房間</button>
+  </div>
+  <div id="coopCreate" style="display:none">
+    <div style="color:rgba(255,255,255,.5);font-size:11px;margin-bottom:10px">選擇房間密碼方式</div>
+    <button onclick="coopCreateRoom()" style="width:100%;padding:13px;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#FFD43B,#FCC419);color:#1a1a35;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 12px rgba(255,212,59,.3)">🎲 隨機生成密碼</button>
+    <div style="color:rgba(255,255,255,.35);font-size:9px;margin-bottom:8px">— 或 —</div>
+    <input id="coopHostCode" type="text" maxlength="12" placeholder="輸入自訂密碼" style="width:100%;padding:12px;font-size:15px;font-weight:700;border:1px solid rgba(240,101,149,.3);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;text-align:center;letter-spacing:3px;font-family:'Nunito',sans-serif;margin-bottom:8px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button onclick="coopCreateCustom()" style="width:100%;padding:13px;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#F06595,#DA77F2);color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(240,101,149,.3)">✅ 用這個密碼建立</button>
+  </div>
+  <div id="coopJoin" style="display:none">
+    <div style="color:rgba(255,255,255,.5);font-size:11px;margin-bottom:10px">輸入對方的房間密碼</div>
+    <input id="coopCodeInput" type="text" maxlength="12" placeholder="房間密碼" style="width:100%;padding:12px;font-size:15px;font-weight:700;border:1px solid rgba(240,101,149,.3);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;text-align:center;letter-spacing:3px;font-family:'Nunito',sans-serif;margin-bottom:8px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button onclick="coopJoinRoom()" style="width:100%;padding:13px;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#F06595,#DA77F2);color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(240,101,149,.3)">🔗 加入房間</button>
   </div>
   <div id="coopStatus" style="display:none;padding:16px 0">
     <div id="coopRoomDisplay" style="font-size:32px;font-weight:900;letter-spacing:8px;color:#FFD43B;text-shadow:0 0 15px rgba(255,212,59,.4);margin-bottom:8px"></div>
@@ -291,7 +299,7 @@ const MODE={
 };
 // early levels need less XP so first card pick comes fast
 function expForLevel(lv){
-  if(_mode==="elite"){ // 精英模式：前期快節奏，後期平坦
+  if(_isElite()){ // 精英/coop模式：前期快節奏，後期平坦
     if(lv<=2)return 50;
     if(lv<=4)return 80;
     if(lv<=6)return 110;
@@ -344,9 +352,9 @@ function card(n,e,r,tp,d,ap,c,fx,once){C.push({id:++CID,n,e,r,tp,d,ap,c,fx:fx||n
 // 星辰劍(暴擊可超100%)、召喚球、連鎖爆破/毀滅之手(deathBoom雙重觸發+疊加)。
 card("火焰彈","🔥","R","atk",["攻+4 火焰 燒傷+20% 王燃+40%","攻+8 烈焰 燒傷+35% 王燃+70%","攻+14 獄火 燒傷+50% 王燃+100%"],[s=>{s.atk+=4;s.burnBoost=(s.burnBoost||1)*1.2;s.burnBossMul=Math.max(s.burnBossMul||1,1.4);s.fx.fire=1},s=>{s.atk+=8;s.burnBoost=(s.burnBoost||1)*1.35;s.burnBossMul=Math.max(s.burnBossMul||1,1.7);s.fx.fire=2},s=>{s.atk+=14;s.burnBoost=(s.burnBoost||1)*1.5;s.burnBossMul=Math.max(s.burnBossMul||1,2);s.fx.fire=3}],"#FF6B6B","fire");
 card("冰錐","❄️","R","atk",["攻+2 減速30% 冰脆+15%","攻+5 減速50% 冰脆+25%","攻+8 凍結70% 冰脆+35%"],[s=>{s.atk+=2;s.slow=Math.max((s.slow||1)*.7,.3);s.iceFrag=Math.max(s.iceFrag||0,.15);s.fx.ice=1},s=>{s.atk+=5;s.slow=Math.max((s.slow||1)*.5,.2);s.iceFrag=Math.max(s.iceFrag||0,.25);s.fx.ice=2},s=>{s.atk+=8;s.slow=.3;s.iceFrag=Math.max(s.iceFrag||0,.35);s.fx.ice=3}],"#66D9E8","ice");
-card("生命果","🍎","R","pas",["HP+15","HP+35","HP+60"],[s=>{s.maxHp+=15;s.hp=Math.min(s.hp+15,s.maxHp)},s=>{s.maxHp+=35;s.hp=Math.min(s.hp+35,s.maxHp)},s=>{s.maxHp+=60;s.hp=Math.min(s.hp+60,s.maxHp)}],"#51CF66");
+card("生命果","🍎","R","pas",["HP+75","HP+150","HP+200 防禦+10%"],[s=>{s.maxHp+=75;s.hp=Math.min(s.hp+75,s.maxHp)},s=>{s.maxHp+=150;s.hp=Math.min(s.hp+150,s.maxHp)},s=>{s.maxHp+=200;s.hp=Math.min(s.hp+200,s.maxHp);s.armor=1-(1-s.armor)*.9}],"#51CF66");
 card("疾風靴","👟","R","pas",["閃避+5% 位移CD-15%","閃避+10% 位移CD-30%","閃避+18% 位移CD-50%"],[s=>{s.dodge=Math.min(1,(s.dodge||0)+.05);s.ultCdReduce=1-(1-(s.ultCdReduce||0))*.85},s=>{s.dodge=Math.min(1,(s.dodge||0)+.1);s.ultCdReduce=1-(1-(s.ultCdReduce||0))*.7},s=>{s.dodge=Math.min(1,(s.dodge||0)+.18);s.ultCdReduce=1-(1-(s.ultCdReduce||0))*.5}],"#74C0FC");
-card("連弩","🏹","R","atk",["攻速+12%","攻速+25%","攻速+40%"],[s=>{s.fr*=_mode==="elite"?.76:.88},s=>{s.fr*=_mode==="elite"?.5:.75},s=>{s.fr*=_mode==="elite"?.3:.6}],"#FFA94D");
+card("連弩","🏹","R","atk",["攻速+12%","攻速+25%","攻速+40%"],[s=>{s.fr*=_isElite()?.76:.88},s=>{s.fr*=_isElite()?.5:.75},s=>{s.fr*=_isElite()?.3:.6}],"#FFA94D");
 card("鏡盾","🪞","R","pas",["受傷-10%","受傷-22%","受傷-35%"],[s=>{s.armor=1-(1-s.armor)*.9},s=>{s.armor=1-(1-s.armor)*.78},s=>{s.armor=1-(1-s.armor)*.65}],"#B2F2BB");
 card("自癒術","💗","R","pas",["每0.5秒回10HP","每0.5秒回10HP","每0.5秒回10HP"],[s=>{s.regen=(s.regen||0)+20},s=>{s.regen=(s.regen||0)+20},s=>{s.regen=(s.regen||0)+20}],"#FFC9C9",null,1);
 card("學者帽","🎓","R","pas",["經驗+20%","經驗+45%","經驗+80%"],[s=>{s.expMul=(s.expMul||1)*1.2},s=>{s.expMul=(s.expMul||1)*1.45},s=>{s.expMul=(s.expMul||1)*1.8}],"#D0BFFF");
@@ -437,7 +445,7 @@ function pks(n,excludeIds){
     at++;
     const v=Math.random()*100;
     let r=v<RW.SSR?"SSR":v<RW.SSR+RW.SR?"SR":"R";
-    const _eliteExpBan=_mode==="elite"&&(c=>c.n==="學者帽"||c.n==="磁力場"||c.n==="探索靴");
+    const _eliteExpBan=_isElite()&&(c=>c.n==="學者帽"||c.n==="磁力場"||c.n==="探索靴");
     const pool=C.filter(c=>c.r===r&&!u.has(c.id)&&!ex.has(c.id)&&(c.once?getCardLv(c.id)<0:getCardLv(c.id)<2)&&!(c.n==="命運轉輪"&&inv.length===0)&&!(_eliteExpBan&&_eliteExpBan(c)));
     if(!pool.length)continue;
     const c=pool[pool.length*Math.random()|0];
@@ -1257,9 +1265,9 @@ function enemyGrowth(w){
   const postSurge=w>10?w-10:0;
   const dmgMax=MODE[_mode].dmgCap||1.8;
   return{
-    hp:_mode==="elite"?(1+Math.min(3.5,w*.07+postSurge*.025)):(1+Math.min(4,w*.09+postSurge*.035)),
-    spd:_mode==="elite"?(1+Math.min(.55,w*.018)):(1+Math.min(.65,w*.02)),
-    dmg:_mode==="elite"?(1+Math.min(dmgMax,w*.035+postSurge*.012)):(1+Math.min(1.8,w*.04+postSurge*.015)),
+    hp:_isElite()?(1+Math.min(3.5,w*.07+postSurge*.025)):(1+Math.min(4,w*.09+postSurge*.035)),
+    spd:_isElite()?(1+Math.min(.55,w*.018)):(1+Math.min(.65,w*.02)),
+    dmg:_isElite()?(1+Math.min(dmgMax,w*.035+postSurge*.012)):(1+Math.min(1.8,w*.04+postSurge*.015)),
     size:1+Math.min(.32,w*.008)
   };
 }
@@ -1283,7 +1291,7 @@ function pickEnemyTier(w,boss){
 }
 
 function spawnTargetForWave(w){
-  if(_mode==="elite"){
+  if(_isElite()){
     if(w<4)return 3;if(w<8)return 4;if(w<15)return 5;
     if(w<22)return 6;return Math.min(8,7);
   }
@@ -1301,21 +1309,22 @@ function spikeConfigForWave(w){
 }
 
 /* ═══ fire ═══ */
-function fire(dmg,dx,dy,sp){
+function fire(dmg,dx,dy,sp,p){
   if(g.bul.length>MAX_BULLETS)return;
   sfxShoot();
+  const pp=p||g.p;
   dmg*=PLAYER_DMG_SCALE;
-  // 蓄力拳：重擊判定（每N次攻擊×2傷害）
+  if(g._coopLink)dmg*=1.3; // 連攜光環 +30%
   let heavy=false;
-  if(g.p.heavyEvery>0){g.p._heavyCount=(g.p._heavyCount||0)+1;if(g.p._heavyCount>=g.p.heavyEvery){g.p._heavyCount=0;heavy=true;dmg*=2;}}
-  const shots=g.p.split||1,ba=Math.atan2(dy,dx),bc=heavy?{f:"#FF922B",g:"#FF4500",t:"#FF922B"}:bCol();
-  const dbl=Math.random()<(g.p.dblAtk||0);
+  if(pp.heavyEvery>0){pp._heavyCount=(pp._heavyCount||0)+1;if(pp._heavyCount>=pp.heavyEvery){pp._heavyCount=0;heavy=true;dmg*=2;}}
+  const shots=pp.split||1,ba=Math.atan2(dy,dx),bc=heavy?{f:"#FF922B",g:"#FF4500",t:"#FF922B"}:(p===g.p2?{f:"#F06595",g:"#DA77F2",t:"#F06595"}:bCol());
+  const dbl=Math.random()<(pp.dblAtk||0);
   const dirs=dbl?[ba,ba+Math.PI]:[ba];
   dirs.forEach(dir=>{
     const count=Math.min(shots,12);
     for(let i=0;i<count;i++){
       const a=dir+(i-(count-1)/2)*.16+rn(-sp,sp);
-      g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(g.p.crit||.05),bc,trail:[],_tw:0,pierce:g.p.pierce||0,hm:g.p.homing||0,_minigun:g.p._minigun||0,_armorPen:g.p.armorCapBonus||0});
+      g.bul.push({x:pp.x,y:pp.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(pp.crit||.05),bc,trail:[],_tw:0,pierce:pp.pierce||0,hm:pp.homing||0,_minigun:pp._minigun||0,_armorPen:pp.armorCapBonus||0});
     }
   });
 }
@@ -1461,8 +1470,15 @@ function doUlt(){if(!g||!g.run)return;
   const now=performance.now();
   if(isCd&&now<(g.ultCdEnd||0))return;
   if(!isCd&&g.ultCharge<ULT_CHARGE_NEED)return;
+  // co-op 合體大招：記錄 P1 大招時間，如果 P2 也在 1 秒內按了，觸發合體
+  let _comboUlt=false;
+  if(_isCoopMode&&g.p2&&!g.p2._downed){
+    if(g._p2UltTime&&now-g._p2UltTime<1000){_comboUlt=true;g._p2UltTime=0;}
+    else{g._p1UltTime=now;}
+  }
   const ultLv=g.p.ultLv||0;
-  const baseDmg=(ULT_D+g.p.atk*6+g.level*5)*(g.p.ultDmgMul||1)*(1+ultLv*.35);
+  const _comboMul=_comboUlt?3:1;
+  const baseDmg=(ULT_D+g.p.atk*6+g.level*5)*(g.p.ultDmgMul||1)*(1+ultLv*.35)*_comboMul;
   // 計算複合CD：取最長的
   const cdVal=(isBH?BH_COOLDOWN_MS:(g.p.tsCd||15e3))/(g.p.ultRate||1)*(1-(g.p.ultCdReduce||0));
   // 黑洞效果：立刻開始吸引（跟舊版一致）
@@ -1475,7 +1491,7 @@ function doUlt(){if(!g||!g.run)return;
   if(isTS){
     const frzDur=g.p.tsFrzDur||2e3;
     const tsDmg=baseDmg*.5; // 時停也造成50%大招傷害
-    g.ene.forEach(e=>{e.frozen=Math.max(e.frozen||0,frzDur);const td=(_mode==="elite"&&e.stageBoss)?Math.min(tsDmg,e.mhp*.05):tsDmg;e.hp-=td;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(td),life:1.3,color:"#74C0FC"});if(e.hp<=0)burst(e.x,e.y,e.color,10);});
+    g.ene.forEach(e=>{e.frozen=Math.max(e.frozen||0,frzDur);const td=(_isElite()&&e.stageBoss)?Math.min(tsDmg,e.mhp*.05):tsDmg;e.hp-=td;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(td),life:1.3,color:"#74C0FC"});if(e.hp<=0)burst(e.x,e.y,e.color,10);});
     settleEnemyDeaths();
     burst(g.p.x,g.p.y,"#74C0FC",25);
     g.dn.push({x:g.p.x,y:g.p.y-30,d:isBH?"🕳️⏸️黑洞+時停":"⏸️時間停止+凍結傷害",life:1.5,color:"#74C0FC",big:1});
@@ -1486,15 +1502,22 @@ function doUlt(){if(!g||!g.run)return;
   if(isCd) g.ultCdEnd=now+cdVal;
   // 非純CD制（普通大招 or 只有閃電步）也做傷害+特效
   if(!isTS||isBH){
-    g.ene.forEach(e=>{const ud=(_mode==="elite"&&e.stageBoss)?Math.min(baseDmg,e.mhp*.05):baseDmg;e.hp-=ud;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(ud),life:1.3,color:isBH?"#868E96":"#FFD43B",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,14);});
+    g.ene.forEach(e=>{const ud=(_isElite()&&e.stageBoss)?Math.min(baseDmg,e.mhp*.05):baseDmg;e.hp-=ud;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(ud),life:1.3,color:isBH?"#868E96":"#FFD43B",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,14);});
     settleEnemyDeaths();
   }
   const cols=isBH?["#495057","#868E96","#CED4DA","#fff"]:isTS?["#74C0FC","#4DABF7","#339AF0","#fff"]:["#BE4BDB","#FFD43B","#FF6B6B","#74C0FC","#fff"];
   const burstCount=40+ultLv*12;
   for(let i=0;i<burstCount&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/burstCount,v=rn(2,7+ultLv);par.push({x:g.p.x+Math.cos(a)*20,y:g.p.y+Math.sin(a)*20,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1.3+ultLv*.15,color:cols[i%cols.length],sz:rn(3,8+ultLv)});}
-  g.ultFlash=isBH?1:isTS?.6:1;g.ultType=isBH?"bh":"n";if(!isCd)g.ultCharge=0;sfx("ult");
+  g.ultFlash=isBH?1:isTS?.6:(_comboUlt?1.5:1);g.ultType=isBH?"bh":"n";if(!isCd)g.ultCharge=0;sfx("ult");
   // 閃電步：所有大招同步觸發衝刺
   if(isLS) _startDash(now);
+  // 合體大招特效
+  if(_comboUlt){
+    g.dn.push({x:g.p.x,y:g.p.y-50,d:"🌟 合體大招！×3 傷害！",life:3,color:"#FFD43B",big:1});
+    g.dn.push({x:g.p2.x,y:g.p2.y-50,d:"🌟 合體大招！",life:3,color:"#F06595",big:1});
+    burst(g.p.x,g.p.y,"#FFD43B",25);burst(g.p2.x,g.p2.y,"#F06595",25);
+    sfx("phoenix"); // reuse phoenix sound for epic feel
+  }
 }
 
 /* ════════ 鳳凰飛入 ════════ */
@@ -1713,8 +1736,49 @@ function loop(){
     g.lhF=now;g.heat+=1;
   }
 
+  // === P2 auto-aim + fire (co-op) ===
+  if(_isCoopMode&&g.p2&&!g.p2._downed){
+    // P2 auto-aim
+    let nr2=null,nd2=1e9;
+    g.ene.forEach(e=>{if(e.ragePoo)return;const d=di(g.p2,e);if(d<nd2){nd2=d;nr2=e;}});
+    if(nr2){const dx2=nr2.x-g.p2.x,dy2=nr2.y-g.p2.y,d2=Math.sqrt(dx2*dx2+dy2*dy2)||1;g.p2._ad={x:dx2/d2,y:dy2/d2};if(Math.abs(g.p2._ad.x)>.3)g.p2.face=g.p2._ad.x>0?1:-1;}
+    else{g.p2._ad=g.p2._ad||{x:0,y:-1};}
+    // P2 hold-fire (Host 用 _p2Input，Client 用自己的 aim)
+    const p2aim=(_net&&_net.role==="host")?_p2Input.aimA:aim.a;
+    if(!g.p2._lhF)g.p2._lhF=0;
+    if(p2aim&&now-g.p2._lhF>HOLD_CD*(g.p2.fr||1)){
+      const ad2=g.p2._ad||{x:0,y:-1};
+      fire((2.2+g.p2.atk*.7),ad2.x,ad2.y,.07,g.p2);
+      g.p2._lhF=now;
+    }
+    // P2 ult input
+    const p2ult=(_net&&_net.role==="host")?_p2Input.ult:false;
+    if(p2ult&&!g.p2._ultCooldown){
+      g.p2._ultCooldown=now+3000; // 3s cooldown for P2 ult
+      g._p2UltTime=now;
+      // check if P1 also pressed within 1 sec → combo triggers from P1's doUlt
+      if(g._p1UltTime&&now-g._p1UltTime<1000){
+        doUlt(); // triggers combo check inside doUlt
+      }else{
+        // P2 solo ult: basic damage burst
+        const p2Dmg=(ULT_D+g.p2.atk*6+g.p2Level*5);
+        g.ene.forEach(e=>{const d2=di(g.p2,e);if(d2<200){e.hp-=p2Dmg;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(p2Dmg),life:1.3,color:"#F06595",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,10);}});
+        burst(g.p2.x,g.p2.y,"#F06595",20);g.ultFlash=.5;sfx("ult");
+        g.dn.push({x:g.p2.x,y:g.p2.y-30,d:"💥 P2 大招！",life:1.5,color:"#F06595",big:1});
+      }
+    }
+    if(g.p2._ultCooldown&&now>=g.p2._ultCooldown)g.p2._ultCooldown=0;
+  }
+
+  // co-op link aura（連攜光環：靠近 120px 內雙方攻擊 +30%）
+  if(_isCoopMode&&g.p2&&!g.p._downed&&!g.p2._downed){
+    const linkDist=di(g.p,g.p2);
+    g._coopLink=linkDist<120;
+  }else{g._coopLink=false;}
+
   // passive regen
   if(g.p.regen>0&&g.p.hp<g.p.maxHp)g.p.hp=Math.min(g.p.hp+g.p.regen*dt/60,g.p.maxHp);
+  if(_isCoopMode&&g.p2&&g.p2.regen>0&&g.p2.hp<g.p2.maxHp&&!g.p2._downed)g.p2.hp=Math.min(g.p2.hp+g.p2.regen*dt/60,g.p2.maxHp);
   // shield timer (守護星)
   if(g.p.shieldCD>0){g.p._shT=(g.p._shT||0)+dt*16.67;if(g.p._shT>=g.p.shieldCD&&!g.p._sh){g.p._sh=true;g.p._shT=0;g.p._shSpawn=now;burst(g.p.x,g.p.y,"#4DABF7",12);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🛡️守護星",life:1,color:"#4DABF7"});}}
   // invincibility timer (天使之翼) — 用 game-time 計時，暫停時不消耗
@@ -1908,7 +1972,7 @@ function loop(){
       }
     }
     const rawSlow=g.p.slow||1;
-    const cs=e.st>0?(_mode==="elite"?1-(1-rawSlow)*.35:rawSlow):1; // 精英模式緩速效果僅35%
+    const cs=e.st>0?(_isElite()?1-(1-rawSlow)*.35:rawSlow):1; // 精英/coop模式緩速效果僅35%
     const ts=e.frozen>0?0:1;
     const hs=(g.huntModeUntil&&now<g.huntModeUntil&&e._huntStart&&now>=e._huntStart&&now<e._huntEnd)?2.1:1;
     const es=e.speed*hs;
@@ -2025,7 +2089,7 @@ function loop(){
       e.y+=(dy/d*es*cs*ts)*dt;
     }
     // 精英模式：保持距離 + 繞行
-    if(_mode==="elite"&&!e.boss){
+    if(_isElite()&&!e.boss){
       if(!e._orbAng)e._orbAng=rn(0,Math.PI*2);
       if(!e._orbDir)e._orbDir=Math.random()>.5?1:-1;
       const prefDist=e.eliteEnemy?(55+Math.sin(e.t)*10):(80+Math.sin(e.t)*15);
@@ -2070,7 +2134,7 @@ function loop(){
           for(let i=0;i<cnt&&g.ene.length<_mxE;i++){
             const sa=rn(0,Math.PI*2),sd=40+rn(0,30);
             const mx2=cl(e.x+Math.cos(sa)*sd,30,MW-30),my2=cl(e.y+Math.sin(sa)*sd,30,MH-30);
-            const mhp2=(_mode==="elite")?Math.floor(MODE.elite.smallHpBase+g.wave*MODE.elite.smallHpPerWave):Math.floor((10+g.wave*5)*tierHpFor(e.tier));
+            const mhp2=(_isElite())?Math.floor(MODE[_mode].smallHpBase+g.wave*MODE[_mode].smallHpPerWave):Math.floor((10+g.wave*5)*tierHpFor(e.tier));
             const mc=TC[e.tier][TC[e.tier].length*Math.random()|0];
             g.ene.push({x:mx2,y:my2,hp:mhp2,mhp:mhp2,speed:e.speed*1.5,color:mc,t:rn(0,10),r:ER*.8,st:0,boss:false,mega:false,tier:Math.max(0,e.tier-1),face:1,xp:2+Math.floor(g.wave/3),poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:e.dmgMul*.6,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0});
           }
@@ -2110,7 +2174,19 @@ function loop(){
         if(g.p.thorns>0){/* thorns don't apply to projectiles */}
         g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",4);_hitFlash=1;_shakeT=.35;_shakePow=Math.min(6,2+dmg/15);sfx("hurt");showPlayerDmg(dmg);
         g.dn.push({x:g.p.x,y:g.p.y-20,d:Math.floor(dmg),life:1,color:"#FF6B6B"});
-        if(g.p.hp<=0){if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();}}
+        if(g.p.hp<=0){
+          if(_isCoopMode){g.p._downed=true;g.p._downedTime=now;g.p.hp=0;if(g.p2&&g.p2._downed){g.run=false;showOver();}}
+          else if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();}
+        }
+        return false;
+      }
+      // hit P2? (co-op)
+      if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0)&&di(b,g.p2)<PR+4){
+        if(Math.random()<(g.p2.dodge||0)){g.dn.push({x:g.p2.x,y:g.p2.y-25,d:"MISS",life:1,color:"#B197FC"});return false;}
+        const lm2=1+Math.max(0,g.wave-10)*.07;
+        let dm2=Math.min(50,b.dmg*lm2)*(1-(g.p2.armor||0));
+        g.p2.hp-=dm2;burst(g.p2.x,g.p2.y,"#FF6B6B",4);sfx("hurt");showPlayerDmg(dm2,g.p2);
+        if(g.p2.hp<=0){g.p2._downed=true;g.p2._downedTime=now;g.p2.hp=0;if(g.p._downed){g.run=false;showOver();}}
         return false;
       }
       return true;
@@ -2168,8 +2244,8 @@ function loop(){
       if(fx.fire&&!toughImmune){e.burnT=Math.max(e.burnT||0,(1400+fxLv*600)*(g.p.elemBoost||1));e.burnLv=fxLv;}
       if(fx.ice&&!toughImmune){
         const iceMul=g.p.elemBoost||1;
-        if(_mode==="elite"){
-          // 精英模式：冰只緩速，不凍結
+        if(_isElite()){
+          // 精英/coop模式：冰只緩速，不凍結
           e.st=Math.max(e.st||0,(800+fxLv*450)*iceMul);
         }else{
           if(Math.random()<Math.min(.95,(.12+.08*fxLv)*iceMul))e.frozen=Math.max(e.frozen||0,(350+fxLv*260)*iceMul);
@@ -2259,14 +2335,14 @@ function loop(){
   const c_=cam();
   let crateOpened=false;
   if(!_practiceMode)g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;g.run=false;
-    if(cr.bigChest){const _bcp=_mode==="elite"?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
+    if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
     else{showPick("crate");}
   }}});});
 
   // exp orbs
   const ep=60*(g.p.expR||1);g.orbs=g.orbs.filter(o=>{
     const d1=di(o,g.p),d2=(_isCoopMode&&g.p2)?di(o,g.p2):Infinity;
-    const nearP=d1<=d2?g.p:g.p2,d=Math.min(d1,d2);
+    const nearP=(_isCoopMode&&g.p2&&d1>d2)?g.p2:g.p,d=Math.min(d1,d2);
     if(d<ep){const s=Math.max(3,(ep-d)/ep*8),dx2=nearP.x-o.x,dy2=nearP.y-o.y,dd=Math.sqrt(dx2*dx2+dy2*dy2)||1;o.x+=dx2/dd*s*dt;o.y+=dy2/dd*s*dt;}
     if(d1<PR+8){g.exp+=o.xp;return false;}
     if(_isCoopMode&&g.p2&&d2<PR+8){g.p2Exp+=o.xp;return false;}
@@ -2347,7 +2423,19 @@ function loop(){
     while(g.p2Exp>=g.p2ExpTo){g.p2Exp-=g.p2ExpTo;g.p2Level++;g.p2ExpTo=expForLevel(g.p2Level);
       const _mc2=MODE[_mode];g.p2.atk+=_mc2.atkPerLv;g.p2.maxHp+=_mc2.hpPerLv;g.p2.hp=g.p2.maxHp;
       if(g.p2Level%5===0){g.p2.levelDmgMul=(g.p2.levelDmgMul||1)+.1;}
-      // TODO: P2 card pick (Phase D)
+      // P2 card pick: auto-random (coop 寶箱每等自動拿一張卡)
+      if(!g.p2._downed){
+        const pool=C.filter(c=>{const ex=inv2.find(x=>x.id===c.id);return!ex||ex.lv<2;});
+        if(pool.length>0){
+          const cd=pool[Math.random()*pool.length|0];
+          const ex2=inv2.find(x=>x.id===cd.id);
+          let lv2=0;
+          if(ex2){if(ex2.lv<2){ex2.lv++;lv2=ex2.lv;}else lv2=-1;}
+          else{inv2.push({id:cd.id,lv:0});}
+          if(lv2>=0){cd.ap[lv2](g.p2);g.p2.hp=Math.min(g.p2.hp+15,g.p2.maxHp);
+            g.dn.push({x:g.p2.x,y:g.p2.y-30,d:cd.e+" "+cd.n,life:2,color:"#F06595",big:1});}
+        }
+      }
     }
   }
 
@@ -2378,8 +2466,8 @@ function loop(){
     }
     if(g.level>=12&&((g.p.armor||0)+(g.p.dodge||0))<.25)showHint("🛡️ 後期建議補防禦/閃避，不然很痛！");
     // 寶箱系統（依模式不同）
-    if(_mode==="elite"){
-      // 精英模式：前8等每級1小寶箱，後半靠Boss獎勵
+    if(_mode==="elite"||_mode==="coop"){
+      // 精英/coop模式：前8等每級1小寶箱，後半靠Boss獎勵
       if(g.level>=2&&g.level<=8){spawnBonusCrates(1);showHint("📦 寶箱出現！");}
       if(g.level===12&&!g._boss20){g._boss20=true;triggerStageBoss(20);}
       if(g.level===16){spawnBonusCrates(1);showHint("📦 寶箱出現！");}
@@ -2809,6 +2897,21 @@ function loop(){
   cx.save();
   if(g.p._iFrameEnd>0&&now<g.p._iFrameEnd){cx.globalAlpha=Math.sin(now/30)*0.35+0.55;}
   cx.shadowColor=pCol;cx.shadowBlur=20;drawPlayer(g.p.x,g.p.y,PR,g.time/1000,pCol,g.p.face);cx.restore();
+  // co-op link aura visual
+  if(g._coopLink&&g.p2){
+    const mx2=(g.p.x+g.p2.x)/2,my2=(g.p.y+g.p2.y)/2;
+    cx.save();cx.globalAlpha=.12+Math.sin(now/250)*.06;
+    const lg=cx.createRadialGradient(mx2,my2,10,mx2,my2,80);
+    lg.addColorStop(0,"#FFD43B");lg.addColorStop(1,"transparent");
+    cx.fillStyle=lg;cx.beginPath();cx.arc(mx2,my2,80,0,Math.PI*2);cx.fill();
+    // line between players
+    cx.globalAlpha=.2+Math.sin(now/200)*.1;cx.strokeStyle="#FFD43B";cx.lineWidth=1.5;cx.setLineDash([4,4]);
+    cx.beginPath();cx.moveTo(g.p.x,g.p.y);cx.lineTo(g.p2.x,g.p2.y);cx.stroke();cx.setLineDash([]);
+    cx.restore();
+    // show buff text occasionally
+    if(!g._linkHintT||now-g._linkHintT>5000){g._linkHintT=now;
+      g.dn.push({x:mx2,y:my2-20,d:"⚡連攜 ATK+30%",life:1.5,color:"#FFD43B"});}
+  }
   // P2 (co-op)
   if(_isCoopMode&&g.p2){
     cx.save();
@@ -3190,13 +3293,14 @@ function loop(){
   // Host: 每 2 幀送狀態給 Client
   if(_isCoopMode&&_net&&_net.role==="host"&&_net.connected&&_net.conn&&_net.conn.open){
     if(!g._syncFrame)g._syncFrame=0;
-    if(++g._syncFrame%2===0){_net.conn.send(serializeCoopState());}
+    if(++g._syncFrame%2===0){const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);}
   }
   raf=requestAnimationFrame(loop);
 }
 
 /* ═══ Co-op Network Sync ═══ */
 function serializeCoopState(){
+  if(!g||!g.p2)return null;
   const cm=cam();
   return{t:"state",
     p1:{x:g.p.x,y:g.p.y,hp:g.p.hp,mhp:g.p.maxHp,face:g.p.face,_downed:g.p._downed,_iFrameEnd:g.p._iFrameEnd,_rescueTimer:g.p._rescueTimer||0},
@@ -3289,7 +3393,7 @@ function buildCard(cd,w,i,wrap){
       const fateEntry=inv.find(x=>C.find(c=>c.id===x.id&&c.n==="命運轉輪"));
       inv.length=0;if(fateEntry)inv.push(fateEntry);
       g.p.atk=2.5;g.p.speed=PS;g.p.fr=1;g.p.armor=0;g.p.chain=0;g.p.ls=0;g.p.slow=1;g.p.split=1;g.p.expR=1;g.p.crit=.05;g.p.revive=0;g.p.fx={};g.p.regen=0;g.p.luck=0;g.p.dodge=0;g.p.thorns=0;g.p.dblAtk=0;g.p.shieldCD=0;g.p._sh=false;g.p._shT=0;g.p._shSpawn=0;g.p.windBlades=0;g.p.orbiters=0;g.p.poison=0;g.p.hasBH=false;g.p.hasTS=false;g.p.ultLv=0;g.p.pierce=0;g.p.homing=0;g.p.splash=0;g.p.berserk=0;g.p.deathBoom=0;g.p.dodgeAtk=0;g.p.elemBoost=1;g.p.ultDmgMul=1;g.p.ultRate=1;g.p.bulletHeal=0;g.p.invCD=0;g.p.invDur=0;g.p._inv=false;g.p._ivT=0;g.p._invEnd=0;g.p.timestop=0;g.p.tsD=0;g.p.tsFrzDur=0;g.p.tsCd=0;g.p.lStep=false;g.p.lStepDur=0;g.p.lStepSpd=0;g.p.lStepCd=0;g.p._dashEnd=0;g.p._dashDx=0;g.p._dashDy=0;g.p._dashSpd=0;g.p._dashGT=0;g.p.chainDmg=1;g.p.poisonDmg=0;g.p.bossDmg=1;g.p.mobDmg=1;g.p.poisonBossMul=1;g.p.burnBoost=1;g.p.levelDmgMul=1;g.p._angelBuff=false;g.p.projImmune=false;g.p.crateVis=1;g.p.mapExpand=0;g.p.pickCount=2;g.p.face=1;g.p._iFrameEnd=0;g.p._healFlash=0;
-      if(_mode==="elite"){
+      if(_isElite()){
         g.p.maxHp=150;g.p.hp=Math.min(g.p.hp,150);g.p.atk+=5;g.p.speed+=.3;g.p.armor=.05;g.p.expR=99;g.orbs=[];
         g.dn.push({x:g.p.x,y:g.p.y-50,d:"🎰 命運重鑄！基礎素質提升！",life:2.5,color:"#FFD43B",big:1});
       }else{
@@ -3711,7 +3815,7 @@ function estimateBossDPS(lv){
   const shotsPerSec=1000/(200*fr);
   const split=p.split||1;
   const hitsPerSec=shotsPerSec*split;
-  if(_mode==="elite"){
+  if(_isElite()){
     // 每秒 cap 制：估算是否需要天使卡
     const bHp=lv===20?30000:50000;
     const secCap=bHp/(lv===20?120:180);
@@ -3727,9 +3831,9 @@ function estimateBossDPS(lv){
 function triggerStageBoss(lv){
   // 計算是否需要天使卡
   const dps=estimateBossDPS(lv);
-  const _bossEliteMul=_mode==="elite"?10:1;
-  const baseHp=_mode==="elite"?(lv===20?30000:50000):(1500+g.wave*100)*_bossEliteMul;
-  const hpMul=_mode==="elite"?1:(lv===20?1.2:3.5);
+  const _bossEliteMul=_isElite()?10:1;
+  const baseHp=_isElite()?(lv===20?30000:50000):(1500+g.wave*100)*_bossEliteMul;
+  const hpMul=_isElite()?1:(lv===20?1.2:3.5);
   const bossHp=baseHp*hpMul;
   const estTime=bossHp/Math.max(dps,0.1);
   const angelKey="_angelOffer"+lv;
@@ -3851,7 +3955,8 @@ function updateStageBoss(e,now,dt){
       sfxBossAtk("shockwave");
       g.dn.push({x:e.x,y:e.y-e.r-18,d:"⚠️ 護盾啟動！普攻無效！",life:2.5,color:"#4DABF7",big:1});}
   }
-  const dx=g.p.x-e.x,dy=g.p.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+  const _sbt=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p;
+  const dx=_sbt.x-e.x,dy=_sbt.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
   if(Math.abs(dx)>2)e.face=dx>0?1:-1;
 
   // 😈 Phase transitions
@@ -4038,7 +4143,8 @@ function updateStageBoss(e,now,dt){
           e.x+=(Math.random()-.5)*4;e.y+=(Math.random()-.5)*4;
         }else if(e._dashChargeEnd&&now>=e._dashChargeEnd){
           e._dashChargeEnd=0;
-          const cdx=g.p.x-e.x,cdy=g.p.y-e.y,cd=Math.sqrt(cdx*cdx+cdy*cdy)||1;
+          const _ct=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p;
+          const cdx=_ct.x-e.x,cdy=_ct.y-e.y,cd=Math.sqrt(cdx*cdx+cdy*cdy)||1;
           e._chargeDx=cdx/cd;e._chargeDy=cdy/cd;e._chargeEnd=now+350;
           sfxBossAtk("slam");
         }
@@ -4419,7 +4525,7 @@ window.pracRefreshStats=function(){
       const hpStr=e.mhp>99999?"INF":Math.round(e.hp)+"/"+e.mhp;
       // 每秒傷害上限
       let capStr="--";
-      if(e.boss&&_mode==="elite"){
+      if(e.boss&&_isElite()){
         const armMul=e.bossType==="armor"?acm:1;
         let cap;
         if(e.stageBoss===20)cap=e.mhp/120*angelMul*armMul;
@@ -4454,22 +4560,42 @@ window.pracRefreshStats=function(){
 function _coopGenCode(){const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<6;i++)s+=c[Math.random()*c.length|0];return s;}
 
 function showCoopLobby(){
-  show("title"); // hide all first
+  show("title");
   $("titleOv").style.display="none";
   $("coopOv").style.display="flex";
   $("coopMenu").style.display="block";
+  $("coopCreate").style.display="none";
+  $("coopJoin").style.display="none";
   $("coopStatus").style.display="none";
   $("coopConnected").style.display="none";
   if(_net&&_net.peer){_net.peer.destroy();_net=null;}
+}
+function coopShowCreate(){
+  $("coopMenu").style.display="none";
+  $("coopCreate").style.display="block";
+  $("coopJoin").style.display="none";
+  $("coopHostCode").value="";
+}
+function coopShowJoin(){
+  $("coopMenu").style.display="none";
+  $("coopCreate").style.display="none";
+  $("coopJoin").style.display="block";
+  $("coopCodeInput").value="";
+}
+function coopCreateCustom(){
+  const code=($("coopHostCode").value||"").trim();
+  if(code.length<2){$("coopHostCode").style.borderColor="#FF6B6B";return;}
+  _coopDoCreate(code);
 }
 function coopBack(){
   if(_net&&_net.peer){_net.peer.destroy();_net=null;}
   $("coopOv").style.display="none";
   $("titleOv").style.display="flex";
 }
-function coopCreateRoom(){
-  const code=_coopGenCode();
+function coopCreateRoom(){_coopDoCreate(_coopGenCode());}
+function _coopDoCreate(code){
   $("coopMenu").style.display="none";
+  $("coopCreate").style.display="none";
   $("coopStatus").style.display="block";
   $("coopRoomDisplay").textContent=code;
   $("coopStatusText").textContent="等待對方加入...";
@@ -4529,10 +4655,16 @@ function coopStart(){
   $("coopOv").style.display="none";
   startGame("coop");
 }
-// Client: 接收狀態（Phase C 實作）
-function applyCoopState(data){/* TODO */}
-// Client: 顯示選卡（Phase D 實作）
-function showCoopPick(cards){/* TODO */}
+// applyCoopState 和 clientRenderLoop 定義在 Co-op Network Sync 區塊
+function showCoopPick(cards){/* P2 自動拿卡，Client 端暫不需要選卡 UI */}
+window._showCoopLobby=showCoopLobby;
+window.coopBack=coopBack;
+window.coopCreateRoom=coopCreateRoom;
+window.coopCreateCustom=coopCreateCustom;
+window.coopShowCreate=coopShowCreate;
+window.coopShowJoin=coopShowJoin;
+window.coopJoinRoom=coopJoinRoom;
+window.coopStart=coopStart;
 
 window.openPractice=function(){
   _practiceMode=true;_pracFiniteHp=false;_pracEnemySel.clear();_pracCardLvs={};
@@ -4676,7 +4808,7 @@ window.startGame=window.SG=function(mode){
   resetSessionUi();
   cx.fillStyle="#0a0a18";cx.fillRect(0,0,VW,VH);
   const _mw=MC.mapW||MW,_mh=MC.mapH||MH;
-  g={p:{x:_mw/2,y:_mh/2,hp:MC.startHp,maxHp:MC.startHp,atk:MC.startAtk,speed:MC.startSpeed,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,hasBH:false,hasTS:false,ultLv:0,pierce:0,homing:0,homingR:200,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,bossDmg:1,mobDmg:1,poisonBossMul:1,burnBoost:1,crateVis:1,mapExpand:0,pickCount:2,face:1,_iFrameEnd:0,_healFlash:0,heavyEvery:0,_heavyCount:0,ultCdReduce:0},
+  g={p:{x:_mw/2,y:_mh/2,hp:MC.startHp,maxHp:MC.startHp,atk:MC.startAtk,speed:MC.startSpeed,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:1,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,hasBH:false,hasTS:false,ultLv:0,pierce:0,homing:0,homingR:200,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,bossDmg:1,mobDmg:1,poisonBossMul:1,burnBoost:1,crateVis:1,mapExpand:0,pickCount:2,face:1,_iFrameEnd:0,_healFlash:0,heavyEvery:0,_heavyCount:0,ultCdReduce:0,_downed:false,_rescueTimer:0,contactCap:100},
     ene:[],bul:[],par:[],dn:[],orbs:[],ltn:[],ebul:[],crates:_practiceMode?[]:genCrates(),
     exp:0,expTo:expForLevel(1),level:1,score:0,kills:0,wave:1,
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
