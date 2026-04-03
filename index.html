@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.52</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.54</div>
 </div>
 </div>
 
@@ -416,7 +416,7 @@ document.addEventListener("visibilitychange",()=>{
 
 /* ═══════════ 設定 + 靜音 ═══════════ */
 let _muted=false,_settingsOpen=false,_wasRunning=false;
-function toggleMute(){
+window.toggleMute=function(){
   _muted=!_muted;
   // 更新 toggle 開關外觀
   const tog=document.getElementById("sfxToggle");
@@ -474,7 +474,7 @@ window.settingsGoHome=function(){
   const dov=document.getElementById("_demonDealOv");if(dov&&dov.parentNode)dov.parentNode.removeChild(dov);
   show("title");
 }
-function toggleStatsPanel(){
+window.toggleStatsPanel=function(){
   const el=document.getElementById("settingsStats");
   if(el.style.display!=="none"){el.style.display="none";return;}
   if(!g||!g.p){el.innerHTML='<div style="color:rgba(255,255,255,.5);font-size:12px;text-align:center;padding:12px">尚未開始遊戲</div>';el.style.display="block";return;}
@@ -702,20 +702,18 @@ function settleEnemyDeaths(){
   if(!g)return;
   g.ene.forEach(e=>{
     if(e.hp>0||e.deadHandled)return;
+    if(e.stageBoss)return; // Stage Boss 由 checkStageBossDeath 處理，不在此移除
     burst(e.x,e.y,e.color,10);
-    // NOTE: deathBoom 在子彈命中處(line ~1387)也會觸發一次，等於雙重爆炸。
-    // 暫時保留作為降低難度機制，若主角太強可移除此處或該處其中一個。
     if(g.p.deathBoom>0){
       burst(e.x,e.y,"#FF922B",8);
       g.ene.forEach(oe=>{if(oe!==e&&oe.hp>0&&di(e,oe)<50){oe.hp-=g.p.deathBoom;}});
     }
     awardEnemyKill(e);
-    // Lv10 攻勢：追蹤擊殺數
     if(g._surgeLv10&&!g._surgeCleared10){
       g._surgeKillCount=(g._surgeKillCount||0)+1;
     }
   });
-  g.ene=g.ene.filter(e=>e.hp>0);
+  g.ene=g.ene.filter(e=>e.hp>0||e.stageBoss);
   // Lv10 攻勢通關檢查
   if(g._surgeLv10&&!g._surgeCleared10&&g._surgeKillCount>=g._surgeKillTarget){
     g._surgeCleared10=true;
@@ -1586,7 +1584,7 @@ function loop(){
   // checkStageBossDeath 移到 DPS cap 之後，避免 cap 回血前 Boss 被判定死亡
 
   // 練習模式：鎖血（無限模式）或正常血量 + 跳過自動升級
-  if(_practiceMode){if(!g._pracFiniteHp){g.p.hp=99999;g.p.maxHp=99999;}g.exp=0;g.lS=now;}
+  if(_practiceMode){if(!_pracFiniteHp){g.p.hp=99999;g.p.maxHp=99999;}g.exp=0;g.lS=now;}
   // spawn system
   if(_practiceMode){/* skip */}
   else if(g._stageBossActive){g.lS=now;} // skip spawn during stage boss
@@ -2008,6 +2006,7 @@ function loop(){
     }
     if(fx.ice&&bType!=="tough")dmg*=.95;
     if(e.role===ROLE_SHIELD){const ba=Math.atan2(b.vy,b.vx),fa=e.shieldAng+Math.PI,ad=Math.abs(((ba-fa)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);if(ad<Math.PI*.55)dmg*=.25;}
+    if(e._p3armor)dmg*=(1-e._p3armor); // 惡魔最終階段護甲減傷
     e.hp-=dmg;sfxHit();
     if(g.p.slow<1&&bType!=="tough")e.st=1800;
     // 元素效果：韌性型免疫燃燒/凍結（但毒可以），防禦型全部正常
@@ -2122,7 +2121,8 @@ function loop(){
     // 狂暴便便：撞到扣剩餘HP 1/3，不可摧毀
     if(e.ragePoo){if(di(e,g.p)<PR+e.r-4){
       if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});g.p._iFrameEnd=now+400;return true;}
-      const rpDmg=Math.floor(g.p.hp/3);g.p.hp-=rpDmg;burst(g.p.x,g.p.y,"#8B6914",6);_hitFlash=1;sfx("hurt");
+      const rpDmg=(_practiceMode&&!_pracFiniteHp)?50:Math.floor(g.p.hp/3);
+      g.p.hp-=rpDmg;burst(g.p.x,g.p.y,"#8B6914",6);_hitFlash=1;sfx("hurt");
       g.p._iFrameEnd=now+800;showPlayerDmg(rpDmg);
       if(g.p.hp<=0){if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();}}
     }return true;}
@@ -2592,18 +2592,23 @@ function loop(){
     cx.fillStyle=hCol;cx.fillRect(hbX,hbY,hbW*heatPct,hbH);
     cx.restore();
   }
-  // 過熱警告：主角頭上
+  // 過熱警告：集氣條下方，閃爍動畫
   if(g._heatWarn){
-    cx.save();cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
-    cx.fillStyle="#FF922B";cx.globalAlpha=.7+Math.sin(now/100)*.3;
-    cx.fillText("🔥 過熱警告",g.p.x,g.p.y-PR-10);
+    const hbY2=g.p.y+PR+14;
+    const blink=Math.sin(now/60); // 快速閃爍
+    cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#FF4500";cx.globalAlpha=blink>0?(.6+blink*.4):0; // 閃爍：亮→全透明→亮
+    cx.shadowColor="#FF4500";cx.shadowBlur=6;
+    cx.fillText("⚠ 過熱警告",g.p.x,hbY2+10);
     cx.restore();
   }
   if(g.heatCD>0){
-    cx.save();cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
-    cx.fillStyle="#FF4040";cx.globalAlpha=.7+Math.sin(now/80)*.3;
+    const hbY2=g.p.y+PR+14;
+    cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/80)*.3;
+    cx.shadowColor="#FF4040";cx.shadowBlur=6;
     const sec=(g.heatCD/1000).toFixed(1);
-    cx.fillText("🔥 冷卻 "+sec+"s",g.p.x,g.p.y-PR-10);
+    cx.fillText("🔥 冷卻 "+sec+"s",g.p.x,hbY2+10);
     cx.restore();
   }
   // 黑洞持續效果：主角周圍暗能量漩渦
@@ -2832,13 +2837,33 @@ function loop(){
   }
 
   // ult flash overlay + hit vignette
-  const _needFx=g.ultFlash>0||_hitFlash>0||_phoenixT>0;
+  const _pulseWarn=g._pulseWarnEnd&&now<g._pulseWarnEnd;
+  const _needFx=g.ultFlash>0||_hitFlash>0||_phoenixT>0||_pulseWarn;
   if(_needFx){
     const fctx=fxctx;fctx.clearRect(0,0,VW,VH);
     // 受擊紅色暈光
     if(_hitFlash>0){fctx.save();const hg=fctx.createRadialGradient(VW/2,VH/2,VW*.25,VW/2,VH/2,VW*.72);hg.addColorStop(0,"transparent");hg.addColorStop(1,"#FF2020");fctx.fillStyle=hg;fctx.globalAlpha=_hitFlash*.45;fctx.fillRect(0,0,VW,VH);fctx.restore();}
     // 不死鳥金色閃光
     if(_phoenixT>0){fctx.save();const pt=1-_phoenixT/1.2,pa=pt<.3?(pt/.3):(1-(pt-.3)/.9);const pg=fctx.createRadialGradient(VW/2,VH/2,0,VW/2,VH/2,VW*.6);pg.addColorStop(0,"#FFD43B");pg.addColorStop(.3,"#FF922B");pg.addColorStop(1,"transparent");fctx.fillStyle=pg;fctx.globalAlpha=pa*.35;fctx.fillRect(0,0,VW,VH);fctx.restore();}
+    // 暗黑脈衝畫面警告
+    if(_pulseWarn){
+      fctx.save();
+      const pwT=(g._pulseWarnEnd-now)/2200, pwFlash=Math.sin(now/80);
+      // 紫紅色邊框閃爍
+      fctx.globalAlpha=(.25+pwFlash*.15)*(1-pwT*.3);
+      const eg=fctx.createRadialGradient(VW/2,VH/2,VW*.2,VW/2,VH/2,VW*.7);
+      eg.addColorStop(0,"transparent");eg.addColorStop(1,"#9B59B6");
+      fctx.fillStyle=eg;fctx.fillRect(0,0,VW,VH);
+      // 中央文字
+      fctx.globalAlpha=.7+pwFlash*.3;
+      fctx.font="bold 22px Nunito,sans-serif";fctx.textAlign="center";fctx.textBaseline="middle";
+      fctx.fillStyle="#FF4040";fctx.shadowColor="#FF4040";fctx.shadowBlur=15;
+      fctx.fillText("⚠️ 靠近Boss！",VW/2,VH*0.18);
+      fctx.font="bold 13px Nunito,sans-serif";fctx.fillStyle="#FFD43B";fctx.shadowColor="#FFD43B";
+      fctx.fillText("進入Boss身邊的安全圈",VW/2,VH*0.24);
+      fctx.shadowBlur=0;
+      fctx.restore();
+    }
     // ult flash
     if(g.ultFlash>0){fctx.save();fctx.globalAlpha=g.ultFlash*.5;const ug=fctx.createRadialGradient(VW/2,VH/2,0,VW/2,VH/2,VW);if(g.ultType==="bh"){ug.addColorStop(0,"#fff");ug.addColorStop(.3,"#495057");ug.addColorStop(1,"transparent");}else{ug.addColorStop(0,"#fff");ug.addColorStop(.2,"#FFD43B");ug.addColorStop(.5,"#BE4BDB");ug.addColorStop(1,"transparent");}fctx.fillStyle=ug;fctx.fillRect(0,0,VW,VH);const rr=(1-g.ultFlash)*VW;fctx.strokeStyle="#fff";fctx.lineWidth=3+g.ultFlash*6;fctx.globalAlpha=g.ultFlash*.5;fctx.beginPath();fctx.arc(VW/2,VH/2,rr,0,Math.PI*2);fctx.stroke();fctx.restore();}
     fxc.style.display="block";
@@ -3110,14 +3135,18 @@ function sfxBossAtk(type){
 
 function sfxVictory(){
   const ac=sfxCtx();if(!ac)return;const now=ac.currentTime;
-  [523,587,659,698,784,880,988,1047].forEach((f,i)=>{
+  // 輕快上行大調 fanfare：C E G C' E' G' C''
+  [523,659,784,1047,1318,1568,2093].forEach((f,i)=>{
     const o=ac.createOscillator(),g2=ac.createGain();
-    o.type=i<4?"sine":"triangle";o.frequency.setValueAtTime(f,now+i*.12);
-    g2.gain.setValueAtTime(0,now+i*.12);g2.gain.linearRampToValueAtTime(.1,now+i*.12+.02);
-    g2.gain.setValueAtTime(.1,now+i*.12+.08);g2.gain.exponentialRampToValueAtTime(.001,now+i*.12+.2);
-    o.connect(g2).connect(ac.destination);o.start(now+i*.12);o.stop(now+i*.12+.22);
+    o.type=i<4?"triangle":"sine";o.frequency.setValueAtTime(f,now+i*.09);
+    g2.gain.setValueAtTime(0,now+i*.09);g2.gain.linearRampToValueAtTime(.12,now+i*.09+.02);
+    g2.gain.setValueAtTime(.1,now+i*.09+.06);g2.gain.exponentialRampToValueAtTime(.001,now+i*.09+.18);
+    o.connect(g2).connect(ac.destination);o.start(now+i*.09);o.stop(now+i*.09+.2);
   });
-  [523,659,784].forEach(f=>{const o=ac.createOscillator(),g2=ac.createGain();o.type="sine";o.frequency.setValueAtTime(f,now+1.1);g2.gain.setValueAtTime(0,now+1.1);g2.gain.linearRampToValueAtTime(.12,now+1.15);g2.gain.exponentialRampToValueAtTime(.005,now+2.5);o.connect(g2).connect(ac.destination);o.start(now+1.1);o.stop(now+2.6);});
+  // 結尾大三和弦 C-E-G（明亮長音）
+  [523,659,784,1047].forEach(f=>{const o=ac.createOscillator(),g2=ac.createGain();o.type="sine";o.frequency.setValueAtTime(f,now+.75);g2.gain.setValueAtTime(0,now+.75);g2.gain.linearRampToValueAtTime(.1,now+.8);g2.gain.exponentialRampToValueAtTime(.005,now+2.2);o.connect(g2).connect(ac.destination);o.start(now+.75);o.stop(now+2.3);});
+  // 額外高音閃爍（歡慶感）
+  [1568,2093,2637].forEach((f,i)=>{const o=ac.createOscillator(),g2=ac.createGain();o.type="sine";o.frequency.setValueAtTime(f,now+1.2+i*.15);g2.gain.setValueAtTime(0,now+1.2+i*.15);g2.gain.linearRampToValueAtTime(.06,now+1.2+i*.15+.02);g2.gain.exponentialRampToValueAtTime(.001,now+1.2+i*.15+.15);o.connect(g2).connect(ac.destination);o.start(now+1.2+i*.15);o.stop(now+1.2+i*.15+.18);});
 }
 
 /* ═══════════ END CUTSCENE 通關結局動畫 ═══════════ */
@@ -3126,16 +3155,16 @@ function victoryBgmPlay(){
   const ac=sfxCtx();if(!ac)return;
   _endCutsceneNodes=[];
   const now=ac.currentTime;
-  // 史詩管弦和弦進行：Am → F → C → G → Am → F → Em → Am
+  // 明亮大調和弦進行：C → G → Am → F → C → G → F → C
   const chords=[
-    {t:0,  notes:[220,261,329]},   // Am
-    {t:.8, notes:[174,261,349]},   // F
-    {t:1.6,notes:[261,329,392]},   // C
-    {t:2.4,notes:[196,246,392]},   // G
-    {t:3.2,notes:[220,261,329]},   // Am (repeat higher)
-    {t:4.0,notes:[174,261,349]},   // F
-    {t:4.8,notes:[164,246,329]},   // Em
-    {t:5.6,notes:[220,329,440]},   // Am resolve
+    {t:0,  notes:[261,329,392]},   // C
+    {t:.8, notes:[196,246,392]},   // G
+    {t:1.6,notes:[220,261,329]},   // Am
+    {t:2.4,notes:[174,261,349]},   // F
+    {t:3.2,notes:[261,329,392]},   // C
+    {t:4.0,notes:[196,246,392]},   // G
+    {t:4.8,notes:[174,261,349]},   // F
+    {t:5.6,notes:[261,329,523]},   // C (高八度結尾)
   ];
   chords.forEach(ch=>{
     ch.notes.forEach((f,ni)=>{
@@ -3567,7 +3596,9 @@ function updateStageBoss(e,now,dt){
       }
       if(newPhase===3){
         bossBgmSetBpm(160);
-        g.dn.push({x:e.x,y:e.y-e.r-20,d:"😈 最終階段！",life:3,color:"#C0392B",big:1});
+        e.bossType="armor"; // 最終階段獲得護甲，降低物理傷害
+        e._p3armor=0.35; // 35% 減傷
+        g.dn.push({x:e.x,y:e.y-e.r-20,d:"😈 最終階段！護甲強化！",life:3,color:"#C0392B",big:1});
       }
     }
   }
@@ -3633,7 +3664,7 @@ function updateStageBoss(e,now,dt){
       const tr=120+rn(0,40),ta=Math.random()*Math.PI*2;
       e._teleLandX=cl(g.p.x+Math.cos(ta)*tr,e.r,mapW()-e.r);
       e._teleLandY=cl(g.p.y+Math.sin(ta)*tr,e.r,mapH()-e.r);
-      e._teleLandShow=now;e._teleExe=now+700;e._teleShake=now+700;
+      e._teleLandShow=now+300;e._teleExe=now+1000;e._teleShake=now+1000;
     }
     // === Phase 3 攻擊循環狀態機 ===
     // 狀態：idle → tele_warn → tele_land → dash(×3) → pulse_warn → pulse_boom → free → idle
@@ -3645,7 +3676,7 @@ function updateStageBoss(e,now,dt){
         const tr=90+rn(0,30),ta=Math.random()*Math.PI*2;
         e._teleLandX=cl(g.p.x+Math.cos(ta)*tr,e.r,mapW()-e.r);
         e._teleLandY=cl(g.p.y+Math.sin(ta)*tr,e.r,mapH()-e.r);
-        e._teleLandShow=now;e._teleExe=now+700;
+        e._teleLandShow=now+300;e._teleExe=now+1000;
       }
       // 衝刺子循環
       if(e._p3cycle==="dash"){
@@ -3681,7 +3712,8 @@ function updateStageBoss(e,now,dt){
           if(e._p3dashN>=3){
             // 3次衝刺完成 → 進入脈衝預告
             e._p3cycle="pulse_warn";e._p3t=now;
-            g.dn.push({x:e.x,y:e.y-e.r-20,d:"⚠️ 暗黑脈衝！靠近Boss！",life:2.2,color:"#FF4040",big:1});
+            g.dn.push({x:e.x,y:e.y-e.r-20,d:"⚠️ 暗黑脈衝！",life:2.2,color:"#FF4040",big:1});
+            g._pulseWarnEnd=now+2200; // 畫面警告計時
             sfxBossAtk("darkpulse");
           }else{
             // 下一次衝刺
@@ -3704,8 +3736,10 @@ function updateStageBoss(e,now,dt){
           e._p3cycle="pulse_boom";e._p3t=now;
           _hitFlash=.8;_shakeT=.6;_shakePow=10;sfxBossAtk("slam");
           const pulseDist=di(e,g.p),safe=pulseDist<150;
-          if(!safe&&!g.p._inv&&!(g.p._iFrameEnd>0)){
-            const dmg=(30+g.wave*2)*(1-g.p.armor);g.p.hp-=dmg;sfx("hurt");_hitFlash=1;showPlayerDmg(dmg);g.p._iFrameEnd=performance.now()+600;
+          if(!safe&&!g.p._inv&&!(g.p._iFrameEnd>0&&now<g.p._iFrameEnd)){
+            // 撞擊傷害（非遠距），走接觸傷害邏輯
+            const dmg=(40+g.wave*3)*e.dmgMul;
+            g.p.hp-=dmg;burst(g.p.x,g.p.y,"#9B59B6",10);sfx("hurt");_hitFlash=1;_shakeT=.5;_shakePow=8;showPlayerDmg(dmg);g.p._iFrameEnd=performance.now()+800;
           }else if(safe){g.dn.push({x:g.p.x,y:g.p.y-30,d:"安全！",life:1.5,color:"#51CF66",big:1});}
           // 華麗爆炸特效
           for(let r=0;r<3;r++){
@@ -3884,7 +3918,7 @@ function checkStageBossDeath(){
       g.dn.push({x:e.x,y:e.y-40,d:"💩 Boss 擊敗！",life:3,color:"#FFD43B",big:1});
       g.dn.push({x:g.p.x,y:g.p.y-60,d:"📦 寶箱獎勵！",life:2.5,color:"#FFD43B",big:1});
       setTimeout(()=>spawnBonusCrates(2),1500);
-      g.ene=g.ene.filter(oe=>{if(oe.miniPoo||oe.ragePoo){burst(oe.x,oe.y,"#A0822A",5);return false;}return true;});
+      g.ene=g.ene.filter(oe=>{if(oe===e||oe.miniPoo||oe.ragePoo){burst(oe.x,oe.y,"#A0822A",5);return false;}return true;});
       _stageBoss=null;
     }else if(lv===30){
       bgmStop();
@@ -4065,10 +4099,11 @@ window.pracRefreshStats=function(){
   s.innerHTML=h;
 };
 window.openPractice=function(){
-  _practiceMode=true;_pracEnemySel.clear();_pracCardLvs={};
+  _practiceMode=true;_pracFiniteHp=false;_pracEnemySel.clear();_pracCardLvs={};
   startGame("elite");
   g.p.hp=99999;g.p.maxHp=99999;g.level=12;g.wave=12;g.p.atk=30;
-  requestAnimationFrame(()=>{$("practiceOv").style.display="block";});
+  requestAnimationFrame(()=>{$("practiceOv").style.display="block";
+    const hb=$("pracHpBtn");hb.textContent="❤️無限血量";hb.style.background="rgba(255,107,107,.2)";hb.style.color="#FF6B6B";hb.style.borderColor="rgba(255,107,107,.3)";});
   // 建立卡片列表
   const cc=$("pracCards");
   let html='<div style="color:#FFD43B;font-weight:900;font-size:11px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(10,10,24,.95);z-index:1">🃏 卡片（點擊切換等級）</div>';
@@ -4168,14 +4203,14 @@ window.pracClear=function(){
   if(!g)return;
   g.ene.forEach(e=>burst(e.x,e.y,e.color,5));
   g.ene=[];g.ebul=[];g.bul=[];_stageBoss=null;g._stageBossActive=false;
-  if(!g._pracFiniteHp)g.p.hp=99999;
+  if(!_pracFiniteHp)g.p.hp=99999;
 };
 let _pracFiniteHp=false;
 window.pracToggleHp=function(){
   if(!g||!_practiceMode)return;
   _pracFiniteHp=!_pracFiniteHp;
-  if(_pracFiniteHp){g.p.hp=200;g.p.maxHp=200;g._pracFiniteHp=true;}
-  else{g.p.hp=99999;g.p.maxHp=99999;g._pracFiniteHp=false;}
+  if(_pracFiniteHp){g.p.hp=200;g.p.maxHp=200;}
+  else{g.p.hp=99999;g.p.maxHp=99999;}
   $("pracHpBtn").textContent=_pracFiniteHp?"❤️血量200":"❤️無限血量";
   $("pracHpBtn").style.background=_pracFiniteHp?"rgba(81,207,102,.2)":"rgba(255,107,107,.2)";
   $("pracHpBtn").style.color=_pracFiniteHp?"#51CF66":"#FF6B6B";
