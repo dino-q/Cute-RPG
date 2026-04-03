@@ -66,6 +66,10 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div class="hbar"><span class="hlbl" style="color:#74C0FC" id="ll">Lv.1</span><div class="hbg" style="height:3px"><div class="hfill" id="eb" style="background:linear-gradient(90deg,#74C0FC,#4DABF7);width:0%"></div></div></div>
   <div class="hbar"><span class="hlbl" style="color:#DA77F2" id="ulbl">💎0%</span><div class="hbg" style="height:4px;background:rgba(190,78,219,.16)"><div class="hfill" id="ub" style="background:linear-gradient(90deg,#BE4BDB,#DA77F2,#FFD43B);width:0%"></div></div></div>
   <div id="hud2"><span id="sl" style="color:#FFD43B">⭐0</span><span id="ulr" style="color:rgba(190,78,219,.7)">💎0%</span><span id="kl" style="color:rgba(255,255,255,.2)">💀0</span></div>
+  <div id="p2hud" style="display:none;margin-top:2px">
+    <div class="hbar"><span class="hlbl" style="color:#F06595;font-size:8px" id="p2hl">🤝 P2 ❤️100/100</span><div class="hbg" style="height:3px"><div class="hfill" id="p2hb" style="background:linear-gradient(90deg,#F06595,#FF8FA3);width:100%"></div></div></div>
+    <div class="hbar"><span class="hlbl" style="color:#F06595;font-size:8px" id="p2ll">P2 Lv.1</span><div class="hbg" style="height:2px"><div class="hfill" id="p2eb" style="background:linear-gradient(90deg,#F06595,#FF8FA3);width:0%"></div></div></div>
+  </div>
 </div>
 <div id="ctl">
   <div class="joyW" id="jzL" style="width:min(140px,34vw);height:min(140px,34vw);margin-bottom:14px"><div class="joyR"><div class="joyK jkL" id="jkL"></div></div></div>
@@ -98,7 +102,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.59</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.60</div>
 </div>
 </div>
 
@@ -239,6 +243,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 (function(){"use strict";
 /* ═══════════════ CONFIG ═══════════════ */
 const VW=400,VH=700; // viewport
+function _isElite(){return _mode==="elite"||_mode==="coop";} // coop 共用 elite 邏輯
 const MW=1900,MH=1900; // map size (smaller for higher pressure)
 const PR=18,ER=16,BR=5,PS=4.5;
 const AUTO_CD=500,HOLD_CD=115;
@@ -756,19 +761,19 @@ function settleEnemyDeaths(protectBoss){
   g.ene.forEach(e=>{
     if(e.hp>0||e.deadHandled)return;
     if(e.stageBoss)return; // Stage Boss 由 checkStageBossDeath 處理，不在此移除
-    if(_wb&&_mode==="elite"&&e.boss&&!e.miniPoo&&!e.miniDemon)return; // 菁英波次王延後判定
+    if(_wb&&_isElite()&&e.boss&&!e.miniPoo&&!e.miniDemon)return; // 菁英波次王延後判定
     burst(e.x,e.y,e.color,10);
     if(g.p.deathBoom>0){
       burst(e.x,e.y,"#FF922B",8);
       const _boomD=g.p.deathBoom+(g.p.atk||0)*1.5;
-      g.ene.forEach(oe=>{if(oe!==e&&oe.hp>0&&di(e,oe)<50){const bd=(oe.boss||oe.stageBoss)?Math.min(_boomD,oe.mhp*.03):_boomD;oe.hp-=bd;}});
+      g.ene.forEach(oe=>{if(oe!==e&&oe.hp>0&&di(e,oe)<50){const bd=(oe.boss||oe.stageBoss)?Math.min(_boomD,oe.mhp*.03):_boomD;oe.hp-=bd;burst(oe.x,oe.y,"#FF922B",3);g.dn.push({x:oe.x,y:oe.y-oe.r,d:Math.floor(bd),life:.8,color:"#FF922B"});}});
     }
     awardEnemyKill(e);
     if(g._surgeLv10&&!g._surgeCleared10){
       g._surgeKillCount=(g._surgeKillCount||0)+1;
     }
   });
-  g.ene=g.ene.filter(e=>e.hp>0||e.stageBoss||(_wb&&_mode==="elite"&&e.boss&&!e.miniPoo&&!e.miniDemon));
+  g.ene=g.ene.filter(e=>e.hp>0||e.stageBoss||(_wb&&_isElite()&&e.boss&&!e.miniPoo&&!e.miniDemon));
   // Lv10 攻勢通關檢查
   if(g._surgeLv10&&!g._surgeCleared10&&g._surgeKillCount>=g._surgeKillTarget){
     g._surgeCleared10=true;
@@ -779,7 +784,10 @@ function settleEnemyDeaths(protectBoss){
 }
 
 /* ═══ camera ═══ */
-function cam(){const w=mapW(),h=mapH();return{x:cl(g.p.x-VW/2,0,w-VW),y:cl(g.p.y-VH/2,0,h-VH)};}
+function cam(){const w=mapW(),h=mapH();const t=(_isCoopMode&&_net&&_net.role==="client"&&g.p2)?g.p2:g.p;return{x:cl(t.x-VW/2,0,w-VW),y:cl(t.y-VH/2,0,h-VH)};}
+/* ═══ Co-op helpers ═══ */
+function nearestPlayer(e){if(!_isCoopMode||!g.p2||g.p2._downed)return g.p;if(g.p._downed)return g.p2;return di(e,g.p)<di(e,g.p2)?g.p:g.p2;}
+function bothPlayers(){return(_isCoopMode&&g.p2)?[g.p,g.p2]:[g.p];}
 
 /* ═══ resize ═══ */
 function resize(){const s=Math.min(window.innerWidth/VW,window.innerHeight/VH,2),cw=VW*s,ch=VH*s;
@@ -790,9 +798,10 @@ function resize(){const s=Math.min(window.innerWidth/VW,window.innerHeight/VH,2)
 window.addEventListener("resize",resize);
 
 // 玩家受傷紅色拋物線數字
-function showPlayerDmg(dmg){
+function showPlayerDmg(dmg,p){
   if(!g||dmg<1)return;
-  g.dn.push({x:g.p.x,y:g.p.y-PR-5,d:"-"+Math.floor(dmg),life:1.6,color:"#FF4040",big:1,_playerDmg:true});
+  const pp=p||g.p;
+  g.dn.push({x:pp.x,y:pp.y-PR-5,d:"-"+Math.floor(dmg),life:1.6,color:"#FF4040",big:1,_playerDmg:true});
 }
 
 /* ═══ HUD ═══ */
@@ -841,6 +850,16 @@ function hud(){if(!g)return;
     $("ulr").style.color=pct>=1?"#FFD43B":"rgba(190,78,219,.85)";
     $("ultR").style.animation=pct>=1?"gw .45s infinite":"none";
   }
+  // P2 HUD (co-op)
+  const _p2h=$("p2hud");
+  if(_isCoopMode&&g.p2&&_p2h){
+    _p2h.style.display="block";
+    const p2s=g.p2._downed?"💀":"🤝";
+    $("p2hl").textContent=p2s+" P2 ❤️"+Math.floor(g.p2.hp)+"/"+g.p2.maxHp;
+    $("p2hb").style.width=(Math.max(0,g.p2.hp)/g.p2.maxHp*100)+"%";
+    $("p2ll").textContent="P2 Lv."+g.p2Level;
+    $("p2eb").style.width=(g.p2Exp/g.p2ExpTo*100)+"%";
+  }else if(_p2h){_p2h.style.display="none";}
 }
 
 /* ═══ floating hints ═══ */
@@ -874,6 +893,8 @@ function drawMinimap(){
   g.ene.forEach(e=>{mx.fillStyle=e.boss?"#FF6B6B":e.role===ROLE_SHOOTER?"#FFA94D":e.role===ROLE_SHIELD?"#4DABF7":"rgba(255,100,100,.5)";mx.fillRect(e.x*sx-1,e.y*sy-1,e.boss?3:2,e.boss?3:2);});
   // player
   mx.fillStyle="#74C0FC";mx.fillRect(g.p.x*sx-2,g.p.y*sy-2,4,4);
+  // P2 co-op
+  if(_isCoopMode&&g.p2){mx.fillStyle="#F06595";mx.fillRect(g.p2.x*sx-2,g.p2.y*sy-2,4,4);}
   // viewport box
   const c=cam();mx.strokeStyle="rgba(255,255,255,.3)";mx.lineWidth=1;mx.strokeRect(c.x*sx,c.y*sy,VW*sx,VH*sy);
 }
@@ -1064,6 +1085,29 @@ function drawEnemy(e){
       cx.globalAlpha=.4+Math.sin(enow/80)*.2;cx.setLineDash([4,3]);cx.strokeStyle="#FF0000";cx.lineWidth=2;
       cx.beginPath();cx.moveTo(x,cy);cx.lineTo(x+e._rageDx*60,cy+e._rageDy*60);cx.stroke();cx.setLineDash([]);
     }
+  }
+  // co-op shield bubble + circles
+  if(e._coopShield&&e._coopCircles){
+    const enow=performance.now();
+    // shield bubble
+    cx.globalAlpha=.2+Math.sin(enow/300)*.1;cx.strokeStyle="#4DABF7";cx.lineWidth=2.5;
+    cx.beginPath();cx.arc(x,cy,r+15,0,Math.PI*2);cx.stroke();
+    cx.globalAlpha=.06;cx.fillStyle="#4DABF7";cx.beginPath();cx.arc(x,cy,r+15,0,Math.PI*2);cx.fill();
+    // circles
+    e._coopCircles.forEach(c=>{
+      const occ=(g&&g.p&&di(g.p,c)<30)||(g&&g.p2&&di(g.p2,c)<30);
+      cx.globalAlpha=.4+Math.sin(enow/200)*.2;
+      cx.strokeStyle=occ?"#51CF66":"#FFD43B";cx.lineWidth=2.5;
+      cx.beginPath();cx.arc(c.x,c.y,25,0,Math.PI*2);cx.stroke();
+      cx.globalAlpha=.08;cx.fillStyle=occ?"#51CF66":"#FFD43B";
+      cx.beginPath();cx.arc(c.x,c.y,25,0,Math.PI*2);cx.fill();
+    });
+  }
+  // broken shield timer indicator
+  if(e._coopShieldBrokenEnd>0){
+    const enow=performance.now(),left=(e._coopShieldBrokenEnd-enow)/3000;
+    if(left>0){cx.globalAlpha=.6;cx.strokeStyle="#FF4040";cx.lineWidth=3;
+      cx.beginPath();cx.arc(x,cy,r+15,-.5*Math.PI,-.5*Math.PI+left*Math.PI*2);cx.stroke();}
   }
   cx.restore();
 }
@@ -1283,20 +1327,22 @@ function spawn(boss,opts={}){
   const earlyMobNerf=w<8?.82:1;
   const earlyBossNerf=w<8?.72:1;
   const earlyMul=boss?earlyBossNerf:earlyMobNerf;
-  const tierHp=(_mode==="elite"?[1,1.45,2.05,3.05,4.4]:[1,1.3,1.7,2.2,2.8])[tier]||1;
+  const tierHp=(_isElite()?[1,1.45,2.05,3.05,4.4]:[1,1.3,1.7,2.2,2.8])[tier]||1;
   const tierSpd=[1,.98,1.03,1.08,1.14][tier]||1;
   const tierDmg=[1,1.15,1.35,1.6,1.9][tier]||1;
   const bhp=(20+w*11)*(1+w*.018)*tierHp;
-  const _bossMul=_mode==="elite"?1:(boss?4.25:1); // 經典小王砍半(8.5→4.25)
-  const _megaMul=_mode==="elite"?1:(mega?1.1:1); // 經典巨王再減2/3(3.3→1.1)
+  const _bossMul=_isElite()?1:(boss?4.25:1); // 經典小王砍半(8.5→4.25)
+  const _megaMul=_isElite()?1:(mega?1.1:1); // 經典巨王再減2/3(3.3→1.1)
   const _classicMobNerf=(_mode!=="elite"&&!boss)?.25:1; // 經典小怪HP砍75%，Boss不變
-  const hp=Math.floor(bhp*_bossMul*_megaMul*ENEMY_HP_SCALE*grow.hp*earlyMul*_classicMobNerf);
+  const _coopMul=(_mode==="coop")?(MODE.coop.coopHpMul||1.5):1;
+  const hp=Math.floor(bhp*_bossMul*_megaMul*ENEMY_HP_SCALE*grow.hp*earlyMul*_classicMobNerf*_coopMul);
   const _spdCap=MODE[_mode].enemySpdCap||2.4;
-  const spdW=(_mode==="elite")?Math.min(w,12):w; // 精英模式：速度成長在12等封頂
+  const spdW=(_isElite())?Math.min(w,12):w; // 精英模式：速度成長在12等封頂
   const spd=(.92+Math.min(spdW*.13,_spdCap))*tierSpd*enemyGrowth(spdW).spd*(mega?.85:1)*(w<8?.92:1);
   const rm=(boss?1.85:1)*(mega?1.9:1)*(1+tier*.11)*grow.size;
   const a=rn(0,Math.PI*2),d=SPAWN_R+rn(0,80);
-  let x=g.p.x+Math.cos(a)*d,y=g.p.y+Math.sin(a)*d;
+  const _sp=(_isCoopMode&&g.p2&&Math.random()>.5)?g.p2:g.p; // coop: 隨機圍繞某玩家出怪
+  let x=_sp.x+Math.cos(a)*d,y=_sp.y+Math.sin(a)*d;
   x=cl(x,ER*rm+5,mapW()-ER*rm-5);y=cl(y,ER*rm+5,mapH()-ER*rm-5);
   const tcols=TC[tier],col=tcols[tcols.length*Math.random()|0];
   const role=opts.role??pickRole(w,boss);
@@ -1308,9 +1354,9 @@ function spawn(boss,opts={}){
   if(role===ROLE_FLANKER){spdMul=1.12;} // flankers slightly faster
   let finalHp=Math.floor(hp*hpMul);
   let isEliteEnemy=false;
-  // 精英模式 HP 調整
-  if(_mode==="elite"){
-    const eMC=MODE.elite;
+  // 精英/coop模式 HP 調整
+  if(_isElite()){
+    const eMC=MODE[_mode];
     if(boss){
       // 波次 Boss/巨王：HP 隨波次成長，配合每秒傷害上限
       finalHp=Math.floor((1000+w*270)*(mega?2:1));
@@ -1336,8 +1382,23 @@ function spawn(boss,opts={}){
     shieldAng:0, // shield facing angle (toward player)
     // boss skill data
     bossSkillCD:boss?rn(2500,4000):0,bossSkill:0,
-    bossType:boss?(Math.random()>.5?"tough":"armor"):"" // 韌性或防禦隨機
+    bossType:boss?(Math.random()>.5?"tough":"armor"):"", // 韌性或防禦隨機
+    // co-op shield
+    _coopShield:(_isCoopMode&&boss)?true:false,
+    _coopCircles:null,_coopShieldBrokenEnd:0,_coopCircleTimer:0
   });
+  // 初始化 co-op boss 破盾圓點
+  if(_isCoopMode&&boss){
+    const ne=g.ene[g.ene.length-1];
+    _coopGenCircles(ne);
+  }
+}
+function _coopGenCircles(e){
+  if(!e)return;
+  const a1=rn(0,Math.PI*2),a2=a1+rn(Math.PI*.4,Math.PI*1.6); // 間隔至少 72 度
+  const r1=rn(80,150),r2=rn(80,150);
+  e._coopCircles=[{x:e.x+Math.cos(a1)*r1,y:e.y+Math.sin(a1)*r1},{x:e.x+Math.cos(a2)*r2,y:e.y+Math.sin(a2)*r2}];
+  e._coopCircleTimer=performance.now()+8000; // 8 秒後重新定位
 }
 
 function triggerSpikeWave(w){
@@ -1544,13 +1605,36 @@ function loop(){
       cx.fillStyle=d.color;cx.textAlign="center";cx.fillText(d.d,d.x,d.y);cx.restore();});
     cx.restore();raf=requestAnimationFrame(loop);return;}
   if(!g||!g.run){raf=requestAnimationFrame(loop);return;}
+  // Client: 只送操作+渲染，不跑邏輯
+  if(_isCoopMode&&_net&&_net.role==="client"&&_net.connected){
+    g.time=performance.now();
+    // 送操作給 Host
+    if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:false,dodge:false,pick:-1});}
+    // 渲染收到的狀態
+    clientRenderLoop();
+    raf=requestAnimationFrame(loop);return;
+  }
   const now=performance.now(),frameMs=Math.min(now-g.lf,33),dt=frameMs/16.67;g.lf=now;g.time=now;
   const bhSafe=!!(g.p.bhSafeEnd&&now<g.p.bhSafeEnd);
   fxQ=frameMs>24?Math.max(.45,fxQ-.05):Math.min(1,fxQ+.02);
 
-  // move
-  if(joy.a){g.p.x+=joy.dx*g.p.speed*dt;g.p.y+=joy.dy*g.p.speed*dt;if(Math.abs(joy.dx)>.2)g.p.face=joy.dx>0?1:-1;}
+  // move P1
+  if(!g.p._downed){
+    if(joy.a){g.p.x+=joy.dx*g.p.speed*dt;g.p.y+=joy.dy*g.p.speed*dt;if(Math.abs(joy.dx)>.2)g.p.face=joy.dx>0?1:-1;}
+  }else if(g.p._downed&&joy.a){
+    g.p.x+=joy.dx*.5*dt;g.p.y+=joy.dy*.5*dt; // 倒地爬行
+  }
   g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
+  // move P2 (co-op)
+  if(_isCoopMode&&g.p2){
+    const p2i=(_net&&_net.role==="host")?_p2Input:joy; // Client 用自己的 joy
+    if(!g.p2._downed){
+      if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*g.p2.speed*dt;g.p2.y+=p2i.dy*g.p2.speed*dt;if(Math.abs(p2i.dx)>.2)g.p2.face=p2i.dx>0?1:-1;}
+    }else{
+      if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*.5*dt;g.p2.y+=p2i.dy*.5*dt;} // 倒地爬行
+    }
+    g.p2.x=cl(g.p2.x,PR+4,mapW()-PR-4);g.p2.y=cl(g.p2.y,PR+4,mapH()-PR-4);
+  }
 
   // heat system
   if(g.heatCD>0){g.heatCD-=dt*16.67;if(g.heatCD<=0){g.heatCD=0;g.heat=0;}}
@@ -1649,8 +1733,8 @@ function loop(){
   // spawn system
   if(_practiceMode){/* skip */}
   else if(g._stageBossActive){g.lS=now;} // skip spawn during stage boss
-  else if(_mode==="elite"){
-    // === 精英模式：波次制 ===
+  else if(_mode==="elite"||_mode==="coop"){
+    // === 精英/coop模式：波次制 ===
     if(!g._ew)g._ew={num:0,restEnd:0,active:false};
     const ew=g._ew;
     const aliveEnemies=g.ene.filter(e=>e.hp>0&&!e.stageBoss).length;
@@ -1757,7 +1841,8 @@ function loop(){
   g.ene.forEach(e=>{e.t+=.03*dt;e.st=Math.max(0,e.st-dt*16.67);e.frozen=Math.max(0,e.frozen-dt*16.67);
     // 精英怪特殊能力
     if(e.eliteEnemy&&e.hp>0&&e.frozen<=0){
-      const edx=g.p.x-e.x,edy=g.p.y-e.y,ed=Math.sqrt(edx*edx+edy*edy)||1;
+      const _elt=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p;
+      const edx=_elt.x-e.x,edy=_elt.y-e.y,ed=Math.sqrt(edx*edx+edy*edy)||1;
       // 衝刺突進：每5秒，距離100~250時衝向玩家
       if(!e._eDashCD)e._eDashCD=now+3000;
       if(now>e._eDashCD&&ed>100&&ed<250&&!e._eDashing){
@@ -1827,7 +1912,8 @@ function loop(){
     const ts=e.frozen>0?0:1;
     const hs=(g.huntModeUntil&&now<g.huntModeUntil&&e._huntStart&&now>=e._huntStart&&now<e._huntEnd)?2.1:1;
     const es=e.speed*hs;
-    const dx=g.p.x-e.x,dy=g.p.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+    const _et=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p; // 追蹤目標
+    const dx=_et.x-e.x,dy=_et.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
     if(Math.abs(dx)>2)e.face=dx>0?1:-1;
     e.shieldAng=Math.atan2(dy,dx); // always face player for shield calc
 
@@ -1841,7 +1927,8 @@ function loop(){
         // 開始衝刺
         e._rageState="dash";e._rageT=now+300;e._rageDist=0;
         // 重新鎖定方向
-        const rdx2=g.p.x-e.x,rdy2=g.p.y-e.y,rd2=Math.sqrt(rdx2*rdx2+rdy2*rdy2)||1;
+        const _rgt=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p;
+        const rdx2=_rgt.x-e.x,rdy2=_rgt.y-e.y,rd2=Math.sqrt(rdx2*rdx2+rdy2*rdy2)||1;
         e._rageDx=rdx2/rd2;e._rageDy=rdy2/rd2;
       }else if(rcs==="dash"&&e._rageDist<120&&now<e._rageT){
         // 衝刺中：固定距離120px
@@ -2063,14 +2150,16 @@ function loop(){
       if(hasElem)dmg*=1.2;else dmg*=.5;
     }
     // 精英模式：小怪 per-hit cap（Boss 改用每秒上限制，見 settleEnemyDeaths 前）
-    if(_mode==="elite"&&!e.stageBoss&&!isBossUnit){
+    if(_isElite()&&!e.stageBoss&&!isBossUnit){
       const lvBonus=Math.max(0,g.level-5)*.003;
       dmg=Math.min(dmg,e.mhp*(.04+lvBonus));
     }
     // 冰脆：被減速/凍結的敵人受到額外傷害
-    if(g.p.iceFrag&&(e.st>0||e.frozen>0))dmg*=(1+g.p.iceFrag);
+    let _iceFragHit=false;
+    if(g.p.iceFrag&&(e.st>0||e.frozen>0)){dmg*=(1+g.p.iceFrag);_iceFragHit=true;}
     if(e.role===ROLE_SHIELD){const ba=Math.atan2(b.vy,b.vx),fa=e.shieldAng+Math.PI,ad=Math.abs(((ba-fa)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);if(ad<Math.PI*.55)dmg*=.25;}
     if(e._p3armor)dmg*=(1-e._p3armor); // 惡魔最終階段護甲減傷
+    if(e._coopShield){dmg=0;} // co-op 護盾：攻擊無效
     e.hp-=dmg;sfxHit();
     if(g.p.slow<1&&bType!=="tough")e.st=1800;
     // 元素效果：韌性型免疫燃燒/凍結（但毒可以），防禦型全部正常
@@ -2141,9 +2230,11 @@ function loop(){
       // 破甲箭命中 armor 型：碎甲火花
       if(b._armorPen>0&&e.bossType==="armor"){burst(b.x,b.y,"#FF922B",4);burst(b.x,b.y,"#fff",2);
         if(Math.random()<.15)g.dn.push({x:e.x,y:e.y-e.r-8,d:"💥破甲",life:.6,color:"#D4A017"});}
-      g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(dmg),life:1,color:b.crit?"#FFD43B":"#fff",big:b.crit});
+      // 冰脆特效：冰色碎片 + 傷害數字改色
+      if(_iceFragHit){burst(b.x,b.y,"#66D9E8",4);burst(b.x,b.y,"#fff",2);}
+      g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(dmg),life:1,color:b.crit?"#FFD43B":_iceFragHit?"#66D9E8":"#fff",big:b.crit});
     }
-    if(e.hp<=0&&!(_mode==="elite"&&e.boss&&!e.stageBoss&&!e.miniPoo&&!e.miniDemon)){
+    if(e.hp<=0&&!(_isElite()&&e.boss&&!e.stageBoss&&!e.miniPoo&&!e.miniDemon)){
       if(ltnThrottle){
         // lightweight kill fx for lightning+split
         burst(e.x,e.y,e.color,5);
@@ -2156,7 +2247,7 @@ function loop(){
         if(fx.poison)burst(e.x,e.y,"#69DB7C",4+fxLv*2);
         if(fx.star)burst(e.x,e.y,"#FFD43B",4+fxLv*2);
       }
-      if(g.p.deathBoom>0){burst(e.x,e.y,"#FF922B",8);const _boomD=g.p.deathBoom+(g.p.atk||0)*1.5;g.ene.forEach(oe=>{if(oe!==e&&oe.hp>0&&di(e,oe)<50){const bd=(oe.boss||oe.stageBoss)?Math.min(_boomD,oe.mhp*.03):_boomD;oe.hp-=bd;}});}
+      if(g.p.deathBoom>0){burst(e.x,e.y,"#FF922B",8);const _boomD=g.p.deathBoom+(g.p.atk||0)*1.5;g.ene.forEach(oe=>{if(oe!==e&&oe.hp>0&&di(e,oe)<50){const bd=(oe.boss||oe.stageBoss)?Math.min(_boomD,oe.mhp*.03):_boomD;oe.hp-=bd;burst(oe.x,oe.y,"#FF922B",3);g.dn.push({x:oe.x,y:oe.y-oe.r,d:Math.floor(bd),life:.8,color:"#FF922B"});}});}
       awardEnemyKill(e);
       if(!g.run)return;
     }
@@ -2173,7 +2264,13 @@ function loop(){
   }}});});
 
   // exp orbs
-  const ep=60*(g.p.expR||1);g.orbs=g.orbs.filter(o=>{const d=di(o,g.p);if(d<ep){const s=Math.max(3,(ep-d)/ep*8),dx=g.p.x-o.x,dy=g.p.y-o.y,dd=Math.sqrt(dx*dx+dy*dy)||1;o.x+=dx/dd*s*dt;o.y+=dy/dd*s*dt;}if(d<PR+8){g.exp+=o.xp;return false;}o.life-=.001*dt;return o.life>0;});
+  const ep=60*(g.p.expR||1);g.orbs=g.orbs.filter(o=>{
+    const d1=di(o,g.p),d2=(_isCoopMode&&g.p2)?di(o,g.p2):Infinity;
+    const nearP=d1<=d2?g.p:g.p2,d=Math.min(d1,d2);
+    if(d<ep){const s=Math.max(3,(ep-d)/ep*8),dx2=nearP.x-o.x,dy2=nearP.y-o.y,dd=Math.sqrt(dx2*dx2+dy2*dy2)||1;o.x+=dx2/dd*s*dt;o.y+=dy2/dd*s*dt;}
+    if(d1<PR+8){g.exp+=o.xp;return false;}
+    if(_isCoopMode&&g.p2&&d2<PR+8){g.p2Exp+=o.xp;return false;}
+    o.life-=.001*dt;return o.life>0;});
 
   // enemy-player (with i-frame protection)
   if(g.p._iFrameEnd>0&&now>=g.p._iFrameEnd)g.p._iFrameEnd=0;
@@ -2202,7 +2299,7 @@ function loop(){
       if(g.p.hp<=0){if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();}}
     }return true;}
     if(di(e,g.p)<PR+e.r-4){
-    const _isWB=_mode==="elite"&&e.boss&&!e.miniPoo&&!e.miniDemon; // 菁英波次王
+    const _isWB=_isElite()&&e.boss&&!e.miniPoo&&!e.miniDemon; // 菁英波次王
     if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});if(g.p.dodgeAtk>0){e.hp-=g.p.dodgeAtk;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(g.p.dodgeAtk),life:1,color:"#FFE066"});}return _isWB||e.hp>0;}
     if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"🛡️擋住",life:1,color:"#4DABF7",big:1});return true;}
     const lateMul=1+Math.max(0,g.wave-10)*.07;
@@ -2212,14 +2309,50 @@ function loop(){
     if(g.p.thorns>0){const td=dmg*g.p.thorns;e.hp-=td;}
     g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",6);_hitFlash=1;_shakeT=.4;_shakePow=Math.min(8,3+dmg/12);sfx("hurt");showPlayerDmg(dmg);
     g.p._iFrameEnd=now+400; // 400ms i-frame after contact damage
-    if(g.p.hp<=0){if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();return false;}}
-    if(_isWB){e._retreatEnd=now+1500;return true;} // 菁英波次王：不消失，後退
+    if(g.p.hp<=0){
+      if(_isCoopMode){g.p._downed=true;g.p._downedTime=now;g.p.hp=0;if(g.p2&&g.p2._downed){g.run=false;showOver();return false;}}
+      else if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();return false;}
+    }
+    if(_isWB){e._retreatEnd=now+1500;return true;}
     if(MODE[_mode].enemyContactVanish){awardEnemyKill(e);return false;}
     else{g.p._iFrameEnd=now+500;if(e.hp>0)e._retreatEnd=now+1500;return e.hp>0||(awardEnemyKill(e),false);}
-    }return true;});}
+    }
+    // P2 contact damage (co-op)
+    if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0)&&!e.ragePoo&&!e.stageBoss&&di(e,g.p2)<PR+e.r-4){
+      const lm2=1+Math.max(0,g.wave-10)*.07;
+      let dm2=Math.min(g.p2.contactCap||100,(8+g.wave*2)*(e.dmgMul||1)*lm2)*(1-(g.p2.armor||0));
+      g.p2.hp-=dm2;burst(g.p2.x,g.p2.y,"#FF6B6B",6);sfx("hurt");showPlayerDmg(dm2,g.p2);
+      g.p2._iFrameEnd=now+400;
+      if(g.p2.hp<=0){g.p2._downed=true;g.p2._downedTime=now;g.p2.hp=0;if(g.p._downed){g.run=false;showOver();return false;}}
+    }
+    return true;});}
+
+  // co-op rescue logic
+  if(_isCoopMode&&g.p2){
+    if(g.p2._downed&&!g.p._downed&&di(g.p,g.p2)<40){
+      g.p2._rescueTimer+=frameMs;
+      if(g.p2._rescueTimer>=3000){g.p2._downed=false;g.p2.hp=Math.floor(g.p2.maxHp*.3);g.p2._iFrameEnd=now+2000;g.p2._rescueTimer=0;
+        g.dn.push({x:g.p2.x,y:g.p2.y-PR-10,d:"💚 救援成功！",life:2,color:"#51CF66",big:1});burst(g.p2.x,g.p2.y,"#51CF66",12);}
+    }else if(g.p2._downed){g.p2._rescueTimer=0;}
+    if(g.p._downed&&!g.p2._downed&&di(g.p,g.p2)<40){
+      g.p._rescueTimer+=frameMs;
+      if(g.p._rescueTimer>=3000){g.p._downed=false;g.p.hp=Math.floor(g.p.maxHp*.3);g.p._iFrameEnd=now+2000;g.p._rescueTimer=0;
+        g.dn.push({x:g.p.x,y:g.p.y-PR-10,d:"💚 救援成功！",life:2,color:"#51CF66",big:1});burst(g.p.x,g.p.y,"#51CF66",12);}
+    }else if(g.p._downed){g.p._rescueTimer=0;}
+    if(g.p2._iFrameEnd>0&&now>=g.p2._iFrameEnd)g.p2._iFrameEnd=0;
+  }
+
+  // P2 level up (co-op)
+  if(_isCoopMode&&g.p2){
+    while(g.p2Exp>=g.p2ExpTo){g.p2Exp-=g.p2ExpTo;g.p2Level++;g.p2ExpTo=expForLevel(g.p2Level);
+      const _mc2=MODE[_mode];g.p2.atk+=_mc2.atkPerLv;g.p2.maxHp+=_mc2.hpPerLv;g.p2.hp=g.p2.maxHp;
+      if(g.p2Level%5===0){g.p2.levelDmgMul=(g.p2.levelDmgMul||1)+.1;}
+      // TODO: P2 card pick (Phase D)
+    }
+  }
 
   // level up
-  while(g.exp>=g.expTo){g.exp-=g.expTo;g.level++;if(_mode==="elite")g.wave=g.level;g.expTo=expForLevel(g.level);sfx("levelup");
+  while(g.exp>=g.expTo){g.exp-=g.expTo;g.level++;if(_mode==="elite"||_mode==="coop")g.wave=g.level;g.expTo=expForLevel(g.level);sfx("levelup");
     // NOTE 未來可考慮方案D — 升級解鎖能力：Lv5解鎖衝刺、Lv10解鎖第二武器等，增加階段感
     // stat boost on level up
     const _mc=MODE[_mode];g.p.atk+=_mc.atkPerLv;g.p.maxHp+=_mc.hpPerLv;g.p.hp=g.p.maxHp;
@@ -2374,19 +2507,47 @@ function loop(){
       });
     }
   }
+  // co-op boss shield update
+  if(_isCoopMode&&g.p2){
+    g.ene.forEach(e=>{
+      if(!e.boss||!e._coopCircles)return;
+      const now2=performance.now();
+      // 護盾已破：倒數 3 秒
+      if(e._coopShieldBrokenEnd>0&&now2<e._coopShieldBrokenEnd)return; // 破盾中，可攻擊
+      if(e._coopShieldBrokenEnd>0&&now2>=e._coopShieldBrokenEnd){
+        e._coopShield=true;e._coopShieldBrokenEnd=0;
+        _coopGenCircles(e);
+        g.dn.push({x:e.x,y:e.y-e.r-15,d:"🛡️ 護盾恢復！",life:2,color:"#4DABF7",big:1});
+        return;
+      }
+      // 圓點重新定位
+      if(now2>e._coopCircleTimer)_coopGenCircles(e);
+      // 檢查兩人是否各站一個圓點
+      if(e._coopShield&&!g.p._downed&&!g.p2._downed){
+        const c=e._coopCircles;
+        const p1c0=di(g.p,c[0])<30,p1c1=di(g.p,c[1])<30;
+        const p2c0=di(g.p2,c[0])<30,p2c1=di(g.p2,c[1])<30;
+        if((p1c0&&p2c1)||(p1c1&&p2c0)){
+          e._coopShield=false;e._coopShieldBrokenEnd=now2+3000;
+          g.dn.push({x:e.x,y:e.y-e.r-15,d:"💥 破盾！3秒攻擊窗口！",life:2.5,color:"#FFD43B",big:1});
+          burst(e.x,e.y,"#FFD43B",15);sfx("boss");
+        }
+      }
+    });
+  }
   // 每秒傷害上限（精英=全 Boss，經典=僅 Stage Boss）
   const _capAngelMul=g.p._angelBuff?1.6:1;
   const _capArmorMul=1+(g.p.armorCapBonus||0);
   g.ene.forEach(e=>{
     if(!e.boss)return;
     // 經典模式：只保護 Stage Boss
-    if(_mode!=="elite"&&!e.stageBoss)return;
+    if(!_isElite()&&!e.stageBoss)return;
     if(!e._secReset||now-e._secReset>=1000){e._secSnap=e.hp;e._secReset=now;}
     const acm=(e.bossType==="armor")?_capArmorMul:1;
     let cap;
-    if(e.stageBoss===20)cap=e.mhp/(_mode==="elite"?150:60)*_capAngelMul*acm;  // 💩：精英2.5分/經典1分
-    else if(e.stageBoss===30)cap=e.mhp/(_mode==="elite"?240:90)*_capAngelMul*acm; // 😈：精英4分/經典1.5分
-    else if(_mode==="elite")cap=e.mhp/(e.mega?30:15)*_capAngelMul*acm; // 精英波次Boss
+    if(e.stageBoss===20)cap=e.mhp/(_isElite()?150:60)*_capAngelMul*acm;  // 💩：精英2.5分/經典1分
+    else if(e.stageBoss===30)cap=e.mhp/(_isElite()?240:90)*_capAngelMul*acm; // 😈：精英4分/經典1.5分
+    else if(_isElite())cap=e.mhp/(e.mega?30:15)*_capAngelMul*acm; // 精英/coop波次Boss
     else return; // 經典波次Boss不限制
     const taken=Math.max(0,e._secSnap-e.hp);
     if(taken>cap){e.hp=e._secSnap-cap;}
@@ -2648,6 +2809,35 @@ function loop(){
   cx.save();
   if(g.p._iFrameEnd>0&&now<g.p._iFrameEnd){cx.globalAlpha=Math.sin(now/30)*0.35+0.55;}
   cx.shadowColor=pCol;cx.shadowBlur=20;drawPlayer(g.p.x,g.p.y,PR,g.time/1000,pCol,g.p.face);cx.restore();
+  // P2 (co-op)
+  if(_isCoopMode&&g.p2){
+    cx.save();
+    if(g.p2._downed){cx.globalAlpha=.35;}
+    else if(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd){cx.globalAlpha=Math.sin(now/30)*.35+.55;}
+    cx.shadowColor="#F06595";cx.shadowBlur=20;drawPlayer(g.p2.x,g.p2.y,PR,g.time/1000,"#F06595",g.p2.face);cx.restore();
+    if(g.p2._downed){
+      cx.save();cx.font="bold 12px Nunito,sans-serif";cx.textAlign="center";
+      cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/200)*.4;
+      cx.fillText("💀 SOS",g.p2.x,g.p2.y-PR-10);cx.restore();
+    }
+    // P2 rescue progress
+    if(!g.p2._downed&&g.p._downed&&g.p._rescueTimer>0){
+      const pct=g.p._rescueTimer/3000;
+      cx.save();cx.strokeStyle="#51CF66";cx.lineWidth=3;cx.globalAlpha=.8;
+      cx.beginPath();cx.arc(g.p.x,g.p.y,PR+8,-.5*Math.PI,-.5*Math.PI+pct*Math.PI*2);cx.stroke();cx.restore();
+    }
+    if(!g.p._downed&&g.p2._downed&&g.p2._rescueTimer>0){
+      const pct=g.p2._rescueTimer/3000;
+      cx.save();cx.strokeStyle="#51CF66";cx.lineWidth=3;cx.globalAlpha=.8;
+      cx.beginPath();cx.arc(g.p2.x,g.p2.y,PR+8,-.5*Math.PI,-.5*Math.PI+pct*Math.PI*2);cx.stroke();cx.restore();
+    }
+  }
+  // P1 downed indicator
+  if(_isCoopMode&&g.p&&g.p._downed){
+    cx.save();cx.font="bold 12px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/200)*.4;
+    cx.fillText("💀 SOS",g.p.x,g.p.y-PR-10);cx.restore();
+  }
   // 過熱條：長按攻擊時顯示在主角下方
   if(g.heat>0&&!g.p._noOverheat){
     const heatPct=g.heat/HOLD_COOLDOWN_NEED;
@@ -2997,7 +3187,82 @@ function loop(){
   }
 
   hud();drawMinimap();
+  // Host: 每 2 幀送狀態給 Client
+  if(_isCoopMode&&_net&&_net.role==="host"&&_net.connected&&_net.conn&&_net.conn.open){
+    if(!g._syncFrame)g._syncFrame=0;
+    if(++g._syncFrame%2===0){_net.conn.send(serializeCoopState());}
+  }
   raf=requestAnimationFrame(loop);
+}
+
+/* ═══ Co-op Network Sync ═══ */
+function serializeCoopState(){
+  const cm=cam();
+  return{t:"state",
+    p1:{x:g.p.x,y:g.p.y,hp:g.p.hp,mhp:g.p.maxHp,face:g.p.face,_downed:g.p._downed,_iFrameEnd:g.p._iFrameEnd,_rescueTimer:g.p._rescueTimer||0},
+    p2:{x:g.p2.x,y:g.p2.y,hp:g.p2.hp,mhp:g.p2.maxHp,face:g.p2.face,_downed:g.p2._downed,_iFrameEnd:g.p2._iFrameEnd,_rescueTimer:g.p2._rescueTimer||0},
+    ene:g.ene.map(e=>({x:e.x,y:e.y,hp:e.hp,mhp:e.mhp,r:e.r,color:e.color,boss:e.boss,mega:e.mega,tier:e.tier,role:e.role,face:e.face,t:e.t,stageBoss:e.stageBoss,sbPhase:e.sbPhase,_coopShield:e._coopShield,_rage:e._rage,eliteEnemy:e.eliteEnemy,_eDashing:e._eDashing,_eShieldEnd:e._eShieldEnd})),
+    bul:g.bul.filter(b=>b.life>0).map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,crit:b.crit,life:b.life})),
+    ebul:g.ebul.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,life:b.life})),
+    dn:g.dn.map(d=>({x:d.x,y:d.y,d:d.d,life:d.life,color:d.color,big:d.big})),
+    orbs:g.orbs.map(o=>({x:o.x,y:o.y})),
+    wave:g.wave,level:g.level,score:g.score,kills:g.kills,
+    p2Lv:g.p2Level,p2Exp:g.p2Exp,p2ExpTo:g.p2ExpTo,
+    run:g.run
+  };
+}
+function applyCoopState(data){
+  if(!g)return;
+  // 更新雙方玩家
+  if(data.p1){Object.assign(g.p,data.p1);g.p.maxHp=data.p1.mhp;}
+  if(data.p2&&g.p2){Object.assign(g.p2,data.p2);g.p2.maxHp=data.p2.mhp;}
+  // 更新敵人
+  if(data.ene)g.ene=data.ene;
+  // 更新子彈
+  if(data.bul)g.bul=data.bul;
+  if(data.ebul)g.ebul=data.ebul;
+  // 傷害數字
+  if(data.dn)g.dn=data.dn;
+  // 經驗球
+  if(data.orbs)g.orbs=data.orbs;
+  // 遊戲資訊
+  if(data.wave!==undefined)g.wave=data.wave;
+  if(data.level!==undefined)g.level=data.level;
+  if(data.score!==undefined)g.score=data.score;
+  if(data.kills!==undefined)g.kills=data.kills;
+  if(data.p2Lv!==undefined)g.p2Level=data.p2Lv;
+  if(data.run===false){g.run=false;showOver();}
+}
+function clientRenderLoop(){
+  if(!g||!cv)return;
+  const now=g.time||performance.now();
+  const cm=cam();
+  cx.clearRect(0,0,VW,VH);cx.save();cx.translate(-cm.x,-cm.y);
+  // background
+  const tileS=80,sxT=Math.floor(cm.x/tileS),syT=Math.floor(cm.y/tileS);
+  const exT=Math.ceil((cm.x+VW)/tileS),eyT=Math.ceil((cm.y+VH)/tileS);
+  for(let ty=syT;ty<=eyT;ty++)for(let tx=sxT;tx<=exT;tx++){
+    cx.fillStyle=(tx+ty)%2===0?"#0d0d22":"#0a0a18";cx.fillRect(tx*tileS,ty*tileS,tileS,tileS);}
+  // enemies
+  g.ene.forEach(e=>{if(e.hp>0)drawEnemy(e);});
+  // bullets
+  g.bul.forEach(b=>{if(b.life>0){cx.fillStyle=b.crit?"#FFD43B":"#FFE066";cx.beginPath();cx.arc(b.x,b.y,BR,0,Math.PI*2);cx.fill();}});
+  // enemy bullets
+  g.ebul.forEach(b=>{cx.fillStyle=b.color||"#FF6B6B";cx.beginPath();cx.arc(b.x,b.y,4,0,Math.PI*2);cx.fill();});
+  // orbs
+  g.orbs.forEach(o=>{cx.fillStyle="#74C0FC";cx.globalAlpha=.7;cx.beginPath();cx.arc(o.x,o.y,4,0,Math.PI*2);cx.fill();cx.globalAlpha=1;});
+  // P1
+  cx.save();if(g.p._downed)cx.globalAlpha=.35;
+  cx.shadowColor="#74C0FC";cx.shadowBlur=20;drawPlayer(g.p.x,g.p.y,PR,now/1000,"#74C0FC",g.p.face);cx.restore();
+  // P2
+  if(g.p2){cx.save();if(g.p2._downed)cx.globalAlpha=.35;
+    cx.shadowColor="#F06595";cx.shadowBlur=20;drawPlayer(g.p2.x,g.p2.y,PR,now/1000,"#F06595",g.p2.face);cx.restore();}
+  // damage numbers
+  g.dn=g.dn.filter(d=>{d.life-=.025;return d.life>0;});
+  g.dn.forEach(d=>{cx.save();cx.globalAlpha=Math.min(1,d.life);cx.font=(d.big?"bold 15px":"bold 11px")+" 'Nunito',sans-serif";
+    cx.textAlign="center";cx.fillStyle=d.color||"#fff";cx.fillText(typeof d.d==="number"?"-"+d.d:d.d,d.x,d.y);cx.restore();});
+  cx.restore();
+  hud();drawMinimap();
 }
 
 /* ═══ CARD PICK ═══ */
