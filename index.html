@@ -207,8 +207,6 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 </div>
 
 </div>
-<!-- 設定鍵：放在 #app 外面避免被遮擋 -->
-<button id="settingsBtn" onclick="openSettings()" style="position:fixed;top:6px;right:6px;z-index:9999;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation;pointer-events:auto;transition:background .2s">⚙️</button>
 <script>
 (function(){"use strict";
 /* ═══════════════ CONFIG ═══════════════ */
@@ -446,7 +444,7 @@ function updateToggleUI(){
     knob.style.left=_muted?"3px":"27px";
   }
 }
-function openSettings(){
+window.openSettings=function(){
   if(_settingsOpen)return;
   _settingsOpen=true;
   // 暫停遊戲
@@ -456,7 +454,7 @@ function openSettings(){
   const ov=document.getElementById("settingsOv");
   ov.style.display="flex";
 }
-function closeSettings(){
+window.closeSettings=function(){
   if(!_settingsOpen)return;
   _settingsOpen=false;
   document.getElementById("settingsOv").style.display="none";
@@ -466,7 +464,7 @@ function closeSettings(){
     g.run=true;g.lf=n;g.lS=n;g.laF=n;
   }
 }
-function settingsGoHome(){
+window.settingsGoHome=function(){
   if(!_settingsOpen)return;
   _settingsOpen=false;
   _wasRunning=false;
@@ -4341,5 +4339,7 @@ function uK(){let dx=0,dy=0;
 document.addEventListener("gesturestart",e=>e.preventDefault());document.addEventListener("dblclick",e=>e.preventDefault());
 })();
 </script>
+<!-- 設定鍵：放在所有元素最後，確保不被遮擋 -->
+<button id="settingsBtn" onclick="openSettings()" style="position:fixed;top:6px;right:6px;z-index:99999;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation;pointer-events:auto;transition:background .2s">⚙️</button>
 </body>
 </html>
