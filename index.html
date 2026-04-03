@@ -101,7 +101,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.62</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.01</div>
 </div>
 </div>
 
@@ -233,6 +233,8 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
     <button onclick="pracSpawn()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:#51CF66;color:#000;font-weight:700;border:none;cursor:pointer">▶出怪</button>
     <button onclick="pracClear()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:#FF6B6B;color:#fff;font-weight:700;border:none;cursor:pointer">清場</button>
     <button id="pracHpBtn" onclick="pracToggleHp()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,107,107,.2);color:#FF6B6B;font-weight:700;border:1px solid rgba(255,107,107,.3);cursor:pointer">❤️無限血量</button>
+    <button id="pracCoopBtn" onclick="pracToggleCoop()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🤝雙人(AI)</button>
+    <button id="pracRoomBtn" onclick="pracCoopRoom()" style="display:none;padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🔗房間</button>
     <button onclick="exitPractice()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,255,255,.15);color:#fff;font-weight:700;border:none;cursor:pointer">退出練習</button>
   </div>
   <!-- 左側卡片抽屜 -->
@@ -250,7 +252,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 <script>
 (function(){"use strict";
 /* ═══════════════ CONFIG ═══════════════ */
-const VW=400,VH=700; // viewport
+let VW=400,VH=700; // viewport (動態：橫屏時交換)
 function _isElite(){return _mode==="elite"||_mode==="coop";} // coop 共用 elite 邏輯
 const MW=1900,MH=1900; // map size (smaller for higher pressure)
 const PR=18,ER=16,BR=5,PS=4.5;
@@ -463,6 +465,7 @@ let raf,cTimer,ultCastTimer=null;
 /* ═══ Co-op Networking ═══ */
 let _net=null; // {role:"host"|"client", peer:Peer, conn:DataConnection, roomCode:string, connected:bool}
 let _isCoopMode=false;
+let _p2AI=false; // P2 由 AI 控制
 let _p2Input={dx:0,dy:0,a:0,aimA:0,aimDx:0,aimDy:0,ult:false,dodge:false,pick:-1};
 let inv2=[]; // P2 卡片庫存
 let _bgm=null;
@@ -798,7 +801,15 @@ function nearestPlayer(e){if(!_isCoopMode||!g.p2||g.p2._downed)return g.p;if(g.p
 function bothPlayers(){return(_isCoopMode&&g.p2)?[g.p,g.p2]:[g.p];}
 
 /* ═══ resize ═══ */
-function resize(){const s=Math.min(window.innerWidth/VW,window.innerHeight/VH,2),cw=VW*s,ch=VH*s;
+function resize(){
+  const isLand=window.innerWidth>window.innerHeight;
+  const newVW=isLand?700:400,newVH=isLand?400:700;
+  if(VW!==newVW||VH!==newVH){
+    VW=newVW;VH=newVH;
+    if(cv){cv.width=VW;cv.height=VH;}
+    if(fxc){fxc.width=VW;fxc.height=VH;}
+  }
+  const s=Math.min(window.innerWidth/VW,window.innerHeight/VH,2),cw=VW*s,ch=VH*s;
   const ox=Math.floor((window.innerWidth-cw)/2),oy=Math.floor((window.innerHeight-ch)/2);
   [cv,fxc].forEach(c=>{if(c){c.style.width=cw+"px";c.style.height=ch+"px";c.style.left=ox+"px";c.style.top=oy+"px";}});
   $("minimap").style.display=g?"block":"none";
@@ -1657,6 +1668,37 @@ function loop(){
       if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*.5*dt;g.p2.y+=p2i.dy*.5*dt;} // 倒地爬行
     }
     g.p2.x=cl(g.p2.x,PR+4,mapW()-PR-4);g.p2.y=cl(g.p2.y,PR+4,mapH()-PR-4);
+  }
+  // AI P2 行為
+  if(_p2AI&&g.p2&&!g.p2._downed&&_isCoopMode){
+    // 找最近敵人
+    let aiTarget=null,aiDist=1e9;
+    g.ene.forEach(e=>{if(e.hp<=0||e.ragePoo)return;const d=di(g.p2,e);if(d<aiDist){aiDist=d;aiTarget=e;}});
+    if(aiTarget){
+      // 追敵人但保持 80px 距離
+      const adx=aiTarget.x-g.p2.x,ady=aiTarget.y-g.p2.y,ad=Math.sqrt(adx*adx+ady*ady)||1;
+      if(aiDist>100){g.p2.x+=adx/ad*g.p2.speed*dt*.8;g.p2.y+=ady/ad*g.p2.speed*dt*.8;}
+      else if(aiDist<50){g.p2.x-=adx/ad*g.p2.speed*dt*.5;g.p2.y-=ady/ad*g.p2.speed*dt*.5;}
+      if(Math.abs(adx)>.2)g.p2.face=adx>0?1:-1;
+      // AI 自動射擊
+      _p2Input.aimA=1;
+    }else{
+      // 沒敵人：跟隨 P1，保持 60px
+      const fdx=g.p.x-g.p2.x,fdy=g.p.y-g.p2.y,fd=Math.sqrt(fdx*fdx+fdy*fdy)||1;
+      if(fd>80){g.p2.x+=fdx/fd*g.p2.speed*dt*.6;g.p2.y+=fdy/fd*g.p2.speed*dt*.6;}
+      _p2Input.aimA=0;
+    }
+    g.p2.x=cl(g.p2.x,PR+4,mapW()-PR-4);g.p2.y=cl(g.p2.y,PR+4,mapH()-PR-4);
+    // AI 倒地時靠近 P1 求救
+    if(g.p2._downed&&!g.p._downed){
+      const rdx=g.p.x-g.p2.x,rdy=g.p.y-g.p2.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
+      g.p2.x+=rdx/rd*.5*dt;g.p2.y+=rdy/rd*.5*dt;
+    }
+    // P1 倒地時 AI 去救
+    if(g.p._downed&&!g.p2._downed){
+      const rdx=g.p.x-g.p2.x,rdy=g.p.y-g.p2.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
+      if(rd>30){g.p2.x+=rdx/rd*g.p2.speed*dt;g.p2.y+=rdy/rd*g.p2.speed*dt;}
+    }
   }
 
   // heat system
@@ -4797,6 +4839,55 @@ window.exitPractice=function(){
   $("pracEnemies").style.display="none";
   $("pracStats").style.display="none";
   show("title");
+  _isCoopMode=false;_p2AI=false;
+  if(_net&&_net.peer){_net.peer.destroy();_net=null;}
+};
+window.pracToggleCoop=function(){
+  _isCoopMode=!_isCoopMode;
+  _p2AI=_isCoopMode;
+  const btn=$("pracCoopBtn"),rbtn=$("pracRoomBtn");
+  if(_isCoopMode){
+    btn.textContent="🤝雙人(ON)";btn.style.background="rgba(240,101,149,.4)";btn.style.color="#fff";
+    rbtn.style.display="inline-block";
+    // 初始化 P2
+    if(g&&!g.p2){
+      const MC=MODE[_mode];
+      g.p2={x:g.p.x+50,y:g.p.y,hp:99999,maxHp:99999,atk:30,speed:MC.startSpeed||5,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:99,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,hasBH:false,hasTS:false,ultLv:0,pierce:0,homing:0,homingR:200,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,bossDmg:1,mobDmg:1,poisonBossMul:1,burnBoost:1,crateVis:1,mapExpand:0,pickCount:2,face:-1,_iFrameEnd:0,_healFlash:0,heavyEvery:0,_heavyCount:0,ultCdReduce:0,_downed:false,_rescueTimer:0,_downedTime:0,_pickPending:false,contactCap:100,_dodgeCD:0,_mgFireT:0,_mgBerserkEnd:0,levelDmgMul:1,armorCapBonus:0};
+      g.p._downed=false;g.p._rescueTimer=0;
+      inv2=[];g.p2Level=1;g.p2Exp=0;g.p2ExpTo=100;
+    }
+  }else{
+    btn.textContent="🤝雙人(AI)";btn.style.background="rgba(240,101,149,.15)";btn.style.color="#F06595";
+    rbtn.style.display="none";
+    _p2AI=false;
+    if(g)g.p2=null;
+    if(_net&&_net.peer){_net.peer.destroy();_net=null;}
+  }
+};
+window.pracCoopRoom=function(){
+  // 練習模式開房間讓對方加入
+  if(!_isCoopMode)return;
+  const code=prompt("輸入房間密碼（留空隨機）：")||"";
+  const roomCode=code.trim().length>=2?code.trim():_coopGenCode();
+  const peer=new Peer(roomCode,{debug:0});
+  _net={role:"host",peer,conn:null,roomCode,connected:false};
+  _p2AI=true; // 先用 AI，等對方加入後切換
+  peer.on("open",()=>{
+    g.dn.push({x:g.p.x,y:g.p.y-40,d:"🔗 房間："+roomCode+" 等待加入...",life:4,color:"#F06595",big:1});
+    $("pracRoomBtn").textContent="🔗"+roomCode;
+  });
+  peer.on("connection",conn=>{
+    _net.conn=conn;
+    conn.on("open",()=>{
+      _net.connected=true;_p2AI=false; // 對方加入，關閉 AI
+      g.dn.push({x:g.p.x,y:g.p.y-40,d:"✅ 對方已加入！",life:3,color:"#51CF66",big:1});
+      $("pracRoomBtn").textContent="✅已連線";
+      conn.on("data",data=>{
+        if(data&&data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;}
+      });
+      conn.on("close",()=>{_net.connected=false;_p2AI=true;g.dn.push({x:g.p.x,y:g.p.y-40,d:"⚠️ 對方已離線，切換 AI",life:3,color:"#FF6B6B",big:1});});
+    });
+  });
 };
 
 window.startGame=window.SG=function(mode){
@@ -4804,7 +4895,8 @@ window.startGame=window.SG=function(mode){
   sfxCtx();bgmPlay();
   if(_titleUltTimer){clearTimeout(_titleUltTimer);_titleUltTimer=null;}
   cv=$("cv");cx=cv.getContext("2d");fxc=$("fx");fxctx=fxc.getContext("2d");
-  cv.width=fxc.width=VW;cv.height=fxc.height=VH;resize();
+  resize(); // 先偵測方向更新 VW/VH
+  cv.width=fxc.width=VW;cv.height=fxc.height=VH;
   resetSessionUi();
   cx.fillStyle="#0a0a18";cx.fillRect(0,0,VW,VH);
   const _mw=MC.mapW||MW,_mh=MC.mapH||MH;
