@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.56</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.57</div>
 </div>
 </div>
 
@@ -2332,7 +2332,7 @@ function loop(){
   par=par.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=.03*dt;p.sz*=.98;return p.life>0;});
   g.dn=g.dn.filter(d=>{
     if(d._arc||(d.color==="#fff"&&typeof d.d==="number")||(d._playerDmg)){
-      if(!d._arc){d._arc=1;d.vx=rn(-1.2,1.2);d.vy=rn(-3.2,-2.4);d.g=.22;}
+      if(!d._arc){d._arc=1;d.vx=rn(-.5,.5);d.vy=rn(-3.2,-2.4);d.g=.16;}
       d.x+=d.vx*dt;d.vy+=d.g*dt;d.y+=d.vy*dt;
     }else d.y-=1.1*dt;
     d.life-=.025*dt;
