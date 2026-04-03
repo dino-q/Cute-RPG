@@ -125,7 +125,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.21</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.23</div>
 </div>
 </div>
 
@@ -157,7 +157,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
       <div style="font-size:7px;color:#51CF66;margin-top:3px">🛡️ 嘲諷</div>
     </div>
   </div>
-  <button onclick="$('charSelectOv').style.display='none';$('titleOv').style.display='flex'" style="margin-top:14px;padding:6px 16px;font-size:10px;border:none;border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);cursor:pointer">← 返回</button>
+  <button onclick="document.getElementById('charSelectOv').style.display='none';document.getElementById('titleOv').style.display='flex'" style="margin-top:14px;padding:8px 24px;font-size:12px;border:none;border-radius:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);cursor:pointer;touch-action:manipulation">← 返回</button>
 </div>
 </div>
 
@@ -1252,12 +1252,17 @@ function drawPlayer(x,y,r,t,col,face){
     cx.beginPath();cx.arc(x,cy,r,0,TAU);cx.fillStyle=bg;cx.fill();
     cx.strokeStyle="rgba(255,255,255,.12)";cx.lineWidth=1;cx.stroke();
     // headband
-    cx.save();cx.strokeStyle="#FF922B";cx.lineWidth=2.5;cx.globalAlpha=.8;
-    cx.beginPath();cx.arc(x,cy-1,r+1,-PI*.8,-PI*.55);cx.stroke();
-    const hbx=x-f*r*.8,hby=cy-r*.5;
-    cx.lineWidth=1.8;cx.lineCap="round";
+    cx.save();cx.strokeStyle="#FF922B";cx.lineWidth=3;cx.globalAlpha=.85;
+    cx.shadowColor="#FF922B";cx.shadowBlur=6;
+    cx.beginPath();cx.arc(x,cy-1,r+1.5,-PI*.75,-PI*.42);cx.stroke();
+    const hbx=x-f*r*.85,hby=cy-r*.55;
+    cx.lineWidth=2.2;cx.lineCap="round";
     cx.beginPath();cx.moveTo(hbx,hby);
-    cx.quadraticCurveTo(hbx-f*8,hby+4+Math.sin(t*4)*3,hbx-f*14,hby+9+Math.sin(t*3)*4);
+    cx.quadraticCurveTo(hbx-f*10,hby+5+Math.sin(t*4)*4,hbx-f*16,hby+10+Math.sin(t*3)*5);
+    cx.stroke();
+    cx.lineWidth=1.5;
+    cx.beginPath();cx.moveTo(hbx-f*1,hby+2);
+    cx.quadraticCurveTo(hbx-f*8,hby+8+Math.sin(t*3.5)*3,hbx-f*13,hby+14+Math.sin(t*2.8)*4);
     cx.stroke();cx.restore();
   } else {
     // ─── 坦克：身體 + 盾（盾擊推出動畫）───
@@ -1684,7 +1689,8 @@ function fire(dmg,dx,dy,sp,p){
   });
 }
 function spawn(boss,opts={}){
-  if(!g||g.ene.length>=(MODE[_mode].maxEnemies||MAX_ENEMIES))return;
+  if(!g)return;
+  if(!_practiceMode&&g.ene.length>=(MODE[_mode].maxEnemies||MAX_ENEMIES))return;
   const w=g.wave,tier=opts.tier??pickEnemyTier(w,boss);
   const mega=!!opts.mega;
   const grow=enemyGrowth(w);
@@ -1865,20 +1871,33 @@ function swordSwing(){
   // 殘影斬：延遲 150ms 再打一次（殘影）
   if(g.p._ghostSlash){
     const gsMul=g.p._ghostSlash;
+    const _gsX=g.p.x,_gsY=g.p.y,_gsF=g.p.face;
+    // 殘影剪影（記錄位置，渲染區畫半透明角色）
+    g._ghostShadow={x:_gsX,y:_gsY,face:_gsF,life:1,t:performance.now()};
     setTimeout(()=>{
       if(!g||!g.run)return;
-      // 殘影粒子（紫色半透明劍形）
-      for(let gi=0;gi<5;gi++){const a=atkAngle+rn(-.3,.3);par.push({x:g.p.x+Math.cos(a)*rn(10,30),y:g.p.y+Math.sin(a)*rn(10,30),vx:Math.cos(a)*2,vy:Math.sin(a)*2,life:.4,color:"#DA77F2",sz:rn(2,4)});}
+      // 紫色粒子爆發（2層環）
+      for(let ring=0;ring<2;ring++){
+        const cnt=8+ring*4,spd=2+ring*1.5;
+        for(let gi=0;gi<cnt;gi++){
+          const a=atkAngle+TAU*gi/cnt+ring*.2;
+          par.push({x:_gsX+Math.cos(a)*(10+ring*8),y:_gsY+Math.sin(a)*(10+ring*8),
+            vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:.5+ring*.1,
+            color:gi%3===0?"#fff":gi%3===1?"#DA77F2":"#BE4BDB",sz:rn(2,4+ring)});
+        }
+      }
+      // 紫色斬擊弧
+      g._ghostArc={x:_gsX,y:_gsY,ang:atkAngle,t:performance.now()};
       g.ene.forEach(e=>{
         if(e.hp<=0)return;
-        const dx2=e.x-g.p.x,dy2=e.y-g.p.y,d2=Math.sqrt(dx2*dx2+dy2*dy2);
+        const dx2=e.x-_gsX,dy2=e.y-_gsY,d2=Math.sqrt(dx2*dx2+dy2*dy2);
         if(d2>range)return;
         const ea2=Math.atan2(dy2,dx2);
         let da2=Math.abs(((ea2-atkAngle)%(PI*2)+PI*3)%(PI*2)-PI);
         if(da2>arc)return;
         const gd=dmg*gsMul;e.hp-=gd;
-        burst(e.x,e.y,"#DA77F2",3);
-        g.dn.push({x:e.x+rn(-6,6),y:e.y-e.r-5,d:Math.floor(gd),life:.8,color:"#DA77F2"});
+        burst(e.x,e.y,"#DA77F2",5);
+        g.dn.push({x:e.x+rn(-6,6),y:e.y-e.r-5,d:Math.floor(gd),life:.8,color:"#DA77F2",big:1});
       });
     },150);
   }
@@ -1938,9 +1957,15 @@ function shieldBash(){
     // 精英怪物抗（近戰至少 1 傷害）
     if(e.eliteEnemy){const hasEl=!!(g.p.fx.fire||g.p.fx.ice||g.p.fx.lightning||g.p.fx.poison||g.p.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
     e.hp-=fd;
-    // 擊退
-    const pushDist=d>0?30/d:0;
-    e.x+=dx*pushDist;e.y+=dy*pushDist;
+    // 擊退（明顯推開+retreat）
+    if(!e.stageBoss){
+      const pushF=e.boss?35:70; // Boss 35px，小怪 70px
+      if(d>0){e.x+=dx/d*pushF;e.y+=dy/d*pushF;}
+      e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
+      e._retreatEnd=now+800; // 被擊退後 0.8 秒不追玩家
+      // 擊退視覺：白色衝擊線
+      par.push({x:e.x-dx/d*10,y:e.y-dy/d*10,vx:dx/d*3,vy:dy/d*3,life:.3,color:"#fff",sz:rn(2,3.5)});
+    }
     e.st=Math.max(e.st||0,1000);
     // 元素效果
     const fx=g.p.fx;
@@ -2034,7 +2059,7 @@ function skillSnipe(now){
   setTimeout(()=>{
     if(!g||!g.run)return;
     const bm=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;
-    const dmg=(3.5+g.p.atk)*2.5*bm; // 狙擊高傷害
+    const dmg=(3.5+g.p.atk)*2.5*bm*(g.p.ultDmgMul||1); // 狙擊高傷害+大招增幅
     sfxShoot();sfx("ult");
     const ba2=Math.atan2(g.ad.y,g.ad.x);
     g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(ba2)*12,vy:Math.sin(ba2)*12,dmg:dmg*PLAYER_DMG_SCALE,life:1,crit:true,bc:{f:"#FFD43B",g:"#FF922B",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0});
@@ -2050,35 +2075,46 @@ function skillSnipe(now){
 
 // 劍士：鬼斬（旋風斬+位移 兩倍距離+殘影）
 function skillGhostSlash(now){
-  const dmg=(3.5+g.p.atk)*2*(g.p.elemBoost||1)*(g.p.levelDmgMul||1);
+  const dmg=(3.5+g.p.atk)*2*(g.p.elemBoost||1)*(g.p.levelDmgMul||1)*(g.p.ultDmgMul||1);
   const dashDist=PR*8;
-  const dx=g.ad.x,dy=g.ad.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+  // 方向鍵控制衝刺方向，沒按方向鍵則用面朝方向
+  const _joyActive=joy.a&&(joy.dx||joy.dy);
+  const dx=_joyActive?joy.dx:(g.p.face||1),dy=_joyActive?joy.dy:0;
+  const d=Math.sqrt(dx*dx+dy*dy)||1;
   const ndx=dx/d,ndy=dy/d;
   sfxShoot();
   const startX=g.p.x,startY=g.p.y;
+  const endX=cl(startX+ndx*dashDist,PR+4,mapW()-PR-4);
+  const endY=cl(startY+ndy*dashDist,PR+4,mapH()-PR-4);
   const hitRange=PR*4;
-  g.ene.forEach(e=>{
-    if(e.hp<=0)return;
-    const ex2=e.x-startX,ey2=e.y-startY;
-    const proj=ex2*ndx+ey2*ndy;
-    if(proj<-hitRange||proj>dashDist+hitRange)return;
-    const perp=Math.abs(ex2*ndy-ey2*ndx);
-    if(perp>hitRange)return;
-    let fd=dmg;
-    if(!e.boss&&!e.stageBoss)fd+=e.mhp*.1; // 非Boss額外扣10%最大HP
-    if(e.boss&&e.bossType==="armor")fd*=.7;
-    if(g.p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+g.p.iceFrag);
-    e.hp-=fd;e.st=Math.max(e.st||0,1200);
-    const fx=g.p.fx;
-    if(fx.fire){e.burnT=Math.max(e.burnT||0,2000);e.burnLv=Math.max(fx.fire||0,1);}
-    if(fx.poison&&g.p.poison>0){e.poisonT=g.p.poison*1000;e.poisonLv=Math.max(fx.poison||0,1);}
-    burst(e.x,e.y,"#FF922B",8);
-    g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:"#FFD43B",big:1});
-  });
-  g.p.x=cl(startX+ndx*dashDist,PR+4,mapW()-PR-4);
-  g.p.y=cl(startY+ndy*dashDist,PR+4,mapH()-PR-4);
-  g.p._iFrameEnd=now+300; // 只用 i-frame，不設 _inv（避免卡住天使之翼）
+  // 衝刺開始即無敵（衝刺 200ms + 結束後 300ms = 共 500ms）
+  g.p._iFrameEnd=now+500;
+  // 衝刺動畫（200ms 漸進移動）
+  g.p._gsDash={startX,startY,endX,endY,startT:now,dur:200};
+  // 殘影
   for(let i=0;i<6;i++){const p=i/5;_dashGhosts.push({x:startX+ndx*dashDist*p,y:startY+ndy*dashDist*p,face:g.p.face,life:1});}
+  // 延遲到衝刺中段再造傷害（100ms，衝刺一半時）
+  setTimeout(()=>{
+    if(!g||!g.run)return;
+    g.ene.forEach(e=>{
+      if(e.hp<=0)return;
+      const ex2=e.x-startX,ey2=e.y-startY;
+      const proj=ex2*ndx+ey2*ndy;
+      if(proj<-hitRange||proj>dashDist+hitRange)return;
+      const perp=Math.abs(ex2*ndy-ey2*ndx);
+      if(perp>hitRange)return;
+      let fd=dmg;
+      if(!e.boss&&!e.stageBoss)fd+=e.mhp*.1;
+      if(e.boss&&e.bossType==="armor")fd*=.7;
+      if(g.p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+g.p.iceFrag);
+      e.hp-=fd;e.st=Math.max(e.st||0,1200);
+      const fx=g.p.fx;
+      if(fx.fire){e.burnT=Math.max(e.burnT||0,2000);e.burnLv=Math.max(fx.fire||0,1);}
+      if(fx.poison&&g.p.poison>0){e.poisonT=g.p.poison*1000;e.poisonLv=Math.max(fx.poison||0,1);}
+      burst(e.x,e.y,"#FF922B",8);
+      g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:"#FFD43B",big:1});
+    });
+  },100);
   for(let i=0;i<16;i++){const a=PI*2*i/16;par.push({x:g.p.x+Math.cos(a)*15,y:g.p.y+Math.sin(a)*15,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:.6,color:i%2?"#FF922B":"#FFD43B",sz:rn(2,5)});}
   g.dn.push({x:g.p.x,y:g.p.y-30,d:"⚔️ 鬼斬",life:1.2,color:"#FF922B",big:1});
   if(!g._atkAnim)g._atkAnim={active:false,startT:0};g._atkAnim.active=true;g._atkAnim.startT=performance.now();
@@ -2092,7 +2128,8 @@ function skillTaunt(now){
     e._tauntEnd=now+3000;e.st=0;
     g.dn.push({x:e.x,y:e.y-e.r-8,d:"⚠️",life:1,color:"#FF6B6B",big:1});
   });
-  g.p._tauntAtkEnd=now+3000;g.p._tauntAtkBonus=2;g.p.atk+=2;
+  const _tauntBonus=Math.floor(2*(g.p.ultDmgMul||1)); // 大招增幅強化嘲諷攻擊加成
+  g.p._tauntAtkEnd=now+3000;g.p._tauntAtkBonus=_tauntBonus;g.p.atk+=_tauntBonus;
   // 大範圍擴散粒子（4層環，更多更遠）
   for(let ring=0;ring<4;ring++){
     const rOff=ring*8,spd=4+ring*2.5,cnt=14+ring*6;
@@ -2324,8 +2361,16 @@ function loop(){
   const bhSafe=!!(g.p.bhSafeEnd&&now<g.p.bhSafeEnd);
   fxQ=frameMs>24?Math.max(.45,fxQ-.05):Math.min(1,fxQ+.02);
 
+  // 鬼斬衝刺動畫
+  if(g.p._gsDash){
+    const gd=g.p._gsDash,gp=Math.min(1,(now-gd.startT)/gd.dur);
+    const ease=gp<.5?2*gp*gp:1-Math.pow(-2*gp+2,2)/2; // easeInOut
+    g.p.x=gd.startX+(gd.endX-gd.startX)*ease;
+    g.p.y=gd.startY+(gd.endY-gd.startY)*ease;
+    if(gp>=1)g.p._gsDash=null;
+  }
   // move P1
-  if(!g.p._downed){
+  if(!g.p._gsDash&&!g.p._downed){
     if(joy.a){g.p.x+=joy.dx*g.p.speed*dt;g.p.y+=joy.dy*g.p.speed*dt;if(Math.abs(joy.dx)>.2)g.p.face=joy.dx>0?1:-1;}
   }else if(g.p._downed&&joy.a){
     g.p.x+=joy.dx*.5*dt;g.p.y+=joy.dy*.5*dt; // 倒地爬行
@@ -3766,6 +3811,28 @@ function loop(){
       cx.fillText("🃏 挑卡中...",g.p2.x,g.p2.y-PR-18);cx.restore();
     }
   }
+  // 殘影斬：殘影剪影
+  if(g._ghostShadow&&g._ghostShadow.life>0){
+    const gs=g._ghostShadow;gs.life-=.04;
+    cx.save();cx.globalAlpha=gs.life*.35;
+    cx.shadowColor="#DA77F2";cx.shadowBlur=12;
+    drawPlayer(gs.x,gs.y,PR,performance.now()/1000,"#DA77F2",gs.face);
+    cx.shadowBlur=0;cx.restore();
+    if(gs.life<=0)g._ghostShadow=null;
+  }
+  // 殘影斬：紫色斬擊弧
+  if(g._ghostArc){
+    const ga=g._ghostArc,gel=performance.now()-ga.t;
+    if(gel<250){
+      const gp=gel/250;
+      cx.save();cx.globalAlpha=(1-gp)*.6;cx.strokeStyle="#DA77F2";cx.lineWidth=3*(1-gp);
+      cx.shadowColor="#DA77F2";cx.shadowBlur=8;
+      cx.beginPath();cx.arc(ga.x,ga.y,PR*2.5,ga.ang-PI*.4+gp*.3,ga.ang+PI*.4-gp*.1);cx.stroke();
+      cx.strokeStyle="#fff";cx.lineWidth=1.5*(1-gp);
+      cx.beginPath();cx.arc(ga.x,ga.y,PR*2,ga.ang-PI*.3+gp*.2,ga.ang+PI*.3-gp*.05);cx.stroke();
+      cx.shadowBlur=0;cx.restore();
+    }else{g._ghostArc=null;}
+  }
   // 劍士揮劍弧線 / 坦克盾擊衝擊波
   if(g._wbSwing>0&&g.charType!=="gunner"){
     const sw=g._wbSwing,aa=Math.atan2(g.ad.y,g.ad.x);
@@ -3780,12 +3847,21 @@ function loop(){
       cx.globalAlpha=sw*.35;cx.strokeStyle="#fff";cx.lineWidth=1.5*sw;cx.shadowBlur=0;
       cx.beginPath();cx.arc(g.p.x,g.p.y,swR*.75,aa-swArc*.4,aa+swArc*.4);cx.stroke();
     }else if(g.charType==="tank"){
-      // 綠色衝擊波扇形
-      const swArc=PI*.5,swR=PR*2.5*(1-sw*.2);
-      cx.globalAlpha=sw*.5;cx.fillStyle="rgba(81,207,102,.25)";
+      // 綠色衝擊波扇形（盾擊範圍 + 基礎震波範圍）
+      const swArc=PI*.6,swR=PR*5*(1-sw*.2); // 大範圍
+      // 外層半透明填充（震波範圍）
+      cx.globalAlpha=sw*.2;cx.fillStyle="rgba(81,207,102,.15)";
       cx.beginPath();cx.moveTo(g.p.x,g.p.y);cx.arc(g.p.x,g.p.y,swR,aa-swArc/2,aa+swArc/2);cx.closePath();cx.fill();
-      cx.strokeStyle="#51CF66";cx.lineWidth=2.5*sw;cx.shadowColor="#51CF66";cx.shadowBlur=6*sw;
+      // 內層較亮填充（盾擊範圍）
+      const swR2=PR*3.5*(1-sw*.2);
+      cx.globalAlpha=sw*.4;cx.fillStyle="rgba(81,207,102,.3)";
+      cx.beginPath();cx.moveTo(g.p.x,g.p.y);cx.arc(g.p.x,g.p.y,swR2,aa-swArc/2,aa+swArc/2);cx.closePath();cx.fill();
+      // 外環邊框
+      cx.strokeStyle="#51CF66";cx.lineWidth=3*sw;cx.shadowColor="#51CF66";cx.shadowBlur=8*sw;
       cx.beginPath();cx.arc(g.p.x,g.p.y,swR,aa-swArc/2,aa+swArc/2);cx.stroke();
+      // 內環邊框
+      cx.globalAlpha=sw*.5;cx.lineWidth=2*sw;cx.shadowBlur=0;
+      cx.beginPath();cx.arc(g.p.x,g.p.y,swR2,aa-swArc/2,aa+swArc/2);cx.stroke();
     }
     cx.shadowBlur=0;cx.restore();
   }
@@ -6071,6 +6147,8 @@ window.addEventListener("mouseup",()=>endUltPress());
 // 閃避按鈕
 $("dodgeBtn").addEventListener("touchstart",e=>{e.preventDefault();e.stopPropagation();doDodge();},{passive:false});
 $("dodgeBtn").addEventListener("click",e=>{e.preventDefault();doDodge();});
+$("skillBtn").addEventListener("touchstart",e=>{e.preventDefault();e.stopPropagation();useCharSkill();},{passive:false});
+$("skillBtn").addEventListener("click",e=>{e.preventDefault();useCharSkill();});
 
 // global touchmove — always fires, handles both joysticks
 document.addEventListener("touchmove",e=>{
