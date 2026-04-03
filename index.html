@@ -94,7 +94,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/WASD 移動，右搖桿/Space 射擊，長壓E/💎 集氣放大招
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.51</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v4.52</div>
 </div>
 </div>
 
@@ -141,8 +141,6 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 <div class="panel" id="overPanel"></div>
 </div>
 
-<!-- 設定鍵 -->
-<button id="settingsBtn" onclick="openSettings()" style="position:fixed;top:6px;right:6px;z-index:9999;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation;pointer-events:auto;transition:background .2s">⚙️</button>
 <!-- 設定面板 -->
 <div id="settingsOv" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;touch-action:manipulation" onclick="if(event.target===this)closeSettings()">
 <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:18px;padding:24px 28px;min-width:260px;max-width:320px;border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 32px rgba(0,0,0,.5)">
@@ -209,6 +207,8 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 </div>
 
 </div>
+<!-- 設定鍵：放在 #app 外面避免被遮擋 -->
+<button id="settingsBtn" onclick="openSettings()" style="position:fixed;top:6px;right:6px;z-index:9999;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation;pointer-events:auto;transition:background .2s">⚙️</button>
 <script>
 (function(){"use strict";
 /* ═══════════════ CONFIG ═══════════════ */
@@ -1496,8 +1496,7 @@ function loop(){
   g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
 
   // heat system
-  if(g.heatCD>0){g.heatCD-=dt*16.67;if(g.heatCD<=0){g.heatCD=0;g.heat=0;$("combo").textContent="";}
-    else{const sec=Math.ceil(g.heatCD/1000);$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FF6B6B,#C92A2A);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;letter-spacing:.5px;box-shadow:0 0 14px #FF6B6Baa;animation:gw .65s infinite">🔥 攻擊冷卻 '+sec+'s</span>';}}
+  if(g.heatCD>0){g.heatCD-=dt*16.67;if(g.heatCD<=0){g.heatCD=0;g.heat=0;}}
   else if(g.huntModeUntil&&now<g.huntModeUntil){$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FA5252,#C92A2A);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;box-shadow:0 0 14px #FA5252aa;animation:gw .55s infinite">⚠️ 獵殺模式</span>';}
   else if(g._cw&&g._cw.raged&&g.ene.some(e=>e._rage&&e._rageDashes<3)){$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FA5252,#C92A2A);border:1px solid #FFA8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;box-shadow:0 0 14px #FA5252aa;animation:gw .55s infinite">⚠️ 獵殺模式</span>';}
 
@@ -1509,9 +1508,9 @@ function loop(){
   }else g.ultHold=false;
   if(!g.heatCD&&aim.a&&!g.p._noOverheat){g.heat=Math.min(HOLD_COOLDOWN_NEED,g.heat+dt*16.67);}
   else if(g.heat>0&&!aim.a){g.heat=Math.max(0,g.heat-dt*40);}
-  if(g.heat>=HOLD_COOLDOWN_NEED&&!g.heatCD&&!g.p._noOverheat){g.heatCD=500;g.heat=HOLD_COOLDOWN_NEED;}
-  // 快過熱預警（75%以上，combo區顯示橘色提示）
-  if(!g.heatCD&&g.heat/HOLD_COOLDOWN_NEED>.75&&!g.p._noOverheat){$("combo").innerHTML='<span style="display:inline-block;color:#fff;background:linear-gradient(135deg,#FF922B,#E8590C);border:1px solid #FFD8A8;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:900;box-shadow:0 0 10px #FF922Baa;animation:gw .7s infinite">🔥 過熱警告</span>';}
+  if(g.heat>=HOLD_COOLDOWN_NEED&&!g.heatCD&&!g.p._noOverheat){g.heatCD=700;g.heat=HOLD_COOLDOWN_NEED;}
+  // 快過熱預警：標記給繪圖階段在主角頭上顯示
+  g._heatWarn=(!g.heatCD&&g.heat/HOLD_COOLDOWN_NEED>.75&&!g.p._noOverheat);
 
   // 閃電步 dash movement + afterimage
   if(g.p._dashEnd&&now<g.p._dashEnd){
@@ -1588,8 +1587,8 @@ function loop(){
   if(g._stageBossActive&&_stageBoss&&_stageBoss.hp>0)updateStageBoss(_stageBoss,now,dt);
   // checkStageBossDeath 移到 DPS cap 之後，避免 cap 回血前 Boss 被判定死亡
 
-  // 練習模式：鎖血 + 跳過自動出怪/升級
-  if(_practiceMode){g.p.hp=99999;g.p.maxHp=99999;g.exp=0;g.lS=now;}
+  // 練習模式：鎖血（無限模式）或正常血量 + 跳過自動升級
+  if(_practiceMode){if(!g._pracFiniteHp){g.p.hp=99999;g.p.maxHp=99999;}g.exp=0;g.lS=now;}
   // spawn system
   if(_practiceMode){/* skip */}
   else if(g._stageBossActive){g.lS=now;} // skip spawn during stage boss
@@ -2593,6 +2592,20 @@ function loop(){
     cx.fillStyle="rgba(0,0,0,.35)";cx.fillRect(hbX,hbY,hbW,hbH);
     const hCol=heatPct>.75?"#FF4500":heatPct>.5?"#FF922B":"#FFD43B";
     cx.fillStyle=hCol;cx.fillRect(hbX,hbY,hbW*heatPct,hbH);
+    cx.restore();
+  }
+  // 過熱警告：主角頭上
+  if(g._heatWarn){
+    cx.save();cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#FF922B";cx.globalAlpha=.7+Math.sin(now/100)*.3;
+    cx.fillText("🔥 過熱警告",g.p.x,g.p.y-PR-10);
+    cx.restore();
+  }
+  if(g.heatCD>0){
+    cx.save();cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#FF4040";cx.globalAlpha=.7+Math.sin(now/80)*.3;
+    const sec=(g.heatCD/1000).toFixed(1);
+    cx.fillText("🔥 冷卻 "+sec+"s",g.p.x,g.p.y-PR-10);
     cx.restore();
   }
   // 黑洞持續效果：主角周圍暗能量漩渦
