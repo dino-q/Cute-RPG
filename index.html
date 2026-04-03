@@ -1665,9 +1665,10 @@ function loop(){
     if(cw.phase==="active"&&!cw.raged&&cw.spawned>=cw.target&&now-cw.waveStart>15000&&aliveClassic>0){
       cw.raged=true;
       g.dn.push({x:g.p.x,y:g.p.y-50,d:"⚠️ 敵人暴走！",life:2.5,color:"#FF4040",big:1});
-      g.ene.forEach(e=>{
+      g.ene.forEach((e,ei)=>{
         if(e.hp<=0||e.boss||e.stageBoss)return;
-        e._rage=1;e._rageDashes=0;e._rageState="charge";e._rageT=now+400;
+        const delay=ei*200+Math.random()*400; // 每隻錯開 200~600ms
+        e._rage=1;e._rageDashes=0;e._rageState="charge";e._rageT=now+400+delay;
         // 鎖定衝刺方向
         const rdx=g.p.x-e.x,rdy=g.p.y-e.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
         e._rageDx=rdx/rd;e._rageDy=rdy/rd;
@@ -1686,7 +1687,7 @@ function loop(){
     }
     for(let ti=0;ti<b.trail.length;ti++)b.trail[ti].life-=.18*dt;
     // homing
-    if(b.hm>0){const hmR=g.p.homingR||200;let nr=null,nd=1e9;g.ene.forEach(e=>{const d=di(b,e);if(d<nd){nd=d;nr=e;}});if(nr&&nd<hmR){const dx=nr.x-b.x,dy=nr.y-b.y,d=Math.sqrt(dx*dx+dy*dy)||1;b.vx+=(dx/d)*b.hm*dt*60;b.vy+=(dy/d)*b.hm*dt*60;const bs=Math.sqrt(b.vx*b.vx+b.vy*b.vy);if(bs>8){b.vx=b.vx/bs*8;b.vy=b.vy/bs*8;}}}
+    if(b.hm>0){const hmR=g.p.homingR||200;let nr=null,nd=1e9;g.ene.forEach(e=>{if(e.ragePoo||e.hp<=0)return;const d=di(b,e);if(d<nd){nd=d;nr=e;}});if(nr&&nd<hmR){const dx=nr.x-b.x,dy=nr.y-b.y,d=Math.sqrt(dx*dx+dy*dy)||1;b.vx+=(dx/d)*b.hm*dt*60;b.vy+=(dy/d)*b.hm*dt*60;const bs=Math.sqrt(b.vx*b.vx+b.vy*b.vy);if(bs>8){b.vx=b.vx/bs*8;b.vy=b.vy/bs*8;}}}
     b.x+=b.vx*dt;b.y+=b.vy*dt;
     return b.x>g.p.x-VW&&b.x<g.p.x+VW&&b.y>g.p.y-VH&&b.y<g.p.y+VH&&b.life>0;
   });
