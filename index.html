@@ -813,16 +813,19 @@ function bothPlayers(){return(_isCoopMode&&g.p2)?[g.p,g.p2]:[g.p];}
 
 /* ═══ resize ═══ */
 function resize(){
-  const isLand=window.innerWidth>window.innerHeight;
-  const newVW=isLand?700:400,newVH=isLand?400:700;
+  const sw=window.innerWidth,sh=window.innerHeight;
+  const isLand=sw>sh;
+  // 動態計算 VW/VH 以匹配螢幕比例，消除黑邊
+  const ratio=sw/sh;
+  const newVW=isLand?Math.round(400*ratio):400;
+  const newVH=isLand?400:Math.round(400/ratio);
   if(VW!==newVW||VH!==newVH){
     VW=newVW;VH=newVH;
     if(cv){cv.width=VW;cv.height=VH;}
     if(fxc){fxc.width=VW;fxc.height=VH;}
   }
-  const s=Math.min(window.innerWidth/VW,window.innerHeight/VH,2),cw=VW*s,ch=VH*s;
-  const ox=Math.floor((window.innerWidth-cw)/2),oy=Math.floor((window.innerHeight-ch)/2);
-  [cv,fxc].forEach(c=>{if(c){c.style.width=cw+"px";c.style.height=ch+"px";c.style.left=ox+"px";c.style.top=oy+"px";}});
+  // 直接填滿螢幕
+  [cv,fxc].forEach(c=>{if(c){c.style.width=sw+"px";c.style.height=sh+"px";c.style.left="0";c.style.top="0";}});
   $("minimap").style.display=g?"block":"none";
 }
 window.addEventListener("resize",resize);
@@ -1437,10 +1440,13 @@ function spawn(boss,opts={}){
 }
 function _coopGenCircles(e){
   if(!e)return;
-  const a1=rn(0,Math.PI*2),a2=a1+rn(Math.PI*.4,Math.PI*1.6); // 間隔至少 72 度
-  const r1=rn(80,150),r2=rn(80,150);
-  e._coopCircles=[{x:e.x+Math.cos(a1)*r1,y:e.y+Math.sin(a1)*r1},{x:e.x+Math.cos(a2)*r2,y:e.y+Math.sin(a2)*r2}];
-  // 圈位置固定，只有護盾恢復時才重新生成
+  const mw=mapW(),mh=mapH(),pad=40;
+  const a1=rn(0,Math.PI*2),a2=a1+rn(Math.PI*.4,Math.PI*1.6);
+  const r1=rn(80,140),r2=rn(80,140);
+  e._coopCircles=[
+    {x:cl(e.x+Math.cos(a1)*r1,pad,mw-pad),y:cl(e.y+Math.sin(a1)*r1,pad,mh-pad)},
+    {x:cl(e.x+Math.cos(a2)*r2,pad,mw-pad),y:cl(e.y+Math.sin(a2)*r2,pad,mh-pad)}
+  ];
 }
 
 function triggerSpikeWave(w){
@@ -1472,8 +1478,14 @@ function triggerHuntPressure(now){
   pack.forEach(role=>{const pre=g.ene.length;if(pre<MAX_ENEMIES){spawn(false,{role,tier});if(g.ene.length>pre){const ne=g.ene[g.ene.length-1];ne._huntStart=now+Math.random()*1200;ne._huntEnd=ne._huntStart+1800+Math.random()*1500;}}});
   g.dn.push({x:g.p.x,y:g.p.y-60,d:"⚠️ 被獵殺！快擊殺敵人止壓",life:1.6,color:"#FF6B6B",big:1});
 }
-function tapAtk(){if(!g||!g.run||g.heatCD>0)return;const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;const berserkMul=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;fire((3.5+g.p.atk+bonus)*berserkMul,g.ad.x,g.ad.y,.03);if(!g.heatCD)$("combo").textContent=aim.tn>2?aim.tn+"x COMBO!":"";// combo 50 = 集滿一次大招
-if(aim.tn>0&&aim.tn%50===0&&g.ultCharge<ULT_CHARGE_NEED){const _pu2=g.ultCharge;g.ultCharge=ULT_CHARGE_NEED;if(_pu2<ULT_CHARGE_NEED)g._ultReadyUntil=performance.now()+1500;}
+function tapAtk(){if(!g||!g.run||g.heatCD>0)return;const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;const berserkMul=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;fire((3.5+g.p.atk+bonus)*berserkMul,g.ad.x,g.ad.y,.03);if(!g.heatCD)$("combo").textContent=aim.tn>2?aim.tn+"x COMBO!":"";
+// combo 漸進集氣：combo 數 / 50 = 集氣條比例
+if(aim.tn>0&&!g.p.hasBH&&!g.p.hasTS){
+  const _comboPct=Math.min((aim.tn%50)/50,1);const _prevUlt3=g.ultCharge;
+  g.ultCharge=Math.max(g.ultCharge,_comboPct*ULT_CHARGE_NEED);
+  if(aim.tn%50===0){g.ultCharge=ULT_CHARGE_NEED;}
+  if(_prevUlt3<ULT_CHARGE_NEED&&g.ultCharge>=ULT_CHARGE_NEED)g._ultReadyUntil=now+1500;
+}
 clearTimeout(cTimer);cTimer=setTimeout(()=>{if(!g.heatCD){$("combo").textContent="";}aim.tn=0;},700);}
 
 let _dashGhosts=[]; // afterimage array: {x,y,face,life}
@@ -1681,8 +1693,8 @@ function loop(){
     g.p.x+=joy.dx*.5*dt;g.p.y+=joy.dy*.5*dt; // 倒地爬行
   }
   g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
-  // move P2 (co-op)
-  if(_isCoopMode&&g.p2){
+  // move P2 (co-op) — AI 模式跳過（AI 自己控制移動）
+  if(_isCoopMode&&g.p2&&!_p2AI){
     const p2i=(_net&&_net.role==="host")?_p2Input:joy; // Client 用自己的 joy
     if(!g.p2._downed){
       if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*g.p2.speed*dt;g.p2.y+=p2i.dy*g.p2.speed*dt;if(Math.abs(p2i.dx)>.2)g.p2.face=p2i.dx>0?1:-1;}
@@ -1704,25 +1716,24 @@ function loop(){
       const rdx=g.p.x-g.p2.x,rdy=g.p.y-g.p2.y,rd=Math.sqrt(rdx*rdx+rdy*rdy)||1;
       if(rd>30){g.p2.x+=rdx/rd*spd2;g.p2.y+=rdy/rd*spd2;}
     }
-    // 有護盾 Boss → 去佔一個圈（選 P1 沒佔的那個）
+    // 有護盾 Boss → 去佔一個圈
     else if(shieldBoss){
       const c=shieldBoss._coopCircles;
       const p1on0=di(g.p,c[0])<30,p1on1=di(g.p,c[1])<30;
-      // AI 去 P1 沒站的那個圈；如果 P1 都沒站，AI 去較近的
       let target=p1on0?c[1]:p1on1?c[0]:(di(g.p2,c[0])<di(g.p2,c[1])?c[0]:c[1]);
       const tdx=target.x-g.p2.x,tdy=target.y-g.p2.y,td=Math.sqrt(tdx*tdx+tdy*tdy)||1;
       if(td>20){g.p2.x+=tdx/td*spd2;g.p2.y+=tdy/td*spd2;}
-      // 邊走邊閃：隨機橫向偏移模擬走位閃躲
+      // 邊走邊閃
       const dodgeT=Math.sin(now/400)*1.5;
       g.p2.x+=Math.cos(Math.atan2(tdy,tdx)+Math.PI/2)*dodgeT*dt;
       if(Math.abs(tdx)>.2)g.p2.face=tdx>0?1:-1;
-      _p2Input.aimA=1; // 邊跑邊打
+      _p2Input.aimA=1;
     }
-    // 有敵人 → 隨機走位 + 射擊
+    // 有敵人 → 隨機走位 + 射擊 + 閃避
     else{
       let aiTarget=null,aiDist=1e9;
       g.ene.forEach(e=>{if(e.hp<=0||e.ragePoo)return;const d=di(g.p2,e);if(d<aiDist){aiDist=d;aiTarget=e;}});
-      // 隨機漫遊目標：每 1.5~3 秒換一個點
+      // 隨機漫遊目標
       if(now>aw.nextT){
         const cx2=aiTarget?aiTarget.x:g.p.x,cy2=aiTarget?aiTarget.y:g.p.y;
         const wRange=aiTarget?120:100;
@@ -1730,14 +1741,35 @@ function loop(){
         aw.tx=cl(aw.tx,PR+20,mapW()-PR-20);aw.ty=cl(aw.ty,PR+20,mapH()-PR-20);
         aw.nextT=now+rn(1500,3000);
       }
-      // 走向漫遊目標
       const wdx=aw.tx-g.p2.x,wdy=aw.ty-g.p2.y,wd=Math.sqrt(wdx*wdx+wdy*wdy)||1;
       if(wd>15){g.p2.x+=wdx/wd*spd2*.7;g.p2.y+=wdy/wd*spd2*.7;}
       if(aiTarget&&Math.abs(aiTarget.x-g.p2.x)>.2)g.p2.face=(aiTarget.x-g.p2.x)>0?1:-1;
       _p2Input.aimA=aiTarget?1:0;
-      // 離 P1 太遠（>300）時趨近
+      // 離 P1 太遠時趨近
       const p1d=di(g.p,g.p2);
       if(p1d>300){const fdx=g.p.x-g.p2.x,fdy=g.p.y-g.p2.y,fd=Math.sqrt(fdx*fdx+fdy*fdy)||1;g.p2.x+=fdx/fd*spd2*.4;g.p2.y+=fdy/fd*spd2*.4;}
+    }
+    // === AI 閃避：遠離太近的敵人（<55px 時反方向推開）===
+    let evadeX=0,evadeY=0;
+    g.ene.forEach(e=>{
+      if(e.hp<=0)return;
+      const ed=di(g.p2,e);
+      if(ed<55+e.r){
+        const ex=g.p2.x-e.x,ey=g.p2.y-e.y,el=Math.sqrt(ex*ex+ey*ey)||1;
+        const push=(55+e.r-ed)/(55+e.r); // 越近推力越大
+        evadeX+=ex/el*push*2;evadeY+=ey/el*push*2;
+      }
+    });
+    // 閃避敵彈
+    g.ebul.forEach(b=>{
+      const bd=di(g.p2,b);
+      if(bd<40){
+        const bx=g.p2.x-b.x,by=g.p2.y-b.y,bl=Math.sqrt(bx*bx+by*by)||1;
+        evadeX+=bx/bl*1.5;evadeY+=by/bl*1.5;
+      }
+    });
+    if(evadeX||evadeY){
+      g.p2.x+=evadeX*spd2;g.p2.y+=evadeY*spd2;
     }
     g.p2.x=cl(g.p2.x,PR+4,mapW()-PR-4);g.p2.y=cl(g.p2.y,PR+4,mapH()-PR-4);
   }
@@ -1831,17 +1863,18 @@ function loop(){
     g.ene.forEach(e=>{if(e.ragePoo)return;const d=di(g.p2,e);if(d<nd2){nd2=d;nr2=e;}});
     if(nr2){const dx2=nr2.x-g.p2.x,dy2=nr2.y-g.p2.y,d2=Math.sqrt(dx2*dx2+dy2*dy2)||1;g.p2._ad={x:dx2/d2,y:dy2/d2};if(Math.abs(g.p2._ad.x)>.3)g.p2.face=g.p2._ad.x>0?1:-1;}
     else{g.p2._ad=g.p2._ad||{x:0,y:-1};}
-    // P2 hold-fire (Host 用 _p2Input，Client 用自己的 aim)
-    const p2aim=(_net&&_net.role==="host")?_p2Input.aimA:aim.a;
+    // P2 hold-fire (AI 用 _p2Input，Host 用 _p2Input，Client 用自己的 aim)
+    const p2aim=_p2AI?_p2Input.aimA:(_net&&_net.role==="host")?_p2Input.aimA:aim.a;
     if(!g.p2._lhF)g.p2._lhF=0;
     if(p2aim&&now-g.p2._lhF>HOLD_CD*(g.p2.fr||1)){
       const ad2=g.p2._ad||{x:0,y:-1};
       fire((2.2+g.p2.atk*.7),ad2.x,ad2.y,.07,g.p2);
       g.p2._lhF=now;
     }
-    // P2 ult input
-    const p2ult=(_net&&_net.role==="host")?_p2Input.ult:false;
+    // P2 ult: AI 每 8 秒自動放一次，連線時用 _p2Input
+    const p2ult=_p2AI?(now-(g.p2._aiUltT||0)>8000):(_net&&_net.role==="host")?_p2Input.ult:false;
     if(p2ult&&!g.p2._ultCooldown){
+      if(_p2AI)g.p2._aiUltT=now;
       g.p2._ultCooldown=now+3000; // 3s cooldown for P2 ult
       g._p2UltTime=now;
       // check if P1 also pressed within 1 sec → combo triggers from P1's doUlt
