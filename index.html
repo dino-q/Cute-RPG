@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.44</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.45</div>
 </div>
 </div>
 
@@ -978,6 +978,13 @@ function hud(){if(!g)return;
     _db.style.background=_dReady?'radial-gradient(circle,rgba(116,192,252,.2),rgba(20,20,40,.9))':`conic-gradient(rgba(116,192,252,.45) ${_dDeg-1}deg,rgba(116,192,252,.2) ${_dDeg}deg,rgba(20,20,40,.9) ${_dDeg+1}deg)`;
     _db.style.borderColor=_dReady?"rgba(116,192,252,.6)":"rgba(255,255,255,.15)";
     _db.style.opacity=_dReady?"1":".6";
+  }
+  // 技能 CD 顯示（HOST + CLIENT 共用）
+  const _skBtn=$("skillCd");
+  if(_skBtn){
+    const _skLeft=_hudIsClient?(g._clientP2SkillCd||0):Math.max(0,_skillCdEnd-performance.now());
+    if(_skLeft>0){_skBtn.style.display="flex";_skBtn.textContent=(_skLeft/1000).toFixed(1);}
+    else{_skBtn.style.display="none";}
   }
   $("hl").textContent="❤️"+Math.floor(_hudP.hp)+"/"+_hudP.maxHp;
   $("hb").style.width=(_hudP.hp/_hudP.maxHp*100)+"%";
@@ -2004,10 +2011,17 @@ function swordSwing(_pp,_isP2){
   g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(_pp,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
     if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
       if(_isCoopMode){_pp._inv=true;_pp._pickPending=true;
-      if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest",null,{player:_pp,inv:_pinv,charType:_pct});}
-      else{showPick("crate",null,{player:_pp,inv:_pinv,charType:_pct});}}
+      if(_isP2&&!_p2AI&&_net&&_net.conn&&_net.conn.open){
+        // 真人 P2：發網路給 CLIENT 選卡
+        _sendP2Pick(cr);
+      }else{
+        // AI P2 或 P1：本地 showPick
+        var _pkCtx=_isP2?{player:_pp,inv:_pinv,charType:_pct}:null;
+        if(cr.bigChest){var _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest",null,_pkCtx);}
+        else{showPick("crate",null,_pkCtx);}
+      }}
       else{g.run=false;
-      if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
+      if(cr.bigChest){var _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
       else{showPick("crate");}}
     }}});
   // 達摩的光劍：揮劍射出 3 道光束
@@ -2133,10 +2147,15 @@ function shieldBash(_pp,_isP2){
   g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(_pp,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
     if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
       if(_isCoopMode){_pp._inv=true;_pp._pickPending=true;
-      if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest",null,{player:_pp,inv:_pinv,charType:_pct});}
-      else{showPick("crate",null,{player:_pp,inv:_pinv,charType:_pct});}}
+      if(_isP2&&!_p2AI&&_net&&_net.conn&&_net.conn.open){
+        _sendP2Pick(cr);
+      }else{
+        var _pkCtx2=_isP2?{player:_pp,inv:_pinv,charType:_pct}:null;
+        if(cr.bigChest){var _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest",null,_pkCtx2);}
+        else{showPick("crate",null,_pkCtx2);}
+      }}
       else{g.run=false;
-      if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
+      if(cr.bigChest){var _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
       else{showPick("crate");}}
     }}});
   // 盾擊衝擊波視覺
@@ -3491,8 +3510,12 @@ function loop(){
     if(b._isP2&&_isCoopMode&&g.p2){
       // P2 的子彈打開寶箱 → P2 選卡
       g.p2._inv=true;g.p2._pickPending=true;
-      if(cr.bigChest){var _bcp3=_isElite()?4:5;g._bigChestTotal=_bcp3;g._bigChestLeft=_bcp3;showPick("bigchest",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}
-      else{showPick("crate",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}
+      if(!_p2AI&&_net&&_net.conn&&_net.conn.open){_sendP2Pick(cr);}
+      else{
+        var _pkCtx4={player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"};
+        if(cr.bigChest){var _bcp3=_isElite()?4:5;g._bigChestTotal=_bcp3;g._bigChestLeft=_bcp3;showPick("bigchest",null,_pkCtx4);}
+        else{showPick("crate",null,_pkCtx4);}
+      }
     }else{
       if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
       if(cr.bigChest){var _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
@@ -6519,7 +6542,7 @@ function _coopStartReal(){
 // ═══ P2 選卡系統 ═══
 // HOST 端：P2 打開寶箱 → 生成選項 → 發給 CLIENT
 let _p2BigChestLeft=0; // P2 大寶箱剩餘次數
-function _triggerP2Pick(cr){
+function _sendP2Pick(cr){
   // 大寶箱：設定多次選卡
   if(cr&&cr.bigChest&&_p2BigChestLeft<=0){
     _p2BigChestLeft=_isElite()?4:5;
@@ -6541,7 +6564,7 @@ function _triggerP2Pick(cr){
   // AI P2：自動選第一張
   if(_p2AI){
     _applyP2Card(picks[0].id);
-    if(isBig){_p2BigChestLeft--;if(_p2BigChestLeft>0){setTimeout(()=>_triggerP2Pick(null),300);return;}}
+    if(isBig){_p2BigChestLeft--;if(_p2BigChestLeft>0){setTimeout(()=>_sendP2Pick(null),300);return;}}
     g.p2._inv=false;g.p2._pickPending=false;
     g.p2._iFrameEnd=performance.now()+1000; // AI 也給保護時間
     return;
@@ -6586,7 +6609,7 @@ function _applyP2Card(cardId){
   burst(g.p2.x,g.p2.y,"#DA77F2",12);
   g.dn.push({x:g.p2.x,y:g.p2.y-30,d:cd.e+cd.n+" Lv"+(lv+1),life:2,color:"#DA77F2",big:1});
   // 大寶箱：繼續下一輪選卡
-  if(_p2BigChestLeft>0){_p2BigChestLeft--;if(_p2BigChestLeft>0){setTimeout(()=>_triggerP2Pick(null),300);return;}}
+  if(_p2BigChestLeft>0){_p2BigChestLeft--;if(_p2BigChestLeft>0){setTimeout(()=>_sendP2Pick(null),300);return;}}
   g.p2._inv=false;g.p2._pickPending=false;
   // 選卡結束後給 1 秒無敵保護（防止被圍攻秒殺）
   g.p2._iFrameEnd=performance.now()+1000;
