@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.40</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.41</div>
 </div>
 </div>
 
@@ -3591,7 +3591,7 @@ function loop(){
       var rpDmg=(_practiceMode&&!_pracFiniteHp)?50:Math.floor(g.p.hp/3);
       g.p.hp-=rpDmg;burst(g.p.x,g.p.y,"#8B6914",6);_hitFlash=1;sfx("hurt");
       g.p._iFrameEnd=now+800;showPlayerDmg(rpDmg);
-      if(g.p.hp<=0){if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();}}
+      if(g.p.hp<=0){if(_isCoopMode){g.p._downed=true;g.p._downedTime=now;g.p.hp=0;if(g.p2&&g.p2._downed){g.run=false;showOver();}}else if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();}}
     }return true;}
     // Stage Boss：接觸造成傷害但Boss不消失（脈衝蓄力期間免撞傷）
     if(e.stageBoss){var _pulseWarn=e._p3cycle==="pulse_warn"||e._p3cycle==="pulse_boom";
@@ -3602,7 +3602,7 @@ function loop(){
       g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",8);_hitFlash=1;_shakeT=.5;_shakePow=8;sfx("hurt");
       g.p._iFrameEnd=now+600;showPlayerDmg(dmg);
       e._retreatEnd=now+1500; // 撞擊後退開1.5秒
-      if(g.p.hp<=0){if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();}}
+      if(g.p.hp<=0){if(_isCoopMode){g.p._downed=true;g.p._downedTime=now;g.p.hp=0;if(g.p2&&g.p2._downed){g.run=false;showOver();}}else if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();}}
     }return true;}
     if(di(e,g.p)<PR+e.r-4){
     var _isWB=_isElite()&&e.boss&&!e.miniPoo&&!e.miniDemon;
@@ -3919,6 +3919,21 @@ function loop(){
   checkStageBossDeath();
 
   } // ═══ HOST 遊戲邏輯結束 ═══
+
+  // 攻擊動畫衰減（HOST + CLIENT 都要跑）
+  if(!g._atkAnim)g._atkAnim={active:false,startT:0};
+  if(g._atkAnim.active){
+    var _ae=now-g._atkAnim.startT;
+    var _ad2=g.charType==="gunner"?200:g.charType==="swordsman"?320:280;
+    if(_ae>=_ad2){g._atkAnim.active=false;g._atkAnim._qiSpin=false;}
+    g._wbSwing=g._atkAnim.active?Math.max(0,1-_ae/_ad2):0;
+  }else{g._wbSwing=0;}
+  if(g._p2AtkAnim&&g._p2AtkAnim.active){
+    var _ae2=now-g._p2AtkAnim.startT;
+    var _ad3=g.p2?(g.p2.charType==="gunner"?200:g.p2.charType==="swordsman"?320:280):200;
+    if(_ae2>=_ad3){g._p2AtkAnim.active=false;g._p2AtkAnim._qiSpin=false;}
+    g._p2WbSwing=g._p2AtkAnim.active?Math.max(0,1-_ae2/_ad3):0;
+  }else{g._p2WbSwing=0;}
 
   // particles（HOST + CLIENT 都要跑，用於視覺衰減）
   par=par.filter(p=>{p.x+=(p.vx||0)*dt;p.y+=(p.vy||0)*dt;p.life-=.03*dt;if(p.sz)p.sz*=.98;return p.life>0;});
@@ -4974,7 +4989,7 @@ function serializeCoopState(){
   return{t:"state",
     p1:{x:g.p.x,y:g.p.y,hp:g.p.hp,mhp:g.p.maxHp,face:g.p.face,_downed:g.p._downed,_iFrameEnd:g.p._iFrameEnd,_rescueTimer:g.p._rescueTimer||0,_pickPending:g.p._pickPending||false,charType:g.charType},
     p2:{x:g.p2.x,y:g.p2.y,hp:g.p2.hp,mhp:g.p2.maxHp,face:g.p2.face,_downed:g.p2._downed,_iFrameEnd:g.p2._iFrameEnd,_rescueTimer:g.p2._rescueTimer||0,_pickPending:g.p2._pickPending||false,charType:g.p2.charType},
-    ene:g.ene.map(e=>({x:e.x,y:e.y,hp:e.hp,mhp:e.mhp,r:e.r,color:e.color,boss:e.boss,mega:e.mega,tier:e.tier,role:e.role,face:e.face,t:e.t,st:e.st,frozen:e.frozen,stageBoss:e.stageBoss,sbPhase:e.sbPhase,_coopShield:e._coopShield,_rage:e._rage,_rageState:e._rageState,_rageDx:e._rageDx,_rageDy:e._rageDy,eliteEnemy:e.eliteEnemy,_eDashing:e._eDashing,_eShieldEnd:e._eShieldEnd,dashState:e.dashState,dashDx:e.dashDx,dashDy:e.dashDy,shieldAng:e.shieldAng,flankA:e.flankA,bhExeAt:e.bhExeAt,bossType:e.bossType,poisonT:e.poisonT,burnT:e.burnT})),
+    ene:g.ene.map(e=>({x:e.x,y:e.y,hp:e.hp,mhp:e.mhp,r:e.r,color:e.color,boss:e.boss,mega:e.mega,tier:e.tier,role:e.role,face:e.face,t:e.t,st:e.st,frozen:e.frozen,stageBoss:e.stageBoss,sbPhase:e.sbPhase,_coopShield:e._coopShield,_coopCircles:e._coopCircles,_coopShieldBrokenEnd:e._coopShieldBrokenEnd,_coopCircleTimer:e._coopCircleTimer,_rage:e._rage,_rageState:e._rageState,_rageDx:e._rageDx,_rageDy:e._rageDy,eliteEnemy:e.eliteEnemy,_eDashing:e._eDashing,_eShieldEnd:e._eShieldEnd,dashState:e.dashState,dashDx:e.dashDx,dashDy:e.dashDy,shieldAng:e.shieldAng,flankA:e.flankA,bhExeAt:e.bhExeAt,bossType:e.bossType,poisonT:e.poisonT,burnT:e.burnT})),
     bul:g.bul.filter(b=>b.life>0).map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,crit:b.crit,life:b.life})),
     ebul:g.ebul.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,life:b.life})),
     dn:g.dn.map(d=>({x:d.x,y:d.y,d:d.d,life:d.life,color:d.color,big:d.big})),
@@ -4995,7 +5010,9 @@ function serializeCoopState(){
     ghostShadow:g._ghostShadow&&g._ghostShadow.life>0?{x:g._ghostShadow.x,y:g._ghostShadow.y,face:g._ghostShadow.face,life:g._ghostShadow.life}:null,
     ghostArc:g._ghostArc?{x:g._ghostArc.x,y:g._ghostArc.y,ang:g._ghostArc.ang,t:g._ghostArc.t}:null,
     ultFlash:g.ultFlash||0,
-    p2Atk:g._p2AtkAnim?{active:g._p2AtkAnim.active,startT:g._p2AtkAnim.startT,_qiSpin:g._p2AtkAnim._qiSpin}:null,
+    p1Atk:g._atkAnim?{active:g._atkAnim.active,elapsed:performance.now()-g._atkAnim.startT,_qiSpin:g._atkAnim._qiSpin}:null,
+    p1Wb:g._wbSwing||0,
+    p2Atk:g._p2AtkAnim?{active:g._p2AtkAnim.active,elapsed:performance.now()-g._p2AtkAnim.startT,_qiSpin:g._p2AtkAnim._qiSpin}:null,
     p2Wb:g._p2WbSwing||0,
     // P2 數據（CLIENT 需要顯示自己的 HUD）
     p2Hp:g.p2?g.p2.hp:0,p2Mhp:g.p2?g.p2.maxHp:0,
@@ -5033,7 +5050,11 @@ function applyCoopState(data){
   if(data.ghostShadow!==undefined)g._ghostShadow=data.ghostShadow;
   if(data.ghostArc!==undefined)g._ghostArc=data.ghostArc;
   if(data.ultFlash!==undefined)g.ultFlash=data.ultFlash;
-  if(data.p2Atk)g._p2AtkAnim=data.p2Atk;
+  // 動畫同步：elapsed → 本地 startT
+  var _syncNow=performance.now();
+  if(data.p1Atk){g._atkAnim={active:data.p1Atk.active,startT:_syncNow-data.p1Atk.elapsed,_qiSpin:data.p1Atk._qiSpin};}
+  if(data.p1Wb!==undefined)g._wbSwing=data.p1Wb;
+  if(data.p2Atk){g._p2AtkAnim={active:data.p2Atk.active,startT:_syncNow-data.p2Atk.elapsed,_qiSpin:data.p2Atk._qiSpin};}
   if(data.p2Wb!==undefined)g._p2WbSwing=data.p2Wb;
   // P2 HUD 數據（CLIENT 用）
   if(data.p2Hp!==undefined)g._clientP2Hp=data.p2Hp;
@@ -6485,6 +6506,7 @@ function _coopDoCreate(code){
         if(data.t==="p2char"&&data.charType&&g&&g.p2){
           g.p2.charType=data.charType;
           const CC2=CHAR[data.charType]||CHAR.gunner;
+          g.p2.hp=CC2.startHp;g.p2.maxHp=CC2.startHp;g.p2.atk=CC2.startAtk;
           g.p2.speed=CC2.startSpeed;g.p2.armor=CC2.armor;g.p2.dodge=CC2.dodge;g.p2.crit=CC2.crit;g.p2.fr=CC2.fr;
         }
       });
@@ -6919,7 +6941,7 @@ window.pracCycleP2Char=function(){
   const next=types[(types.indexOf(cur)+1)%3];
   g.p2.charType=next;
   const CC=CHAR[next];
-  g.p2.speed=CC.startSpeed;g.p2.armor=CC.armor;g.p2.dodge=CC.dodge;g.p2.crit=CC.crit;g.p2.fr=CC.fr;
+  g.p2.hp=CC.startHp;g.p2.maxHp=CC.startHp;g.p2.atk=CC.startAtk;g.p2.speed=CC.startSpeed;g.p2.armor=CC.armor;g.p2.dodge=CC.dodge;g.p2.crit=CC.crit;g.p2.fr=CC.fr;
   $("pracP2CharBtn").textContent=icons[next]+"AI:"+names[next];
   g.dn.push({x:g.p2.x,y:g.p2.y-40,d:"AI切換："+names[next],life:2,color:"#F06595",big:1});
 };
@@ -6945,7 +6967,7 @@ window.pracCoopRoom=function(){
         if(data&&data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.skill=!!data.skill;}
         if(data&&data.t==="p2picked"&&data.cardId){_applyP2Card(data.cardId);}
         if(data&&data.t==="p2reroll"&&data.idx!==undefined){_handleP2Reroll(data.idx);}
-        if(data&&data.t==="p2char"&&data.charType&&g&&g.p2){g.p2.charType=data.charType;const CC3=CHAR[data.charType]||CHAR.gunner;g.p2.speed=CC3.startSpeed;g.p2.armor=CC3.armor;g.p2.dodge=CC3.dodge;g.p2.crit=CC3.crit;g.p2.fr=CC3.fr;}
+        if(data&&data.t==="p2char"&&data.charType&&g&&g.p2){g.p2.charType=data.charType;const CC3=CHAR[data.charType]||CHAR.gunner;g.p2.hp=CC3.startHp;g.p2.maxHp=CC3.startHp;g.p2.atk=CC3.startAtk;g.p2.speed=CC3.startSpeed;g.p2.armor=CC3.armor;g.p2.dodge=CC3.dodge;g.p2.crit=CC3.crit;g.p2.fr=CC3.fr;}
       });
       conn.on("close",()=>{_net.connected=false;_p2AI=true;g.dn.push({x:g.p.x,y:g.p.y-40,d:"⚠️ 對方已離線，切換 AI",life:3,color:"#FF6B6B",big:1});});
     });
