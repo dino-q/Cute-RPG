@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.43</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.44</div>
 </div>
 </div>
 
@@ -1871,7 +1871,7 @@ function triggerHuntPressure(now){
 }
 // ═══ 劍士近戰：弧形範圍傷害 ═══
 function swordSwing(_pp,_isP2){
-  if(!_pp)_pp=g.p;var _pad=_isP2?(g.p2&&g.p2._ad||{x:0,y:-1}):g.ad;var _pct=_isP2?(g.p2?g.p2.charType:"gunner"):g.charType;var _pinv=_isP2?inv2:inv;
+  if(!_pp)_pp=g.p;var _pad=_isP2?(g.p2&&g.p2._ad||{x:0,y:-1}):g.ad;var _atkRef=_isP2?"_p2AtkAnim":"_atkAnim";var _wbRef=_isP2?"_p2WbSwing":"_wbSwing";var _pct=_isP2?(g.p2?g.p2.charType:"gunner"):g.charType;var _pinv=_isP2?inv2:inv;
   if(!g||!g.run)return;
   const now=performance.now();
   const splitBonus=Math.max(1,(_pp.split||1)*.5+.5);
@@ -2041,11 +2041,11 @@ function swordSwing(_pp,_isP2){
     }
   }
   // 揮劍視覺弧線
-  if(!g._atkAnim)g._atkAnim={active:false,startT:0};
-  g._atkAnim.active=true;g._atkAnim.startT=performance.now();g._atkAnim._qiSpin=false;
+  if(!g[_atkRef])g[_atkRef]={active:false,startT:0};
+  g[_atkRef].active=true;g[_atkRef].startT=performance.now();g[_atkRef]._qiSpin=false;
   if(isQi){
     // 劍氣：360 度旋風斬動畫（覆蓋普通動畫）
-    g._atkAnim._qiSpin=true;
+    g[_atkRef]._qiSpin=true;
     // 更帥的金色粒子爆發（3 層環）
     for(let ring=0;ring<3;ring++){
       const cnt=10+ring*4,spd=3+ring*1.5;
@@ -2064,7 +2064,7 @@ function swordSwing(_pp,_isP2){
 
 // ═══ 坦克盾擊：擊退+反彈傷害 ═══
 function shieldBash(_pp,_isP2){
-  if(!_pp)_pp=g.p;var _pad=_isP2?(g.p2&&g.p2._ad||{x:0,y:-1}):g.ad;var _pct=_isP2?(g.p2?g.p2.charType:"gunner"):g.charType;var _pinv=_isP2?inv2:inv;
+  if(!_pp)_pp=g.p;var _pad=_isP2?(g.p2&&g.p2._ad||{x:0,y:-1}):g.ad;var _atkRef=_isP2?"_p2AtkAnim":"_atkAnim";var _wbRef=_isP2?"_p2WbSwing":"_wbSwing";var _pct=_isP2?(g.p2?g.p2.charType:"gunner"):g.charType;var _pinv=_isP2?inv2:inv;
   if(!g||!g.run)return;
   const now=performance.now();
   const splitBonus=Math.max(1,(_pp.split||1)*.4+.6);
@@ -2140,7 +2140,7 @@ function shieldBash(_pp,_isP2){
       else{showPick("crate");}}
     }}});
   // 盾擊衝擊波視覺
-  if(!g._atkAnim)g._atkAnim={active:false,startT:0};g._atkAnim.active=true;g._atkAnim.startT=performance.now();
+  if(!g[_atkRef])g[_atkRef]={active:false,startT:0};g[_atkRef].active=true;g[_atkRef].startT=performance.now();
   for(let i=0;i<6;i++){
     const a=atkAngle-arc+arc*2*i/5;
     par.push({x:_pp.x+Math.cos(a)*15,y:_pp.y+Math.sin(a)*15,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:.4,color:"#51CF66",sz:rn(2,4)});
