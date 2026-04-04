@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.35</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.36</div>
 </div>
 </div>
 
@@ -2311,17 +2311,18 @@ function skillSnipe(now){
   setTimeout(()=>{
     if(!g||!g.run)return;
     const bm=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;
-    const dmg=(3.5+g.p.atk)*2.5*bm*(g.p.ultDmgMul||1); // 狙擊高傷害+大招增幅
+    const ohBonus=g.heatCD?2.5:1; // 過熱瞬間狙擊 ×2.5
+    const dmg=(3.5+g.p.atk)*4*bm*ohBonus*(g.p.ultDmgMul||1); // 狙擊高傷害
     sfxShoot();sfx("ult");
     const ba2=Math.atan2(g.ad.y,g.ad.x);
-    g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(ba2)*12,vy:Math.sin(ba2)*12,dmg:dmg*PLAYER_DMG_SCALE,life:1,crit:true,bc:{f:"#FFD43B",g:"#FF922B",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0});
-    // 穿透藍色光束
+    g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(ba2)*12,vy:Math.sin(ba2)*12,dmg:dmg*PLAYER_DMG_SCALE,life:1,crit:true,bc:ohBonus>1?{f:"#FF4500",g:"#FF0000",t:"#FFD43B"}:{f:"#FFD43B",g:"#FF922B",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0});
+    // 穿透光束
     g.p._snipeBeamT=performance.now();g.p._snipeBeamAng=ba2;
     // 大火花
     const mzX=g.p.x+Math.cos(ba2)*PR,mzY=g.p.y+Math.sin(ba2)*PR;
-    burst(mzX,mzY,"#FFD43B",12);burst(mzX,mzY,"#fff",6);
-    _shakeT=.3;_shakePow=5;
-    g.dn.push({x:g.p.x,y:g.p.y-30,d:"🎯 狙擊！",life:1.5,color:"#FFD43B",big:1});
+    burst(mzX,mzY,ohBonus>1?"#FF4500":"#FFD43B",12);burst(mzX,mzY,"#fff",6);
+    _shakeT=ohBonus>1?.5:.3;_shakePow=ohBonus>1?8:5;
+    g.dn.push({x:g.p.x,y:g.p.y-30,d:ohBonus>1?"🔥 過熱狙擊！！":"🎯 狙擊！",life:1.5,color:ohBonus>1?"#FF4500":"#FFD43B",big:1});
   },400);
 }
 
@@ -4964,6 +4965,21 @@ function serializeCoopState(){
     pickOpen:g.pickOpen||false,
     wave:g.wave,level:g.level,score:g.score,kills:g.kills,
     p2Lv:g.p2Level,p2Exp:g.p2Exp,p2ExpTo:g.p2ExpTo,
+    // 視覺同步（限量避免頻寬爆）
+    par:par.slice(-30).map(p=>({x:p.x,y:p.y,vx:p.vx,vy:p.vy,life:p.life,color:p.color,sz:p.sz})),
+    ltn:g.ltn.slice(-8).map(l=>({x1:l.x1,y1:l.y1,x2:l.x2,y2:l.y2,life:l.life,c:l.c})),
+    ghosts:_dashGhosts.slice(-6).map(gh=>({x:gh.x,y:gh.y,face:gh.face,life:gh.life})),
+    // 特效數據
+    heat:g.heat||0,heatCD:g.heatCD||0,_heatWarn:g._heatWarn||false,
+    coopLink:g._coopLink||false,
+    lightBeams:(g._lightBeams||[]).slice(-3).map(b=>({x:b.x,y:b.y,ang:b.ang,len:b.len,t:b.t})),
+    dragonFx:g._dragonBreathFx?{ang:g._dragonBreathFx.ang,range:g._dragonBreathFx.range,on:g._dragonBreathFx.on}:null,
+    ghostShadow:g._ghostShadow&&g._ghostShadow.life>0?{x:g._ghostShadow.x,y:g._ghostShadow.y,face:g._ghostShadow.face,life:g._ghostShadow.life}:null,
+    // P2 數據（CLIENT 需要顯示自己的 HUD）
+    p2Hp:g.p2?g.p2.hp:0,p2Mhp:g.p2?g.p2.maxHp:0,
+    p2Ult:g.ultCharge||0,p2UltNeed:ULT_CHARGE_NEED,
+    p2SkillCd:Math.max(0,_p2SkillCdEnd-performance.now()),
+    p2Combo:aim.tn||0,
     run:g.run
   };
 }
@@ -4981,6 +4997,25 @@ function applyCoopState(data){
   if(data.dn)g.dn=data.dn;
   // 經驗球
   if(data.orbs)g.orbs=data.orbs;
+  // 視覺效果同步
+  if(data.par)par=data.par;
+  if(data.ltn)g.ltn=data.ltn;
+  if(data.ghosts)_dashGhosts=data.ghosts;
+  // 特效狀態
+  if(data.heat!==undefined)g.heat=data.heat;
+  if(data.heatCD!==undefined)g.heatCD=data.heatCD;
+  if(data._heatWarn!==undefined)g._heatWarn=data._heatWarn;
+  if(data.coopLink!==undefined)g._coopLink=data.coopLink;
+  if(data.lightBeams)g._lightBeams=data.lightBeams;
+  if(data.dragonFx!==undefined)g._dragonBreathFx=data.dragonFx;
+  if(data.ghostShadow!==undefined)g._ghostShadow=data.ghostShadow;
+  // P2 HUD 數據（CLIENT 用）
+  if(data.p2Hp!==undefined)g._clientP2Hp=data.p2Hp;
+  if(data.p2Mhp!==undefined)g._clientP2Mhp=data.p2Mhp;
+  if(data.p2Ult!==undefined)g._clientP2Ult=data.p2Ult;
+  if(data.p2UltNeed!==undefined)g._clientP2UltNeed=data.p2UltNeed;
+  if(data.p2SkillCd!==undefined)g._clientP2SkillCd=data.p2SkillCd;
+  if(data.p2Combo!==undefined)g._clientP2Combo=data.p2Combo;
   // 寶箱
   if(data.crates)g.crates=data.crates;
   // 選卡狀態
@@ -5034,6 +5069,79 @@ function clientRenderLoop(){
     g._atkAnim=g._p2AtkAnim||{active:false,startT:0};g._wbSwing=g._p2WbSwing||0;
     drawPlayer(g.p2.x,g.p2.y,PR,now/1000,"#F06595",g.p2.face);
     g.charType=_p1ct2;g._atkAnim=_p1atk2;g._wbSwing=_p1wb2;cx.restore();}
+  // 粒子
+  par=par.filter(p=>{p.x+=p.vx||0;p.y+=p.vy||0;p.life-=.03;return p.life>0;});
+  par.forEach(p=>{cx.save();cx.globalAlpha=Math.min(1,p.life);cx.fillStyle=p.color||"#fff";cx.beginPath();cx.arc(p.x,p.y,p.sz||2,0,Math.PI*2);cx.fill();cx.restore();});
+  // 閃電
+  if(g.ltn)g.ltn=g.ltn.filter(l=>{l.life-=.05;return l.life>0;});
+  if(g.ltn)g.ltn.forEach(l=>{cx.save();cx.globalAlpha=l.life;cx.strokeStyle=l.c||"#FAB005";cx.lineWidth=2;cx.beginPath();cx.moveTo(l.x1,l.y1);cx.lineTo(l.x2,l.y2);cx.stroke();cx.restore();});
+  // 殘影
+  _dashGhosts=_dashGhosts.filter(gh=>{gh.life-=.04;return gh.life>0;});
+  _dashGhosts.forEach(gh=>{cx.save();cx.globalAlpha=gh.life*.4;drawPlayer(gh.x,gh.y,PR,now/1000,"#FFE066",gh.face);cx.restore();});
+  // 殘影斬剪影
+  if(g._ghostShadow&&g._ghostShadow.life>0){
+    g._ghostShadow.life-=.04;
+    cx.save();cx.globalAlpha=g._ghostShadow.life*.35;cx.shadowColor="#DA77F2";cx.shadowBlur=12;
+    drawPlayer(g._ghostShadow.x,g._ghostShadow.y,PR,now/1000,"#DA77F2",g._ghostShadow.face);
+    cx.restore();
+  }
+  // 過熱條（CLIENT 端 P2 用 — 顯示在自己角色下方）
+  if(g.p2&&g.heat>0){
+    const _hp3=g.heat/15,_hbW=PR*2.4,_hbH=3,_hbX=g.p2.x-_hbW/2,_hbY=g.p2.y+PR+8;
+    cx.save();cx.globalAlpha=.5+_hp3*.4;
+    cx.fillStyle="rgba(0,0,0,.35)";cx.fillRect(_hbX,_hbY,_hbW,_hbH);
+    cx.fillStyle=_hp3>.75?"#FF4500":_hp3>.5?"#FF922B":"#FFD43B";
+    cx.fillRect(_hbX,_hbY,_hbW*_hp3,_hbH);cx.restore();
+  }
+  if(g._heatWarn&&g.p2){
+    cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#FF4500";cx.globalAlpha=Math.sin(now/60)>0?.8:0;
+    cx.fillText("⚠ 過熱警告",g.p2.x,g.p2.y+PR+18);cx.restore();
+  }
+  if(g.heatCD>0&&g.p2){
+    cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/80)*.3;
+    cx.fillText("🔥 冷卻 "+(g.heatCD/1000).toFixed(1)+"s",g.p2.x,g.p2.y+PR+18);cx.restore();
+  }
+  // 連攜光環
+  if(g._coopLink&&g.p2){
+    const _mx3=(g.p.x+g.p2.x)/2,_my3=(g.p.y+g.p2.y)/2;
+    cx.save();cx.globalAlpha=.12+Math.sin(now/250)*.06;
+    const _lg=cx.createRadialGradient(_mx3,_my3,10,_mx3,_my3,80);
+    _lg.addColorStop(0,"#FFD43B");_lg.addColorStop(1,"transparent");
+    cx.fillStyle=_lg;cx.beginPath();cx.arc(_mx3,_my3,80,0,Math.PI*2);cx.fill();
+    cx.globalAlpha=.2+Math.sin(now/200)*.1;cx.strokeStyle="#FFD43B";cx.lineWidth=1.5;cx.setLineDash([4,4]);
+    cx.beginPath();cx.moveTo(g.p.x,g.p.y);cx.lineTo(g.p2.x,g.p2.y);cx.stroke();cx.setLineDash([]);
+    cx.restore();
+  }
+  // 光劍光束
+  if(g._lightBeams){
+    g._lightBeams=g._lightBeams.filter(b=>{
+      const el=now-b.t;if(el>300)return false;
+      const bp=el/300;
+      cx.save();cx.lineCap="round";
+      cx.globalAlpha=(1-bp)*.4;cx.strokeStyle="#FFD43B";cx.lineWidth=6*(1-bp);
+      cx.shadowColor="#FFD43B";cx.shadowBlur=12;
+      cx.beginPath();cx.moveTo(b.x,b.y);cx.lineTo(b.x+Math.cos(b.ang)*b.len,b.y+Math.sin(b.ang)*b.len);cx.stroke();
+      cx.globalAlpha=(1-bp)*.8;cx.strokeStyle="#fff";cx.lineWidth=2*(1-bp);cx.shadowBlur=0;
+      cx.beginPath();cx.moveTo(b.x,b.y);cx.lineTo(b.x+Math.cos(b.ang)*b.len,b.y+Math.sin(b.ang)*b.len);cx.stroke();
+      cx.restore();return true;
+    });
+  }
+  // 龍息錐形
+  if(g._dragonBreathFx&&g._dragonBreathFx.on&&g.p){
+    const _dbf=g._dragonBreathFx,_dbA2=_dbf.ang,_dbR2=_dbf.range;
+    const _dbX=g.p.x,_dbY=g.p.y;
+    cx.save();
+    for(let i=0;i<20;i++){
+      const t2=i/20,d2=_dbR2*t2;
+      const w2=t2*8+1;
+      const col2=t2<.2?"#FFF8E0":t2<.4?"#FFD43B":t2<.6?"#FF922B":"#FF4500";
+      cx.globalAlpha=(1-t2*.4)*.25;cx.fillStyle=col2;
+      cx.beginPath();cx.arc(_dbX+Math.cos(_dbA2)*d2,_dbY+Math.sin(_dbA2)*d2,w2,0,Math.PI*2);cx.fill();
+    }
+    cx.restore();
+  }
   // damage numbers
   g.dn=g.dn.filter(d=>{d.life-=.025;return d.life>0;});
   g.dn.forEach(d=>{cx.save();cx.globalAlpha=Math.min(1,d.life);cx.font=(d.big?"bold 15px":"bold 11px")+" 'Nunito',sans-serif";
@@ -5046,7 +5154,33 @@ function clientRenderLoop(){
     cx.restore();
   }
   cx.restore();
-  hud();drawMinimap();
+  // CLIENT HUD：顯示 P2（自己）的數據
+  if(g.p2&&g._clientP2Hp!==undefined){
+    const _hp2=g._clientP2Hp,_mhp2=g._clientP2Mhp||1;
+    $("hl").textContent="❤️"+Math.floor(_hp2)+"/"+_mhp2;
+    $("hb").style.width=Math.max(0,Math.min(100,_hp2/_mhp2*100))+"%";
+    $("ll").textContent="Lv."+(g.p2Level||1);
+    // 集氣條
+    const _ult2=g._clientP2Ult||0,_ultN2=g._clientP2UltNeed||100;
+    const _up2=Math.min(1,_ult2/_ultN2);
+    $("ub").style.width=(_up2*100)+"%";
+    $("ulbl").textContent=_up2>=1?"💥MAX":"💎"+Math.floor(_up2*100)+"%";
+    $("ulr").textContent=_up2>=1?"💥 READY":"💎"+Math.floor(_up2*100)+"%";
+    $("ulr").style.color=_up2>=1?"#FFD43B":"rgba(190,78,219,.85)";
+  }
+  // 技能 CD 顯示
+  const _skCd=g._clientP2SkillCd||0;
+  const _skEl=$("skillCd");
+  if(_skEl){if(_skCd>0){_skEl.style.display="flex";_skEl.textContent=(_skCd/1000).toFixed(1);}else{_skEl.style.display="none";}}
+  // 波次/分數/擊殺
+  const _sl=$("sl"),_kl=$("kl");
+  if(_sl)_sl.textContent="⭐"+(g.score||0);
+  if(_kl)_kl.textContent="💀"+(g.kills||0);
+  // Combo 文字
+  const _cmb=g._clientP2Combo||0;
+  const _cEl=$("combo");
+  if(_cEl)_cEl.textContent=_cmb>2?_cmb+"x COMBO!":"";
+  drawMinimap();
 }
 
 /* ═══ CARD PICK ═══ */
@@ -6303,6 +6437,11 @@ function _coopDoCreate(code){
         if(!data)return;
         if(data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.pick=data.pick??-1;_p2Input.skill=!!data.skill;}
         if(data.t==="p2picked"&&data.cardId){_applyP2Card(data.cardId);}
+        if(data.t==="p2char"&&data.charType&&g&&g.p2){
+          g.p2.charType=data.charType;
+          const CC2=CHAR[data.charType]||CHAR.gunner;
+          g.p2.speed=CC2.startSpeed;g.p2.armor=CC2.armor;g.p2.dodge=CC2.dodge;g.p2.crit=CC2.crit;g.p2.fr=CC2.fr;
+        }
       });
       conn.on("close",()=>{_net.connected=false;if(g&&g.run){g.run=false;showOver();}});
     });
@@ -6363,6 +6502,10 @@ function coopStart(){
 function _coopStartReal(){
   if(_net&&_net.role==="host"&&_net.conn&&_net.connected){
     _net.conn.send({t:"start",hostChar:_charType});
+  }
+  // CLIENT：選完角色後告知 HOST 自己的角色
+  if(_net&&_net.role==="client"&&_net.conn&&_net.conn.open){
+    _net.conn.send({t:"p2char",charType:_charType});
   }
   startGame("coop");
 }
@@ -6715,6 +6858,7 @@ window.pracCoopRoom=function(){
       conn.on("data",data=>{
         if(data&&data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.skill=!!data.skill;}
         if(data&&data.t==="p2picked"&&data.cardId){_applyP2Card(data.cardId);}
+        if(data&&data.t==="p2char"&&data.charType&&g&&g.p2){g.p2.charType=data.charType;const CC3=CHAR[data.charType]||CHAR.gunner;g.p2.speed=CC3.startSpeed;g.p2.armor=CC3.armor;g.p2.dodge=CC3.dodge;g.p2.crit=CC3.crit;g.p2.fr=CC3.fr;}
       });
       conn.on("close",()=>{_net.connected=false;_p2AI=true;g.dn.push({x:g.p.x,y:g.p.y-40,d:"⚠️ 對方已離線，切換 AI",life:3,color:"#FF6B6B",big:1});});
     });
