@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.38</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.39</div>
 </div>
 </div>
 
@@ -2619,18 +2619,27 @@ function loop(){
       cx.fillStyle=d.color;cx.textAlign="center";cx.fillText(d.d,d.x,d.y);cx.restore();});
     cx.restore();raf=requestAnimationFrame(loop);return;}
   if(!g||!g.run){raf=requestAnimationFrame(loop);return;}
-  // Client: 送操作，然後和 HOST 共用同一套渲染代碼
-  const _isClientMode=!!(_isCoopMode&&_net&&_net.role==="client"&&_net.connected);
-  if(_isClientMode){
+  // Client: 送操作 + 呼叫共用渲染函式（不跑遊戲邏輯）
+  if(_isCoopMode&&_net&&_net.role==="client"&&_net.connected){
     try{
       g.time=performance.now();
       if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:!!_clientUltReq,dodge:!!_clientDodgeReq,pick:-1,skill:!!_clientSkillReq});}
       _clientSkillReq=false;_clientUltReq=false;_clientDodgeReq=false;
-    }catch(e){console.error("CLIENT input error:",e);}
-    // 不 return — 繼續往下跑渲染代碼
+      // 粒子/閃電/殘影衰減（CLIENT 本地視覺）
+      const _cdt=Math.min((performance.now()-(g.lf||performance.now())),33)/16.67;g.lf=performance.now();
+      par=par.filter(p=>{p.x+=(p.vx||0)*_cdt;p.y+=(p.vy||0)*_cdt;p.life-=.03*_cdt;if(p.sz)p.sz*=.98;return p.life>0;});
+      g.dn=g.dn.filter(d=>{if(d._arc||(typeof d.d==="number")){if(!d._arc){d._arc=1;d.vx=rn(-.5,.5);d.vy=rn(-3.2,-2.4);d.g=.16;}d.x+=d.vx*_cdt;d.vy+=d.g*_cdt;d.y+=d.vy*_cdt;}else d.y-=1.1*_cdt;d.life-=.025*_cdt;return d.life>0;});
+      if(g.ltn)g.ltn=g.ltn.filter(l=>{l.life-=.06*_cdt;return l.life>0;});
+      if(g.ultFlash>0)g.ultFlash-=.03*_cdt;
+      if(_shakeT>0)_shakeT=Math.max(0,_shakeT-.016*_cdt);
+      if(_hitFlash>0)_hitFlash=Math.max(0,_hitFlash-.04*_cdt);
+      _dashGhosts=_dashGhosts.filter(gh=>{gh.life-=.06*_cdt;return gh.life>0;});
+      // 呼叫和 HOST 完全相同的渲染函式
+      _renderFrame(performance.now());
+    }catch(e){console.error("CLIENT error:",e);}
+    raf=requestAnimationFrame(loop);return;
   }
   const now=performance.now(),frameMs=Math.min(now-g.lf,33),dt=frameMs/16.67;g.lf=now;g.time=now;
-  if(!_isClientMode){ // ═══ 以下遊戲邏輯只在 HOST 端執行 ═══
   const bhSafe=!!(g.p.bhSafeEnd&&now<g.p.bhSafeEnd);
   fxQ=frameMs>24?Math.max(.45,fxQ-.05):Math.min(1,fxQ+.02);
 
@@ -3918,10 +3927,8 @@ function loop(){
   settleEnemyDeaths();
   checkStageBossDeath();
 
-  } // ═══ HOST 遊戲邏輯結束 ═══
-
-  // particles（HOST + CLIENT 都要跑，用於視覺衰減）
-  par=par.filter(p=>{p.x+=(p.vx||0)*dt;p.y+=(p.vy||0)*dt;p.life-=.03*dt;if(p.sz)p.sz*=.98;return p.life>0;});
+  // particles
+  par=par.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=.03*dt;p.sz*=.98;return p.life>0;});
   g.dn=g.dn.filter(d=>{
     if(d._arc||(typeof d.d==="number")||(d._playerDmg)){
       if(!d._arc){d._arc=1;d.vx=rn(-.5,.5);d.vy=rn(-3.2,-2.4);d.g=.16;}
@@ -3939,6 +3946,17 @@ function loop(){
   if(_phoenixT>0)_phoenixT=Math.max(0,_phoenixT-.016*dt);
 
   /* ════ DRAW ════ */
+  _renderFrame(now);
+  // Host: sync after render
+  if(_isCoopMode&&_net&&_net.role==="host"&&_net.connected&&_net.conn&&_net.conn.open){
+    if(!g._syncFrame)g._syncFrame=0;
+    {const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);}
+  }
+  raf=requestAnimationFrame(loop);
+} // end loop()
+
+// ═══ 共用渲染函式（HOST + CLIENT 都呼叫）═══
+function _renderFrame(now){
   const cm=cam();
   const _sx=_shakeT>0?(Math.random()-.5)*2*_shakePow*_shakeT:0;
   const _sy=_shakeT>0?(Math.random()-.5)*2*_shakePow*_shakeT:0;
@@ -4959,13 +4977,7 @@ function loop(){
   }
 
   hud();drawMinimap();
-  // Host: 每 2 幀送狀態給 Client
-  if(_isCoopMode&&_net&&_net.role==="host"&&_net.connected&&_net.conn&&_net.conn.open){
-    if(!g._syncFrame)g._syncFrame=0;
-    {const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);} // 每幀同步（減少LAG）
-  }
-  raf=requestAnimationFrame(loop);
-}
+} // end _renderFrame()
 
 /* ═══ Co-op Network Sync ═══ */
 function serializeCoopState(){
@@ -7000,7 +7012,7 @@ window.pickChar=function(charType){
 
 window.startGame=window.SG=function(mode){
   _mode=mode||_mode||"classic";const MC=MODE[_mode];
-  if(_mode==="coop")_isCoopMode=true; // 確保 coop flag 正確
+  _isCoopMode=(_mode==="coop"); // 確保 coop flag 正確（非 coop 重設為 false）
   const CC=CHAR[_charType]||CHAR.gunner; // 角色數值
   // 嘗試全螢幕（隱藏網址列）
   const el=document.documentElement;
