@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.37</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.38</div>
 </div>
 </div>
 
@@ -961,25 +961,31 @@ function showPlayerDmg(dmg,p){
 
 /* ═══ HUD ═══ */
 function hud(){if(!g)return;
+  // CLIENT 模式：HUD 顯示 P2（自己）的數據
+  const _hudIsClient=!!(_isCoopMode&&_net&&_net.role==="client");
+  const _hudP=_hudIsClient&&g.p2?g.p2:g.p;
+  const _hudLv=_hudIsClient?g.p2Level||1:g.level;
+  const _hudExp=_hudIsClient?g.p2Exp||0:g.exp;
+  const _hudExpTo=_hudIsClient?g.p2ExpTo||100:g.expTo;
   // 閃避按鈕 CD 外圈
   const _db=$("dodgeBtn");
   if(_db){
-    const _dn=performance.now(),_dCD=g.p._dodgeCD||0,_dReady=_dn>=_dCD;
+    const _dn=performance.now(),_dCD=_hudP._dodgeCD||0,_dReady=_dn>=_dCD;
     const _dPct=_dReady?1:Math.max(0,1-((_dCD-_dn)/2000));
     const _dDeg=_dPct*360;
     _db.style.background=_dReady?'radial-gradient(circle,rgba(116,192,252,.2),rgba(20,20,40,.9))':`conic-gradient(rgba(116,192,252,.45) ${_dDeg-1}deg,rgba(116,192,252,.2) ${_dDeg}deg,rgba(20,20,40,.9) ${_dDeg+1}deg)`;
     _db.style.borderColor=_dReady?"rgba(116,192,252,.6)":"rgba(255,255,255,.15)";
     _db.style.opacity=_dReady?"1":".6";
   }
-  $("hl").textContent="❤️"+Math.floor(g.p.hp)+"/"+g.p.maxHp;
-  $("hb").style.width=(g.p.hp/g.p.maxHp*100)+"%";
-  $("ll").textContent="Lv."+g.level;
-  $("eb").style.width=(g.exp/g.expTo*100)+"%";
+  $("hl").textContent="❤️"+Math.floor(_hudP.hp)+"/"+_hudP.maxHp;
+  $("hb").style.width=(_hudP.hp/_hudP.maxHp*100)+"%";
+  $("ll").textContent="Lv."+_hudLv;
+  $("eb").style.width=(_hudExp/_hudExpTo*100)+"%";
   $("sl").textContent="⭐"+g.score;$("kl").textContent="💀"+g.kills;
-  const _hasBH=!!g.p.hasBH,_hasTS=!!g.p.hasTS,_hasLS=!!g.p.lStep,_hasCd=_hasBH||_hasTS;
+  const _hasBH=!!_hudP.hasBH,_hasTS=!!_hudP.hasTS,_hasLS=!!_hudP.lStep,_hasCd=_hasBH||_hasTS;
   const _ultCount=(_hasBH?1:0)+(_hasTS?1:0)+(_hasLS?1:0);
   if(_hasCd){
-    const cdMs=(_hasBH?BH_COOLDOWN_MS:(_hasTS?(g.p.tsCd||15e3):15e3))/(g.p.ultRate||1);
+    const cdMs=(_hasBH?BH_COOLDOWN_MS:(_hasTS?(_hudP.tsCd||15e3):15e3))/(_hudP.ultRate||1);
     const icon=_ultCount>=2?"🔮":_hasBH?"🕳️":"⏸️";
     const label=[_hasBH?"黑洞":null,_hasTS?"時停":null,_hasLS?"閃電步":null].filter(Boolean).join("+");
     const cdColor=_hasBH?"#495057":"#74C0FC";
@@ -994,11 +1000,12 @@ function hud(){if(!g)return;
     $("ulr").style.color=ready?"#FFD43B":"rgba(190,78,219,.85)";
     $("ultR").style.animation=ready?"gw .45s infinite":"none";
   }else{
-    const pct=Math.min(g.ultCharge/ULT_CHARGE_NEED,1);
+    const _hudUltCharge=_hudIsClient?(g._clientP2Ult||0):g.ultCharge;
+    const pct=Math.min(_hudUltCharge/ULT_CHARGE_NEED,1);
     $("ultR").style.background="conic-gradient(#BE4BDB "+(pct*360)+"deg,rgba(190,78,219,.1) "+(pct*360)+"deg)";
-    const _lsReady=pct>=1&&g.p.lStep;
+    const _lsReady=pct>=1&&_hudP.lStep;
     $("ultI").textContent=pct>=1?(_lsReady?"⚡":"💥"):"💎";
-    $("ultL").textContent=pct>=1?(_lsReady?"⬇ 閃電步 ⬇":"⬇ 發動 ⬇"):g.ultHold?"集氣中...":"長壓集氣";
+    $("ultL").textContent=pct>=1?(_lsReady?"⬇ 閃電步 ⬇":"⬇ 發動 ⬇"):(g.ultHold||(_hudIsClient&&aim.a))?"集氣中...":"長壓集氣";
     $("ub").style.width=(pct*100)+"%";
     $("ulbl").textContent=pct>=1?"💥MAX":`💎${Math.floor(pct*100)}%`;
     $("ulr").textContent=pct>=1?"💥 READY":"💎"+Math.floor(pct*100)+"%";
@@ -1009,11 +1016,17 @@ function hud(){if(!g)return;
   const _p2h=$("p2hud");
   if(_isCoopMode&&g.p2&&_p2h){
     _p2h.style.display="block";
-    const p2s=g.p2._downed?"💀":"🤝";
-    $("p2hl").textContent=p2s+" P2 ❤️"+Math.floor(g.p2.hp)+"/"+g.p2.maxHp;
-    $("p2hb").style.width=(Math.max(0,g.p2.hp)/g.p2.maxHp*100)+"%";
-    $("p2ll").textContent="P2 Lv."+g.p2Level;
-    $("p2eb").style.width=(g.p2Exp/g.p2ExpTo*100)+"%";
+    // CLIENT：P2 HUD 顯示對方（P1）的數據；HOST：顯示 P2 的數據
+    const _otherP=_hudIsClient?g.p:g.p2;
+    const _otherLv=_hudIsClient?g.level:g.p2Level;
+    const _otherExp=_hudIsClient?g.exp:g.p2Exp;
+    const _otherExpTo=_hudIsClient?g.expTo:g.p2ExpTo;
+    const p2s=_otherP._downed?"💀":"🤝";
+    const _otherLabel=_hudIsClient?"P1":"P2";
+    $("p2hl").textContent=p2s+" "+_otherLabel+" ❤️"+Math.floor(_otherP.hp)+"/"+_otherP.maxHp;
+    $("p2hb").style.width=(Math.max(0,_otherP.hp)/_otherP.maxHp*100)+"%";
+    $("p2ll").textContent=_otherLabel+" Lv."+_otherLv;
+    $("p2eb").style.width=(_otherExp/_otherExpTo*100)+"%";
   }else if(_p2h){_p2h.style.display="none";}
 }
 
@@ -2606,19 +2619,18 @@ function loop(){
       cx.fillStyle=d.color;cx.textAlign="center";cx.fillText(d.d,d.x,d.y);cx.restore();});
     cx.restore();raf=requestAnimationFrame(loop);return;}
   if(!g||!g.run){raf=requestAnimationFrame(loop);return;}
-  // Client: 只送操作+渲染，不跑邏輯
-  if(_isCoopMode&&_net&&_net.role==="client"&&_net.connected){
+  // Client: 送操作，然後和 HOST 共用同一套渲染代碼
+  const _isClientMode=!!(_isCoopMode&&_net&&_net.role==="client"&&_net.connected);
+  if(_isClientMode){
     try{
       g.time=performance.now();
-      // 送操作給 Host
       if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:!!_clientUltReq,dodge:!!_clientDodgeReq,pick:-1,skill:!!_clientSkillReq});}
       _clientSkillReq=false;_clientUltReq=false;_clientDodgeReq=false;
-      // 渲染收到的狀態
-      clientRenderLoop();
-    }catch(e){console.error("CLIENT loop error:",e);}
-    raf=requestAnimationFrame(loop);return;
+    }catch(e){console.error("CLIENT input error:",e);}
+    // 不 return — 繼續往下跑渲染代碼
   }
   const now=performance.now(),frameMs=Math.min(now-g.lf,33),dt=frameMs/16.67;g.lf=now;g.time=now;
+  if(!_isClientMode){ // ═══ 以下遊戲邏輯只在 HOST 端執行 ═══
   const bhSafe=!!(g.p.bhSafeEnd&&now<g.p.bhSafeEnd);
   fxQ=frameMs>24?Math.max(.45,fxQ-.05):Math.min(1,fxQ+.02);
 
@@ -3906,8 +3918,10 @@ function loop(){
   settleEnemyDeaths();
   checkStageBossDeath();
 
-  // particles
-  par=par.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=.03*dt;p.sz*=.98;return p.life>0;});
+  } // ═══ HOST 遊戲邏輯結束 ═══
+
+  // particles（HOST + CLIENT 都要跑，用於視覺衰減）
+  par=par.filter(p=>{p.x+=(p.vx||0)*dt;p.y+=(p.vy||0)*dt;p.life-=.03*dt;if(p.sz)p.sz*=.98;return p.life>0;});
   g.dn=g.dn.filter(d=>{
     if(d._arc||(typeof d.d==="number")||(d._playerDmg)){
       if(!d._arc){d._arc=1;d.vx=rn(-.5,.5);d.vy=rn(-3.2,-2.4);d.g=.16;}
@@ -4960,7 +4974,7 @@ function serializeCoopState(){
   return{t:"state",
     p1:{x:g.p.x,y:g.p.y,hp:g.p.hp,mhp:g.p.maxHp,face:g.p.face,_downed:g.p._downed,_iFrameEnd:g.p._iFrameEnd,_rescueTimer:g.p._rescueTimer||0,_pickPending:g.p._pickPending||false,charType:g.charType},
     p2:{x:g.p2.x,y:g.p2.y,hp:g.p2.hp,mhp:g.p2.maxHp,face:g.p2.face,_downed:g.p2._downed,_iFrameEnd:g.p2._iFrameEnd,_rescueTimer:g.p2._rescueTimer||0,_pickPending:g.p2._pickPending||false,charType:g.p2.charType},
-    ene:g.ene.map(e=>({x:e.x,y:e.y,hp:e.hp,mhp:e.mhp,r:e.r,color:e.color,boss:e.boss,mega:e.mega,tier:e.tier,role:e.role,face:e.face,t:e.t,stageBoss:e.stageBoss,sbPhase:e.sbPhase,_coopShield:e._coopShield,_rage:e._rage,eliteEnemy:e.eliteEnemy,_eDashing:e._eDashing,_eShieldEnd:e._eShieldEnd})),
+    ene:g.ene.map(e=>({x:e.x,y:e.y,hp:e.hp,mhp:e.mhp,r:e.r,color:e.color,boss:e.boss,mega:e.mega,tier:e.tier,role:e.role,face:e.face,t:e.t,st:e.st,frozen:e.frozen,stageBoss:e.stageBoss,sbPhase:e.sbPhase,_coopShield:e._coopShield,_rage:e._rage,_rageState:e._rageState,_rageDx:e._rageDx,_rageDy:e._rageDy,eliteEnemy:e.eliteEnemy,_eDashing:e._eDashing,_eShieldEnd:e._eShieldEnd,dashState:e.dashState,dashDx:e.dashDx,dashDy:e.dashDy,shieldAng:e.shieldAng,flankA:e.flankA,bhExeAt:e.bhExeAt,bossType:e.bossType,poisonT:e.poisonT,burnT:e.burnT})),
     bul:g.bul.filter(b=>b.life>0).map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,crit:b.crit,life:b.life})),
     ebul:g.ebul.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,life:b.life})),
     dn:g.dn.map(d=>({x:d.x,y:d.y,d:d.d,life:d.life,color:d.color,big:d.big})),
@@ -4979,6 +4993,10 @@ function serializeCoopState(){
     lightBeams:(g._lightBeams||[]).slice(-3).map(b=>({x:b.x,y:b.y,ang:b.ang,len:b.len,t:b.t})),
     dragonFx:g._dragonBreathFx?{ang:g._dragonBreathFx.ang,range:g._dragonBreathFx.range,on:g._dragonBreathFx.on}:null,
     ghostShadow:g._ghostShadow&&g._ghostShadow.life>0?{x:g._ghostShadow.x,y:g._ghostShadow.y,face:g._ghostShadow.face,life:g._ghostShadow.life}:null,
+    ghostArc:g._ghostArc?{x:g._ghostArc.x,y:g._ghostArc.y,ang:g._ghostArc.ang,t:g._ghostArc.t}:null,
+    ultFlash:g.ultFlash||0,
+    p2Atk:g._p2AtkAnim?{active:g._p2AtkAnim.active,startT:g._p2AtkAnim.startT,_qiSpin:g._p2AtkAnim._qiSpin}:null,
+    p2Wb:g._p2WbSwing||0,
     // P2 數據（CLIENT 需要顯示自己的 HUD）
     p2Hp:g.p2?g.p2.hp:0,p2Mhp:g.p2?g.p2.maxHp:0,
     p2Ult:g.ultCharge||0,p2UltNeed:ULT_CHARGE_NEED,
@@ -5013,6 +5031,10 @@ function applyCoopState(data){
   if(data.lightBeams)g._lightBeams=data.lightBeams;
   if(data.dragonFx!==undefined)g._dragonBreathFx=data.dragonFx;
   if(data.ghostShadow!==undefined)g._ghostShadow=data.ghostShadow;
+  if(data.ghostArc!==undefined)g._ghostArc=data.ghostArc;
+  if(data.ultFlash!==undefined)g.ultFlash=data.ultFlash;
+  if(data.p2Atk)g._p2AtkAnim=data.p2Atk;
+  if(data.p2Wb!==undefined)g._p2WbSwing=data.p2Wb;
   // P2 HUD 數據（CLIENT 用）
   if(data.p2Hp!==undefined)g._clientP2Hp=data.p2Hp;
   if(data.p2Mhp!==undefined)g._clientP2Mhp=data.p2Mhp;
@@ -5030,6 +5052,8 @@ function applyCoopState(data){
   if(data.score!==undefined)g.score=data.score;
   if(data.kills!==undefined)g.kills=data.kills;
   if(data.p2Lv!==undefined)g.p2Level=data.p2Lv;
+  if(data.p2Exp!==undefined)g.p2Exp=data.p2Exp;
+  if(data.p2ExpTo!==undefined)g.p2ExpTo=data.p2ExpTo;
   if(data.run===false){g.run=false;showOver();}
 }
 function clientRenderLoop(){
@@ -5145,6 +5169,22 @@ function clientRenderLoop(){
       cx.beginPath();cx.arc(_dbX+Math.cos(_dbA2)*d2,_dbY+Math.sin(_dbA2)*d2,w2,0,Math.PI*2);cx.fill();
     }
     cx.restore();
+  }
+  // 殘影斬紫弧
+  if(g._ghostArc){
+    const _ga=g._ghostArc,_gaEl=now-_ga.t;
+    if(_gaEl<400){
+      const _gap=_gaEl/400;
+      cx.save();cx.globalAlpha=(1-_gap)*.5;cx.strokeStyle="#DA77F2";cx.lineWidth=3*(1-_gap);
+      cx.shadowColor="#DA77F2";cx.shadowBlur=10;
+      cx.beginPath();cx.arc(_ga.x,_ga.y,PR*2+_gap*20,_ga.ang-PI*.5,_ga.ang+PI*.5);cx.stroke();
+      cx.restore();
+    }else{g._ghostArc=null;}
+  }
+  // 大招閃光
+  if(g.ultFlash>0){
+    cx.save();cx.globalAlpha=g.ultFlash*.5;cx.fillStyle="#fff";cx.fillRect(0,0,VW*2,VH*2);cx.restore();
+    g.ultFlash=Math.max(0,g.ultFlash-.03);
   }
   // damage numbers
   g.dn=g.dn.filter(d=>{d.life-=.025;return d.life>0;});
@@ -6441,6 +6481,7 @@ function _coopDoCreate(code){
         if(!data)return;
         if(data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.pick=data.pick??-1;_p2Input.skill=!!data.skill;}
         if(data.t==="p2picked"&&data.cardId){_applyP2Card(data.cardId);}
+        if(data.t==="p2reroll"&&data.idx!==undefined){_handleP2Reroll(data.idx);}
         if(data.t==="p2char"&&data.charType&&g&&g.p2){
           g.p2.charType=data.charType;
           const CC2=CHAR[data.charType]||CHAR.gunner;
@@ -6545,10 +6586,33 @@ function _triggerP2Pick(cr){
   }
   // 真人 P2：發送給 CLIENT
   if(_net&&_net.conn&&_net.conn.open){
+    _p2LastPicks=picks.slice(); // HOST 記錄，供重骰用
     _net.conn.send({t:"p2pick",cards:picks,bigLeft:_p2BigChestLeft});
   }
 }
 // HOST 端：收到 CLIENT 選擇後套用
+// HOST：處理 P2 重骰請求
+let _p2LastPicks=[]; // HOST 記錄當前 P2 選卡選項
+function _handleP2Reroll(idx){
+  if(!g||!g.p2||idx<0||idx>=_p2LastPicks.length)return;
+  const p2ct=g.p2.charType||"gunner";
+  const used=new Set(_p2LastPicks.map(c=>c.id));
+  const pool=C.filter(c=>{
+    if(c.charReq&&c.charReq!==p2ct)return false;
+    if(used.has(c.id))return false;
+    const ex=inv2.find(x=>x.id===c.id);
+    if(c.once&&ex)return false;
+    return!ex||ex.lv<2;
+  });
+  if(pool.length===0)return;
+  const newCard=pool[Math.random()*pool.length|0];
+  _p2LastPicks[idx]={id:newCard.id,n:newCard.n,e:newCard.e,r:newCard.r,d:newCard.d};
+  // 發送更新後的卡片列表給 CLIENT
+  if(_net&&_net.conn&&_net.conn.open){
+    _net.conn.send({t:"p2pick",cards:_p2LastPicks,bigLeft:_p2BigChestLeft,reroll:idx});
+  }
+}
+
 function _applyP2Card(cardId){
   const cd=C.find(c=>c.id===cardId);if(!cd)return;
   const ex=inv2.find(x=>x.id===cd.id);
@@ -6575,18 +6639,36 @@ function showCoopPick(data){
   h+='<div style="background:rgba(12,12,30,.96);border-radius:16px;border:1px solid rgba(240,101,149,.2);padding:20px;max-width:360px;width:90%;text-align:center">';
   h+=`<div style="color:#F06595;font-size:14px;font-weight:700;margin-bottom:10px">${title}</div>`;
   h+='<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">';
-  cards.forEach(c=>{
+  cards.forEach((c,ci)=>{
     const rc={R:"#74C0FC",SR:"#DA77F2",SSR:"#FFD43B"}[c.r]||"#fff";
-    h+=`<div onclick="_p2PickCard(${c.id})" style="cursor:pointer;width:100px;background:rgba(255,255,255,.04);border:2px solid ${rc}40;border-radius:12px;padding:10px 6px;text-align:center;transition:all .15s" onmouseover="this.style.borderColor='${rc}'" onmouseout="this.style.borderColor='${rc}40'">`;
+    h+=`<div id="_p2c${ci}" style="width:100px;background:rgba(255,255,255,.04);border:2px solid ${rc}40;border-radius:12px;padding:10px 6px;text-align:center">`;
     h+=`<div style="font-size:28px">${c.e}</div>`;
     h+=`<div style="color:${rc};font-weight:700;font-size:12px;margin:4px 0">${c.n}</div>`;
     h+=`<div style="color:${rc};font-size:9px">${c.r}</div>`;
     h+=`<div style="color:rgba(255,255,255,.4);font-size:8px;margin-top:4px;line-height:1.3">${c.d[0]}</div>`;
-    h+='</div>';
+    h+=`<div style="display:flex;gap:4px;margin-top:6px;justify-content:center">`;
+    h+=`<button onclick="_p2PickCard(${c.id})" style="padding:4px 10px;font-size:10px;border:none;border-radius:6px;background:${rc};color:#000;font-weight:700;cursor:pointer">選擇</button>`;
+    h+=`<button onclick="_p2RerollCard(${ci})" id="_p2rr${ci}" style="padding:4px 8px;font-size:9px;border:1px solid rgba(255,255,255,.2);border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);cursor:pointer">🔄</button>`;
+    h+=`</div></div>`;
   });
   h+='</div></div></div>';
   document.body.insertAdjacentHTML('beforeend',h);
+  // 儲存當前卡片供重骰用
+  window._p2PickCards=cards;
+  window._p2PickRerolled=[false,false,false];
 }
+// P2 重骰（CLIENT 端向 HOST 請求新卡）
+window._p2RerollCard=function(idx){
+  if(!window._p2PickRerolled||window._p2PickRerolled[idx])return;
+  window._p2PickRerolled[idx]=true;
+  // 停用重骰按鈕
+  const rrBtn=document.getElementById("_p2rr"+idx);
+  if(rrBtn){rrBtn.disabled=true;rrBtn.style.opacity=".3";}
+  // 向 HOST 請求重骰
+  if(_net&&_net.conn&&_net.conn.open){
+    _net.conn.send({t:"p2reroll",idx});
+  }
+};
 window._p2PickCard=function(cardId){
   // CLIENT 選完 → 發回 HOST
   if(_net&&_net.conn&&_net.conn.open){
@@ -6862,6 +6944,7 @@ window.pracCoopRoom=function(){
       conn.on("data",data=>{
         if(data&&data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.skill=!!data.skill;}
         if(data&&data.t==="p2picked"&&data.cardId){_applyP2Card(data.cardId);}
+        if(data&&data.t==="p2reroll"&&data.idx!==undefined){_handleP2Reroll(data.idx);}
         if(data&&data.t==="p2char"&&data.charType&&g&&g.p2){g.p2.charType=data.charType;const CC3=CHAR[data.charType]||CHAR.gunner;g.p2.speed=CC3.startSpeed;g.p2.armor=CC3.armor;g.p2.dodge=CC3.dodge;g.p2.crit=CC3.crit;g.p2.fr=CC3.fr;}
       });
       conn.on("close",()=>{_net.connected=false;_p2AI=true;g.dn.push({x:g.p.x,y:g.p.y-40,d:"⚠️ 對方已離線，切換 AI",life:3,color:"#FF6B6B",big:1});});
@@ -6992,7 +7075,7 @@ function startUltPress(){
   else if(g.ultCharge>=ULT_CHARGE_NEED)doUlt();
   else g.ultHold=true;
 }
-function endUltPress(){if(g)g.ultHold=false;}
+function endUltPress(){if(g&&!(_net&&_net.role==="client"))g.ultHold=false;}
 // 短距離閃避位移
 function doDodge(){
   if(!g||!g.run)return;
