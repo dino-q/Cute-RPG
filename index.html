@@ -289,7 +289,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 <div id="practiceOv" style="display:none;position:fixed;inset:0;pointer-events:none;z-index:200">
   <div id="pracBackdrop" onclick="pracCloseOnBlank()" style="display:none;position:absolute;inset:0;pointer-events:auto;z-index:201"></div>
   <!-- 頂部工具列：兩行，避免擋到面板 -->
-  <div id="pracToolbar" style="position:absolute;top:4px;left:50%;transform:translateX(-50%);pointer-events:auto;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:320px;z-index:203">
+  <div id="pracToolbar" style="position:absolute;top:4px;left:50%;transform:translateX(-50%);pointer-events:auto;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:95vw;z-index:203">
     <button onclick="pracTogglePanel('cards')" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,215,0,.2);color:#FFD43B;font-weight:700;border:1px solid rgba(255,215,0,.3);cursor:pointer">🃏卡片</button>
     <button onclick="pracTogglePanel('enemies')" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,107,107,.2);color:#FF6B6B;font-weight:700;border:1px solid rgba(255,107,107,.3);cursor:pointer">👾敵人</button>
     <button onclick="pracTogglePanel('stats')" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(116,192,252,.2);color:#74C0FC;font-weight:700;border:1px solid rgba(116,192,252,.3);cursor:pointer">📊能力值</button>
@@ -563,6 +563,7 @@ let raf,cTimer,ultCastTimer=null;
 let _net=null; // {role:"host"|"client", peer:Peer, conn:DataConnection, roomCode:string, connected:bool}
 let _isCoopMode=false;
 let _p2AI=false; // P2 由 AI 控制
+let _clientSkillReq=false; // CLIENT 端技能請求 flag
 let _p2Input={dx:0,dy:0,a:0,aimA:0,aimDx:0,aimDy:0,ult:false,dodge:false,pick:-1};
 let inv2=[]; // P2 卡片庫存
 let _bgm=null;
@@ -2178,8 +2179,9 @@ function p2SwordSwing(){
     g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:isCrit?"#FFD43B":isQi?"#FFD43B":"#F06595",big:isCrit||isQi});
     sfxHit();
   });
-  // 擊殺結算（settleEnemyDeaths 會在主迴圈處理，這裡不用手動呼叫）
   if(isQi){for(let i=0;i<12;i++){const a=PI*2*i/12;par.push({x:p.x+Math.cos(a)*20,y:p.y+Math.sin(a)*20,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:.6,color:"#FFD43B",sz:rn(2,4)});}}
+  // P2 獨立攻擊動畫
+  g._p2AtkAnim={active:true,startT:performance.now(),_qiSpin:isQi};g._p2WbSwing=1;
 }
 function p2ShieldBash(){
   if(!g||!g.run||!g.p2)return;
@@ -2211,6 +2213,7 @@ function p2ShieldBash(){
     sfxHit();
   });
   for(let i=0;i<6;i++){const a=atkAngle-arc+arc*2*i/5;par.push({x:p.x+Math.cos(a)*15,y:p.y+Math.sin(a)*15,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:.4,color:"#51CF66",sz:rn(2,4)});}
+  g._p2AtkAnim={active:true,startT:performance.now()};g._p2WbSwing=1;
 }
 // P2 技能（AI 自動施放）
 let _p2SkillCdEnd=0;
@@ -2268,6 +2271,8 @@ let _skillCdEnd=0;
 
 function useCharSkill(){
   if(!g||!g.run)return;
+  // CLIENT 端：發送技能請求給 HOST，不在本地執行
+  if(_net&&_net.role==="client"){_clientSkillReq=true;return;}
   const now=performance.now();
   if(now<_skillCdEnd)return;
   const cd=SKILL_CDS[g.charType]||5000;
@@ -2584,7 +2589,8 @@ function loop(){
   if(_isCoopMode&&_net&&_net.role==="client"&&_net.connected){
     g.time=performance.now();
     // 送操作給 Host
-    if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:false,dodge:false,pick:-1});}
+    if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:false,dodge:false,pick:-1,skill:!!_clientSkillReq});}
+    _clientSkillReq=false;
     // 渲染收到的狀態
     clientRenderLoop();
     raf=requestAnimationFrame(loop);return;
@@ -2811,11 +2817,12 @@ function loop(){
     if(p2aim&&now-g.p2._lhF>_p2AtkCD){
       if(p2ct==="swordsman"){p2SwordSwing();}
       else if(p2ct==="tank"){p2ShieldBash();}
-      else{const ad2=g.p2._ad||{x:0,y:-1};fire((2.2+g.p2.atk*.7),ad2.x,ad2.y,.07,g.p2);}
+      else{const ad2=g.p2._ad||{x:0,y:-1};fire((2.2+g.p2.atk*.7),ad2.x,ad2.y,.07,g.p2);g._p2AtkAnim={active:true,startT:now};g._p2WbSwing=1;}
       g.p2._lhF=now;
     }
-    // P2 技能：AI 每 CD 自動施放
+    // P2 技能：AI 自動施放 / 真人透過 _p2Input.skill
     if(_p2AI&&now>=_p2SkillCdEnd){p2UseSkill();}
+    else if(!_p2AI&&_p2Input.skill){_p2Input.skill=false;p2UseSkill();}
     // P2 ult: AI 每 8 秒自動放一次，連線時用 _p2Input
     const p2ult=_p2AI?(now-(g.p2._aiUltT||0)>8000):(_net&&_net.role==="host")?_p2Input.ult:false;
     if(p2ult&&!g.p2._ultCooldown){
@@ -3716,6 +3723,14 @@ function loop(){
     if(el>=dur){g._atkAnim.active=false;g._atkAnim._qiSpin=false;}
     g._wbSwing=g._atkAnim.active?Math.max(0,1-el/dur):0;
   }else{g._wbSwing=0;}
+  // P2 攻擊動畫衰減
+  if(g._p2AtkAnim&&g._p2AtkAnim.active){
+    const el2=now-g._p2AtkAnim.startT;
+    const ct2=g.p2?g.p2.charType:"gunner";
+    const dur2=ct2==="gunner"?200:ct2==="swordsman"?320:280;
+    if(el2>=dur2){g._p2AtkAnim.active=false;g._p2AtkAnim._qiSpin=false;}
+    g._p2WbSwing=g._p2AtkAnim.active?Math.max(0,1-el2/dur2):0;
+  }else{g._p2WbSwing=0;}
 
   // 迴力鏢系統
   if(g.p.boomerang>0){
@@ -4109,9 +4124,12 @@ function loop(){
     if(g.p2._downed){cx.globalAlpha=.35;}
     else if(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd){cx.globalAlpha=Math.sin(now/30)*.35+.55;}
     cx.shadowColor="#F06595";cx.shadowBlur=20;
-    const _p1ct=g.charType;g.charType=g.p2.charType||"gunner"; // 暫時切換為P2角色
+    // 暫時切換為 P2 角色 + 清除 P1 攻擊動畫（避免 P2 同步做出 P1 的攻擊動作）
+    const _p1ct=g.charType,_p1atk=g._atkAnim,_p1wb=g._wbSwing;
+    g.charType=g.p2.charType||"gunner";
+    g._atkAnim=g._p2AtkAnim||{active:false,startT:0};g._wbSwing=g._p2WbSwing||0;
     drawPlayer(g.p2.x,g.p2.y,PR,g.time/1000,"#F06595",g.p2.face);
-    g.charType=_p1ct; // 還原P1角色
+    g.charType=_p1ct;g._atkAnim=_p1atk;g._wbSwing=_p1wb;
     cx.restore();
     if(g.p2._downed){
       cx.save();cx.font="bold 12px Nunito,sans-serif";cx.textAlign="center";
@@ -4183,45 +4201,52 @@ function loop(){
       cx.restore();
     }
   }
-  // === 龍寵物繪製（arc/fillRect/lineTo only，關節旋轉動畫）===
+  // === 龍寵物繪製（對照參考圖，4段分色翅膀，關節旋轉動畫）===
   if(g._dragonPet){
     var _dp=g._dragonPet,_dpS=.34,_dpF=_dp.face||1,_dpT=now/1000;
     cx.save();cx.translate(_dp.x,_dp.y);cx.scale(_dpS*_dpF,_dpS);
     var _wAng=Math.sin(_dpT*10)*.3,_tAng=Math.sin(_dpT*5)*.15;
-    // 1. 尾巴與尾焰（關節旋轉）
-    cx.save();cx.translate(0,30);cx.rotate(_tAng);
-    cx.fillStyle='orange';cx.beginPath();
-    cx.moveTo(0,0);cx.lineTo(50,25);cx.lineTo(0,10);cx.closePath();cx.fill();
-    cx.fillStyle='#FF6600';cx.beginPath();
-    cx.moveTo(50,25);cx.lineTo(68,3);cx.lineTo(33,3);cx.closePath();cx.fill();
-    cx.fillStyle='yellow';cx.beginPath();
-    cx.moveTo(50,25);cx.lineTo(62,8);cx.lineTo(38,8);cx.closePath();cx.fill();
+    // 1. 尾巴+尾焰（關節旋轉）
+    cx.save();cx.translate(15,25);cx.rotate(_tAng);
+    cx.fillStyle='#D07030';cx.beginPath();
+    cx.moveTo(0,0);cx.lineTo(55,30);cx.lineTo(0,15);cx.closePath();cx.fill();
+    cx.fillStyle='#FF6B00';cx.beginPath();
+    cx.moveTo(53,28);cx.lineTo(80,-3);cx.lineTo(33,-3);cx.closePath();cx.fill();
+    cx.fillStyle='#FFD700';cx.beginPath();
+    cx.moveTo(53,28);cx.lineTo(73,5);cx.lineTo(39,5);cx.closePath();cx.fill();
     cx.restore();
-    // 2. 翅膀（關節旋轉）— 深橘主翼+淺橘翅膜
-    cx.save();cx.translate(-10,-10);cx.rotate(_wAng);
-    cx.fillStyle='#CC5500';cx.beginPath();
-    cx.moveTo(0,0);cx.lineTo(-40,-30);cx.lineTo(20,-10);cx.closePath();cx.fill();
-    cx.fillStyle='#E87040';cx.beginPath();
-    cx.moveTo(2,-2);cx.lineTo(-28,-22);cx.lineTo(15,-8);cx.closePath();cx.fill();
+    // 2. 翅膀（關節旋轉，4段重疊三角形）
+    cx.save();cx.translate(-5,-5);cx.rotate(_wAng);
+    cx.fillStyle='#B06025';cx.beginPath();
+    cx.moveTo(-10,5);cx.lineTo(-20,-65);cx.lineTo(20,-25);cx.closePath();cx.fill();
+    cx.fillStyle='#D87535';cx.beginPath();
+    cx.moveTo(0,2);cx.lineTo(30,-85);cx.lineTo(55,-40);cx.lineTo(30,2);cx.closePath();cx.fill();
+    cx.fillStyle='#E88040';cx.beginPath();
+    cx.moveTo(20,0);cx.lineTo(68,-65);cx.lineTo(80,-30);cx.lineTo(45,5);cx.closePath();cx.fill();
+    cx.fillStyle='#D07038';cx.beginPath();
+    cx.moveTo(40,0);cx.lineTo(92,-55);cx.lineTo(98,-12);cx.lineTo(55,8);cx.closePath();cx.fill();
     cx.restore();
-    // 3. 身體與腹部（arc）
-    cx.fillStyle='orange';cx.beginPath();cx.arc(0,0,35,0,TAU);cx.fill();
-    cx.fillStyle='lightyellow';cx.beginPath();cx.arc(0,0,20,0,TAU);cx.fill();
-    // 腹部三個小方塊高光
-    cx.fillStyle='#FFF8DC';
-    cx.fillRect(-5,-8,5,5);cx.fillRect(0,-8,5,5);cx.fillRect(-3,-2,5,5);
-    // 4. 四肢（fillRect）
-    cx.fillStyle='orange';
-    cx.fillRect(-20,20,10,20);cx.fillRect(-10,20,10,20);
-    cx.fillRect(10,20,10,20);cx.fillRect(20,20,10,20);
-    // 5. 頭部與五官
+    // 3. 身體+腹部
+    cx.fillStyle='#E87530';cx.beginPath();cx.arc(0,0,35,0,TAU);cx.fill();
+    cx.fillStyle='#FFD43B';cx.beginPath();cx.arc(0,2,20,0,TAU);cx.fill();
+    cx.fillStyle='#FFEEA0';
+    cx.fillRect(-10,-10,5,5);cx.fillRect(0,-10,5,5);
+    cx.fillRect(-10,-4,5,5);cx.fillRect(0,-4,5,5);
+    cx.fillRect(-5,3,5,5);
+    // 4. 手臂
+    cx.fillStyle='#D06520';cx.fillRect(30,-8,12,8);
+    // 5. 腿
+    cx.fillStyle='#CC5818';
+    cx.fillRect(-10,22,10,20);cx.fillRect(0,22,10,20);
+    // 6. 頭部
     cx.save();cx.translate(0,-60);
-    cx.fillStyle='orange';cx.beginPath();cx.arc(0,0,18,0,TAU);cx.fill();
+    cx.fillStyle='#E87530';cx.beginPath();cx.arc(0,0,18,0,TAU);cx.fill();
     cx.fillRect(0,-5,30,10);
     cx.fillStyle='yellow';cx.beginPath();cx.arc(15,0,4,0,TAU);cx.fill();
-    // 角（深棕色）
-    cx.fillStyle='#8B4513';cx.beginPath();
-    cx.moveTo(-15,-15);cx.lineTo(0,0);cx.lineTo(-5,0);cx.closePath();cx.fill();
+    cx.fillStyle='#6B3410';cx.beginPath();
+    cx.moveTo(-12,-18);cx.lineTo(-2,-2);cx.lineTo(-15,-3);cx.closePath();cx.fill();
+    cx.fillStyle='#6B3410';cx.beginPath();
+    cx.moveTo(2,-20);cx.lineTo(7,-2);cx.lineTo(-3,-4);cx.closePath();cx.fill();
     cx.restore();
     cx.restore();
     // 噴火（從龍嘴，噴射流形）
@@ -4891,7 +4916,7 @@ function loop(){
   // Host: 每 2 幀送狀態給 Client
   if(_isCoopMode&&_net&&_net.role==="host"&&_net.connected&&_net.conn&&_net.conn.open){
     if(!g._syncFrame)g._syncFrame=0;
-    if(++g._syncFrame%2===0){const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);}
+    {const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);} // 每幀同步（減少LAG）
   }
   raf=requestAnimationFrame(loop);
 }
@@ -4908,6 +4933,8 @@ function serializeCoopState(){
     ebul:g.ebul.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,color:b.color,life:b.life})),
     dn:g.dn.map(d=>({x:d.x,y:d.y,d:d.d,life:d.life,color:d.color,big:d.big})),
     orbs:g.orbs.map(o=>({x:o.x,y:o.y})),
+    crates:g.crates.filter(c=>c.hp>0).map(c=>({x:c.x,y:c.y,hp:c.hp,mhp:c.mhp,bigChest:c.bigChest,hits:c.hits,needed:c.needed})),
+    pickOpen:g.pickOpen||false,
     wave:g.wave,level:g.level,score:g.score,kills:g.kills,
     p2Lv:g.p2Level,p2Exp:g.p2Exp,p2ExpTo:g.p2ExpTo,
     run:g.run
@@ -4927,6 +4954,10 @@ function applyCoopState(data){
   if(data.dn)g.dn=data.dn;
   // 經驗球
   if(data.orbs)g.orbs=data.orbs;
+  // 寶箱
+  if(data.crates)g.crates=data.crates;
+  // 選卡狀態
+  if(data.pickOpen!==undefined)g._remotePickOpen=data.pickOpen;
   // 遊戲資訊
   if(data.wave!==undefined)g.wave=data.wave;
   if(data.level!==undefined)g.level=data.level;
@@ -4945,6 +4976,17 @@ function clientRenderLoop(){
   const exT=Math.ceil((cm.x+VW)/tileS),eyT=Math.ceil((cm.y+VH)/tileS);
   for(let ty=syT;ty<=eyT;ty++)for(let tx=sxT;tx<=exT;tx++){
     cx.fillStyle=(tx+ty)%2===0?"#0d0d22":"#0a0a18";cx.fillRect(tx*tileS,ty*tileS,tileS,tileS);}
+  // crates (寶箱)
+  if(g.crates)g.crates.forEach(c=>{
+    if(c.hp<=0)return;
+    const cs2=c.bigChest?14:10;
+    cx.save();cx.fillStyle=c.bigChest?"#FFD43B":"#FF922B";cx.globalAlpha=.9;
+    cx.fillRect(c.x-cs2/2,c.y-cs2/2,cs2,cs2);
+    cx.strokeStyle=c.bigChest?"#FCC419":"#E8590C";cx.lineWidth=1.5;cx.strokeRect(c.x-cs2/2,c.y-cs2/2,cs2,cs2);
+    cx.fillStyle="#fff";cx.globalAlpha=.6;cx.font="bold 8px sans-serif";cx.textAlign="center";
+    cx.fillText(c.bigChest?"👑":"📦",c.x,c.y+3);
+    cx.restore();
+  });
   // enemies
   g.ene.forEach(e=>{if(e.hp>0)drawEnemy(e);});
   // bullets
@@ -4960,13 +5002,22 @@ function clientRenderLoop(){
   // P2
   if(g.p2){cx.save();if(g.p2._downed)cx.globalAlpha=.35;
     cx.shadowColor="#F06595";cx.shadowBlur=20;
-    const _p1ct2=g.charType;g.charType=g.p2.charType||"gunner";
+    const _p1ct2=g.charType,_p1atk2=g._atkAnim,_p1wb2=g._wbSwing;
+    g.charType=g.p2.charType||"gunner";
+    g._atkAnim=g._p2AtkAnim||{active:false,startT:0};g._wbSwing=g._p2WbSwing||0;
     drawPlayer(g.p2.x,g.p2.y,PR,now/1000,"#F06595",g.p2.face);
-    g.charType=_p1ct2;cx.restore();}
+    g.charType=_p1ct2;g._atkAnim=_p1atk2;g._wbSwing=_p1wb2;cx.restore();}
   // damage numbers
   g.dn=g.dn.filter(d=>{d.life-=.025;return d.life>0;});
   g.dn.forEach(d=>{cx.save();cx.globalAlpha=Math.min(1,d.life);cx.font=(d.big?"bold 15px":"bold 11px")+" 'Nunito',sans-serif";
     cx.textAlign="center";cx.fillStyle=d.color||"#fff";cx.fillText(typeof d.d==="number"?"-"+d.d:d.d,d.x,d.y);cx.restore();});
+  // 對方選卡中通知
+  if(g._remotePickOpen){
+    cx.save();cx.font="bold 14px 'Nunito',sans-serif";cx.textAlign="center";
+    cx.fillStyle="rgba(0,0,0,.6)";cx.fillRect(VW/2-80,VH/2-15,160,30);
+    cx.fillStyle="#FFD43B";cx.fillText("🃏 對方選卡中...",VW/2,VH/2+5);
+    cx.restore();
+  }
   cx.restore();
   hud();drawMinimap();
 }
@@ -6223,7 +6274,7 @@ function _coopDoCreate(code){
       $("coopConnected").style.display="block";
       conn.on("data",data=>{
         if(!data)return;
-        if(data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.pick=data.pick??-1;}
+        if(data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.pick=data.pick??-1;_p2Input.skill=!!data.skill;}
       });
       conn.on("close",()=>{_net.connected=false;if(g&&g.run){g.run=false;showOver();}});
     });
@@ -6540,7 +6591,7 @@ window.pracCoopRoom=function(){
       g.dn.push({x:g.p.x,y:g.p.y-40,d:"✅ 對方已加入！",life:3,color:"#51CF66",big:1});
       $("pracRoomBtn").textContent="✅已連線";
       conn.on("data",data=>{
-        if(data&&data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;}
+        if(data&&data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.skill=!!data.skill;}
       });
       conn.on("close",()=>{_net.connected=false;_p2AI=true;g.dn.push({x:g.p.x,y:g.p.y-40,d:"⚠️ 對方已離線，切換 AI",life:3,color:"#FF6B6B",big:1});});
     });
@@ -6613,6 +6664,7 @@ window.startGame=window.SG=function(mode){
     lastKill:performance.now(),lastHunt:0,
     time:0,run:true,ad:{x:0,y:-1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,_ultReadyUntil:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,pickOpen:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1,_startTime:performance.now(),_stageBossActive:false,_stageBossLv:0,_boss20:false,_boss30:false,_bigChestTotal:0,_bigChestLeft:0,_angelOffered:false,_pendingStageBoss:0,_ew:null,_cw:null};
   inv=[];inv2=[];par=[];_ltnRingIdx=0;_dashGhosts=[];_stageBoss=null;bossBgmStop();_hitFlash=0;_shakeT=0;_phoenixT=0;_phoenixAnim=null;g._wb=[];g._wbSpawnT=0;
+  g._p2AtkAnim={active:false,startT:0};g._p2WbSwing=0;_p2SkillCdEnd=0;
   if(_mode==="elite"||_mode==="coop"){g.p.expR=99;} // 精英/coop 模式內建全螢幕磁力吸經驗
   if(_mode==="classic"){g.p.splash=20;} // 經典模式內建基礎濺射（20px）
   // Co-op: 初始化 P2
