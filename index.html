@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.33</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.35</div>
 </div>
 </div>
 
@@ -319,6 +319,11 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 (function(){"use strict";
 /* ═══════════════ CONFIG ═══════════════ */
 const PI=Math.PI,TAU=PI*2;
+// 龍寵物精靈圖（翅膀+完整身體）50x48px
+var _dpWingImg=new Image(),_dpBodyImg=new Image();
+_dpWingImg.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAwCAYAAABT9ym6AAAABmJLR0QA/wD/AP+gvaeTAAACsUlEQVRoge3VXWjNYRzA8e/vOWe2s5cmM2/L0ljsaihF8laUUGppRXkpLlyspnGBklpeLpRSyhXJBRlWciFxQaS8rGUyJbaMLPaec87+O/+Xn4v/2YzItM1Sz+fiXJzzf/7P8z3/5zwHLMuy/ifyuw+aqlff87p78gaSrqoxmWCMoC7gaeCjSoaYiGLEJ/BUJZqtbippotGI5OSru3bv5pXbt7dPeIjq84xPp2vPZTbf3p1yApIJJZmA/gSkBoJwpP7ihpkx8rZUrSyvOfVwnNf+47x/uqD17I6duY1XLop6Q0MEcF0hmVD603GOExCJCFM2Vx6df/hq7eD4V3V1k3qvHT+5/NqL/RMaAtB2pvJEzsvrh1BA00MkQFVRgc8fDH1dAbPLpzL7fEdURPzBsY8qFz3Wd43LPChc00DneIWYkVxUXF132C0o6QIFCcI9lQ7qaDfE42FQZHrRh+ERT/auu6rvGpcBROHAeEUw0hAAZ+bi0+Hzk/A5CnR3RkgmYN4CgxgBEwx940/3VRxJPbtXOewWVWO9+OFGHJK3seYSxqQjlL4ewelX5swF34esmBBNJUsAGg5tq3Ae3awNT4Oh3Ztza1NZ6YSHFJQu/egxCRGI9xncFBQVKyKKl4KsGJiu9/mvLxzbmrxff8MQgAgimj4ehILcrBUTHgKQGemf6yTkjipMnR6k3xU8D2IxQfDR+trL4jqAImj4mt6KTkvzwvHJ+MuQyedomXXZX5+d75ci3IXwd++5SlY2iMC0Qo9oxvfDUNJBghINBh6MfcLgPKPwZRelJmKOdLSzatoMKUYUVPF8ofWN4rnhP6YqGKEvN0VReROJsVr8cKMK+VnnHsoMrFA1SzSQjLZWJf41AKEn3svBDW8ZGMv5LMuyLMuyLMuyLMuyLMuyLMv6l74BpKIFeLuqkjYAAAAASUVORK5CYII=";
+_dpBodyImg.src="data:image/png;base64,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";
+var _dpW=50,_dpH=48,_dpJX=27,_dpJY=13; // 翅膀關節
 let VW=400,VH=700; // viewport (動態：橫屏時交換)
 function _isElite(){return _mode==="elite"||_mode==="coop";} // coop 共用 elite 邏輯
 const MW=1900,MH=1900; // map size (smaller for higher pressure)
@@ -2911,23 +2916,39 @@ function loop(){
 
   // === 龍寵物系統 ===
   if(g.p._dragonBreath&&!g._dragonPet){
-    g._dragonPet={x:g.p.x-30,y:g.p.y-35,face:1,breathCycle:0};
+    g._dragonPet={x:g.p.x-30,y:g.p.y-35,face:1,breathCycle:0,_tgtE:null};
     g.dn.push({x:g.p.x,y:g.p.y-40,d:"🐉 噴火龍降臨！",life:2.5,color:"#FF922B",big:1});
   }
   if(g._dragonPet){
     var _dp=g._dragonPet;
-    _dp.x+=(g.p.x-25*g.p.face-_dp.x)*.08*dt;
-    _dp.y+=(g.p.y-35+Math.sin(now/400)*6-_dp.y)*.08*dt;
-    _dp.face=g.p.face;
+    // 找最近敵人
+    var _nrE=null,_nrD=1e9;
+    g.ene.forEach(function(e){if(e.hp>0){var d3=di(_dp,e);if(d3<_nrD){_nrD=d3;_nrE=e;}}});
+    _dp._tgtE=_nrE;
+    var _dbLv=g.p._dragonBreath,_dbR=[0,110,140,180][_dbLv];
+    if(_nrE&&_nrD<_dbR*2.5){
+      // 有敵人在範圍內：飛向敵人（保持噴火距離）
+      var _tAng=Math.atan2(_nrE.y-_dp.y,_nrE.x-_dp.x);
+      var _idealD=_dbR*0.5; // 在噴火範圍內的理想距離
+      var _tgtX=_nrE.x-Math.cos(_tAng)*_idealD;
+      var _tgtY=_nrE.y-Math.sin(_tAng)*_idealD+Math.sin(now/400)*4;
+      _dp.x+=(_tgtX-_dp.x)*.12*dt;
+      _dp.y+=(_tgtY-_dp.y)*.12*dt;
+      _dp.face=_nrE.x>_dp.x?1:-1;
+    }else{
+      // 沒有敵人或太遠：跟隨玩家（微浮動）
+      _dp.x+=(g.p.x-25*g.p.face-_dp.x)*.08*dt;
+      _dp.y+=(g.p.y-30+Math.sin(now/400)*6-_dp.y)*.08*dt;
+      _dp.face=g.p.face;
+    }
     _dp.breathCycle=(_dp.breathCycle||0)+dt*16.67;
     var _cyc=_dp.breathCycle%3500;
     _dp.breathOn=_cyc<2000;
-    if(_dp.breathOn&&g.ene.length>0){
-      var _dbLv=g.p._dragonBreath,_dbR=[0,110,140,180][_dbLv],_dbA=[0,.45,.55,.65][_dbLv];
+    // 只在有近距離敵人時才噴火
+    if(_dp.breathOn&&_nrE&&_nrD<_dbR*1.5){
+      var _dbA=[0,.45,.55,.65][_dbLv];
       var _dbD=(g.p.atk*.3+2)*(1+_dbLv*.3)*dt;
-      var _nrE=null,_nrD=1e9;
-      g.ene.forEach(function(e){if(e.hp>0){var d3=di(_dp,e);if(d3<_nrD){_nrD=d3;_nrE=e;}}});
-      var _bAng=_nrE?Math.atan2(_nrE.y-_dp.y,_nrE.x-_dp.x):(_dp.face>0?0:PI);
+      var _bAng=Math.atan2(_nrE.y-_dp.y,_nrE.x-_dp.x);
       _dp._breathAng=_bAng;
       g.ene.forEach(function(e){if(e.hp<=0)return;
         var dx5=e.x-_dp.x,dy5=e.y-_dp.y,d5=Math.sqrt(dx5*dx5+dy5*dy5);
@@ -4232,58 +4253,33 @@ function loop(){
       cx.restore();
     }
   }
-  // === 龍寵物繪製（對照參考圖，4段分色翅膀，關節旋轉動畫）===
+  // === 龍寵物繪製（翅膀在後旋轉 + 身體蓋上）===
   if(g._dragonPet){
-    var _dp=g._dragonPet,_dpS=.34,_dpF=_dp.face||1,_dpT=now/1000;
-    cx.save();cx.translate(_dp.x,_dp.y);cx.scale(_dpS*_dpF,_dpS);
-    var _wAng=Math.sin(_dpT*10)*.3,_tAng=Math.sin(_dpT*5)*.15;
-    // 1. 尾巴+尾焰（關節旋轉）
-    cx.save();cx.translate(15,25);cx.rotate(_tAng);
-    cx.fillStyle='#D07030';cx.beginPath();
-    cx.moveTo(0,0);cx.lineTo(55,30);cx.lineTo(0,15);cx.closePath();cx.fill();
-    cx.fillStyle='#FF6B00';cx.beginPath();
-    cx.moveTo(53,28);cx.lineTo(80,-3);cx.lineTo(33,-3);cx.closePath();cx.fill();
-    cx.fillStyle='#FFD700';cx.beginPath();
-    cx.moveTo(53,28);cx.lineTo(73,5);cx.lineTo(39,5);cx.closePath();cx.fill();
+    var _dp=g._dragonPet,_dpF=_dp.face||1,_dpT=now/1000;
+    var _wAng=Math.sin(_dpT*14)*.35; // 振翅（~2.2Hz, ±20度）
+    var _bobY=Math.sin(_dpT*3)*3; // 上下浮動
+    // 移動時傾斜
+    var _dpVx=(_dp._prevX!==undefined)?(_dp.x-_dp._prevX):0;
+    _dp._prevX=_dp.x;
+    var _tilt=Math.max(-.12,Math.min(.12,_dpVx*.06));
+    cx.save();
+    cx.translate(_dp.x,_dp.y+_bobY);
+    cx.scale(_dpF,1); // 圖已翻轉為朝右，face=1不翻，face=-1翻轉
+    cx.rotate(_tilt);
+    // 翅膀（先畫，在身體後面，繞關節旋轉）
+    cx.save();
+    cx.translate(_dpJX-_dpW/2,_dpJY-_dpH/2);
+    cx.rotate(_wAng);
+    if(_dpWingImg.complete&&_dpWingImg.naturalWidth)cx.drawImage(_dpWingImg,-_dpJX,-_dpJY);
     cx.restore();
-    // 2. 翅膀（關節旋轉，4段重疊三角形）
-    cx.save();cx.translate(-5,-5);cx.rotate(_wAng);
-    cx.fillStyle='#B06025';cx.beginPath();
-    cx.moveTo(-10,5);cx.lineTo(-20,-65);cx.lineTo(20,-25);cx.closePath();cx.fill();
-    cx.fillStyle='#D87535';cx.beginPath();
-    cx.moveTo(0,2);cx.lineTo(30,-85);cx.lineTo(55,-40);cx.lineTo(30,2);cx.closePath();cx.fill();
-    cx.fillStyle='#E88040';cx.beginPath();
-    cx.moveTo(20,0);cx.lineTo(68,-65);cx.lineTo(80,-30);cx.lineTo(45,5);cx.closePath();cx.fill();
-    cx.fillStyle='#D07038';cx.beginPath();
-    cx.moveTo(40,0);cx.lineTo(92,-55);cx.lineTo(98,-12);cx.lineTo(55,8);cx.closePath();cx.fill();
+    // 身體蓋上（完整圖，遮住翅膀接合處）
+    if(_dpBodyImg.complete&&_dpBodyImg.naturalWidth)cx.drawImage(_dpBodyImg,-_dpW/2,-_dpH/2);
     cx.restore();
-    // 3. 身體+腹部
-    cx.fillStyle='#E87530';cx.beginPath();cx.arc(0,0,35,0,TAU);cx.fill();
-    cx.fillStyle='#FFD43B';cx.beginPath();cx.arc(0,2,20,0,TAU);cx.fill();
-    cx.fillStyle='#FFEEA0';
-    cx.fillRect(-10,-10,5,5);cx.fillRect(0,-10,5,5);
-    cx.fillRect(-10,-4,5,5);cx.fillRect(0,-4,5,5);
-    cx.fillRect(-5,3,5,5);
-    // 4. 手臂
-    cx.fillStyle='#D06520';cx.fillRect(30,-8,12,8);
-    // 5. 腿
-    cx.fillStyle='#CC5818';
-    cx.fillRect(-10,22,10,20);cx.fillRect(0,22,10,20);
-    // 6. 頭部
-    cx.save();cx.translate(0,-60);
-    cx.fillStyle='#E87530';cx.beginPath();cx.arc(0,0,18,0,TAU);cx.fill();
-    cx.fillRect(0,-5,30,10);
-    cx.fillStyle='yellow';cx.beginPath();cx.arc(15,0,4,0,TAU);cx.fill();
-    cx.fillStyle='#6B3410';cx.beginPath();
-    cx.moveTo(-12,-18);cx.lineTo(-2,-2);cx.lineTo(-15,-3);cx.closePath();cx.fill();
-    cx.fillStyle='#6B3410';cx.beginPath();
-    cx.moveTo(2,-20);cx.lineTo(7,-2);cx.lineTo(-3,-4);cx.closePath();cx.fill();
-    cx.restore();
-    cx.restore();
-    // 噴火（從龍嘴，噴射流形）
+    // 噴火（從龍嘴出發）
     if(g._dragonBreathFx&&g._dragonBreathFx.on){
       var _bfx=g._dragonBreathFx,_bAng=_bfx.ang,_bR=_bfx.range;
-      var _mx=_dp.x+_dpF*10,_my=_dp.y-21;
+      // 嘴巴位置：龍頭上方偏前（精靈圖中嘴巴約在左上 1/3 處）
+      var _mx=_dp.x+_dpF*15,_my=_dp.y-14;
       cx.save();
       var _cyc2=(_dp.breathCycle||0)%3500,_bFade=_cyc2>1600?(2000-_cyc2)/400:Math.min(1,_cyc2/300);
       for(var i=0;i<40;i++){var t2=i/40,d2=_bR*t2;
