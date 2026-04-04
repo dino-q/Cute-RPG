@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.42</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.43</div>
 </div>
 </div>
 
@@ -1870,35 +1870,37 @@ function triggerHuntPressure(now){
   g.dn.push({x:g.p.x,y:g.p.y-60,d:"⚠️ 被獵殺！快擊殺敵人止壓",life:1.6,color:"#FF6B6B",big:1});
 }
 // ═══ 劍士近戰：弧形範圍傷害 ═══
-function swordSwing(){
+function swordSwing(_pp,_isP2){
+  if(!_pp)_pp=g.p;var _pad=_isP2?(g.p2&&g.p2._ad||{x:0,y:-1}):g.ad;var _pct=_isP2?(g.p2?g.p2.charType:"gunner"):g.charType;var _pinv=_isP2?inv2:inv;
   if(!g||!g.run)return;
   const now=performance.now();
-  const splitBonus=Math.max(1,(g.p.split||1)*.5+.5);
+  const splitBonus=Math.max(1,(_pp.split||1)*.5+.5);
   // 重擊判定（蓄力拳）
   let _meleeHeavy=false;
-  if(g.p.heavyEvery>0){g.p._heavyCount=(g.p._heavyCount||0)+1;if(g.p._heavyCount>=g.p.heavyEvery){g.p._heavyCount=0;_meleeHeavy=true;}}
+  if(_pp.heavyEvery>0){_pp._heavyCount=(_pp._heavyCount||0)+1;if(_pp._heavyCount>=_pp.heavyEvery){_pp._heavyCount=0;_meleeHeavy=true;}}
   const heavyMul=_meleeHeavy?2:1;
-  const berserkMul=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;
-  const baseDmg=(3.5+g.p.atk)*splitBonus*berserkMul*heavyMul*(g.p.elemBoost||1)*(g.p.levelDmgMul||1);
-  const pierceRange=(g.p.pierce||0)>0?30:0;
-  const splashRange=g.p.splash||0; // 濺射→攻擊距離
-  const _drawSlashMul=g.p._drawSlash?[1,1.3,1.5,1.8][g.p._drawSlash]||1:1;
-  const _gsCdActive=_skillCdEnd>0&&performance.now()<_skillCdEnd&&g.charType==="swordsman";
+  const berserkMul=(_pp.berserk&&_pp.hp/_pp.maxHp<_pp.berserk)?2:1;
+  const baseDmg=(3.5+_pp.atk)*splitBonus*berserkMul*heavyMul*(_pp.elemBoost||1)*(_pp.levelDmgMul||1);
+  const pierceRange=(_pp.pierce||0)>0?30:0;
+  const splashRange=_pp.splash||0; // 濺射→攻擊距離
+  const _drawSlashMul=_pp._drawSlash?[1,1.3,1.5,1.8][_pp._drawSlash]||1:1;
+  var _gsCdT=_isP2?_p2SkillCdEnd:_skillCdEnd;
+  const _gsCdActive=_gsCdT>0&&performance.now()<_gsCdT&&_pct==="swordsman";
   const _gsRangeMul=_gsCdActive?2:1;
   const range=(PR*5+pierceRange+splashRange)*_drawSlashMul*_gsRangeMul;
-  const atkAngle=Math.atan2(g.ad.y,g.ad.x);
-  const _dblMelee=Math.random()<(g.p.dblAtk||0); // 影分身：前後攻擊
-  const arc=_dblMelee?TAU:PI*(.6+Math.min(.4,(g.p.split||1)*.05)); // 影分身=360°全方位
+  const atkAngle=Math.atan2(_pad.y,_pad.x);
+  const _dblMelee=Math.random()<(_pp.dblAtk||0); // 影分身：前後攻擊
+  const arc=_dblMelee?TAU:PI*(.6+Math.min(.4,(_pp.split||1)*.05)); // 影分身=360°全方位
   sfxShoot();
-  if(_dblMelee){burst(g.p.x,g.p.y,"#868E96",6);} // 影分身視覺
+  if(_dblMelee){burst(_pp.x,_pp.y,"#868E96",6);} // 影分身視覺
   // 劍氣被動：劍氣強化卡改變觸發頻率和倍率
-  g.p._swordQiCount=(g.p._swordQiCount||0)+1;
-  const qiEvery=g.p._qiEvery||5;
-  const isQi=g.p._swordQiCount%qiEvery===0;
-  const qiMul=isQi?(g.p._qiMul||2):1;
+  _pp._swordQiCount=(_pp._swordQiCount||0)+1;
+  const qiEvery=_pp._qiEvery||5;
+  const isQi=_pp._swordQiCount%qiEvery===0;
+  const qiMul=isQi?(_pp._qiMul||2):1;
   g.ene.forEach(e=>{
     if(e.hp<=0)return;
-    const dx=e.x-g.p.x,dy=e.y-g.p.y,d=Math.sqrt(dx*dx+dy*dy);
+    const dx=e.x-_pp.x,dy=e.y-_pp.y,d=Math.sqrt(dx*dx+dy*dy);
     const _bossReach=(e.boss||e.stageBoss)?30:0; // Boss/王額外攻擊距離
     if(d>range+e.r+_bossReach+(isQi?40:0))return;
     const ea=Math.atan2(dy,dx);
@@ -1906,39 +1908,39 @@ function swordSwing(){
     if(da>arc&&!isQi)return; // 劍氣無角度限制（穿透全方位）
     const hitDmg=baseDmg*qiMul;
     const isBoss=e.boss&&!e.stageBoss;
-    const _meleeCrit=Math.random()<(g.p.crit||.05);
+    const _meleeCrit=Math.random()<(_pp.crit||.05);
     let fd=hitDmg*(_meleeCrit?2:1);
     if(isBoss&&e.bossType==="armor")fd*=.7;
-    if((e.boss||e.mega)&&g.p.bossDmg>1)fd*=g.p.bossDmg; // 王傷
-    if(!e.mega&&g.p.mobDmg>1)fd*=g.p.mobDmg; // 小怪傷
-    if(g.p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+g.p.iceFrag);
-    if(e.eliteEnemy){const hasEl=!!(g.p.fx.fire||g.p.fx.ice||g.p.fx.lightning||g.p.fx.poison||g.p.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
+    if((e.boss||e.mega)&&_pp.bossDmg>1)fd*=_pp.bossDmg; // 王傷
+    if(!e.mega&&_pp.mobDmg>1)fd*=_pp.mobDmg; // 小怪傷
+    if(_pp.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+_pp.iceFrag);
+    if(e.eliteEnemy){const hasEl=!!(_pp.fx.fire||_pp.fx.ice||_pp.fx.lightning||_pp.fx.poison||_pp.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
     e.hp-=fd;
     e.st=Math.max(e.st||0,800);
     // 命中回血（萬物吞噬，近戰最低回5）
-    if(g.p.bulletHeal>0){const mheal=Math.max(5,g.p.bulletHeal);g.p.hp=Math.min(g.p.hp+mheal,g.p.maxHp);g.p._healFlash=now;}
+    if(_pp.bulletHeal>0){const mheal=Math.max(5,_pp.bulletHeal);_pp.hp=Math.min(_pp.hp+mheal,_pp.maxHp);_pp._healFlash=now;}
     // 元素效果
-    const fx=g.p.fx;
+    const fx=_pp.fx;
     if(fx.fire){e.burnT=Math.max(e.burnT||0,1400+Math.max(fx.fire||0,1)*600);e.burnLv=Math.max(fx.fire||0,1);}
-    if(fx.poison&&g.p.poison>0){e.poisonT=g.p.poison*1000*(g.p.elemBoost||1);e.poisonLv=Math.max(fx.poison||0,1);}
+    if(fx.poison&&_pp.poison>0){e.poisonT=_pp.poison*1000*(_pp.elemBoost||1);e.poisonLv=Math.max(fx.poison||0,1);}
     if(fx.ice){if(Math.random()<.25)e.frozen=Math.max(e.frozen||0,500);else e.st=Math.max(e.st||0,1200);}
     // 拔刀術：流血效果
-    if(g.p._bleedChance&&Math.random()<g.p._bleedChance){
-      e._bleedEnd=now+2000;e._bleedDmg=g.p.atk*.3;
+    if(_pp._bleedChance&&Math.random()<_pp._bleedChance){
+      e._bleedEnd=now+2000;e._bleedDmg=_pp.atk*.3;
       // 流血特效：紅色水滴粒子
       for(let bi=0;bi<3;bi++)par.push({x:e.x+rn(-5,5),y:e.y+rn(-5,5),vx:rn(-.5,.5),vy:rn(.5,1.5),life:.5,color:"#FF4040",sz:rn(1.5,3),g:.05});
       g.dn.push({x:e.x+rn(-8,8),y:e.y-e.r-12,d:"🩸",life:.8,color:"#FF4040"});
     }
     // 近戰吸血（劍士自帶每次命中回 3 HP）
-    const _meleeHeal=3+(g.p.ls>0?g.p.ls*.3:0);
-    if(g.p.hp<g.p.maxHp){g.p.hp=Math.min(g.p.hp+_meleeHeal,g.p.maxHp);}
+    const _meleeHeal=3+(_pp.ls>0?_pp.ls*.3:0);
+    if(_pp.hp<_pp.maxHp){_pp.hp=Math.min(_pp.hp+_meleeHeal,_pp.maxHp);}
     // VFX
     burst(e.x,e.y,isQi?"#FFD43B":_meleeCrit?"#FFD43B":_meleeHeavy?"#FF922B":"#FF922B",5);
     g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:_meleeCrit?"#FFD43B":isQi?"#FFD43B":"#fff",big:_meleeCrit||isQi});
     sfxHit();
     // 連鎖雷電（近戰強化：範圍更大、可跳2次、特效更明顯）
-    if(g.p.chain>0||fx.lightning){
-      const cMul=(g.p.chainDmg||1)*(fx.lightning?.58:.3);
+    if(_pp.chain>0||fx.lightning){
+      const cMul=(_pp.chainDmg||1)*(fx.lightning?.58:.3);
       const cd2=fd*cMul;
       const _ltnHit=new Set([e]);
       let _ltnSrc=e;
@@ -1966,9 +1968,9 @@ function swordSwing(){
     }
   });
   // 殘影斬：延遲 150ms 再打一次（殘影）
-  if(g.p._ghostSlash){
-    const gsMul=g.p._ghostSlash;
-    const _gsX=g.p.x,_gsY=g.p.y,_gsF=g.p.face;
+  if(_pp._ghostSlash){
+    const gsMul=_pp._ghostSlash;
+    const _gsX=_pp.x,_gsY=_pp.y,_gsF=_pp.face;
     // 殘影剪影（記錄位置，渲染區畫半透明角色）
     g._ghostShadow={x:_gsX,y:_gsY,face:_gsF,life:1,t:performance.now()};
     setTimeout(()=>{
@@ -1999,22 +2001,25 @@ function swordSwing(){
     },150);
   }
   // 近戰打寶箱
-  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(g.p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
+  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(_pp,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
     if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
-      if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
+      if(_isCoopMode){_pp._inv=true;_pp._pickPending=true;
+      if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest",null,{player:_pp,inv:_pinv,charType:_pct});}
+      else{showPick("crate",null,{player:_pp,inv:_pinv,charType:_pct});}}
+      else{g.run=false;
       if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
-      else{showPick("crate");}
+      else{showPick("crate");}}
     }}});
   // 達摩的光劍：揮劍射出 3 道光束
-  if(g.p._lightSaber){
-    const beamDmg=g.p.atk*1.5*(g.p.elemBoost||1);
+  if(_pp._lightSaber){
+    const beamDmg=_pp.atk*1.5*(_pp.elemBoost||1);
     const beamRange=200;
     for(let bi=0;bi<3;bi++){
       const ba=atkAngle+(bi-1)*.25; // -0.25, 0, +0.25 三道扇形
       // 光束傷害（穿透所有敵人）
       g.ene.forEach(e=>{
         if(e.hp<=0)return;
-        const bx=e.x-g.p.x,by=e.y-g.p.y,bd=Math.sqrt(bx*bx+by*by);
+        const bx=e.x-_pp.x,by=e.y-_pp.y,bd=Math.sqrt(bx*bx+by*by);
         if(bd>beamRange)return;
         const ba2=Math.atan2(by,bx);
         let bda=Math.abs(((ba2-ba)%(PI*2)+PI*3)%(PI*2)-PI);
@@ -2027,11 +2032,11 @@ function swordSwing(){
       // 光束視覺（隨機長短，存到渲染區畫）
       const bLen=rn(120,beamRange); // 隨機長短
       if(!g._lightBeams)g._lightBeams=[];
-      g._lightBeams.push({x:g.p.x,y:g.p.y,ang:ba,len:bLen,t:performance.now()});
+      g._lightBeams.push({x:_pp.x,y:_pp.y,ang:ba,len:bLen,t:performance.now()});
       // 光粒子沿光束
       for(let pi=0;pi<5;pi++){
         const pd=rn(20,bLen);
-        par.push({x:g.p.x+Math.cos(ba)*pd+rn(-3,3),y:g.p.y+Math.sin(ba)*pd+rn(-3,3),vx:Math.cos(ba)*rn(1,4),vy:Math.sin(ba)*rn(1,4),life:.35,color:["#FFD43B","#fff","#FFE066"][pi%3],sz:rn(1.5,3.5)});
+        par.push({x:_pp.x+Math.cos(ba)*pd+rn(-3,3),y:_pp.y+Math.sin(ba)*pd+rn(-3,3),vx:Math.cos(ba)*rn(1,4),vy:Math.sin(ba)*rn(1,4),life:.35,color:["#FFD43B","#fff","#FFE066"][pi%3],sz:rn(1.5,3.5)});
       }
     }
   }
@@ -2046,55 +2051,56 @@ function swordSwing(){
       const cnt=10+ring*4,spd=3+ring*1.5;
       for(let i=0;i<cnt;i++){
         const a=TAU*i/cnt+ring*.2;
-        par.push({x:g.p.x+Math.cos(a)*(15+ring*8),y:g.p.y+Math.sin(a)*(15+ring*8),
+        par.push({x:_pp.x+Math.cos(a)*(15+ring*8),y:_pp.y+Math.sin(a)*(15+ring*8),
           vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:.8+ring*.15,
           color:["#FFD43B","#fff","#FF922B","#FFE066"][i%4],sz:rn(2.5,5+ring)});
       }
     }
-    burst(g.p.x,g.p.y,"#FFD43B",15);burst(g.p.x,g.p.y,"#fff",8);
-    g.dn.push({x:g.p.x,y:g.p.y-35,d:"⚔️ 劍氣！",life:1.5,color:"#FFD43B",big:1});
+    burst(_pp.x,_pp.y,"#FFD43B",15);burst(_pp.x,_pp.y,"#fff",8);
+    g.dn.push({x:_pp.x,y:_pp.y-35,d:"⚔️ 劍氣！",life:1.5,color:"#FFD43B",big:1});
     _shakeT=.2;_shakePow=4;
   }
 }
 
 // ═══ 坦克盾擊：擊退+反彈傷害 ═══
-function shieldBash(){
+function shieldBash(_pp,_isP2){
+  if(!_pp)_pp=g.p;var _pad=_isP2?(g.p2&&g.p2._ad||{x:0,y:-1}):g.ad;var _pct=_isP2?(g.p2?g.p2.charType:"gunner"):g.charType;var _pinv=_isP2?inv2:inv;
   if(!g||!g.run)return;
   const now=performance.now();
-  const splitBonus=Math.max(1,(g.p.split||1)*.4+.6);
-  const _tauntMul=(g.p._tauntAtkEnd&&now<g.p._tauntAtkEnd)?2:1;
+  const splitBonus=Math.max(1,(_pp.split||1)*.4+.6);
+  const _tauntMul=(_pp._tauntAtkEnd&&now<_pp._tauntAtkEnd)?2:1;
   // 重擊判定
   let _tankHeavy=false;
-  if(g.p.heavyEvery>0){g.p._heavyCount=(g.p._heavyCount||0)+1;if(g.p._heavyCount>=g.p.heavyEvery){g.p._heavyCount=0;_tankHeavy=true;}}
+  if(_pp.heavyEvery>0){_pp._heavyCount=(_pp._heavyCount||0)+1;if(_pp._heavyCount>=_pp.heavyEvery){_pp._heavyCount=0;_tankHeavy=true;}}
   const heavyMul2=_tankHeavy?2:1;
-  const berserkMul2=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;
-  const dmg=(3+g.p.atk)*splitBonus*heavyMul2*berserkMul2*(g.p.elemBoost||1)*(g.p.levelDmgMul||1)*_tauntMul;
-  const pierceRange=(g.p.pierce||0)>0?25:0;
-  const splashRange2=g.p.splash||0; // 濺射→攻擊距離
+  const berserkMul2=(_pp.berserk&&_pp.hp/_pp.maxHp<_pp.berserk)?2:1;
+  const dmg=(3+_pp.atk)*splitBonus*heavyMul2*berserkMul2*(_pp.elemBoost||1)*(_pp.levelDmgMul||1)*_tauntMul;
+  const pierceRange=(_pp.pierce||0)>0?25:0;
+  const splashRange2=_pp.splash||0; // 濺射→攻擊距離
   const range=PR*3+pierceRange+splashRange2;
-  const atkAngle=Math.atan2(g.ad.y,g.ad.x);
-  const _dblMelee2=Math.random()<(g.p.dblAtk||0);
-  const arc=_dblMelee2?TAU:PI*(.5+Math.min(.3,(g.p.split||1)*.04)); // 影分身=360°
+  const atkAngle=Math.atan2(_pad.y,_pad.x);
+  const _dblMelee2=Math.random()<(_pp.dblAtk||0);
+  const arc=_dblMelee2?TAU:PI*(.5+Math.min(.3,(_pp.split||1)*.04)); // 影分身=360°
   sfxShoot();
-  if(_dblMelee2){burst(g.p.x,g.p.y,"#868E96",6);}
+  if(_dblMelee2){burst(_pp.x,_pp.y,"#868E96",6);}
   g.ene.forEach(e=>{
     if(e.hp<=0)return;
-    const dx=e.x-g.p.x,dy=e.y-g.p.y,d=Math.sqrt(dx*dx+dy*dy);
+    const dx=e.x-_pp.x,dy=e.y-_pp.y,d=Math.sqrt(dx*dx+dy*dy);
     const _bossReach2=(e.boss||e.stageBoss)?30:0;
     if(d>range+e.r+_bossReach2)return;
     const ea=Math.atan2(dy,dx);
     let da=Math.abs(((ea-atkAngle)%(PI*2)+PI*3)%(PI*2)-PI);
     if(da>arc)return;
-    const _tankCrit=Math.random()<(g.p.crit||.05);
+    const _tankCrit=Math.random()<(_pp.crit||.05);
     let fd=dmg*(_tankCrit?2:1);
     if(e.boss&&e.bossType==="armor")fd*=.7;
-    if((e.boss||e.mega)&&g.p.bossDmg>1)fd*=g.p.bossDmg;
-    if(!e.mega&&g.p.mobDmg>1)fd*=g.p.mobDmg;
-    if(g.p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+g.p.iceFrag);
-    if(e.eliteEnemy){const hasEl=!!(g.p.fx.fire||g.p.fx.ice||g.p.fx.lightning||g.p.fx.poison||g.p.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
+    if((e.boss||e.mega)&&_pp.bossDmg>1)fd*=_pp.bossDmg;
+    if(!e.mega&&_pp.mobDmg>1)fd*=_pp.mobDmg;
+    if(_pp.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+_pp.iceFrag);
+    if(e.eliteEnemy){const hasEl=!!(_pp.fx.fire||_pp.fx.ice||_pp.fx.lightning||_pp.fx.poison||_pp.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
     e.hp-=fd;
     // 命中回血（近戰最低5）
-    if(g.p.bulletHeal>0){const mheal2=Math.max(5,g.p.bulletHeal);g.p.hp=Math.min(g.p.hp+mheal2,g.p.maxHp);g.p._healFlash=now;}
+    if(_pp.bulletHeal>0){const mheal2=Math.max(5,_pp.bulletHeal);_pp.hp=Math.min(_pp.hp+mheal2,_pp.maxHp);_pp._healFlash=now;}
     // 擊退（明顯推開+retreat）
     if(!e.stageBoss){
       const pushF=e.boss?15:35; // Boss 15px，小怪 35px
@@ -2106,16 +2112,16 @@ function shieldBash(){
     }
     e.st=Math.max(e.st||0,1000);
     // 元素效果
-    const fx=g.p.fx;
+    const fx=_pp.fx;
     if(fx.fire){e.burnT=Math.max(e.burnT||0,1400+Math.max(fx.fire||0,1)*600);e.burnLv=Math.max(fx.fire||0,1);}
-    if(fx.poison&&g.p.poison>0){e.poisonT=g.p.poison*1000*(g.p.elemBoost||1);e.poisonLv=Math.max(fx.poison||0,1);}
+    if(fx.poison&&_pp.poison>0){e.poisonT=_pp.poison*1000*(_pp.elemBoost||1);e.poisonLv=Math.max(fx.poison||0,1);}
     if(fx.ice){if(Math.random()<.3)e.frozen=Math.max(e.frozen||0,600);else e.st=Math.max(e.st||0,1500);}
     burst(e.x,e.y,_tankCrit?"#FFD43B":"#51CF66",6);
     g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:_tankCrit?"#FFD43B":"#51CF66",big:_tankCrit});
     sfxHit();
     // 連鎖雷電（近戰觸發）
-    if(g.p.chain>0||fx.lightning){
-      const cMul2=(g.p.chainDmg||1)*(fx.lightning?.58:.3);
+    if(_pp.chain>0||fx.lightning){
+      const cMul2=(_pp.chainDmg||1)*(fx.lightning?.58:.3);
       const cd3=fd*cMul2;
       g.ene.forEach(t=>{if(t===e||t.hp<=0)return;if(di(e,t)<80){
         t.hp-=cd3;addLtn(e.x,e.y,t.x,t.y,.7);burst(t.x,t.y,"#FAB005",3);
@@ -2124,24 +2130,27 @@ function shieldBash(){
     }
   });
   // 近戰打寶箱
-  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(g.p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
+  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(_pp,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
     if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
-      if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
+      if(_isCoopMode){_pp._inv=true;_pp._pickPending=true;
+      if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest",null,{player:_pp,inv:_pinv,charType:_pct});}
+      else{showPick("crate",null,{player:_pp,inv:_pinv,charType:_pct});}}
+      else{g.run=false;
       if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
-      else{showPick("crate");}
+      else{showPick("crate");}}
     }}});
   // 盾擊衝擊波視覺
   if(!g._atkAnim)g._atkAnim={active:false,startT:0};g._atkAnim.active=true;g._atkAnim.startT=performance.now();
   for(let i=0;i<6;i++){
     const a=atkAngle-arc+arc*2*i/5;
-    par.push({x:g.p.x+Math.cos(a)*15,y:g.p.y+Math.sin(a)*15,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:.4,color:"#51CF66",sz:rn(2,4)});
+    par.push({x:_pp.x+Math.cos(a)*15,y:_pp.y+Math.sin(a)*15,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:.4,color:"#51CF66",sz:rn(2,4)});
   }
   // 內建基礎震波（盾擊範圍外的小範圍 AOE）
   const baseQuakeR=range+40; // 盾擊範圍外再 +40px
-  const baseQuakeDmg=g.p.atk*.5;
+  const baseQuakeDmg=_pp.atk*.5;
   g.ene.forEach(e=>{
     if(e.hp<=0)return;
-    const qd2=di(g.p,e);
+    const qd2=di(_pp,e);
     if(qd2>range&&qd2<=baseQuakeR){
       let bqd=baseQuakeDmg;if(e.boss)bqd=Math.min(bqd,30);
       e.hp-=bqd;e.st=Math.max(e.st||0,400);
@@ -2151,10 +2160,10 @@ function shieldBash(){
   // 基礎震波視覺（小環）
   g._quakeRingT=now;g._quakeRingSmall=true;
   // 大地震擊：盾擊額外全螢幕地震波（卡片強化）
-  if(g.p._quake&&(!g.p._quakeCD||now>=g.p._quakeCD)){
-    g.p._quakeCD=now+3000;
-    const qMul=[0,1,1.5,2][g.p._quake]||1;
-    const qDmg=g.p.atk*2*qMul;
+  if(_pp._quake&&(!_pp._quakeCD||now>=_pp._quakeCD)){
+    _pp._quakeCD=now+3000;
+    const qMul=[0,1,1.5,2][_pp._quake]||1;
+    const qDmg=_pp.atk*2*qMul;
     g.ene.forEach(e=>{
       if(e.hp<=0)return;
       let qd=qDmg;if(e.boss)qd=Math.min(qd,80);
@@ -2167,145 +2176,32 @@ function shieldBash(){
     _shakeT=.4;_shakePow=6; // 適度震動
     sfx("ult"); // 大招音效
     // 大量粒子爆發
-    burst(g.p.x,g.p.y,"#FF922B",30);burst(g.p.x,g.p.y,"#FFD43B",15);burst(g.p.x,g.p.y,"#FF6B6B",10);
+    burst(_pp.x,_pp.y,"#FF922B",30);burst(_pp.x,_pp.y,"#FFD43B",15);burst(_pp.x,_pp.y,"#FF6B6B",10);
     // 碎石粒子
     for(let i=0;i<12;i++){
-      const a=TAU*i/12;par.push({x:g.p.x+Math.cos(a)*rn(10,30),y:g.p.y+Math.sin(a)*rn(10,30),vx:Math.cos(a)*rn(2,5),vy:Math.sin(a)*rn(2,5)-1,life:.7,color:i%3===0?"#868E96":i%3===1?"#ADB5BD":"#FF922B",sz:rn(3,6),g:.15});
+      const a=TAU*i/12;par.push({x:_pp.x+Math.cos(a)*rn(10,30),y:_pp.y+Math.sin(a)*rn(10,30),vx:Math.cos(a)*rn(2,5),vy:Math.sin(a)*rn(2,5)-1,life:.7,color:i%3===0?"#868E96":i%3===1?"#ADB5BD":"#FF922B",sz:rn(3,6),g:.15});
     }
-    g.dn.push({x:g.p.x,y:g.p.y-40,d:"🌋 地震波！",life:2,color:"#FF922B",big:1});
+    g.dn.push({x:_pp.x,y:_pp.y-40,d:"🌋 地震波！",life:2,color:"#FF922B",big:1});
     g.ultFlash=.4;g.ultType="n"; // 短暫全螢幕閃光
   }
 }
 
 // ═══ P2 近戰攻擊（精簡版，共用 g.p2 數據）═══
-function p2SwordSwing(){
-  if(!g||!g.run||!g.p2)return;
-  const p=g.p2,ad=p._ad||{x:0,y:-1};
-  const dmg=(3.5+p.atk)*(p.elemBoost||1)*(p.levelDmgMul||1);
-  const range=PR*5,atkAngle=Math.atan2(ad.y,ad.x),arc=PI*.6;
-  sfxShoot();
-  p._swordQiCount=(p._swordQiCount||0)+1;
-  const isQi=p._swordQiCount%5===0;
-  const qiMul=isQi?2:1;
-  const _crit2=()=>Math.random()<(p.crit||.05);
-  g.ene.forEach(e=>{
-    if(e.hp<=0)return;
-    const dx=e.x-p.x,dy=e.y-p.y,d=Math.sqrt(dx*dx+dy*dy);
-    if(d>range+e.r+(isQi?40:0))return;
-    const ea=Math.atan2(dy,dx);
-    let da=Math.abs(((ea-atkAngle)%(PI*2)+PI*3)%(PI*2)-PI);
-    if(da>arc&&!isQi)return;
-    const isCrit=_crit2();
-    let fd=dmg*qiMul*(isCrit?2:1);
-    if(e.boss&&e.bossType==="armor")fd*=.7;
-    if((e.boss||e.mega)&&p.bossDmg>1)fd*=p.bossDmg;
-    if(!e.mega&&p.mobDmg>1)fd*=p.mobDmg;
-    if(p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+p.iceFrag);
-    if(e.eliteEnemy){const hasEl=!!(p.fx.fire||p.fx.ice||p.fx.lightning||p.fx.poison||p.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
-    e.hp-=fd;e.st=Math.max(e.st||0,800);
-    if(p.bulletHeal>0){const mh=Math.max(5,p.bulletHeal);p.hp=Math.min(p.hp+mh,p.maxHp);}
-    burst(e.x,e.y,isQi?"#FFD43B":isCrit?"#FFD43B":"#F06595",5);
-    g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:isCrit?"#FFD43B":isQi?"#FFD43B":"#F06595",big:isCrit||isQi});
-    sfxHit();
-  });
-  if(isQi){for(let i=0;i<12;i++){const a=PI*2*i/12;par.push({x:p.x+Math.cos(a)*20,y:p.y+Math.sin(a)*20,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:.6,color:"#FFD43B",sz:rn(2,4)});}}
-  // P2 近戰打寶箱
-  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
-    if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
-      if(_isCoopMode){p._inv=true;p._pickPending=true;
-      if(cr.bigChest){var _bcp2=_isElite()?4:5;g._bigChestTotal=_bcp2;g._bigChestLeft=_bcp2;showPick("bigchest",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}
-      else{showPick("crate",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}}
-    }}});
-  // P2 獨立攻擊動畫
-  g._p2AtkAnim={active:true,startT:performance.now(),_qiSpin:isQi};g._p2WbSwing=1;
-}
-function p2ShieldBash(){
-  if(!g||!g.run||!g.p2)return;
-  const p=g.p2,ad=p._ad||{x:0,y:-1};
-  const dmg=(3+p.atk)*(p.elemBoost||1)*(p.levelDmgMul||1);
-  const range=PR*3,atkAngle=Math.atan2(ad.y,ad.x),arc=PI*.5;
-  sfxShoot();
-  const _crit3=()=>Math.random()<(p.crit||.05);
-  g.ene.forEach(e=>{
-    if(e.hp<=0)return;
-    const dx=e.x-p.x,dy=e.y-p.y,d=Math.sqrt(dx*dx+dy*dy);
-    if(d>range+e.r)return;
-    const ea=Math.atan2(dy,dx);
-    let da=Math.abs(((ea-atkAngle)%(PI*2)+PI*3)%(PI*2)-PI);
-    if(da>arc)return;
-    const isCrit=_crit3();
-    let fd=dmg*(isCrit?2:1);
-    if(e.boss&&e.bossType==="armor")fd*=.7;
-    if((e.boss||e.mega)&&p.bossDmg>1)fd*=p.bossDmg;
-    if(!e.mega&&p.mobDmg>1)fd*=p.mobDmg;
-    if(p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+p.iceFrag);
-    if(e.eliteEnemy){const hasEl=!!(p.fx.fire||p.fx.ice||p.fx.lightning||p.fx.poison||p.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
-    e.hp-=fd;
-    if(p.bulletHeal>0){const mh=Math.max(5,p.bulletHeal);p.hp=Math.min(p.hp+mh,p.maxHp);}
-    if(!e.stageBoss&&d>0){const pf=e.boss?15:35;e.x+=dx/d*pf;e.y+=dy/d*pf;e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);}
-    e.st=Math.max(e.st||0,1000);
-    burst(e.x,e.y,isCrit?"#FFD43B":"#51CF66",6);
-    g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:isCrit?"#FFD43B":"#51CF66",big:isCrit});
-    sfxHit();
-  });
-  for(let i=0;i<6;i++){const a=atkAngle-arc+arc*2*i/5;par.push({x:p.x+Math.cos(a)*15,y:p.y+Math.sin(a)*15,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:.4,color:"#51CF66",sz:rn(2,4)});}
-  // P2 近戰打寶箱
-  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
-    if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
-      if(_isCoopMode){p._inv=true;p._pickPending=true;
-      if(cr.bigChest){var _bcp2=_isElite()?4:5;g._bigChestTotal=_bcp2;g._bigChestLeft=_bcp2;showPick("bigchest",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}
-      else{showPick("crate",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}}
-    }}});
-  g._p2AtkAnim={active:true,startT:performance.now()};g._p2WbSwing=1;
-}
+
+
 // P2 技能（AI 自動施放）
 let _p2SkillCdEnd=0;
+// P2 技能：呼叫共用的技能函式
 function p2UseSkill(){
   if(!g||!g.run||!g.p2)return;
   const now=performance.now();
   if(now<_p2SkillCdEnd)return;
   const ct=g.p2.charType||"gunner";
-  const _p2SkillCd={gunner:3000,swordsman:3000,tank:5000}; // P2 專用 CD 表
-  _p2SkillCdEnd=now+(_p2SkillCd[ct]||5000);
-  const p=g.p2,ad=p._ad||{x:0,y:-1};
-  if(ct==="gunner"){
-    const ba=Math.atan2(ad.y,ad.x);
-    const dmg2=(3.5+p.atk)*1.5*(p.levelDmgMul||1);
-    g.bul.push({x:p.x,y:p.y-PR*.4,vx:Math.cos(ba)*9,vy:Math.sin(ba)*9,dmg:dmg2*PLAYER_DMG_SCALE,life:1,crit:false,bc:{f:"#FFD43B",g:"#F06595",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0,_isP2:true});
-    g.ltn.push({x1:p.x,y1:p.y,x2:p.x+Math.cos(ba)*500,y2:p.y+Math.sin(ba)*500,life:1,w:3,c:"#F06595"});
-    burst(p.x,p.y,"#F06595",10);
-    g.dn.push({x:p.x,y:p.y-30,d:"🎯P2 狙擊",life:1.2,color:"#F06595",big:1});
-  } else if(ct==="swordsman"){
-    const dx=ad.x,dy=ad.y,d=Math.sqrt(dx*dx+dy*dy)||1;
-    const ndx=dx/d,ndy=dy/d,dashDist=PR*8;
-    const startX=p.x,startY=p.y;
-    const dmg2=(3.5+p.atk)*2*(p.elemBoost||1)*(p.levelDmgMul||1);
-    g.ene.forEach(e=>{
-      if(e.hp<=0)return;
-      const ex=e.x-startX,ey=e.y-startY;
-      const proj=ex*ndx+ey*ndy,perp=Math.abs(ex*ndy-ey*ndx);
-      if(proj<-PR*4||proj>dashDist+PR*4||perp>PR*4)return;
-      e.hp-=dmg2;e.st=Math.max(e.st||0,1200);
-      // 元素效果
-      const pfx=p.fx||{};
-      if(pfx.fire){e.burnT=Math.max(e.burnT||0,2000);e.burnLv=Math.max(pfx.fire||0,1);}
-      if(pfx.poison&&p.poison>0){e.poisonT=p.poison*1000;e.poisonLv=Math.max(pfx.poison||0,1);}
-      burst(e.x,e.y,"#F06595",8);
-      g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(dmg2),life:1,color:"#F06595",big:1});
-    });
-    p.x=cl(startX+ndx*dashDist,PR+4,mapW()-PR-4);
-    p.y=cl(startY+ndy*dashDist,PR+4,mapH()-PR-4);
-    for(let i=0;i<6;i++){_dashGhosts.push({x:startX+ndx*dashDist*i/5,y:startY+ndy*dashDist*i/5,face:p.face,life:1});}
-    g.dn.push({x:p.x,y:p.y-30,d:"⚔️P2 鬼斬",life:1.2,color:"#F06595",big:1});
-  } else {
-    // P2 嘲諷：用 _tauntAtkEnd 而非 setTimeout（安全）
-    if(p._tauntAtkBonus>0)p.atk-=p._tauntAtkBonus; // 先移除舊的
-    g.ene.forEach(e=>{if(e.hp<=0)return;e._tauntEnd=now+3000;g.dn.push({x:e.x,y:e.y-e.r-8,d:"⚠️",life:1,color:"#FF6B6B",big:1});});
-    p._tauntAtkEnd=now+3000;p._tauntAtkBonus=2;p.atk+=2;
-    burst(p.x,p.y,"#51CF66",15);
-    g.dn.push({x:p.x,y:p.y-30,d:"🛡️P2 嘲諷",life:1.5,color:"#51CF66",big:1});
-  }
-  sfxShoot();
+  _p2SkillCdEnd=now+(SKILL_CDS[ct]||5000);
+  if(ct==="gunner")skillSnipe(now,g.p2,true);
+  else if(ct==="swordsman")skillGhostSlash(now,g.p2,true);
+  else if(ct==="tank")skillTaunt(now,g.p2,true);
+  // P2 技能 CD 顯示（HOST 端處理，sync 到 CLIENT）
 }
 
 // ═══ 角色技能系統 ═══
@@ -2328,50 +2224,54 @@ function useCharSkill(){
 }
 
 // 槍手：狙擊（穿透全部 傷害1.5倍）
-function skillSnipe(now){
+function skillSnipe(now,_pp,_isP2){
+  if(!_pp)_pp=g.p;
+  var _pad=_isP2?(_pp._ad||{x:_pp.face||1,y:0}):(g.ad||{x:_pp.face||1,y:0});
   // 蓄力階段（0.4秒瞄準線+蓄力圈）→ 射擊
-  g.p._snipeT=now; // 記錄開始時間，渲染區畫蓄力特效
-  g.p._iFrameEnd=now+600; // 蓄力期間短暫保護
-  const ba=Math.atan2(g.ad.y,g.ad.x);
+  _pp._snipeT=now; // 記錄開始時間，渲染區畫蓄力特效
+  _pp._iFrameEnd=now+600; // 蓄力期間短暫保護
+  const ba=Math.atan2(_pad.y,_pad.x);
   // 延遲 400ms 後發射
   setTimeout(()=>{
     if(!g||!g.run)return;
-    const bm=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;
+    const bm=(_pp.berserk&&_pp.hp/_pp.maxHp<_pp.berserk)?2:1;
     const ohBonus=(g._heatWarn||g.heatCD)?2.5:1; // 過熱警告或冷卻中狙擊 ×2.5
-    const dmg=(3.5+g.p.atk)*4*bm*ohBonus*(g.p.ultDmgMul||1); // 狙擊高傷害
+    const dmg=(3.5+_pp.atk)*4*bm*ohBonus*(_pp.ultDmgMul||1); // 狙擊高傷害
     sfxShoot();sfx("ult");
-    const ba2=Math.atan2(g.ad.y,g.ad.x);
-    g.bul.push({x:g.p.x,y:g.p.y-PR*.4,vx:Math.cos(ba2)*12,vy:Math.sin(ba2)*12,dmg:dmg*PLAYER_DMG_SCALE,life:1,crit:true,bc:ohBonus>1?{f:"#FF4500",g:"#FF0000",t:"#FFD43B"}:{f:"#FFD43B",g:"#FF922B",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0});
+    const ba2=Math.atan2(_pad.y,_pad.x);
+    g.bul.push({x:_pp.x,y:_pp.y-PR*.4,vx:Math.cos(ba2)*12,vy:Math.sin(ba2)*12,dmg:dmg*PLAYER_DMG_SCALE,life:1,crit:true,bc:ohBonus>1?{f:"#FF4500",g:"#FF0000",t:"#FFD43B"}:{f:"#FFD43B",g:"#FF922B",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0});
     // 穿透光束
-    g.p._snipeBeamT=performance.now();g.p._snipeBeamAng=ba2;
+    _pp._snipeBeamT=performance.now();_pp._snipeBeamAng=ba2;
     // 大火花
-    const mzX=g.p.x+Math.cos(ba2)*PR,mzY=g.p.y+Math.sin(ba2)*PR;
+    const mzX=_pp.x+Math.cos(ba2)*PR,mzY=_pp.y+Math.sin(ba2)*PR;
     burst(mzX,mzY,ohBonus>1?"#FF4500":"#FFD43B",12);burst(mzX,mzY,"#fff",6);
     _shakeT=ohBonus>1?.5:.3;_shakePow=ohBonus>1?8:5;
-    g.dn.push({x:g.p.x,y:g.p.y-30,d:ohBonus>1?"🔥 過熱狙擊！！":"🎯 狙擊！",life:1.5,color:ohBonus>1?"#FF4500":"#FFD43B",big:1});
+    g.dn.push({x:_pp.x,y:_pp.y-30,d:ohBonus>1?"🔥 過熱狙擊！！":"🎯 狙擊！",life:1.5,color:ohBonus>1?"#FF4500":"#FFD43B",big:1});
   },400);
 }
 
 // 劍士：鬼斬（旋風斬+位移 兩倍距離+殘影）
-function skillGhostSlash(now){
-  const dmg=(3.5+g.p.atk)*2*(g.p.elemBoost||1)*(g.p.levelDmgMul||1)*(g.p.ultDmgMul||1);
+function skillGhostSlash(now,_pp,_isP2){
+  if(!_pp)_pp=g.p;
+  const dmg=(3.5+_pp.atk)*2*(_pp.elemBoost||1)*(_pp.levelDmgMul||1)*(_pp.ultDmgMul||1);
   const dashDist=PR*8;
-  // 方向鍵控制衝刺方向，沒按方向鍵則用面朝方向
-  const _joyActive=joy.a&&(joy.dx||joy.dy);
-  const dx=_joyActive?joy.dx:(g.p.face||1),dy=_joyActive?joy.dy:0;
+  // 方向：P1用搖桿，P2用AI瞄準方向
+  var dx,dy;
+  if(_isP2){var _pad=_pp._ad||{x:_pp.face||1,y:0};dx=_pad.x;dy=_pad.y;}
+  else{const _joyActive=joy.a&&(joy.dx||joy.dy);dx=_joyActive?joy.dx:(_pp.face||1);dy=_joyActive?joy.dy:0;}
   const d=Math.sqrt(dx*dx+dy*dy)||1;
   const ndx=dx/d,ndy=dy/d;
   sfxShoot();
-  const startX=g.p.x,startY=g.p.y;
+  const startX=_pp.x,startY=_pp.y;
   const endX=cl(startX+ndx*dashDist,PR+4,mapW()-PR-4);
   const endY=cl(startY+ndy*dashDist,PR+4,mapH()-PR-4);
   const hitRange=PR*4;
   // 衝刺開始即無敵（衝刺 200ms + 結束後 300ms = 共 500ms）
-  g.p._iFrameEnd=now+500;
+  _pp._iFrameEnd=now+500;
   // 衝刺動畫（200ms 漸進移動）
-  g.p._gsDash={startX,startY,endX,endY,startT:now,dur:200};
+  _pp._gsDash={startX,startY,endX,endY,startT:now,dur:200};
   // 殘影
-  for(let i=0;i<6;i++){const p=i/5;_dashGhosts.push({x:startX+ndx*dashDist*p,y:startY+ndy*dashDist*p,face:g.p.face,life:1});}
+  for(let i=0;i<6;i++){const p=i/5;_dashGhosts.push({x:startX+ndx*dashDist*p,y:startY+ndy*dashDist*p,face:_pp.face,life:1});}
   // 延遲到衝刺中段再造傷害（100ms，衝刺一半時）
   setTimeout(()=>{
     if(!g||!g.run)return;
@@ -2385,22 +2285,23 @@ function skillGhostSlash(now){
       let fd=dmg;
       if(!e.boss&&!e.stageBoss)fd+=e.mhp*.1;
       if(e.boss&&e.bossType==="armor")fd*=.7;
-      if(g.p.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+g.p.iceFrag);
+      if(_pp.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+_pp.iceFrag);
       e.hp-=fd;e.st=Math.max(e.st||0,1200);
-      const fx=g.p.fx;
+      const fx=_pp.fx;
       if(fx.fire){e.burnT=Math.max(e.burnT||0,2000);e.burnLv=Math.max(fx.fire||0,1);}
-      if(fx.poison&&g.p.poison>0){e.poisonT=g.p.poison*1000;e.poisonLv=Math.max(fx.poison||0,1);}
+      if(fx.poison&&_pp.poison>0){e.poisonT=_pp.poison*1000;e.poisonLv=Math.max(fx.poison||0,1);}
       burst(e.x,e.y,"#FF922B",8);
       g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(fd),life:1,color:"#FFD43B",big:1});
     });
   },100);
-  for(let i=0;i<16;i++){const a=PI*2*i/16;par.push({x:g.p.x+Math.cos(a)*15,y:g.p.y+Math.sin(a)*15,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:.6,color:i%2?"#FF922B":"#FFD43B",sz:rn(2,5)});}
-  g.dn.push({x:g.p.x,y:g.p.y-30,d:"⚔️ 鬼斬",life:1.2,color:"#FF922B",big:1});
+  for(let i=0;i<16;i++){const a=PI*2*i/16;par.push({x:_pp.x+Math.cos(a)*15,y:_pp.y+Math.sin(a)*15,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:.6,color:i%2?"#FF922B":"#FFD43B",sz:rn(2,5)});}
+  g.dn.push({x:_pp.x,y:_pp.y-30,d:"⚔️ 鬼斬",life:1.2,color:"#FF922B",big:1});
   if(!g._atkAnim)g._atkAnim={active:false,startT:0};g._atkAnim.active=true;g._atkAnim.startT=performance.now();
 }
 
 // 坦克：嘲諷吼叫（仇恨拉到自己+攻擊+2持續3秒）
-function skillTaunt(now){
+function skillTaunt(now,_pp,_isP2){
+  if(!_pp)_pp=g.p;var _pad=_isP2?(g.p2&&g.p2._ad||{x:0,y:-1}):g.ad;
   sfxShoot();sfx("ult");
   g.ene.forEach(e=>{
     if(e.hp<=0)return;
@@ -2408,21 +2309,21 @@ function skillTaunt(now){
     g.dn.push({x:e.x,y:e.y-e.r-8,d:"⚠️",life:1,color:"#FF6B6B",big:1});
   });
   // 先移除舊的嘲諷加成（防止疊加）
-  if(g.p._tauntAtkBonus>0){g.p.atk-=g.p._tauntAtkBonus;}
-  const _tauntBonus=Math.floor(2*(g.p.ultDmgMul||1));
-  g.p._tauntAtkEnd=now+3000;g.p._tauntAtkBonus=_tauntBonus;g.p.atk+=_tauntBonus;
+  if(_pp._tauntAtkBonus>0){_pp.atk-=_pp._tauntAtkBonus;}
+  const _tauntBonus=Math.floor(2*(_pp.ultDmgMul||1));
+  _pp._tauntAtkEnd=now+3000;_pp._tauntAtkBonus=_tauntBonus;_pp.atk+=_tauntBonus;
   // 大範圍擴散粒子（4層環，更多更遠）
   for(let ring=0;ring<4;ring++){
     const rOff=ring*8,spd=4+ring*2.5,cnt=14+ring*6;
     for(let i=0;i<cnt;i++){
       const a=TAU*i/cnt+ring*.25;
       const cols=["#51CF66","#FFD43B","#FF6B6B","#fff","#FF4040"];
-      par.push({x:g.p.x+Math.cos(a)*(12+rOff),y:g.p.y+Math.sin(a)*(12+rOff),vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:1+ring*.25,color:cols[(i+ring)%5],sz:rn(2.5,6+ring)});
+      par.push({x:_pp.x+Math.cos(a)*(12+rOff),y:_pp.y+Math.sin(a)*(12+rOff),vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:1+ring*.25,color:cols[(i+ring)%5],sz:rn(2.5,6+ring)});
     }
   }
   // 敵人頭上的 ❗ 已經有了，不再額外飛散 ⚠️
-  g.dn.push({x:g.p.x,y:g.p.y-40,d:"🛡️ 嘲諷！",life:2.5,color:"#51CF66",big:1});
-  burst(g.p.x,g.p.y,"#51CF66",30);burst(g.p.x,g.p.y,"#FFD43B",20);burst(g.p.x,g.p.y,"#FF4040",10);
+  g.dn.push({x:_pp.x,y:_pp.y-40,d:"🛡️ 嘲諷！",life:2.5,color:"#51CF66",big:1});
+  burst(_pp.x,_pp.y,"#51CF66",30);burst(_pp.x,_pp.y,"#FFD43B",20);burst(_pp.x,_pp.y,"#FF4040",10);
   // 嘲諷擴散環動畫（存到 g 讓渲染區畫）
   g._tauntRingT=now;
   _shakeT=.3;_shakePow=5;
@@ -2662,10 +2563,20 @@ function loop(){
     g.p.x+=joy.dx*.5*dt;g.p.y+=joy.dy*.5*dt; // 倒地爬行
   }
   g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
+  // P2 鬼斬衝刺動畫
+  if(_isCoopMode&&g.p2&&g.p2._gsDash){
+    var gd2=g.p2._gsDash,gp2=Math.min(1,(now-gd2.startT)/gd2.dur);
+    var ease2=gp2<.5?2*gp2*gp2:1-Math.pow(-2*gp2+2,2)/2;
+    g.p2.x=gd2.startX+(gd2.endX-gd2.startX)*ease2;
+    g.p2.y=gd2.startY+(gd2.endY-gd2.startY)*ease2;
+    if(gp2>=1)g.p2._gsDash=null;
+  }
   // move P2 (co-op) — AI 模式跳過（AI 自己控制移動）
   if(_isCoopMode&&g.p2&&!_p2AI){
     var p2i=(_net&&_net.role==="host")?_p2Input:joy; // Client 用自己的 joy
-    if(!g.p2._downed){
+    if(g.p2._gsDash){
+      // 鬼斬衝刺中，不處理手動移動
+    }else if(!g.p2._downed){
       if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*g.p2.speed*dt;g.p2.y+=p2i.dy*g.p2.speed*dt;if(Math.abs(p2i.dx)>.2)g.p2.face=p2i.dx>0?1:-1;}
     }else{
       if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*.5*dt;g.p2.y+=p2i.dy*.5*dt;} // 倒地爬行
@@ -2673,7 +2584,7 @@ function loop(){
     g.p2.x=cl(g.p2.x,PR+4,mapW()-PR-4);g.p2.y=cl(g.p2.y,PR+4,mapH()-PR-4);
   }
   // AI P2 行為
-  if(_p2AI&&g.p2&&!g.p2._downed&&_isCoopMode){
+  if(_p2AI&&g.p2&&!g.p2._downed&&!g.p2._gsDash&&_isCoopMode){
     if(!g.p2._aiWander){g.p2._aiWander={tx:g.p2.x,ty:g.p2.y,nextT:0};}
     var aw=g.p2._aiWander;
     var spd2=g.p2.speed*dt;
@@ -2863,8 +2774,8 @@ function loop(){
     var p2ct=g.p2.charType||"gunner";
     var _p2AtkCD=p2ct==="swordsman"?Math.round(320*(g.p2.fr||1)):p2ct==="tank"?Math.round(280*(g.p2.fr||1)):HOLD_CD*(g.p2.fr||1);
     if(p2aim&&now-g.p2._lhF>_p2AtkCD){
-      if(p2ct==="swordsman"){p2SwordSwing();}
-      else if(p2ct==="tank"){p2ShieldBash();}
+      if(p2ct==="swordsman"){swordSwing(g.p2,true);}
+      else if(p2ct==="tank"){shieldBash(g.p2,true);}
       else{var ad2=g.p2._ad||{x:0,y:-1};fire((2.2+g.p2.atk*.7),ad2.x,ad2.y,.07,g.p2);g._p2AtkAnim={active:true,startT:now};g._p2WbSwing=1;}
       g.p2._lhF=now;
     }
