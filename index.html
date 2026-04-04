@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.41</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.42</div>
 </div>
 </div>
 
@@ -537,20 +537,22 @@ function nearestTargets(src,k){
 let inv=[];
 function getCardLv(id){const c=inv.find(x=>x.id===id);return c?c.lv:-1;}
 function addCard(id){const ex=inv.find(x=>x.id===id);if(ex){if(ex.lv<2){ex.lv++;return ex.lv;}return-1;}inv.push({id,lv:0});return 0;}
-function pks(n,excludeIds){
+function pks(n,excludeIds,_useInv,_useCharType){
+  const _inv2=_useInv||inv;
   const p=[],u=new Set(),ex=excludeIds||new Set();
   let at=0;
+  const _getClv=function(id){const c=_inv2.find(x=>x.id===id);return c?c.lv:-1;};
   while(p.length<n&&at<250){
     at++;
     const v=Math.random()*100;
     let r=v<RW.SSR?"SSR":v<RW.SSR+RW.SR?"SR":"R";
     const _eliteExpBan=_isElite()&&(c=>c.n==="學者帽"||c.n==="磁力場"||c.n==="探索靴");
-    const _ct2=g?g.charType:"gunner";
+    const _ct2=_useCharType||(g?g.charType:"gunner");
     const _charBan=c=>{
-      if(c.charReq&&c.charReq!==_ct2)return true; // 專屬卡不符合角色
+      if(c.charReq&&c.charReq!==_ct2)return true;
       return false;
     };
-    const pool=C.filter(c=>c.r===r&&!u.has(c.id)&&!ex.has(c.id)&&(c.once?getCardLv(c.id)<0:getCardLv(c.id)<2)&&!(c.n==="命運轉輪"&&inv.length===0)&&!(_eliteExpBan&&_eliteExpBan(c))&&!_charBan(c));
+    const pool=C.filter(c=>c.r===r&&!u.has(c.id)&&!ex.has(c.id)&&(c.once?_getClv(c.id)<0:_getClv(c.id)<2)&&!(c.n==="命運轉輪"&&_inv2.length===0)&&!(_eliteExpBan&&_eliteExpBan(c))&&!_charBan(c));
     if(!pool.length)continue;
     const c=pool[pool.length*Math.random()|0];
     p.push(c);u.add(c.id);
@@ -1741,7 +1743,14 @@ function fire(dmg,dx,dy,sp,p){
     const count=Math.min(shots,12);
     for(let i=0;i<count;i++){
       const a=dir+(i-(count-1)/2)*.16+rn(-sp,sp);
-      g.bul.push({x:pp.x,y:pp.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(pp.crit||.05),bc,trail:[],_tw:0,pierce:pp.pierce||0,hm:pp.homing||0,_minigun:pp._minigun||0,_armorPen:pp.armorCapBonus||0,_isP2:p===g.p2});
+      // 追蹤彈：每3秒一波（0.5秒追蹤窗口），其餘正常直射
+      var _nt=performance.now(),_hmOn=false;
+      if(pp.homing){
+        if(!pp._hmCycleT)pp._hmCycleT=_nt; // 初始化循環起點
+        var _cyc=(_nt-pp._hmCycleT)%3500; // 3.5秒循環（0.5追蹤+3冷卻）
+        _hmOn=_cyc<500; // 前0.5秒是追蹤窗口
+      }
+      g.bul.push({x:pp.x,y:pp.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(pp.crit||.05),bc,trail:[],_tw:0,pierce:pp.pierce||0,hm:_hmOn?pp.homing:0,_minigun:pp._minigun||0,_armorPen:pp.armorCapBonus||0,_isP2:p===g.p2});
     }
   });
 }
@@ -2203,7 +2212,9 @@ function p2SwordSwing(){
   // P2 近戰打寶箱
   g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
     if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
-      if(_isCoopMode){p._inv=true;p._pickPending=true;_triggerP2Pick(cr);}
+      if(_isCoopMode){p._inv=true;p._pickPending=true;
+      if(cr.bigChest){var _bcp2=_isElite()?4:5;g._bigChestTotal=_bcp2;g._bigChestLeft=_bcp2;showPick("bigchest",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}
+      else{showPick("crate",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}}
     }}});
   // P2 獨立攻擊動畫
   g._p2AtkAnim={active:true,startT:performance.now(),_qiSpin:isQi};g._p2WbSwing=1;
@@ -2241,7 +2252,9 @@ function p2ShieldBash(){
   // P2 近戰打寶箱
   g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
     if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
-      if(_isCoopMode){p._inv=true;p._pickPending=true;_triggerP2Pick(cr);}
+      if(_isCoopMode){p._inv=true;p._pickPending=true;
+      if(cr.bigChest){var _bcp2=_isElite()?4:5;g._bigChestTotal=_bcp2;g._bigChestLeft=_bcp2;showPick("bigchest",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}
+      else{showPick("crate",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}}
     }}});
   g._p2AtkAnim={active:true,startT:performance.now()};g._p2WbSwing=1;
 }
@@ -2324,7 +2337,7 @@ function skillSnipe(now){
   setTimeout(()=>{
     if(!g||!g.run)return;
     const bm=(g.p.berserk&&g.p.hp/g.p.maxHp<g.p.berserk)?2:1;
-    const ohBonus=g.heatCD?2.5:1; // 過熱瞬間狙擊 ×2.5
+    const ohBonus=(g._heatWarn||g.heatCD)?2.5:1; // 過熱警告或冷卻中狙擊 ×2.5
     const dmg=(3.5+g.p.atk)*4*bm*ohBonus*(g.p.ultDmgMul||1); // 狙擊高傷害
     sfxShoot();sfx("ult");
     const ba2=Math.atan2(g.ad.y,g.ad.x);
@@ -3566,7 +3579,9 @@ function loop(){
   if(!_practiceMode)g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;
     if(b._isP2&&_isCoopMode&&g.p2){
       // P2 的子彈打開寶箱 → P2 選卡
-      g.p2._inv=true;g.p2._pickPending=true;_triggerP2Pick(cr);
+      g.p2._inv=true;g.p2._pickPending=true;
+      if(cr.bigChest){var _bcp3=_isElite()?4:5;g._bigChestTotal=_bcp3;g._bigChestLeft=_bcp3;showPick("bigchest",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}
+      else{showPick("crate",null,{player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"});}
     }else{
       if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
       if(cr.bigChest){var _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
@@ -3690,19 +3705,8 @@ function loop(){
     while(g.p2Exp>=g.p2ExpTo){g.p2Exp-=g.p2ExpTo;g.p2Level++;g.p2ExpTo=expForLevel(g.p2Level);
       var _mc2=MODE[_mode];g.p2.atk+=_mc2.atkPerLv;g.p2.maxHp+=_mc2.hpPerLv;g.p2.hp=g.p2.maxHp;
       if(g.p2Level%5===0){g.p2.levelDmgMul=(g.p2.levelDmgMul||1)+.1;}
-      // P2 card pick: auto-random (coop 寶箱每等自動拿一張卡)
-      if(!g.p2._downed){
-        var pool=C.filter(c=>{if(c.charReq&&c.charReq!==g.charType)return false;var ex=inv2.find(x=>x.id===c.id);return!ex||ex.lv<2;});
-        if(pool.length>0){
-          var cd=pool[Math.random()*pool.length|0];
-          var ex2=inv2.find(x=>x.id===cd.id);
-          var lv2=0;
-          if(ex2){if(ex2.lv<2){ex2.lv++;lv2=ex2.lv;}else lv2=-1;}
-          else{inv2.push({id:cd.id,lv:0});}
-          if(lv2>=0){cd.ap[lv2](g.p2);g.p2.hp=Math.min(g.p2.hp+15,g.p2.maxHp);
-            g.dn.push({x:g.p2.x,y:g.p2.y-30,d:cd.e+" "+cd.n,life:2,color:"#F06595",big:1});}
-        }
-      }
+      // P2 升級：生成寶箱（和 P1 一樣的生成規則）
+      if(g.p2Level>=2&&g.p2Level<=4){spawnBonusCrates(1);g.dn.push({x:g.p2.x,y:g.p2.y-30,d:"📦 P2 寶箱！",life:2,color:"#F06595",big:1});}
     }
   }
 
@@ -4244,6 +4248,12 @@ function loop(){
     cx.save();cx.font="bold 12px Nunito,sans-serif";cx.textAlign="center";
     cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/200)*.4;
     cx.fillText("💀 SOS",g.p.x,g.p.y-PR-10);cx.restore();
+  }
+  // P2 downed indicator
+  if(_isCoopMode&&g.p2&&g.p2._downed){
+    cx.save();cx.font="bold 12px Nunito,sans-serif";cx.textAlign="center";
+    cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/200)*.4;
+    cx.fillText("💀 SOS",g.p2.x,g.p2.y-PR-10);cx.restore();
   }
   // 挑卡中提示（對方可見）
   if(_isCoopMode){
@@ -5255,7 +5265,11 @@ function clientRenderLoop(){
 
 /* ═══ CARD PICK ═══ */
 function buildCard(cd,w,i,wrap){
-  const clv=getCardLv(cd.id),nLv=clv+1,isUp=clv>=0,dLv=nLv+1;
+  const _bpp=_currentPickCtx?_currentPickCtx.player:g.p;
+  const _binv=_currentPickCtx?_currentPickCtx.inv:inv;
+  const _bGetLv=function(id){const c=_binv.find(x=>x.id===id);return c?c.lv:-1;};
+  const _bAddCard=function(id){const ex=_binv.find(x=>x.id===id);if(ex){if(ex.lv<2){ex.lv++;return ex.lv;}return-1;}_binv.push({id,lv:0});return 0;};
+  const clv=_bGetLv(cd.id),nLv=clv+1,isUp=clv>=0,dLv=nLv+1;
   const desc=cd.d[Math.min(nLv,2)];
   const b=document.createElement("button");b.className="cb";
   const rarAnim=cd.r==="SSR"?"ssrRainbow 1.5s infinite":cd.r==="SR"?"srShine 1.2s infinite":"none";
@@ -5271,9 +5285,9 @@ function buildCard(cd,w,i,wrap){
   const recBadge=_isRec?'<div style="font-size:8px;font-weight:900;color:#FFD43B;background:rgba(255,212,59,.15);border:1px solid rgba(255,212,59,.3);border-radius:4px;padding:1px 6px;margin-bottom:3px;display:inline-block">⭐ 推薦</div>':"";
   b.innerHTML=`${rarBadge}${tpL}${recBadge}<div style="font-size:30px;margin-bottom:3px">${cd.e}</div><div style="font-size:12px;font-weight:900;margin-bottom:2px">${cd.n}</div>${lvL}<div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">${desc}</div>`;
   let _picked=false;
-  const doPick=()=>{if(_picked)return;_picked=true;const lv=addCard(cd.id);cd.ap[Math.max(lv,0)](g.p);g.p.hp=Math.min(g.p.hp+15,g.p.maxHp);
+  const doPick=()=>{if(_picked)return;_picked=true;const lv=_bAddCard(cd.id);cd.ap[Math.max(lv,0)](_bpp);_bpp.hp=Math.min(_bpp.hp+15,_bpp.maxHp);
     // --- 幸運幣：選後立即彈出額外3張卡（無重骰） ---
-    if(g.p._luckyPick){g.p._luckyPick=false;g.pickOpen=false;setTimeout(()=>showPick("lucky"),80);return;}
+    if(_bpp._luckyPick){_bpp._luckyPick=false;g.pickOpen=false;setTimeout(()=>showPick("lucky",null,_currentPickCtx),80);return;}
     // --- 命運轉輪：清除所有能力重抽 ---
     if(g.p._fateWheel){g.p._fateWheel=false;
       const rerollCount=inv.length-1;
@@ -5296,8 +5310,11 @@ function buildCard(cd,w,i,wrap){
     if(g._fateQueue>0){g.pickOpen=false;setTimeout(()=>showPick("fate"),80);return;}
     // --- 大寶箱連續選卡 ---
     if(g._bigChestLeft>0){g._bigChestLeft--;
-      if(g._bigChestLeft>0){g.pickOpen=false;setTimeout(()=>showPick("bigchest"),80);return;}}
+      if(g._bigChestLeft>0){g.pickOpen=false;setTimeout(()=>showPick("bigchest",null,_currentPickCtx),80);return;}}
     g.pickOpen=false;g._bigChestTotal=0;g._bigChestLeft=0;
+    // P2 選卡結束：給保護時間
+    if(_currentPickCtx&&_currentPickCtx.player===g.p2){_currentPickCtx.player._iFrameEnd=performance.now()+1000;}
+    _currentPickCtx=null;
     resumeGame();
   };
   b.onclick=e=>{e.preventDefault();doPick();};
@@ -5360,17 +5377,23 @@ function triggerBigChest(count){
   sfx("chest");
 }
 
-function showPick(src,specificCard){
+// _pickCtx: {player:g.p2, inv:inv2, charType:"swordsman"} 或 null=P1
+var _currentPickCtx=null; // 當前選卡上下文（P1=null, P2={...}）
+function showPick(src,specificCard,pickCtx){
   if(g.pickOpen)return;
   g.pickOpen=true;
+  _currentPickCtx=pickCtx||null;
   resetControls();
+  const _pp=_currentPickCtx?_currentPickCtx.player:g.p;
+  const _pinv=_currentPickCtx?_currentPickCtx.inv:inv;
   const isLucky=src==="lucky";
   const isFate=src==="fate";
   if(isFate&&g._fateQueue>0)g._fateQueue--;
-  const luck=g.p.luck||0;
+  const luck=_pp.luck||0;
   const isBig=src==="bigchest";
-  const cnt=isLucky?3:isFate?3:isBig?3:src==="crate"?3:(specificCard?1:(Math.random()*100<(25+luck)?3:(g.p.pickCount||2)));
-  const pk=specificCard?[specificCard]:pks(cnt);
+  const cnt=isLucky?3:isFate?3:isBig?3:src==="crate"?3:(specificCard?1:(Math.random()*100<(25+luck)?3:(_pp.pickCount||2)));
+  const _pct=_currentPickCtx?_currentPickCtx.charType:g.charType;
+  const pk=specificCard?[specificCard]:pks(cnt,null,_pinv,_pct);
   const roundSeen=new Set(pk.map(c=>c.id));
   const noReroll=isLucky||isFate;
   const p=$("pickPanel");
@@ -5395,7 +5418,7 @@ function showPick(src,specificCard){
       rr.textContent="🎲 重骰";
       rr.onclick=()=>{
         const exc=new Set(roundSeen);
-        const nw=pks(1,exc);
+        const nw=pks(1,exc,_pinv,_pct);
         if(nw.length){pk[i]=nw[0];roundSeen.add(nw[0].id);buildCard(nw[0],w,i,cardWrap);}
         rr.textContent="已使用";rr.style.opacity=".3";rr.style.pointerEvents="none";
       };
@@ -6609,6 +6632,7 @@ function _triggerP2Pick(cr){
     _applyP2Card(picks[0].id);
     if(isBig){_p2BigChestLeft--;if(_p2BigChestLeft>0){setTimeout(()=>_triggerP2Pick(null),300);return;}}
     g.p2._inv=false;g.p2._pickPending=false;
+    g.p2._iFrameEnd=performance.now()+1000; // AI 也給保護時間
     return;
   }
   // 真人 P2：發送給 CLIENT
@@ -6653,6 +6677,8 @@ function _applyP2Card(cardId){
   // 大寶箱：繼續下一輪選卡
   if(_p2BigChestLeft>0){_p2BigChestLeft--;if(_p2BigChestLeft>0){setTimeout(()=>_triggerP2Pick(null),300);return;}}
   g.p2._inv=false;g.p2._pickPending=false;
+  // 選卡結束後給 1 秒無敵保護（防止被圍攻秒殺）
+  g.p2._iFrameEnd=performance.now()+1000;
 }
 // CLIENT 端：收到選卡選項 → 顯示 UI
 function showCoopPick(data){
