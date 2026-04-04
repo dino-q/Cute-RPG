@@ -104,9 +104,9 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
     <!-- 大招 280° -->
     <div id="ultW" style="position:absolute;bottom:158px;right:0px"><div id="ultR"><div id="ultI">💎</div></div><div id="ultL">長壓集氣</div></div>
     <!-- 技能 240° -->
-    <div id="skillBtn" onclick="useCharSkill()" style="position:absolute;bottom:147px;right:84px;width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(255,212,59,.15),rgba(20,20,40,.9));border:2px solid rgba(255,212,59,.4);display:flex;justify-content:center;align-items:center;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;box-shadow:0 0 12px rgba(255,212,59,.25);color:#FFD43B"><span id="skillIcon">🎯</span><div id="skillCd" style="position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;font-size:10px;color:#fff"></div></div>
+    <div id="skillBtn" onclick="useCharSkill()" style="position:absolute;bottom:147px;right:84px;width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(255,212,59,.1),rgba(20,20,40,.5));border:1.5px solid rgba(255,212,59,.3);display:flex;justify-content:center;align-items:center;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;box-shadow:0 0 8px rgba(255,212,59,.15);color:rgba(255,212,59,.7);opacity:.7"><span id="skillIcon">🎯</span><div id="skillCd" style="position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;font-size:10px;color:#fff"></div></div>
     <!-- 閃避 200° -->
-    <div id="dodgeBtn" style="position:absolute;bottom:94px;right:128px;width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(116,192,252,.2),rgba(20,20,40,.9));border:2px solid rgba(116,192,252,.4);display:flex;justify-content:center;align-items:center;font-size:18px;cursor:pointer;touch-action:manipulation;box-shadow:0 0 12px rgba(116,192,252,.25)">💨</div>
+    <div id="dodgeBtn" style="position:absolute;bottom:94px;right:128px;width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(116,192,252,.1),rgba(20,20,40,.5));border:1.5px solid rgba(116,192,252,.3);display:flex;justify-content:center;align-items:center;font-size:18px;cursor:pointer;touch-action:manipulation;box-shadow:0 0 8px rgba(116,192,252,.15);opacity:.7">💨</div>
   </div>
 </div>
 
@@ -1217,11 +1217,13 @@ function drawPlayer(x,y,r,t,col,face){
     let sRot=0,sOx=0,sOy=0,sPhase="idle";
     const _isQiSpin=_atkA&&g._atkAnim&&g._atkAnim._qiSpin;
     if(_atkA&&_isQiSpin){
-      // 劍氣：360度旋風斬（參考 sword-swing-preview 旋風斬）
-      const t1=60,t2=280,t3=60; // 蓄力→360旋轉→回收 = 400ms
-      if(_atkEl<t1){const p=_atkEl/t1,e2=p*p;sRot=-e2*.3*f;sPhase="raise";}
-      else if(_atkEl<t1+t2){const p=(_atkEl-t1)/t2,e2=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;sRot=(-.3+e2*(TAU+.3))*f;sPhase="slash";}
-      else if(_atkEl<t1+t2+t3){const p=(_atkEl-t1-t2)/t3,e2=p*p;sRot=TAU*f*(1-e2)*.05;sPhase="recover";}
+      // 劍氣：突刺（參考 sword-swing-preview 突刺）
+      const thrustAng=1.07*f; // 劍尖轉向前方
+      const t1=60,t2=80,t3=60,t4=120; // 瞄準→刺出→停頓→回收 = 320ms
+      if(_atkEl<t1){const p=_atkEl/t1,e2=1-(1-p)*(1-p);sRot=e2*thrustAng;sOx=e2*3*f;sOy=e2*2;sPhase="raise";}
+      else if(_atkEl<t1+t2){const p=(_atkEl-t1)/t2,e2=1-(1-p)*(1-p);sRot=thrustAng;sOx=(3+e2*18)*f;sOy=2;sPhase="thrust";}
+      else if(_atkEl<t1+t2+t3){sRot=thrustAng;sOx=21*f;sOy=2;sPhase="thrust";}
+      else if(_atkEl<t1+t2+t3+t4){const p=(_atkEl-t1-t2-t3)/t4,e2=p*p;sRot=thrustAng*(1-e2);sOx=21*f*(1-e2);sOy=2*(1-e2);sPhase="recover";}
     }else if(_atkA){
       // 普通：上劈下斬
       const t1=100,t2=140,t3=160;
@@ -1240,15 +1242,15 @@ function drawPlayer(x,y,r,t,col,face){
       const totalAng=baseAng+sRot;
       cx.save();
       if(_isQiSpin){
-        // 劍氣旋風：金色完整圓弧
-        cx.globalAlpha=.4;cx.strokeStyle="#FFD43B";cx.lineWidth=3;
+        // 劍氣突刺：金色直線刺痕
+        const tipX=pivotX+sOx+Math.sin(totalAng)*r*2;
+        const tipY=pivotY+sOy-Math.cos(totalAng)*r*2;
+        cx.globalAlpha=.5;cx.strokeStyle="#FFD43B";cx.lineWidth=2;
         cx.shadowColor="#FFD43B";cx.shadowBlur=10;
-        cx.beginPath();cx.arc(pivotX,pivotY,r*2.2,totalAng-PI/2-1.2,totalAng-PI/2+.1);cx.stroke();
-        // 旋轉超過半圈後顯示完整環
-        if(Math.abs(sRot)>PI){
-          cx.globalAlpha=.15;cx.strokeStyle="#FFD43B";cx.lineWidth=2;
-          cx.beginPath();cx.arc(pivotX,pivotY,r*2,0,TAU);cx.stroke();
-        }
+        cx.beginPath();cx.moveTo(tipX,tipY);cx.lineTo(tipX+Math.sin(totalAng)*25,tipY-Math.cos(totalAng)*25);cx.stroke();
+        cx.strokeStyle="rgba(255,255,255,.4)";cx.lineWidth=4;
+        cx.beginPath();cx.moveTo(tipX-5*Math.sin(totalAng),tipY+5*Math.cos(totalAng));
+        cx.lineTo(tipX+Math.sin(totalAng)*30,tipY-Math.cos(totalAng)*30);cx.stroke();
         cx.shadowBlur=0;
       }else{
         cx.globalAlpha=.5;cx.strokeStyle="rgba(255,255,255,.6)";cx.lineWidth=2.5;
@@ -1837,7 +1839,8 @@ function swordSwing(){
   g.ene.forEach(e=>{
     if(e.hp<=0)return;
     const dx=e.x-g.p.x,dy=e.y-g.p.y,d=Math.sqrt(dx*dx+dy*dy);
-    if(d>range+(isQi?40:0))return; // 劍氣加 40 範圍
+    const _bossReach=(e.boss||e.stageBoss)?30:0; // Boss/王額外攻擊距離
+    if(d>range+e.r+_bossReach+(isQi?40:0))return;
     const ea=Math.atan2(dy,dx);
     let da=Math.abs(((ea-atkAngle)%(PI*2)+PI*3)%(PI*2)-PI);
     if(da>arc&&!isQi)return; // 劍氣無角度限制（穿透全方位）
@@ -1959,7 +1962,8 @@ function shieldBash(){
   g.ene.forEach(e=>{
     if(e.hp<=0)return;
     const dx=e.x-g.p.x,dy=e.y-g.p.y,d=Math.sqrt(dx*dx+dy*dy);
-    if(d>range)return;
+    const _bossReach2=(e.boss||e.stageBoss)?30:0;
+    if(d>range+e.r+_bossReach2)return;
     const ea=Math.atan2(dy,dx);
     let da=Math.abs(((ea-atkAngle)%(PI*2)+PI*3)%(PI*2)-PI);
     if(da>arc)return;
@@ -3921,17 +3925,35 @@ function loop(){
         cx.globalAlpha=sw*.15;cx.strokeStyle="#868E96";cx.lineWidth=2*sw;cx.shadowBlur=0;
         cx.beginPath();cx.arc(g.p.x,g.p.y,swR*1.1,0,TAU);cx.stroke();
       }else{
-        // 普通扇形
-        const swArc=PI*.6;
-        cx.globalAlpha=sw*.2;cx.fillStyle="rgba(81,207,102,.15)";
-        cx.beginPath();cx.moveTo(g.p.x,g.p.y);cx.arc(g.p.x,g.p.y,swR,aa-swArc/2,aa+swArc/2);cx.closePath();cx.fill();
-        const swR2=PR*3.5*(1-sw*.2);
-        cx.globalAlpha=sw*.4;cx.fillStyle="rgba(81,207,102,.3)";
-        cx.beginPath();cx.moveTo(g.p.x,g.p.y);cx.arc(g.p.x,g.p.y,swR2,aa-swArc/2,aa+swArc/2);cx.closePath();cx.fill();
-        cx.strokeStyle="#51CF66";cx.lineWidth=3*sw;cx.shadowColor="#51CF66";cx.shadowBlur=8*sw;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR,aa-swArc/2,aa+swArc/2);cx.stroke();
-        cx.globalAlpha=sw*.5;cx.lineWidth=2*sw;cx.shadowBlur=0;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR2,aa-swArc/2,aa+swArc/2);cx.stroke();
+        // 盾擊衝擊波（精確對照 tank-preview A.盾擊）
+        const pushP=sw>.65?sw/.65:1-((1-sw)/.35); // 推出→回收的進度
+        const p2=1-sw; // 0→1 動畫進度
+        // 盾前方位置（推出時前移）
+        const shPush=pushP>0?pushP:0;
+        const shFx=g.p.x+Math.cos(aa)*(PR+shPush*28);
+        const shFy=g.p.y+Math.sin(aa)*(PR+shPush*28);
+        // 衝擊波（p2 在 0.25~0.7 之間顯示）
+        if(p2>.25&&p2<.7){
+          const wp=(p2-.25)/.45;
+          cx.save();
+          // 外層金色弧
+          cx.globalAlpha=(1-wp)*.5;cx.strokeStyle="#FFD43B";cx.lineWidth=3*(1-wp);
+          cx.shadowColor="#FFD43B";cx.shadowBlur=8;
+          cx.beginPath();cx.arc(shFx+Math.cos(aa)*12,shFy+Math.sin(aa)*12,8+wp*35,aa-PI*.35,aa+PI*.35);cx.stroke();
+          // 內層橘色弧
+          cx.strokeStyle="#FF922B";cx.lineWidth=2*(1-wp);cx.shadowBlur=0;
+          cx.beginPath();cx.arc(shFx+Math.cos(aa)*12,shFy+Math.sin(aa)*12,4+wp*25,aa-PI*.25,aa+PI*.25);cx.stroke();
+          cx.restore();
+        }
+        // 碎片（p2 在 0.3~0.65 之間顯示）
+        if(p2>.3&&p2<.65){
+          const sp2=(p2-.3)/.35;
+          for(let i=0;i<6;i++){
+            const fa=aa-.8+i*.32;const fd=10+sp2*30;
+            cx.save();cx.globalAlpha=(1-sp2)*.7;cx.fillStyle=i%2?"#FFD43B":"#FF922B";
+            cx.beginPath();cx.arc(shFx+Math.cos(fa)*fd,shFy+Math.sin(fa)*fd,1.5+Math.random(),0,TAU);cx.fill();cx.restore();
+          }
+        }
       }
     }
     cx.shadowBlur=0;cx.restore();
