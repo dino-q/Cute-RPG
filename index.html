@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.45</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.46</div>
 </div>
 </div>
 
@@ -1922,6 +1922,7 @@ function swordSwing(_pp,_isP2){
     if(!e.mega&&_pp.mobDmg>1)fd*=_pp.mobDmg; // 小怪傷
     if(_pp.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+_pp.iceFrag);
     if(e.eliteEnemy){const hasEl=!!(_pp.fx.fire||_pp.fx.ice||_pp.fx.lightning||_pp.fx.poison||_pp.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
+    if(e._coopShield){fd=0;} // co-op 護盾：近戰也無效
     e.hp-=fd;
     e.st=Math.max(e.st||0,800);
     // 命中回血（萬物吞噬，近戰最低回5）
@@ -2112,6 +2113,7 @@ function shieldBash(_pp,_isP2){
     if(!e.mega&&_pp.mobDmg>1)fd*=_pp.mobDmg;
     if(_pp.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+_pp.iceFrag);
     if(e.eliteEnemy){const hasEl=!!(_pp.fx.fire||_pp.fx.ice||_pp.fx.lightning||_pp.fx.poison||_pp.fx.dragon);if(hasEl)fd*=1.2;else{fd*=.5;fd=Math.max(fd,1);}}
+    if(e._coopShield){fd=0;} // co-op 護盾：近戰也無效
     e.hp-=fd;
     // 命中回血（近戰最低5）
     if(_pp.bulletHeal>0){const mheal2=Math.max(5,_pp.bulletHeal);_pp.hp=Math.min(_pp.hp+mheal2,_pp.maxHp);_pp._healFlash=now;}
@@ -2258,7 +2260,7 @@ function skillSnipe(now,_pp,_isP2){
     const dmg=(3.5+_pp.atk)*4*bm*ohBonus*(_pp.ultDmgMul||1); // 狙擊高傷害
     sfxShoot();sfx("ult");
     const ba2=Math.atan2(_pad.y,_pad.x);
-    g.bul.push({x:_pp.x,y:_pp.y-PR*.4,vx:Math.cos(ba2)*12,vy:Math.sin(ba2)*12,dmg:dmg*PLAYER_DMG_SCALE,life:1,crit:true,bc:ohBonus>1?{f:"#FF4500",g:"#FF0000",t:"#FFD43B"}:{f:"#FFD43B",g:"#FF922B",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0});
+    g.bul.push({x:_pp.x,y:_pp.y-PR*.4,vx:Math.cos(ba2)*12,vy:Math.sin(ba2)*12,dmg:dmg*PLAYER_DMG_SCALE,life:1,crit:true,bc:ohBonus>1?{f:"#FF4500",g:"#FF0000",t:"#FFD43B"}:{f:"#FFD43B",g:"#FF922B",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0,_isP2:!!_isP2});
     // 穿透光束
     _pp._snipeBeamT=performance.now();_pp._snipeBeamAng=ba2;
     // 大火花
@@ -2302,6 +2304,7 @@ function skillGhostSlash(now,_pp,_isP2){
       const perp=Math.abs(ex2*ndy-ey2*ndx);
       if(perp>hitRange)return;
       let fd=dmg;
+      if(e._coopShield){fd=0;} // 護盾：鬼斬也無效
       if(!e.boss&&!e.stageBoss)fd+=e.mhp*.1;
       if(e.boss&&e.bossType==="armor")fd*=.7;
       if(_pp.iceFrag&&(e.st>0||e.frozen>0))fd*=(1+_pp.iceFrag);
@@ -2315,7 +2318,8 @@ function skillGhostSlash(now,_pp,_isP2){
   },100);
   for(let i=0;i<16;i++){const a=PI*2*i/16;par.push({x:_pp.x+Math.cos(a)*15,y:_pp.y+Math.sin(a)*15,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:.6,color:i%2?"#FF922B":"#FFD43B",sz:rn(2,5)});}
   g.dn.push({x:_pp.x,y:_pp.y-30,d:"⚔️ 鬼斬",life:1.2,color:"#FF922B",big:1});
-  if(!g._atkAnim)g._atkAnim={active:false,startT:0};g._atkAnim.active=true;g._atkAnim.startT=performance.now();
+  var _gsAtkRef=_isP2?"_p2AtkAnim":"_atkAnim";
+  if(!g[_gsAtkRef])g[_gsAtkRef]={active:false,startT:0};g[_gsAtkRef].active=true;g[_gsAtkRef].startT=performance.now();
 }
 
 // 坦克：嘲諷吼叫（仇恨拉到自己+攻擊+2持續3秒）
@@ -3350,7 +3354,7 @@ function loop(){
         return false;
       }
       // hit P2? (co-op)
-      if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0)&&di(b,g.p2)<PR+4){
+      if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd)&&di(b,g.p2)<PR+4){
         if(Math.random()<(g.p2.dodge||0)){g.dn.push({x:g.p2.x,y:g.p2.y-25,d:"MISS",life:1,color:"#B197FC"});return false;}
         var lm2=1+Math.max(0,g.wave-10)*.07;
         var _p2TankMit=(g.p2.charType==="tank")?.5:1;
@@ -3608,7 +3612,7 @@ function loop(){
     else{g.p._iFrameEnd=now+500;if(e.hp>0)e._retreatEnd=now+1500;return e.hp>0||(awardEnemyKill(e),false);}
     }
     // P2 contact damage (co-op)
-    if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0)&&!e.ragePoo&&!e.stageBoss&&di(e,g.p2)<PR+e.r-4){
+    if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd)&&!e.ragePoo&&!e.stageBoss&&di(e,g.p2)<PR+e.r-4){
       var lm2=1+Math.max(0,g.wave-10)*.07;
       var dm2=Math.min(g.p2.contactCap||100,(8+g.wave*2)*(e.dmgMul||1)*lm2)*(1-(g.p2.armor||0));
       // P2 坦克被動：接觸反彈15%
