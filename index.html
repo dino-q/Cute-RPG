@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.32</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.33</div>
 </div>
 </div>
 
@@ -564,6 +564,8 @@ let _net=null; // {role:"host"|"client", peer:Peer, conn:DataConnection, roomCod
 let _isCoopMode=false;
 let _p2AI=false; // P2 由 AI 控制
 let _clientSkillReq=false; // CLIENT 端技能請求 flag
+let _clientUltReq=false;   // CLIENT 端大招請求 flag
+let _clientDodgeReq=false; // CLIENT 端閃避請求 flag
 let _p2Input={dx:0,dy:0,a:0,aimA:0,aimDx:0,aimDy:0,ult:false,dodge:false,pick:-1};
 let inv2=[]; // P2 卡片庫存
 let _bgm=null;
@@ -1721,7 +1723,7 @@ function fire(dmg,dx,dy,sp,p){
     const count=Math.min(shots,12);
     for(let i=0;i<count;i++){
       const a=dir+(i-(count-1)/2)*.16+rn(-sp,sp);
-      g.bul.push({x:pp.x,y:pp.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(pp.crit||.05),bc,trail:[],_tw:0,pierce:pp.pierce||0,hm:pp.homing||0,_minigun:pp._minigun||0,_armorPen:pp.armorCapBonus||0});
+      g.bul.push({x:pp.x,y:pp.y-PR*.4,vx:Math.cos(a)*7.5,vy:Math.sin(a)*7.5,dmg,life:1,crit:Math.random()<(pp.crit||.05),bc,trail:[],_tw:0,pierce:pp.pierce||0,hm:pp.homing||0,_minigun:pp._minigun||0,_armorPen:pp.armorCapBonus||0,_isP2:p===g.p2});
     }
   });
 }
@@ -2180,6 +2182,11 @@ function p2SwordSwing(){
     sfxHit();
   });
   if(isQi){for(let i=0;i<12;i++){const a=PI*2*i/12;par.push({x:p.x+Math.cos(a)*20,y:p.y+Math.sin(a)*20,vx:Math.cos(a)*3,vy:Math.sin(a)*3,life:.6,color:"#FFD43B",sz:rn(2,4)});}}
+  // P2 近戰打寶箱
+  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
+    if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
+      if(_isCoopMode){p._inv=true;p._pickPending=true;_triggerP2Pick(cr);}
+    }}});
   // P2 獨立攻擊動畫
   g._p2AtkAnim={active:true,startT:performance.now(),_qiSpin:isQi};g._p2WbSwing=1;
 }
@@ -2213,6 +2220,11 @@ function p2ShieldBash(){
     sfxHit();
   });
   for(let i=0;i<6;i++){const a=atkAngle-arc+arc*2*i/5;par.push({x:p.x+Math.cos(a)*15,y:p.y+Math.sin(a)*15,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:.4,color:"#51CF66",sz:rn(2,4)});}
+  // P2 近戰打寶箱
+  g.crates.forEach(cr=>{if(!crateActive(cr))return;if(di(p,cr)<range){cr.hits+=2;burst(cr.x,cr.y,"#FFD43B",3);
+    if(cr.hits>=cr.needed&&cr.hp>0){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");
+      if(_isCoopMode){p._inv=true;p._pickPending=true;_triggerP2Pick(cr);}
+    }}});
   g._p2AtkAnim={active:true,startT:performance.now()};g._p2WbSwing=1;
 }
 // P2 技能（AI 自動施放）
@@ -2228,7 +2240,7 @@ function p2UseSkill(){
   if(ct==="gunner"){
     const ba=Math.atan2(ad.y,ad.x);
     const dmg2=(3.5+p.atk)*1.5*(p.levelDmgMul||1);
-    g.bul.push({x:p.x,y:p.y-PR*.4,vx:Math.cos(ba)*9,vy:Math.sin(ba)*9,dmg:dmg2*PLAYER_DMG_SCALE,life:1,crit:false,bc:{f:"#FFD43B",g:"#F06595",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0});
+    g.bul.push({x:p.x,y:p.y-PR*.4,vx:Math.cos(ba)*9,vy:Math.sin(ba)*9,dmg:dmg2*PLAYER_DMG_SCALE,life:1,crit:false,bc:{f:"#FFD43B",g:"#F06595",t:"#FFD43B"},trail:[],_tw:0,pierce:999,hm:0,_minigun:0,_armorPen:0,_isP2:true});
     g.ltn.push({x1:p.x,y1:p.y,x2:p.x+Math.cos(ba)*500,y2:p.y+Math.sin(ba)*500,life:1,w:3,c:"#F06595"});
     burst(p.x,p.y,"#F06595",10);
     g.dn.push({x:p.x,y:p.y-30,d:"🎯P2 狙擊",life:1.2,color:"#F06595",big:1});
@@ -2420,6 +2432,7 @@ function _startDash(now){
   }});
 }
 function doUlt(){if(!g||!g.run)return;
+  if(_net&&_net.role==="client"){_clientUltReq=true;return;}
   const isBH=!!g.p.hasBH;
   const isTS=!!g.p.hasTS;
   const isCd=isBH||isTS;
@@ -2589,8 +2602,8 @@ function loop(){
   if(_isCoopMode&&_net&&_net.role==="client"&&_net.connected){
     g.time=performance.now();
     // 送操作給 Host
-    if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:false,dodge:false,pick:-1,skill:!!_clientSkillReq});}
-    _clientSkillReq=false;
+    if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:!!_clientUltReq,dodge:!!_clientDodgeReq,pick:-1,skill:!!_clientSkillReq});}
+    _clientSkillReq=false;_clientUltReq=false;_clientDodgeReq=false;
     // 渲染收到的狀態
     clientRenderLoop();
     raf=requestAnimationFrame(loop);return;
@@ -2823,8 +2836,21 @@ function loop(){
     // P2 技能：AI 自動施放 / 真人透過 _p2Input.skill
     if(_p2AI&&now>=_p2SkillCdEnd){p2UseSkill();}
     else if(!_p2AI&&_p2Input.skill){_p2Input.skill=false;p2UseSkill();}
+    // P2 閃避
+    if(_p2Input.dodge){
+      _p2Input.dodge=false;
+      if(!g.p2._dodgeCD||now>=g.p2._dodgeCD){
+        const dd=g.p2._ad||{x:0,y:-1};
+        const dDist=40;
+        g.p2.x=cl(g.p2.x+dd.x*dDist,PR+4,mapW()-PR-4);
+        g.p2.y=cl(g.p2.y+dd.y*dDist,PR+4,mapH()-PR-4);
+        g.p2._dodgeCD=now+1500;g.p2._inv=true;g.p2._iFrameEnd=now+300;
+        burst(g.p2.x,g.p2.y,"#F06595",8);
+      }
+    }
     // P2 ult: AI 每 8 秒自動放一次，連線時用 _p2Input
-    const p2ult=_p2AI?(now-(g.p2._aiUltT||0)>8000):(_net&&_net.role==="host")?_p2Input.ult:false;
+    const p2ult=_p2AI?(now-(g.p2._aiUltT||0)>8000):_p2Input.ult;
+    if(_p2Input.ult)_p2Input.ult=false; // 消耗一次性 flag
     if(p2ult&&!g.p2._ultCooldown){
       if(_p2AI)g.p2._aiUltT=now;
       g.p2._ultCooldown=now+3000; // 3s cooldown for P2 ult
@@ -3495,9 +3521,14 @@ function loop(){
   const c_=cam();
   let crateOpened=false;
   if(!_practiceMode)g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;
-    if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
-    if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
-    else{showPick("crate");}
+    if(b._isP2&&_isCoopMode&&g.p2){
+      // P2 的子彈打開寶箱 → P2 選卡
+      g.p2._inv=true;g.p2._pickPending=true;_triggerP2Pick(cr);
+    }else{
+      if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
+      if(cr.bigChest){const _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
+      else{showPick("crate");}
+    }
   }}});});
 
   // exp orbs
@@ -6275,6 +6306,7 @@ function _coopDoCreate(code){
       conn.on("data",data=>{
         if(!data)return;
         if(data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.pick=data.pick??-1;_p2Input.skill=!!data.skill;}
+        if(data.t==="p2picked"&&data.cardId){_applyP2Card(data.cardId);}
       });
       conn.on("close",()=>{_net.connected=false;if(g&&g.run){g.run=false;showOver();}});
     });
@@ -6307,9 +6339,14 @@ function coopJoinRoom(){
       $("coopStartBtn").style.display="none"; // Client 不能按開始
       conn.on("data",data=>{
         if(!data)return;
-        if(data.t==="start"){coopStart();}
+        if(data.t==="start"){
+          // CLIENT 收到開始：也選角色後開始
+          _isCoopMode=true;_pendingMode="coop";
+          $("coopOv").style.display="none";
+          $("charSelectOv").style.display="flex";
+        }
         if(data.t==="state"&&g){applyCoopState(data);}
-        if(data.t==="pick"&&g){showCoopPick(data.cards);}
+        if(data.t==="p2pick"&&g){showCoopPick(data);}
         if(data.t==="over"&&g){g.run=false;showOver();}
       });
       conn.on("close",()=>{_net.connected=false;if(g&&g.run){g.run=false;showOver();}});
@@ -6320,13 +6357,102 @@ function coopJoinRoom(){
   peer.on("error",err=>{$("coopStatusText").textContent="錯誤："+err.type;});
 }
 function coopStart(){
-  if(_net.role==="host"&&_net.conn&&_net.connected){_net.conn.send({t:"start"});}
   _isCoopMode=true;
   $("coopOv").style.display="none";
+  // 先選角色再開始
+  _pendingMode="coop";
+  $("charSelectOv").style.display="flex";
+}
+// 原始 coopStart 邏輯（pickChar 後呼叫）
+function _coopStartReal(){
+  if(_net&&_net.role==="host"&&_net.conn&&_net.connected){
+    _net.conn.send({t:"start",hostChar:_charType});
+  }
   startGame("coop");
 }
 // applyCoopState 和 clientRenderLoop 定義在 Co-op Network Sync 區塊
-function showCoopPick(cards){/* P2 自動拿卡，Client 端暫不需要選卡 UI */}
+// ═══ P2 選卡系統 ═══
+// HOST 端：P2 打開寶箱 → 生成選項 → 發給 CLIENT
+let _p2BigChestLeft=0; // P2 大寶箱剩餘次數
+function _triggerP2Pick(cr){
+  // 大寶箱：設定多次選卡
+  if(cr&&cr.bigChest&&_p2BigChestLeft<=0){
+    _p2BigChestLeft=_isElite()?4:5;
+  }
+  const p2ct=g.p2.charType||"gunner";
+  const pool=C.filter(c=>{
+    if(c.charReq&&c.charReq!==p2ct)return false;
+    const ex=inv2.find(x=>x.id===c.id);
+    if(c.once&&ex)return false;
+    return!ex||ex.lv<2;
+  });
+  const picks=[];const used=new Set();
+  for(let i=0;i<3&&i<pool.length;i++){
+    let at2=0;
+    while(at2<50){at2++;const c=pool[Math.random()*pool.length|0];if(!used.has(c.id)){used.add(c.id);picks.push({id:c.id,n:c.n,e:c.e,r:c.r,d:c.d});break;}}
+  }
+  if(picks.length===0){_p2BigChestLeft=0;return;}
+  const isBig=_p2BigChestLeft>0;
+  // AI P2：自動選第一張
+  if(_p2AI){
+    _applyP2Card(picks[0].id);
+    if(isBig){_p2BigChestLeft--;if(_p2BigChestLeft>0){setTimeout(()=>_triggerP2Pick(null),300);return;}}
+    g.p2._inv=false;g.p2._pickPending=false;
+    return;
+  }
+  // 真人 P2：發送給 CLIENT
+  if(_net&&_net.conn&&_net.conn.open){
+    _net.conn.send({t:"p2pick",cards:picks,bigLeft:_p2BigChestLeft});
+  }
+}
+// HOST 端：收到 CLIENT 選擇後套用
+function _applyP2Card(cardId){
+  const cd=C.find(c=>c.id===cardId);if(!cd)return;
+  const ex=inv2.find(x=>x.id===cd.id);
+  let lv=0;
+  if(ex){if(ex.lv<2){ex.lv++;lv=ex.lv;}else return;}
+  else{inv2.push({id:cd.id,lv:0});}
+  cd.ap[lv](g.p2);
+  g.p2.hp=Math.min(g.p2.hp+15,g.p2.maxHp);
+  burst(g.p2.x,g.p2.y,"#DA77F2",12);
+  g.dn.push({x:g.p2.x,y:g.p2.y-30,d:cd.e+cd.n+" Lv"+(lv+1),life:2,color:"#DA77F2",big:1});
+  // 大寶箱：繼續下一輪選卡
+  if(_p2BigChestLeft>0){_p2BigChestLeft--;if(_p2BigChestLeft>0){setTimeout(()=>_triggerP2Pick(null),300);return;}}
+  g.p2._inv=false;g.p2._pickPending=false;
+}
+// CLIENT 端：收到選卡選項 → 顯示 UI
+function showCoopPick(data){
+  const cards=data.cards||data;
+  const bigLeft=data.bigLeft||0;
+  if(!cards||!cards.length)return;
+  // 移除舊的 overlay（如果還在）
+  const old=document.getElementById("_p2PickOv");if(old)old.remove();
+  const title=bigLeft>0?`📦 大寶箱！(剩餘${bigLeft}次)`:"📦 寶箱解鎖！選擇一張卡牌";
+  let h='<div style="position:fixed;inset:0;background:rgba(10,10,24,.92);z-index:50;display:flex;justify-content:center;align-items:center" id="_p2PickOv">';
+  h+='<div style="background:rgba(12,12,30,.96);border-radius:16px;border:1px solid rgba(240,101,149,.2);padding:20px;max-width:360px;width:90%;text-align:center">';
+  h+=`<div style="color:#F06595;font-size:14px;font-weight:700;margin-bottom:10px">${title}</div>`;
+  h+='<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">';
+  cards.forEach(c=>{
+    const rc={R:"#74C0FC",SR:"#DA77F2",SSR:"#FFD43B"}[c.r]||"#fff";
+    h+=`<div onclick="_p2PickCard(${c.id})" style="cursor:pointer;width:100px;background:rgba(255,255,255,.04);border:2px solid ${rc}40;border-radius:12px;padding:10px 6px;text-align:center;transition:all .15s" onmouseover="this.style.borderColor='${rc}'" onmouseout="this.style.borderColor='${rc}40'">`;
+    h+=`<div style="font-size:28px">${c.e}</div>`;
+    h+=`<div style="color:${rc};font-weight:700;font-size:12px;margin:4px 0">${c.n}</div>`;
+    h+=`<div style="color:${rc};font-size:9px">${c.r}</div>`;
+    h+=`<div style="color:rgba(255,255,255,.4);font-size:8px;margin-top:4px;line-height:1.3">${c.d[0]}</div>`;
+    h+='</div>';
+  });
+  h+='</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',h);
+}
+window._p2PickCard=function(cardId){
+  // CLIENT 選完 → 發回 HOST
+  if(_net&&_net.conn&&_net.conn.open){
+    _net.conn.send({t:"p2picked",cardId});
+  }
+  // 移除 overlay
+  const ov=document.getElementById("_p2PickOv");
+  if(ov)ov.remove();
+};
 window.useCharSkill=useCharSkill;
 // 卡片詳細說明
 function showCardTip(cid){
@@ -6592,6 +6718,7 @@ window.pracCoopRoom=function(){
       $("pracRoomBtn").textContent="✅已連線";
       conn.on("data",data=>{
         if(data&&data.t==="inp"){_p2Input.dx=data.jx||0;_p2Input.dy=data.jy||0;_p2Input.a=data.ja||0;_p2Input.aimA=data.aa||0;_p2Input.aimDx=data.ax||0;_p2Input.aimDy=data.ay||0;_p2Input.ult=!!data.ult;_p2Input.dodge=!!data.dodge;_p2Input.skill=!!data.skill;}
+        if(data&&data.t==="p2picked"&&data.cardId){_applyP2Card(data.cardId);}
       });
       conn.on("close",()=>{_net.connected=false;_p2AI=true;g.dn.push({x:g.p.x,y:g.p.y-40,d:"⚠️ 對方已離線，切換 AI",life:3,color:"#FF6B6B",big:1});});
     });
@@ -6621,6 +6748,7 @@ window.pracCoopJoin=function(){
       // Client 送操作、收狀態
       conn.on("data",data=>{
         if(data&&data.t==="state"&&g)applyCoopState(data);
+        if(data&&data.t==="p2pick")showCoopPick(data);
       });
       conn.on("close",()=>{_net.connected=false;g.dn.push({x:g.p.x,y:g.p.y-40,d:"⚠️ 已斷線",life:3,color:"#FF6B6B",big:1});});
     });
@@ -6638,7 +6766,8 @@ window.showCharSelect=function(mode){
 window.pickChar=function(charType){
   _charType=charType;
   $("charSelectOv").style.display="none";
-  if(_pendingMode==="practice"){openPractice();}
+  if(_pendingMode==="coop"){_coopStartReal();}
+  else if(_pendingMode==="practice"){openPractice();}
   else{startGame(_pendingMode);}
 };
 
@@ -6721,6 +6850,7 @@ function endUltPress(){if(g)g.ultHold=false;}
 // 短距離閃避位移
 function doDodge(){
   if(!g||!g.run)return;
+  if(_net&&_net.role==="client"){_clientDodgeReq=true;return;}
   const now=performance.now();
   if(g.p._dodgeCD&&now<g.p._dodgeCD)return;
   if(g.p._dashEnd&&now<g.p._dashEnd)return; // 已在衝刺中
