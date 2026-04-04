@@ -2943,19 +2943,24 @@ function loop(){
     g.ene.forEach(function(e){if(e.hp>0){var d3=di(_dp,e);if(d3<_nrD){_nrD=d3;_nrE=e;}}});
     _dp._tgtE=_nrE;
     var _dbLv=g.p._dragonBreath,_dbR=[0,110,140,180][_dbLv];
+    var _dpMaxSpd=3.5*dt; // 噴火龍最大移動速度（每幀）
     if(_nrE&&_nrD<_dbR*2.5){
       // 有敵人在範圍內：飛向敵人（保持噴火距離）
       var _tAng=Math.atan2(_nrE.y-_dp.y,_nrE.x-_dp.x);
-      var _idealD=_dbR*0.5; // 在噴火範圍內的理想距離
+      var _idealD=_dbR*0.5;
       var _tgtX=_nrE.x-Math.cos(_tAng)*_idealD;
       var _tgtY=_nrE.y-Math.sin(_tAng)*_idealD+Math.sin(now/400)*4;
-      _dp.x+=(_tgtX-_dp.x)*.12*dt;
-      _dp.y+=(_tgtY-_dp.y)*.12*dt;
+      var _dmx=(_tgtX-_dp.x)*.08*dt,_dmy=(_tgtY-_dp.y)*.08*dt;
+      var _dmd=Math.sqrt(_dmx*_dmx+_dmy*_dmy);
+      if(_dmd>_dpMaxSpd){_dmx=_dmx/_dmd*_dpMaxSpd;_dmy=_dmy/_dmd*_dpMaxSpd;}
+      _dp.x+=_dmx;_dp.y+=_dmy;
       _dp.face=_nrE.x>_dp.x?1:-1;
     }else{
       // 沒有敵人或太遠：跟隨玩家（微浮動）
-      _dp.x+=(g.p.x-25*g.p.face-_dp.x)*.08*dt;
-      _dp.y+=(g.p.y-30+Math.sin(now/400)*6-_dp.y)*.08*dt;
+      var _fmx=(g.p.x-25*g.p.face-_dp.x)*.06*dt,_fmy=(g.p.y-30+Math.sin(now/400)*6-_dp.y)*.06*dt;
+      var _fmd=Math.sqrt(_fmx*_fmx+_fmy*_fmy);
+      if(_fmd>_dpMaxSpd){_fmx=_fmx/_fmd*_dpMaxSpd;_fmy=_fmy/_fmd*_dpMaxSpd;}
+      _dp.x+=_fmx;_dp.y+=_fmy;
       _dp.face=g.p.face;
     }
     _dp.breathCycle=(_dp.breathCycle||0)+dt*16.67;
