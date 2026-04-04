@@ -132,7 +132,7 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
   </div>
-  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.36</div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.37</div>
 </div>
 </div>
 
@@ -2403,7 +2403,9 @@ function skillTaunt(now){
 }
 
 // ═══ tapAtk：根據角色類型分流攻擊 ═══
-function tapAtk(){if(!g||!g.run||g.heatCD>0)return;const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;
+function tapAtk(){if(!g||!g.run||g.heatCD>0)return;
+if(_net&&_net.role==="client")return; // CLIENT 不在本地執行攻擊，靠 aim.a 送給 HOST
+const now=performance.now();aim.tn=(aim.tn||0)+1;const el=now-(aim.lt||0);aim.lt=now;const bonus=el<180?Math.min(aim.tn*.5,4):0;if(el>360)aim.tn=1;
 // 根據角色攻擊
 if(g.charType==="swordsman"){swordSwing();}
 else if(g.charType==="tank"){shieldBash();}
@@ -2606,12 +2608,14 @@ function loop(){
   if(!g||!g.run){raf=requestAnimationFrame(loop);return;}
   // Client: 只送操作+渲染，不跑邏輯
   if(_isCoopMode&&_net&&_net.role==="client"&&_net.connected){
-    g.time=performance.now();
-    // 送操作給 Host
-    if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:!!_clientUltReq,dodge:!!_clientDodgeReq,pick:-1,skill:!!_clientSkillReq});}
-    _clientSkillReq=false;_clientUltReq=false;_clientDodgeReq=false;
-    // 渲染收到的狀態
-    clientRenderLoop();
+    try{
+      g.time=performance.now();
+      // 送操作給 Host
+      if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:!!_clientUltReq,dodge:!!_clientDodgeReq,pick:-1,skill:!!_clientSkillReq});}
+      _clientSkillReq=false;_clientUltReq=false;_clientDodgeReq=false;
+      // 渲染收到的狀態
+      clientRenderLoop();
+    }catch(e){console.error("CLIENT loop error:",e);}
     raf=requestAnimationFrame(loop);return;
   }
   const now=performance.now(),frameMs=Math.min(now-g.lf,33),dt=frameMs/16.67;g.lf=now;g.time=now;
@@ -6913,6 +6917,7 @@ window.pickChar=function(charType){
 
 window.startGame=window.SG=function(mode){
   _mode=mode||_mode||"classic";const MC=MODE[_mode];
+  if(_mode==="coop")_isCoopMode=true; // 確保 coop flag 正確
   const CC=CHAR[_charType]||CHAR.gunner; // 角色數值
   // 嘗試全螢幕（隱藏網址列）
   const el=document.documentElement;
@@ -6982,6 +6987,7 @@ $("jzR").addEventListener("touchstart",e=>{
 
 function startUltPress(){
   if(!g)return;
+  if(_net&&_net.role==="client"){_clientUltReq=true;return;} // CLIENT 直接發 flag
   if(g.p.hasBH||g.p.hasTS){if(performance.now()>=(g.ultCdEnd||0))doUlt();}
   else if(g.ultCharge>=ULT_CHARGE_NEED)doUlt();
   else g.ultHold=true;
