@@ -365,6 +365,10 @@ Title Screen
     showOver() → overGoHome() → Title
 ```
 
+- **想改 Boss DPS 估算（天使卡觸發條件）？** → 改 `src/boss.js` 的 `estimateBossDPS()` 函式和 `bossDR` 值。`estTime > 120` 觸發天使卡。
+- **想改經驗追趕機制？** → 改 `src/loop.js` 搜尋 `_xpCatchUp`（經驗倍率）和 `_gapWarn`（提示觸發）
+- **想改 Coop ICE/TURN 伺服器？** → 改 `src/coop.js` 的 `_ICE_CFG` 物件
+
 ---
 
 ## Media Assets

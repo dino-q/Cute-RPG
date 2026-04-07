@@ -7,8 +7,8 @@
 ├── src/
 │   ├── main.js         ← 進入點 + 膠水碼 (~350行)
 │   ├── state.js        ← 共享狀態容器 S 物件（dragon 精靈圖）
-│   ├── config.js       ← 常數、角色、模式、敵人角色定義
-│   ├── cards.js        ← 52 張卡片定義 + rndBuff
+│   ├── config.js       ← 常數、角色定義(含 atkType/skillCD 等擴展欄位)、charCfg() helper
+│   ├── cards.js        ← 52 張卡片定義 + rndBuff（僅供混沌核心卡使用）
 │   ├── utils.js        ← 工具函式 (di, cl, rn, $)
 │   ├── audio.js        ← BGM + SFX Web Audio 合成音效
 │   ├── render.js       ← 繪圖函式（玩家、敵人、粒子、特效）
@@ -16,10 +16,10 @@
 │   ├── input.js        ← 搖桿、鍵盤控制
 │   ├── enemies.js      ← 敵人生成、波次系統、成長曲線
 │   ├── combat.js       ← 射擊、揮劍、碰撞、擊殺結算
-│   ├── skills.js       ← 角色技能、大招、閃避
-│   ├── cards-ui.js     ← 卡片選擇 UI、天使卡、大寶箱
-│   ├── boss.js         ← Stage Boss 系統（Lv20/Lv30）
-│   ├── coop.js         ← PeerJS 連線、狀態同步
+│   ├── skills.js       ← 角色技能、大招、閃避、SKILL_FN registry + registerSkill()
+│   ├── cards-ui.js     ← 卡片選擇 UI、天使卡、大寶箱（cd.ap[lv] 套用卡片效果）
+│   ├── boss.js         ← Stage Boss 系統（Lv20💩/Lv30😈）、DPS 估算、天使卡觸發
+│   ├── coop.js         ← PeerJS 連線(含 STUN+TURN ICE)、狀態同步、CLIENT render
 │   ├── practice.js     ← 練習模式
 │   ├── ui.js           ← 選單、設定、結果畫面、cutscene
 │   └── loop.js         ← 主遊戲迴圈 (~2400行)
@@ -42,15 +42,15 @@ npm run verify   # 完整驗證 (build + 選擇性 Puppeteer)
 
 ## Architecture
 - **Vite + ESM** — 原生模組系統，PeerJS 透過 npm 安裝
-- **config.js** — 純常數 export（角色/模式/卡片稀有度等）
-- **cards.js** — 52 張卡片定義，匯出 C 陣列和 rndBuff
+- **config.js** — 純常數 export（角色/模式/卡片稀有度等）+ `charCfg(ct)` helper + 角色擴展欄位（atkType/atkCD/animDur/skillIcon/skillCD）
+- **cards.js** — 52 張卡片定義，匯出 C 陣列和 rndBuff（混沌核心專用）
 - **audio.js** — 獨立音效模組，管理 BGM 和 SFX 合成
 - **enemies.js** — 敵人生成、波次系統、成長曲線
 - **combat.js** — 射擊、揮劍、碰撞、擊殺結算
-- **skills.js** — 角色技能、大招、閃避
-- **cards-ui.js** — 卡片選擇 UI、天使卡、大寶箱
-- **boss.js** — Stage Boss 系統（Lv20/Lv30）
-- **coop.js** — PeerJS 連線、狀態同步
+- **skills.js** — 角色技能、大招、閃避；SKILL_FN registry 供新角色註冊技能
+- **cards-ui.js** — 卡片選擇 UI、天使卡、大寶箱；`cd.ap[lv](player)` 套用效果
+- **boss.js** — Stage Boss 系統（Lv20💩/Lv30😈）、DPS 估算決定是否給天使卡
+- **coop.js** — PeerJS 連線（含 STUN+TURN NAT 穿透）、HOST/CLIENT 狀態同步
 - **practice.js** — 練習模式
 - **ui.js** — 選單、設定、結果畫面、cutscene
 - **main.js** — 遊戲核心邏輯，包含遊戲迴圈
@@ -79,5 +79,23 @@ npm run verify   # 完整驗證 (build + 選擇性 Puppeteer)
 - main.js: 6500 行 → 352 行
 - 共 17 個模組（含 loop.js 2400 行的完整遊戲迴圈）
 - index.html: 全部 onclick 改為 data-action 事件委派
-- window.xxx 已清理，只剩 overGoHome/SG 供動態 HTML 使用
+- window.xxx 已清理，只剩 overGoHome/SG + _p2PickCard/_p2RerollCard 供動態 HTML 使用
 - ARCHITECTURE.md 已產出
+
+## 🚀 部署（GitHub Pages）
+```bash
+npm run build                    # 產出 dist/
+git checkout gh-pages            # 切到部署 branch
+cp dist/index.html .             # 複製 build 產物
+cp dist/assets/* assets/
+git add -A && git commit         # commit
+git push origin gh-pages         # 推上去，GitHub Pages 自動部署
+git checkout main                # 切回開發 branch
+```
+GitHub Pages 設定：Settings → Pages → Source = `gh-pages` branch, `/ (root)`
+
+## 🎮 遊戲機制備忘
+- **經典模式 XP 追趕**：wave - level > 3 時經驗球自動加成（最高 3 倍），gap ≥ 5/8 時顯示提示
+- **Boss DPS 估算**：`estimateBossDPS()` 在 boss.js，若估算擊殺 > 120 秒會先給天使卡
+- **Coop CLIENT 渲染**：CLIENT 不跑遊戲邏輯，由 `clientRenderLoop`（coop.js）根據 HOST 同步的狀態渲染
+- **Game loop 保護**：try-catch 包住整個 loop body，異常不會中斷 requestAnimationFrame
