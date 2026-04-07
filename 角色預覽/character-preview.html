@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>角色預覽 — 槍手 / 劍士 / 坦克</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a18;color:#fff;font-family:'Nunito','Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+h1{font-size:22px;color:#FFD43B;margin-bottom:6px;text-shadow:0 0 12px rgba(255,215,75,.4)}
+.sub{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:24px}
+.chars{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;width:260px;text-align:center;position:relative}
+.card canvas{display:block;margin:0 auto 12px}
+.name{font-size:18px;font-weight:900;margin-bottom:2px}
+.role{font-size:11px;color:rgba(255,255,255,.4);margin-bottom:10px;letter-spacing:2px}
+.stats{text-align:left;font-size:11px;line-height:1.9}
+.stats .row{display:flex;justify-content:space-between}
+.stats .lbl{color:rgba(255,255,255,.45)}
+.stats .val{color:#fff;font-weight:700}
+.desc{margin-top:10px;font-size:11px;color:rgba(255,255,255,.35);line-height:1.6;text-align:left;border-top:1px solid rgba(255,255,255,.06);padding-top:8px}
+.gunner .name{color:#74C0FC}
+.swordsman .name{color:#FF922B}
+.tank .name{color:#51CF66}
+.tag{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin:0 2px}
+</style>
+</head>
+<body>
+<h1>角色設計預覽</h1>
+<div class="sub">三種角色風格 — Canvas 繪製，匹配遊戲現有美術風格</div>
+<div class="chars">
+
+<div class="card gunner">
+  <canvas id="c1" width="220" height="220"></canvas>
+  <div class="name">艾拉 — 槍手</div>
+  <div class="role">GUNNER</div>
+  <div class="stats">
+    <div class="row"><span class="lbl">HP</span><span class="val" style="color:#FF6B6B">80 (低)</span></div>
+    <div class="row"><span class="lbl">攻擊力</span><span class="val" style="color:#FFD43B">4 (高)</span></div>
+    <div class="row"><span class="lbl">攻速</span><span class="val" style="color:#FFD43B">×1.3 (快)</span></div>
+    <div class="row"><span class="lbl">移速</span><span class="val">普通</span></div>
+    <div class="row"><span class="lbl">暴擊率</span><span class="val" style="color:#F06595">10%</span></div>
+    <div class="row"><span class="lbl">被動</span><span class="val" style="color:#74C0FC">連續命中加速</span></div>
+  </div>
+  <div class="desc">
+    玻璃大砲型。攻速快、暴擊高，但血量最低。<br>
+    <span class="tag" style="background:#74C0FC30;color:#74C0FC">被動：狙擊本能</span> 連續命中同一目標，每次攻速+3%（最多+30%）
+  </div>
+</div>
+
+<div class="card swordsman">
+  <canvas id="c2" width="220" height="220"></canvas>
+  <div class="name">雷恩 — 劍士</div>
+  <div class="role">SWORDSMAN</div>
+  <div class="stats">
+    <div class="row"><span class="lbl">HP</span><span class="val">120 (中)</span></div>
+    <div class="row"><span class="lbl">攻擊力</span><span class="val">3 (中)</span></div>
+    <div class="row"><span class="lbl">攻速</span><span class="val">普通</span></div>
+    <div class="row"><span class="lbl">移速</span><span class="val" style="color:#FFD43B">快</span></div>
+    <div class="row"><span class="lbl">閃避率</span><span class="val" style="color:#FF922B">8%</span></div>
+    <div class="row"><span class="lbl">被動</span><span class="val" style="color:#FF922B">突進斬擊</span></div>
+  </div>
+  <div class="desc">
+    平衡型近戰。移速快、有閃避，擅長游擊戰。<br>
+    <span class="tag" style="background:#FF922B30;color:#FF922B">被動：劍氣</span> 每第5次攻擊釋放穿透劍氣，造成200%傷害
+  </div>
+</div>
+
+<div class="card tank">
+  <canvas id="c3" width="220" height="220"></canvas>
+  <div class="name">鐵壁 — 坦克</div>
+  <div class="role">TANK</div>
+  <div class="stats">
+    <div class="row"><span class="lbl">HP</span><span class="val" style="color:#51CF66">200 (高)</span></div>
+    <div class="row"><span class="lbl">攻擊力</span><span class="val" style="color:#FF6B6B">2 (低)</span></div>
+    <div class="row"><span class="lbl">攻速</span><span class="val" style="color:#FF6B6B">×0.8 (慢)</span></div>
+    <div class="row"><span class="lbl">移速</span><span class="val" style="color:#FF6B6B">慢</span></div>
+    <div class="row"><span class="lbl">減傷</span><span class="val" style="color:#51CF66">15%</span></div>
+    <div class="row"><span class="lbl">被動</span><span class="val" style="color:#51CF66">荊棘反擊</span></div>
+  </div>
+  <div class="desc">
+    肉盾型。血厚減傷高，攻速慢但子彈大。<br>
+    <span class="tag" style="background:#51CF6630;color:#51CF66">被動：鐵壁</span> 受傷時反彈15%傷害給周圍敵人，每5秒自動回10HP
+  </div>
+</div>
+
+</div>
+
+<script>
+const PI=Math.PI,TAU=PI*2;
+
+// ═══ Pixel art 手槍繪製（獨立函式，供角色預覽共用）═══
+function _drawPixelGun(cx){
+  const S_D="#3a3a3a",S_M="#4a4a4a",S_L="#5a5a5a",S_E="#2a2a2a";
+  const FR="#444",G_D="#1a1a1a",G_M="#2a2a2a",G_L="#353535",OL="#1a1a1a";
+  // 滑套
+  cx.fillStyle=S_D;cx.fillRect(0,0,150,28);
+  cx.fillStyle=S_L;cx.fillRect(2,1,146,3);
+  cx.fillStyle=S_M;cx.fillRect(2,5,146,8);
+  cx.fillStyle=S_E;cx.fillRect(0,25,150,3);
+  // 滑套鋸齒紋
+  cx.fillStyle=S_E;
+  for(let i=0;i<7;i++)cx.fillRect(8+i*6,4,2,20);
+  for(let i=0;i<3;i++)cx.fillRect(110+i*6,6,2,16);
+  // 退殼口
+  cx.fillStyle="#222";cx.fillRect(55,4,18,10);
+  cx.fillStyle="#333";cx.fillRect(56,5,16,8);
+  // 前準星
+  cx.fillStyle="#222";cx.fillRect(140,-5,5,6);
+  cx.fillStyle="#888";cx.fillRect(141,-5,3,2);
+  // 後準星
+  cx.fillStyle="#222";cx.fillRect(3,-4,4,5);cx.fillRect(13,-4,4,5);
+  cx.fillStyle=S_D;cx.fillRect(7,-3,6,4);
+  // 下機匣
+  cx.fillStyle=FR;cx.fillRect(18,28,100,12);
+  cx.fillStyle=S_E;cx.fillRect(55,36,40,4);
+  cx.fillStyle="#3a3a3a";
+  for(let i=0;i<4;i++)cx.fillRect(58+i*9,37,4,2);
+  // 扳機護圈
+  cx.strokeStyle=OL;cx.lineWidth=3;
+  cx.beginPath();cx.moveTo(42,28);cx.lineTo(42,44);
+  cx.arc(56,44,14,PI,0,false);cx.lineTo(70,28);cx.stroke();
+  cx.fillStyle="rgba(30,30,30,.3)";cx.fill();
+  // 扳機
+  cx.strokeStyle="#555";cx.lineWidth=2.5;
+  cx.beginPath();cx.moveTo(57,30);cx.lineTo(54,42);cx.stroke();
+  cx.fillStyle="#555";cx.beginPath();cx.arc(54,43,2,0,TAU);cx.fill();
+  // 握把（48px）
+  cx.fillStyle=G_D;cx.beginPath();
+  cx.moveTo(18,28);cx.lineTo(42,28);cx.lineTo(39,76);cx.lineTo(11,76);cx.closePath();cx.fill();
+  // 握把紋路
+  cx.fillStyle=G_M;
+  for(let row=0;row<6;row++)for(let col=0;col<3;col++){
+    cx.fillRect(17+col*7+(row%2)*3,36+row*7,3,3);
+  }
+  // 握把亮邊
+  cx.fillStyle=G_L;cx.beginPath();
+  cx.moveTo(18,28);cx.lineTo(22,28);cx.lineTo(14,76);cx.lineTo(11,76);cx.closePath();cx.fill();
+  // 彈匣底板
+  cx.fillStyle="#2a2a2a";cx.fillRect(11,73,29,5);
+  cx.fillStyle="#404040";cx.fillRect(12,74,27,2);
+  // 槍口
+  cx.fillStyle="#111";cx.fillRect(148,6,4,18);
+  cx.fillStyle="#000";cx.beginPath();cx.arc(150,15,5,0,TAU);cx.fill();
+  cx.strokeStyle="#444";cx.lineWidth=1.5;cx.beginPath();cx.arc(150,15,6,0,TAU);cx.stroke();
+  // 輪廓
+  cx.strokeStyle=OL;cx.lineWidth=2;cx.strokeRect(0,0,150,28);
+  // 高光
+  cx.fillStyle="#666";cx.globalAlpha=.3;
+  cx.fillRect(30,2,40,2);cx.fillRect(90,2,30,2);
+  cx.globalAlpha=1;
+}
+
+function drawGunner(canvasId){
+  const cv=document.getElementById(canvasId);
+  const cx=cv.getContext("2d");
+  const W=cv.width,H=cv.height,centerX=W/2,baseY=H/2+10,r=18;
+  const col="#74C0FC";
+  let t=0;
+
+  function frame(){
+    t+=0.016;
+    cx.clearRect(0,0,W,H);
+    const bob=Math.sin(t*3)*1.5,cy=baseY+bob,f=1;
+
+    // background aura
+    const bg=cx.createRadialGradient(centerX,baseY,0,centerX,baseY,85);
+    bg.addColorStop(0,"rgba(116,192,252,.08)");bg.addColorStop(1,"transparent");
+    cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+
+    // shadow
+    cx.fillStyle="rgba(0,0,0,.18)";
+    cx.beginPath();cx.ellipse(centerX,baseY+r+3,r*.7,3,0,0,TAU);cx.fill();
+
+    const muzzleGlow=.3+Math.sin(t*8)*.15;
+
+    // === BODY ===
+    cx.save();
+    const bodyGrad=cx.createRadialGradient(centerX-f*r*.1,cy-r*.3,r*.1,centerX,cy,r);
+    bodyGrad.addColorStop(0,"#fff");
+    bodyGrad.addColorStop(.25,"#d4e8ff");
+    bodyGrad.addColorStop(.7,"#74C0FC");
+    bodyGrad.addColorStop(1,"#4DABF7");
+    cx.beginPath();cx.arc(centerX,cy,r,0,TAU);cx.fillStyle=bodyGrad;cx.fill();
+    cx.strokeStyle="rgba(255,255,255,.12)";cx.lineWidth=1;cx.stroke();
+    cx.fillStyle="rgba(255,255,255,.08)";
+    cx.beginPath();cx.arc(centerX-3,cy-6,r*.5,0,TAU);cx.fill();
+    cx.restore();
+
+    // === GUN (右側，槍口朝右，握把在身體邊緣) ===
+    cx.save();
+    cx.translate(centerX+f*r*.45, cy+r*.05);
+    cx.rotate(Math.sin(t*5)*.025);
+    cx.scale(.12,.12);
+    _drawPixelGun(cx);
+    cx.restore();
+    // 槍口能量脈衝
+    cx.save();
+    const mzX=centerX+f*r*.45+150*.12, mzY=cy+r*.05+2;
+    cx.fillStyle=`rgba(116,192,252,${muzzleGlow})`;
+    cx.beginPath();cx.arc(mzX,mzY,2,0,TAU);cx.fill();
+    cx.fillStyle=`rgba(116,192,252,${muzzleGlow*.3})`;
+    cx.beginPath();cx.arc(mzX,mzY,4,0,TAU);cx.fill();
+    cx.restore();
+
+    // === FLOATING ENERGY PARTICLES ===
+    for(let i=0;i<4;i++){
+      const a=t*1.8+i*TAU/4;
+      const dist=30+Math.sin(t*2+i*2)*5;
+      const px=centerX+Math.cos(a)*dist, py=cy+Math.sin(a)*dist;
+      cx.save();
+      cx.globalAlpha=.25+Math.sin(t*3+i)*.12;
+      cx.shadowColor="#74C0FC";cx.shadowBlur=6;
+      cx.fillStyle="#74C0FC";
+      cx.beginPath();cx.arc(px,py,1.5+Math.sin(t*4+i)*.5,0,TAU);cx.fill();
+      cx.restore();
+    }
+
+    // outer aura pulse
+    cx.save();
+    cx.strokeStyle=col;cx.lineWidth=1;
+    cx.globalAlpha=.06+Math.sin(t*1.5)*.03;
+    cx.beginPath();cx.arc(centerX,cy,r+14,0,TAU);cx.stroke();
+    cx.restore();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function drawSwordsman(canvasId){
+  const cv=document.getElementById(canvasId);
+  const cx=cv.getContext("2d");
+  const W=cv.width,H=cv.height,centerX=W/2,baseY=H/2+10,r=18;
+  const col="#FF922B";
+  let t=0;
+
+  function frame(){
+    t+=0.016;
+    cx.clearRect(0,0,W,H);
+    const bob=Math.sin(t*3)*1.5,cy=baseY+bob,f=1;
+
+    // background aura
+    const bg=cx.createRadialGradient(centerX,baseY,0,centerX,baseY,85);
+    bg.addColorStop(0,"rgba(255,146,43,.08)");bg.addColorStop(1,"transparent");
+    cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+
+    // shadow
+    cx.fillStyle="rgba(0,0,0,.18)";
+    cx.beginPath();cx.ellipse(centerX,baseY+r+3,r*.7,3,0,0,TAU);cx.fill();
+
+    // === SWORD (right hand) ===
+    cx.save();
+    cx.translate(centerX+f*r*.9, cy-r*.15);
+    cx.rotate(f>0?-.5:.5+PI);
+    const swingOff=Math.sin(t*5)*.06;
+    cx.rotate(swingOff);
+
+    // blade glow
+    cx.shadowColor="#FFD43B";cx.shadowBlur=12;
+    // blade body
+    const bladeGrad=cx.createLinearGradient(0,-r*1.8,0,0);
+    bladeGrad.addColorStop(0,"#fff");
+    bladeGrad.addColorStop(.3,"#E8E8E8");
+    bladeGrad.addColorStop(.7,"#CED4DA");
+    bladeGrad.addColorStop(1,"#ADB5BD");
+    cx.fillStyle=bladeGrad;
+    cx.beginPath();
+    cx.moveTo(-2.8,0);cx.lineTo(-2.2,-r*1.7);cx.lineTo(0,-r*2);cx.lineTo(2.2,-r*1.7);cx.lineTo(2.8,0);
+    cx.closePath();cx.fill();
+    // blade center line
+    cx.strokeStyle="rgba(255,255,255,.5)";cx.lineWidth=.6;
+    cx.beginPath();cx.moveTo(0,-r*.2);cx.lineTo(0,-r*1.85);cx.stroke();
+    // blade edge highlight
+    cx.strokeStyle="rgba(255,255,255,.25)";cx.lineWidth=.8;
+    cx.beginPath();cx.moveTo(-2.5,-r*.1);cx.lineTo(-2,-r*1.6);cx.lineTo(0,-r*1.95);cx.stroke();
+
+    // guard (cross-guard, golden)
+    cx.shadowBlur=0;
+    cx.fillStyle="#FFD43B";
+    cx.beginPath();
+    cx.moveTo(-8,-1);cx.lineTo(-7,2);cx.lineTo(7,2);cx.lineTo(8,-1);
+    cx.closePath();cx.fill();
+    cx.strokeStyle="#E8A200";cx.lineWidth=.5;cx.stroke();
+    // guard gem
+    cx.fillStyle="#FF6B6B";
+    cx.beginPath();cx.arc(0,.5,1.8,0,TAU);cx.fill();
+    cx.fillStyle="rgba(255,255,255,.4)";
+    cx.beginPath();cx.arc(-.5,0,0.8,0,TAU);cx.fill();
+
+    // handle (wrapped)
+    cx.fillStyle="#5C3A1E";
+    cx.fillRect(-2.5,2,5,r*.4);
+    // handle wrapping
+    cx.strokeStyle="#8B6914";cx.lineWidth=.8;
+    for(let i=0;i<4;i++){
+      const hy=4+i*2.5;
+      cx.beginPath();cx.moveTo(-2.5,hy);cx.lineTo(2.5,hy+1.5);cx.stroke();
+    }
+    // pommel
+    cx.fillStyle="#FFD43B";
+    cx.beginPath();cx.arc(0,2+r*.4+2,2.5,0,TAU);cx.fill();
+
+    cx.restore();
+
+    // === BODY ===
+    cx.save();
+    const bodyGrad=cx.createRadialGradient(centerX-f*r*.1,cy-r*.3,r*.1,centerX,cy,r);
+    bodyGrad.addColorStop(0,"#fff");
+    bodyGrad.addColorStop(.25,"#ffe0b2");
+    bodyGrad.addColorStop(.7,"#FF922B");
+    bodyGrad.addColorStop(1,"#E8590C");
+    cx.beginPath();cx.arc(centerX,cy,r,0,TAU);cx.fillStyle=bodyGrad;cx.fill();
+    cx.strokeStyle="rgba(255,255,255,.12)";cx.lineWidth=1;cx.stroke();
+    // inner shine
+    cx.fillStyle="rgba(255,255,255,.08)";
+    cx.beginPath();cx.arc(centerX-3,cy-6,r*.45,0,TAU);cx.fill();
+    cx.restore();
+
+    // === HEADBAND ===
+    cx.save();
+    cx.strokeStyle="#FF922B";cx.lineWidth=3;cx.globalAlpha=.85;
+    cx.shadowColor="#FF922B";cx.shadowBlur=6;
+    cx.beginPath();
+    cx.arc(centerX,cy-1,r+1.5,-PI*.8,-PI*.15);
+    cx.stroke();
+    // headband tails (flowing)
+    cx.lineWidth=2.2;cx.lineCap="round";
+    const hbx=centerX-f*r*.85, hby=cy-r*.55;
+    cx.beginPath();cx.moveTo(hbx,hby);
+    cx.quadraticCurveTo(hbx-f*10,hby+5+Math.sin(t*4)*4, hbx-f*16,hby+10+Math.sin(t*3)*5);
+    cx.stroke();
+    cx.lineWidth=1.5;
+    cx.beginPath();cx.moveTo(hbx-f*1,hby+2);
+    cx.quadraticCurveTo(hbx-f*8,hby+8+Math.sin(t*3.5)*3, hbx-f*13,hby+14+Math.sin(t*2.8)*4);
+    cx.stroke();
+    cx.restore();
+
+    // (no eyes — headband covers face)
+
+    // === SPEED LINES ===
+    cx.save();cx.globalAlpha=.12+Math.sin(t*6)*.06;
+    cx.lineCap="round";
+    for(let i=0;i<4;i++){
+      cx.strokeStyle=i%2?"#FFD43B":"#FF922B";cx.lineWidth=1+Math.random()*.5;
+      cx.beginPath();
+      const ly=cy-10+i*7;
+      cx.moveTo(centerX-f*24,ly);
+      cx.lineTo(centerX-f*(36+Math.sin(t*5+i)*6),ly);
+      cx.stroke();
+    }
+    cx.restore();
+
+    // sword qi particles
+    for(let i=0;i<3;i++){
+      const a=t*2.2+i*TAU/3;
+      const dist=28+Math.sin(t*2.5+i)*4;
+      cx.save();
+      cx.globalAlpha=.2+Math.sin(t*3.5+i)*.1;
+      cx.shadowColor="#FFD43B";cx.shadowBlur=5;
+      cx.fillStyle="#FFD43B";
+      cx.beginPath();
+      // diamond shaped particles
+      const px=centerX+Math.cos(a)*dist, py=cy+Math.sin(a)*dist;
+      cx.save();cx.translate(px,py);cx.rotate(a);
+      cx.beginPath();cx.moveTo(0,-2.5);cx.lineTo(1.5,0);cx.lineTo(0,2.5);cx.lineTo(-1.5,0);cx.closePath();
+      cx.fill();cx.restore();
+      cx.restore();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function drawTank(canvasId){
+  const cv=document.getElementById(canvasId);
+  const cx=cv.getContext("2d");
+  const W=cv.width,H=cv.height,centerX=W/2,baseY=H/2+10,r=22; // bigger body
+  const col="#51CF66";
+  let t=0;
+
+  function frame(){
+    t+=0.016;
+    cx.clearRect(0,0,W,H);
+    const bob=Math.sin(t*2.5)*1.2,cy=baseY+bob,f=1; // slower bob
+
+    // background aura
+    const bg=cx.createRadialGradient(centerX,baseY,0,centerX,baseY,90);
+    bg.addColorStop(0,"rgba(81,207,102,.08)");bg.addColorStop(1,"transparent");
+    cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+
+    // shadow (bigger)
+    cx.fillStyle="rgba(0,0,0,.2)";
+    cx.beginPath();cx.ellipse(centerX,baseY+r+3,r*.75,3.5,0,0,TAU);cx.fill();
+
+    // === BODY (larger, armored) ===
+    cx.save();
+    cx.strokeStyle="rgba(81,207,102,.2)";cx.lineWidth=2;
+    cx.beginPath();cx.arc(centerX,cy,r+3,0,TAU);cx.stroke();
+
+    const bodyGrad=cx.createRadialGradient(centerX-f*r*.1,cy-r*.3,r*.15,centerX,cy,r);
+    bodyGrad.addColorStop(0,"#fff");
+    bodyGrad.addColorStop(.2,"#c8e6c9");
+    bodyGrad.addColorStop(.5,"#66BB6A");
+    bodyGrad.addColorStop(.8,"#51CF66");
+    bodyGrad.addColorStop(1,"#2E7D32");
+    cx.beginPath();cx.arc(centerX,cy,r,0,TAU);cx.fillStyle=bodyGrad;cx.fill();
+    cx.strokeStyle="rgba(255,255,255,.1)";cx.lineWidth=1;cx.stroke();
+
+    cx.strokeStyle="rgba(255,255,255,.08)";cx.lineWidth=1;
+    cx.beginPath();cx.arc(centerX,cy,r*.7,-PI*.3,PI*.3);cx.stroke();
+    cx.beginPath();cx.arc(centerX,cy,r*.7,PI*.7,PI*1.3);cx.stroke();
+
+    cx.fillStyle="rgba(255,255,255,.06)";
+    cx.beginPath();cx.arc(centerX-4,cy-7,r*.4,0,TAU);cx.fill();
+    cx.restore();
+
+    // === SHIELD (身體前方) ===
+    cx.save();
+    cx.translate(centerX+f*r*.7, cy);
+    cx.rotate(f>0?-.1:.1);
+    cx.rotate(Math.sin(t*3)*.03);
+
+    // shield shadow
+    cx.fillStyle="rgba(0,0,0,.15)";
+    cx.beginPath();
+    cx.moveTo(2,-16);cx.lineTo(14,-9);cx.lineTo(13,8);cx.lineTo(2,18);cx.lineTo(-9,8);cx.lineTo(-10,-9);
+    cx.closePath();cx.fill();
+
+    // shield main body
+    const shieldGrad=cx.createLinearGradient(-10,-14,12,14);
+    shieldGrad.addColorStop(0,"#868E96");
+    shieldGrad.addColorStop(.3,"#ADB5BD");
+    shieldGrad.addColorStop(.6,"#868E96");
+    shieldGrad.addColorStop(1,"#495057");
+    cx.fillStyle=shieldGrad;
+    cx.beginPath();
+    cx.moveTo(0,-15);cx.lineTo(12,-8);cx.lineTo(11,7);cx.lineTo(0,16);cx.lineTo(-11,7);cx.lineTo(-12,-8);
+    cx.closePath();cx.fill();
+
+    cx.shadowColor="#51CF66";cx.shadowBlur=8;
+    cx.strokeStyle="#51CF66";cx.lineWidth=1.8;cx.stroke();
+    cx.shadowBlur=0;
+
+    cx.strokeStyle="rgba(255,255,255,.15)";cx.lineWidth=.8;
+    cx.beginPath();
+    cx.moveTo(0,-12);cx.lineTo(9,-6);cx.lineTo(8,5);cx.lineTo(0,13);cx.lineTo(-8,5);cx.lineTo(-9,-6);
+    cx.closePath();cx.stroke();
+
+    cx.strokeStyle="#51CF66";cx.lineWidth=1.2;cx.globalAlpha=.7;
+    cx.beginPath();cx.arc(0,1,5,0,TAU);cx.stroke();
+    cx.beginPath();cx.moveTo(0,-5);cx.lineTo(0,7);cx.stroke();
+    cx.beginPath();cx.moveTo(-5,1);cx.lineTo(5,1);cx.stroke();
+    cx.globalAlpha=1;
+
+    cx.fillStyle="#51CF66";
+    cx.beginPath();cx.arc(0,1,2.5,0,TAU);cx.fill();
+    cx.fillStyle="rgba(255,255,255,.4)";
+    cx.beginPath();cx.arc(-.6,0,1,0,TAU);cx.fill();
+
+    cx.fillStyle="rgba(255,255,255,.12)";
+    cx.beginPath();
+    cx.moveTo(-8,-7);cx.lineTo(0,-13);cx.lineTo(8,-7);cx.lineTo(3,-3);cx.lineTo(-3,-3);
+    cx.closePath();cx.fill();
+
+    cx.fillStyle="#5C5C5C";
+    const rivets=[[-7,-5],[7,-5],[-7,4],[7,4],[0,-12],[0,13]];
+    rivets.forEach(([rx,ry])=>{
+      cx.beginPath();cx.arc(rx,ry,1.2,0,TAU);cx.fill();
+      cx.fillStyle="rgba(255,255,255,.2)";
+      cx.beginPath();cx.arc(rx-.3,ry-.3,.5,0,TAU);cx.fill();
+      cx.fillStyle="#5C5C5C";
+    });
+
+    cx.restore();
+
+    // === DEFENSIVE AURA (pulsing rings) ===
+    cx.save();
+    const pulse1=.15+Math.sin(t*2)*.08;
+    const pulse2=.1+Math.sin(t*2+PI)*.06;
+    cx.strokeStyle="#51CF66";cx.lineWidth=1.5;cx.globalAlpha=pulse1;
+    cx.beginPath();cx.arc(centerX,cy,r+7,0,TAU);cx.stroke();
+    cx.setLineDash([3,3]);cx.lineWidth=1;cx.globalAlpha=pulse2;
+    cx.beginPath();cx.arc(centerX,cy,r+12,0,TAU);cx.stroke();
+    cx.setLineDash([]);
+    cx.restore();
+
+    // === THORN / REFLECT PARTICLES ===
+    for(let i=0;i<5;i++){
+      const a=t*1.2+i*TAU/5;
+      const dist=r+10+Math.sin(t*1.8+i*1.3)*3;
+      const px=centerX+Math.cos(a)*dist, py=cy+Math.sin(a)*dist;
+      cx.save();
+      cx.globalAlpha=.18+Math.sin(t*2.5+i)*.08;
+      cx.fillStyle="#51CF66";
+      // small shield-shaped particle
+      cx.beginPath();
+      cx.moveTo(px,py-2);cx.lineTo(px+1.5,py-.5);cx.lineTo(px+1.2,py+1.5);
+      cx.lineTo(px,py+2.5);cx.lineTo(px-1.2,py+1.5);cx.lineTo(px-1.5,py-.5);
+      cx.closePath();cx.fill();
+      cx.restore();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+drawGunner("c1");
+drawSwordsman("c2");
+drawTank("c3");
+</script>
+</body>
+</html>

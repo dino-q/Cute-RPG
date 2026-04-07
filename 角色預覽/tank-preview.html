@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>坦克動畫預覽</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a18;color:#fff;font-family:'Nunito','Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px}
+h1{font-size:18px;color:#51CF66;margin-bottom:4px}
+.sub{font-size:11px;color:rgba(255,255,255,.35);margin-bottom:16px}
+.row{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.col{text-align:center}
+canvas{border:1px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer}
+.label{font-size:12px;font-weight:700;margin-top:6px}
+.hint{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px}
+.controls{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+.btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;padding:6px 14px;font-size:11px;cursor:pointer;font-family:inherit}
+.btn:hover{background:rgba(255,255,255,.1)}
+.btn.active{border-color:#51CF66;color:#51CF66}
+.info{margin-top:12px;font-size:10px;color:rgba(255,255,255,.25);max-width:600px;text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+<h1>🛡️ 坦克動畫預覽</h1>
+<div class="sub">點擊角色觸發動作 / 下方切換動畫風格</div>
+<div class="row">
+  <div class="col">
+    <canvas id="cv" width="300" height="300"></canvas>
+    <div class="label" style="color:#51CF66">盾衛 — 坦克</div>
+    <div class="hint">點擊觸發動作</div>
+  </div>
+  <div class="col">
+    <canvas id="cv2" width="300" height="300"></canvas>
+    <div class="label" style="color:#51CF66">連續動作（自動）</div>
+    <div class="hint">每 1.2 秒自動觸發</div>
+  </div>
+</div>
+<div class="controls">
+  <button class="btn active" onclick="setStyle(0,this)">A. 盾擊</button>
+  <button class="btn" onclick="setStyle(1,this)">B. 格擋反彈</button>
+  <button class="btn" onclick="setStyle(3,this)">C. 嘲諷吼叫</button>
+</div>
+<div class="info">
+  <b>A. 盾擊</b>：盾牌向前猛推，衝擊波擊退前方敵人<br>
+  <b>B. 格擋反彈</b>：舉盾格擋（藍色閃光）→ 火花反射傷害<br>
+  <b>C. 嘲諷吼叫</b>：紅色氣場環擴散，吸引敵人
+</div>
+
+<script>
+const PI=Math.PI,TAU=PI*2;
+const cx1=document.getElementById("cv").getContext("2d");
+const cx2=document.getElementById("cv2").getContext("2d");
+const W=300,H=300,R=22;
+let style=0,t=0;
+let act1=0,actT1=0;
+let act2=0,actT2=0,autoTimer=0;
+
+function setStyle(s,el){
+  style=s;
+  document.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+}
+document.getElementById("cv").addEventListener("click",()=>{act1=1;actT1=0;});
+
+// === 參考 shield-elements-preview 的精細盾牌 ===
+const ELEM={
+  main:"#868E96",light:"#ADB5BD",dark:"#495057",edge:"#51CF66",gem:"#51CF66"
+};
+
+function drawElementShield(c,t,sc,glow,rot){
+  c.save();
+  if(rot)c.rotate(rot);
+  if(sc&&sc!==1)c.scale(sc,sc);
+  const e=ELEM;
+  const edgeCol=glow||e.edge;
+  // 盾牌主體（六角形）漸層
+  const sg=c.createLinearGradient(-12,-15,12,16);
+  sg.addColorStop(0,e.light);sg.addColorStop(.4,e.main);sg.addColorStop(.7,e.main);sg.addColorStop(1,e.dark);
+  c.fillStyle=sg;
+  c.beginPath();
+  c.moveTo(0,-15);c.lineTo(12,-8);c.lineTo(11,7);c.lineTo(0,16);c.lineTo(-11,7);c.lineTo(-12,-8);
+  c.closePath();c.fill();
+  // 邊框發光
+  c.shadowColor=edgeCol;c.shadowBlur=8;
+  c.strokeStyle=edgeCol;c.lineWidth=1.8;c.stroke();c.shadowBlur=0;
+  // 內邊框
+  c.strokeStyle="rgba(255,255,255,.12)";c.lineWidth=.8;
+  c.beginPath();c.moveTo(0,-12);c.lineTo(9,-6);c.lineTo(8,5);c.lineTo(0,13);c.lineTo(-8,5);c.lineTo(-9,-6);c.closePath();c.stroke();
+  // 頂部高光
+  c.fillStyle="rgba(255,255,255,.1)";
+  c.beginPath();c.moveTo(-8,-7);c.lineTo(0,-13);c.lineTo(8,-7);c.lineTo(3,-3);c.lineTo(-3,-3);c.closePath();c.fill();
+  // 鉚釘
+  const rivets=[[-7,-5],[7,-5],[-7,4],[7,4],[0,-12],[0,13]];
+  rivets.forEach(([rx,ry])=>{
+    c.fillStyle=e.dark;c.beginPath();c.arc(rx,ry,1.2,0,TAU);c.fill();
+    c.fillStyle="rgba(255,255,255,.2)";c.beginPath();c.arc(rx-.3,ry-.3,.5,0,TAU);c.fill();
+  });
+  // 十字紋章
+  c.strokeStyle=edgeCol;c.lineWidth=1;c.globalAlpha=.5;
+  c.beginPath();c.arc(0,1,5,0,TAU);c.stroke();
+  c.beginPath();c.moveTo(0,-4);c.lineTo(0,6);c.stroke();
+  c.beginPath();c.moveTo(-5,1);c.lineTo(5,1);c.stroke();
+  c.globalAlpha=1;
+  // 中心寶石
+  c.fillStyle=e.gem;c.shadowColor=e.gem;c.shadowBlur=6;
+  c.beginPath();c.arc(0,1,2.8,0,TAU);c.fill();c.shadowBlur=0;
+  c.fillStyle="rgba(255,255,255,.4)";c.beginPath();c.arc(-.7,.2,1,0,TAU);c.fill();
+  c.restore();
+}
+
+function drawTank(c,x,y,time,face,act,actT){
+  const f=face||1,bob=Math.sin(time*2.5)*1.2,cy=y+bob;
+  const tr=R*1.1;
+  c.save();
+
+  // bg aura
+  const bg2=c.createRadialGradient(x,y,0,x,y,60);
+  bg2.addColorStop(0,"rgba(81,207,102,.06)");bg2.addColorStop(1,"transparent");
+  c.fillStyle=bg2;c.beginPath();c.arc(x,y,60,0,TAU);c.fill();
+
+  // shadow
+  c.fillStyle="rgba(0,0,0,.2)";c.beginPath();c.ellipse(x,y+R+3,R*.7,3,0,0,TAU);c.fill();
+
+  // armor ring
+  c.strokeStyle="rgba(81,207,102,.15)";c.lineWidth=2;
+  c.beginPath();c.arc(x,cy,tr+3,0,TAU);c.stroke();
+
+  // body
+  const bg=c.createRadialGradient(x-f*R*.1,cy-R*.3,R*.15,x,cy,tr);
+  bg.addColorStop(0,"#fff");bg.addColorStop(.2,"#c8e6c9");bg.addColorStop(.6,"#51CF66");bg.addColorStop(1,"#2E7D32");
+  c.beginPath();c.arc(x,cy,tr,0,TAU);c.fillStyle=bg;c.fill();
+  c.strokeStyle="rgba(255,255,255,.1)";c.lineWidth=1;c.stroke();
+
+  // === Action animations ===
+  let shX=x+f*tr*.7,shY=cy,shRot=0,shSc=1,shGlow="#51CF66";
+  const p=act>0?Math.min(actT/.5,1):0;
+
+  if(act>0&&style===0){ // A. 盾擊
+    const pushP=p<.35?p/.35:1-(p-.35)/.65;
+    shX=x+f*(tr*.7+pushP*28);shY=cy-pushP*3;shRot=f*pushP*-.2;shSc=1+pushP*.12;shGlow="#FFD43B";
+    // 衝擊波
+    if(p>.25&&p<.7){
+      const wp=(p-.25)/.45;
+      c.save();c.globalAlpha=(1-wp)*.5;c.strokeStyle="#FFD43B";c.lineWidth=3*(1-wp);
+      c.beginPath();c.arc(shX+f*12,shY,8+wp*35,-PI*.35,PI*.35);c.stroke();
+      c.strokeStyle="#FF922B";c.lineWidth=2*(1-wp);
+      c.beginPath();c.arc(shX+f*12,shY,4+wp*25,-PI*.25,PI*.25);c.stroke();
+      c.restore();
+    }
+    // 碎片
+    if(p>.3&&p<.65){
+      const sp=(p-.3)/.35;
+      for(let i=0;i<6;i++){
+        const a=-.8+i*.32;const d=10+sp*30;
+        c.save();c.globalAlpha=(1-sp)*.7;c.fillStyle=i%2?"#FFD43B":"#FF922B";
+        c.beginPath();c.arc(shX+Math.cos(a)*d*f,shY+Math.sin(a)*d,1.5+Math.random(),0,TAU);c.fill();c.restore();
+      }
+    }
+  }
+  else if(act>0&&style===1){ // B. 格擋反彈
+    shX=x+f*(tr*.35);shY=cy-3;shRot=f*.12;shSc=1.08;
+    shGlow=p<.3?"#4DABF7":"#FF6B6B";
+    // 藍色格擋閃光
+    if(p>.1&&p<.4){
+      const fp=(p-.1)/.3;
+      c.save();c.globalAlpha=(1-fp)*.6;
+      const fg=c.createRadialGradient(shX,shY,0,shX,shY,20);
+      fg.addColorStop(0,"#4DABF7");fg.addColorStop(1,"transparent");
+      c.fillStyle=fg;c.beginPath();c.arc(shX,shY,12+fp*10,0,TAU);c.fill();c.restore();
+    }
+    // 反射火花
+    if(p>.3&&p<.8){
+      const sp=(p-.3)/.5;
+      for(let i=0;i<8;i++){
+        const a=-.8+i*.25+sp*1.5;const d=12+sp*45;
+        c.save();c.globalAlpha=(1-sp)*.7;c.fillStyle=["#FF6B6B","#FFD43B","#FF922B","#fff"][i%4];
+        c.beginPath();c.arc(shX+Math.cos(a)*d*f,shY+Math.sin(a)*d,1.2+Math.random()*1.5,0,TAU);c.fill();c.restore();
+      }
+    }
+  }
+  else if(act>0&&style===2){ // C. 震地衝撞
+    const rushP=p<.45?p/.45:1;const landP=p>.45?(p-.45)/.55:0;
+    shX=x+f*(tr*.7+rushP*22);shSc=1+rushP*.08;shGlow="#FF922B";
+    // 衝刺塵土
+    if(rushP<1){
+      for(let i=0;i<4;i++){
+        c.save();c.globalAlpha=.25*(1-rushP);c.fillStyle="#ADB5BD";
+        c.beginPath();c.arc(x-f*rushP*25+Math.random()*15-7,y+R+Math.random()*5,2+Math.random()*3,0,TAU);c.fill();c.restore();
+      }
+    }
+    // 地面震波
+    if(landP>0){
+      c.save();
+      c.globalAlpha=(1-landP)*.5;c.strokeStyle="#FF922B";c.lineWidth=3*(1-landP);
+      c.beginPath();c.ellipse(x+f*rushP*22,y+R+3,landP*65,landP*10+2,0,0,TAU);c.stroke();
+      c.globalAlpha=(1-landP)*.35;c.strokeStyle="#FFD43B";c.lineWidth=2*(1-landP);
+      c.beginPath();c.ellipse(x+f*rushP*22,y+R+3,landP*45,landP*6+1,0,0,TAU);c.stroke();
+      // 碎石粒子
+      for(let i=0;i<5;i++){
+        c.globalAlpha=(1-landP)*.6;c.fillStyle=i%2?"#868E96":"#ADB5BD";
+        const rx=x+f*rushP*22+(Math.random()-.5)*landP*80;
+        const ry=y+R-landP*15*Math.random();
+        c.beginPath();c.arc(rx,ry,1+Math.random()*2,0,TAU);c.fill();
+      }
+      c.restore();
+    }
+  }
+  else if(act>0&&style===3){ // D. 嘲諷吼叫
+    shX=x+f*tr*.45;shY=cy+2;shGlow="#FF4040";
+    // 怒吼嘴巴
+    const mp=p<.25?p/.25:(p<.65?1:(1-(p-.65)/.35));
+    c.save();c.fillStyle="#FF4040";c.globalAlpha=mp*.5;
+    c.beginPath();c.ellipse(x+f*R*.3,cy+3,2+mp*2,1.5+mp*1.5,0,0,TAU);c.fill();c.restore();
+    // 擴散氣場環
+    for(let i=0;i<4;i++){
+      const rp=Math.min(1,Math.max(0,(p-i*.1)/.45));
+      if(rp>0&&rp<1){
+        c.save();c.globalAlpha=(1-rp)*.3;c.strokeStyle="#FF4040";c.lineWidth=2.5*(1-rp);
+        c.beginPath();c.arc(x,cy,tr+rp*55+i*8,0,TAU);c.stroke();c.restore();
+      }
+    }
+    // ⚠️ 符號
+    if(p>.08&&p<.85){
+      c.save();c.font="bold 11px sans-serif";c.textAlign="center";
+      for(let i=0;i<5;i++){
+        const a=TAU*i/5+t*1.8;const d=tr+8+p*40;
+        c.globalAlpha=(1-p)*.6;c.fillStyle="#FF4040";
+        c.fillText("⚠",x+Math.cos(a)*d,cy+Math.sin(a)*d+4);
+      }
+      c.restore();
+    }
+  }
+
+  // draw shield
+  c.save();c.translate(shX,shY);
+  drawElementShield(c,t,shSc,shGlow,shRot);
+  c.restore();
+
+  // aura rings
+  c.strokeStyle="#51CF66";c.lineWidth=1;
+  c.globalAlpha=.1+Math.sin(t*2)*.05;
+  c.beginPath();c.arc(x,cy,tr+8,0,TAU);c.stroke();
+  c.setLineDash([3,3]);c.globalAlpha=.06;
+  c.beginPath();c.arc(x,cy,tr+13,0,TAU);c.stroke();
+  c.setLineDash([]);c.globalAlpha=1;
+
+  c.restore();
+}
+
+function frame(){
+  t+=1/60;
+
+  // Canvas 1: click to trigger
+  cx1.clearRect(0,0,W,H);
+  if(act1>0){actT1+=1/60;if(actT1>.6){act1=0;actT1=0;}}
+  drawTank(cx1,W/2,H/2,t,1,act1,actT1);
+
+  // Canvas 2: auto trigger
+  cx2.clearRect(0,0,W,H);
+  autoTimer+=1/60;
+  if(autoTimer>1.2){autoTimer=0;act2=1;actT2=0;}
+  if(act2>0){actT2+=1/60;if(actT2>.6){act2=0;actT2=0;}}
+  drawTank(cx2,W/2,H/2,t,-1,act2,actT2);
+
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>

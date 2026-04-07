@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>劍士揮擊動畫預覽</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a18;color:#fff;font-family:'Nunito','Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px}
+h1{font-size:18px;color:#FFD43B;margin-bottom:4px}
+.sub{font-size:11px;color:rgba(255,255,255,.35);margin-bottom:16px}
+.row{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.col{text-align:center}
+canvas{border:1px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer}
+.label{font-size:12px;font-weight:700;margin-top:6px}
+.hint{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px}
+.controls{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+.btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;padding:6px 14px;font-size:11px;cursor:pointer;font-family:inherit}
+.btn:hover{background:rgba(255,255,255,.1)}
+.btn.active{border-color:#FFD43B;color:#FFD43B}
+.info{margin-top:12px;font-size:10px;color:rgba(255,255,255,.25);max-width:600px;text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+<h1>劍士揮擊動畫</h1>
+<div class="sub">點擊角色觸發揮擊 / 下方切換不同揮擊風格</div>
+<div class="row">
+  <div class="col">
+    <canvas id="cv" width="300" height="300"></canvas>
+    <div class="label" style="color:#FF922B">雷恩 — 劍士</div>
+    <div class="hint">點擊觸發攻擊</div>
+  </div>
+  <div class="col">
+    <canvas id="cv2" width="300" height="300"></canvas>
+    <div class="label" style="color:#FF922B">連續攻擊（自動）</div>
+    <div class="hint">每 0.8 秒自動揮擊</div>
+  </div>
+</div>
+<div class="controls">
+  <button class="btn active" onclick="setStyle(0,this)">A. 上劈下斬</button>
+  <button class="btn" onclick="setStyle(2,this)">B. 突刺</button>
+  <button class="btn" onclick="setStyle(3,this)">C. 旋風斬</button>
+</div>
+<div class="info">
+  <b>A. 上劈下斬</b>：劍高舉過頭→大幅度垂直劈下<br>
+  <b>B. 突刺</b>：劍尖轉向前方→向前直刺<br>
+  <b>C. 旋風斬</b>：劍繞身體360度旋轉斬擊
+</div>
+
+<script>
+const PI=Math.PI,TAU=PI*2;
+let swingStyle=0;
+function setStyle(s,el){swingStyle=s;document.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');}
+
+/*
+  座標系說明：
+  - 劍在 local space 中，tip 在 (0, -bladeLen)，握把在 (0, +handleLen)
+  - 劍的 pivot 在角色右側 (centerX + r*0.9, cy - r*0.15)
+  - base rotation = -0.5 rad → idle 時劍尖指向右上方約 60°
+  - 正角度 = 順時針旋轉 → 劍尖往下/右
+  - 負角度 = 逆時針旋轉 → 劍尖往上/左
+
+  所以：
+  - 舉劍(tip朝上偏左) = angle 往正方向加 → 大正值
+    total = -0.5 + 1.5 = +1.0 → tip 指向左下(因為從-Y旋轉+1.0後)
+
+  不對，讓我用實際計算：
+  tip_local = (0, -1)  // 單位化
+  旋轉 θ 後:
+    tip_x = sin(θ)
+    tip_y = -cos(θ)
+
+  θ = 0 → tip (0, -1) 朝上
+  θ = +PI/2 → tip (1, 0) 朝右
+  θ = +PI → tip (0, 1) 朝下
+  θ = -PI/2 → tip (-1, 0) 朝左
+
+  base = -0.5 → tip 朝 (sin(-0.5), -cos(-0.5)) = (-0.48, -0.88) → 左上方
+
+  等等...那 idle 時劍尖在左上方？但劍的 pivot 在角色右側...
+  pivot 在角色右側 + 劍尖指向左上 = 劍斜跨在角色背後/上方
+
+  要讓劍看起來合理(握在右手，劍尖朝右上)，需要正的 base angle。
+
+  base = +0.5 → tip (sin(0.5), -cos(0.5)) = (0.48, -0.88) → 右上方 ✓
+
+  原本的 -0.5 確實有問題。讓我修正整個系統。
+*/
+
+// ═══ 殘影系統 ═══
+const MAX_GHOSTS=8;
+
+function createSwingState(){
+  return {active:false, startTime:0, ghosts:[]};
+}
+
+function triggerSwing(state){
+  state.active=true;
+  state.startTime=performance.now();
+  state.ghosts=[];
+}
+
+// ═══ 揮擊 transform ═══
+// 回傳 {angle, ox, oy, phase}
+// angle: 相對於 base 的額外旋轉
+// ox, oy: 額外位移
+function getSwingTransform(state, now){
+  if(!state.active) return {angle:0, ox:0, oy:0, phase:'idle'};
+  const elapsed=now-state.startTime;
+
+  if(swingStyle===0){
+    // ═══ A. 上劈下斬（大幅度垂直） ═══
+    // base=+0.5, idle 劍尖朝右上
+    // 舉劍: angle → -1.8 (劍尖轉到正上/左上, 高舉過頭)
+    // 下劈: angle → +2.5 (劍尖掃到正下/右下)
+    // 總弧度 4.3 rad ≈ 246°
+    const t1=100, t2=140, t3=220;
+    if(elapsed<t1){
+      const p=elapsed/t1, ease=p*p;
+      return {angle:-ease*1.8, ox:-ease*4, oy:-ease*8, phase:'raise'};
+    }
+    if(elapsed<t1+t2){
+      const p=(elapsed-t1)/t2, ease=1-(1-p)*(1-p);
+      return {angle:-1.8+ease*4.3, ox:-4+ease*10, oy:-8+ease*18, phase:'slash'};
+    }
+    if(elapsed<t1+t2+t3){
+      const p=(elapsed-t1-t2)/t3, ease=p*p;
+      return {angle:2.5*(1-ease), ox:6*(1-ease), oy:10*(1-ease), phase:'recover'};
+    }
+    state.active=false;
+    return {angle:0,ox:0,oy:0,phase:'idle'};
+  }
+
+  if(swingStyle===1){
+    // ═══ B. 橫掃（低角度水平） ═══
+    // 劍拉到身後偏下 → 水平掃向前方偏上
+    // 重點：oy 保持接近 0，角度集中在水平帶
+    // angle 從 +1.5 (劍尖朝右下/後方) 掃到 -1.5 (劍尖朝左上/前方完成)
+    const t1=80, t2=160, t3=200;
+    if(elapsed<t1){
+      // 拉回：angle 往正方向（劍尖往右下/身後）
+      const p=elapsed/t1, ease=p*p;
+      return {angle:ease*1.5, ox:-ease*6, oy:ease*3, phase:'windup'};
+    }
+    if(elapsed<t1+t2){
+      // 水平掃出：angle 從 +1.5 掃到 -1.5
+      const p=(elapsed-t1)/t2, ease=1-(1-p)*(1-p)*(1-p);
+      return {angle:1.5-ease*3.0, ox:-6+ease*12, oy:3-ease*2, phase:'slash'};
+    }
+    if(elapsed<t1+t2+t3){
+      const p=(elapsed-t1-t2)/t3, ease=p*p;
+      return {angle:-1.5*(1-ease), ox:6*(1-ease), oy:1*(1-ease), phase:'recover'};
+    }
+    state.active=false;
+    return {angle:0,ox:0,oy:0,phase:'idle'};
+  }
+
+  if(swingStyle===2){
+    // ═══ C. 突刺 ═══
+    // 劍尖朝右: total = PI/2 = 1.57, swing angle = 1.07
+    const thrustAngle=1.07;
+    const t1=60, t2=80, t3=60, t4=160;
+    if(elapsed<t1){
+      const p=elapsed/t1, ease=1-(1-p)*(1-p);
+      return {angle:ease*thrustAngle, ox:ease*3, oy:ease*2, phase:'aim'};
+    }
+    if(elapsed<t1+t2){
+      const p=(elapsed-t1)/t2, ease=1-(1-p)*(1-p);
+      return {angle:thrustAngle, ox:3+ease*18, oy:2, phase:'thrust'};
+    }
+    if(elapsed<t1+t2+t3){
+      return {angle:thrustAngle, ox:21, oy:2, phase:'hold'};
+    }
+    if(elapsed<t1+t2+t3+t4){
+      const p=(elapsed-t1-t2-t3)/t4, ease=p*p;
+      return {angle:thrustAngle*(1-ease), ox:21*(1-ease), oy:2*(1-ease), phase:'recover'};
+    }
+    state.active=false;
+    return {angle:0,ox:0,oy:0,phase:'idle'};
+  }
+
+  if(swingStyle===3){
+    // ═══ D. 旋風斬（360度旋轉） ═══
+    // 劍繞身體完整轉一圈 (2*PI ≈ 6.28 rad)
+    // 1) 蓄力微拉 60ms
+    // 2) 360度高速旋轉 280ms (easeInOut)
+    // 3) 回收 200ms
+    const fullSpin=PI*2;
+    const t1=60, t2=280, t3=200;
+    if(elapsed<t1){
+      const p=elapsed/t1, ease=p*p;
+      return {angle:-ease*.3, ox:0, oy:0, phase:'windup'};
+    }
+    if(elapsed<t1+t2){
+      const p=(elapsed-t1)/t2;
+      // easeInOut: 開始慢→中間快→結束慢
+      const ease=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+      return {angle:-.3+ease*(fullSpin+.3), ox:0, oy:0, phase:'slash'};
+    }
+    if(elapsed<t1+t2+t3){
+      const p=(elapsed-t1-t2)/t3, ease=p*p;
+      // 轉完後微微超過，然後回收
+      return {angle:fullSpin*(1-ease)*.05, ox:0, oy:0, phase:'recover'};
+    }
+    state.active=false;
+    return {angle:0,ox:0,oy:0,phase:'idle'};
+  }
+
+  return {angle:0,ox:0,oy:0,phase:'idle'};
+}
+
+// ═══ 繪製劍 ═══
+function drawSword(cx, r, t, e, alpha){
+  cx.save();
+  cx.globalAlpha=alpha||1;
+  cx.shadowColor=e.glow;cx.shadowBlur=alpha<1?0:10;
+  const bladeGrad=cx.createLinearGradient(0,-r*2,0,0);
+  bladeGrad.addColorStop(0,"#fff");
+  bladeGrad.addColorStop(.2,e.bladeMid);
+  bladeGrad.addColorStop(.6,e.blade);
+  bladeGrad.addColorStop(1,e.bladeEdge);
+  cx.fillStyle=bladeGrad;
+  cx.beginPath();
+  cx.moveTo(-2.8,0);cx.lineTo(-2.2,-r*1.7);cx.lineTo(0,-r*2);cx.lineTo(2.2,-r*1.7);cx.lineTo(2.8,0);
+  cx.closePath();cx.fill();
+  cx.shadowBlur=0;
+  if(alpha>=1){
+    cx.strokeStyle="rgba(255,255,255,.4)";cx.lineWidth=.6;
+    cx.beginPath();cx.moveTo(0,-r*.2);cx.lineTo(0,-r*1.85);cx.stroke();
+    cx.strokeStyle="rgba(255,255,255,.2)";cx.lineWidth=.8;
+    cx.beginPath();cx.moveTo(-2.5,-r*.1);cx.lineTo(-2,-r*1.6);cx.lineTo(0,-r*1.95);cx.stroke();
+  }
+  // guard
+  cx.fillStyle=e.guard;
+  cx.beginPath();cx.moveTo(-8,-1);cx.lineTo(-7,2.5);cx.lineTo(7,2.5);cx.lineTo(8,-1);cx.closePath();cx.fill();
+  if(alpha>=1){cx.strokeStyle=e.guardDark;cx.lineWidth=.5;cx.stroke();}
+  cx.fillStyle=e.gem;cx.beginPath();cx.arc(0,.8,1.8,0,TAU);cx.fill();
+  // handle
+  cx.fillStyle="#5C3A1E";cx.fillRect(-2.5,2.5,5,r*.4);
+  if(alpha>=1){
+    cx.strokeStyle="#8B6914";cx.lineWidth=.8;
+    for(let i=0;i<4;i++){cx.beginPath();cx.moveTo(-2.5,4+i*2.5);cx.lineTo(2.5,5.5+i*2.5);cx.stroke();}
+  }
+  cx.fillStyle=e.guard;cx.beginPath();cx.arc(0,2.5+r*.4+2,2.5,0,TAU);cx.fill();
+  cx.restore();
+}
+
+// ═══ 斬擊弧 ═══
+function drawSlashArc(cx, pivotX, pivotY, r, sw, baseAng){
+  if(sw.phase!=='slash' && sw.phase!=='thrust') return;
+  cx.save();
+  const totalAng=baseAng+sw.angle;
+
+  if(swingStyle===0){
+    // 上劈下斬：從上往下的弧形斬痕
+    cx.globalAlpha=.5;
+    cx.strokeStyle="rgba(255,255,255,.6)";cx.lineWidth=2.5;
+    cx.beginPath();
+    // 弧形跟著劍尖軌跡
+    cx.arc(pivotX+sw.ox, pivotY+sw.oy, r*2, totalAng-PI/2-0.6, totalAng-PI/2+0.3);
+    cx.stroke();
+    cx.strokeStyle="rgba(255,213,75,.3)";cx.lineWidth=4;
+    cx.beginPath();
+    cx.arc(pivotX+sw.ox, pivotY+sw.oy, r*2.2, totalAng-PI/2-0.4, totalAng-PI/2+0.2);
+    cx.stroke();
+  }
+  if(swingStyle===1){
+    // 橫掃：水平弧
+    cx.globalAlpha=.45;
+    cx.strokeStyle="rgba(255,255,255,.5)";cx.lineWidth=2.5;
+    cx.beginPath();
+    cx.arc(pivotX+sw.ox, pivotY+sw.oy, r*2, totalAng-PI/2-0.5, totalAng-PI/2+0.3);
+    cx.stroke();
+    cx.strokeStyle="rgba(255,213,75,.25)";cx.lineWidth=5;
+    cx.beginPath();
+    cx.arc(pivotX+sw.ox, pivotY+sw.oy, r*2.3, totalAng-PI/2-0.3, totalAng-PI/2+0.2);
+    cx.stroke();
+  }
+  if(swingStyle===2){
+    // 突刺：直線刺痕
+    cx.globalAlpha=.5;
+    const tipX=pivotX+sw.ox+Math.sin(totalAng)*r*2;
+    const tipY=pivotY+sw.oy-Math.cos(totalAng)*r*2;
+    cx.strokeStyle="rgba(255,255,255,.5)";cx.lineWidth=1.5;
+    cx.beginPath();cx.moveTo(tipX,tipY);cx.lineTo(tipX+20,tipY);cx.stroke();
+    cx.strokeStyle="rgba(255,213,75,.25)";cx.lineWidth=4;
+    cx.beginPath();cx.moveTo(tipX-5,tipY);cx.lineTo(tipX+25,tipY);cx.stroke();
+  }
+  if(swingStyle===3){
+    // 旋風斬：360度圓形斬痕
+    cx.globalAlpha=.4;
+    // 外圈光弧（跟著劍尖位置畫弧，漸漸成圓）
+    cx.strokeStyle="rgba(255,213,75,.4)";cx.lineWidth=3;
+    cx.beginPath();
+    cx.arc(pivotX, pivotY, r*2.1, totalAng-PI/2-1.5, totalAng-PI/2+0.2);
+    cx.stroke();
+    // 內圈
+    cx.strokeStyle="rgba(255,255,255,.3)";cx.lineWidth=1.5;
+    cx.beginPath();
+    cx.arc(pivotX, pivotY, r*1.8, totalAng-PI/2-1.2, totalAng-PI/2+0.1);
+    cx.stroke();
+    // 完整圓環（旋轉過半後開始顯示）
+    if(sw.angle>PI){
+      cx.globalAlpha=.15;
+      cx.strokeStyle="#FFD43B";cx.lineWidth=2;
+      cx.beginPath();cx.arc(pivotX,pivotY,r*2,0,TAU);cx.stroke();
+    }
+  }
+
+  cx.restore();
+}
+
+// ═══ 主場景 ═══
+function drawScene(canvasId, autoSwing){
+  const cv=document.getElementById(canvasId);
+  const cx=cv.getContext("2d");
+  const W=cv.width,H=cv.height,centerX=W/2,baseY=H/2+10,r=22,f=1;
+  const baseAng=0.5; // 正值 → idle 時劍尖朝右上
+  const swordE={blade:"#CED4DA",bladeMid:"#E8E8E8",bladeEdge:"#ADB5BD",glow:"#FFD43B",guard:"#FFD43B",guardDark:"#E8A200",gem:"#FF6B6B"};
+  let t=0;
+  const swState=createSwingState();
+  let lastAutoSwing=0;
+
+  cv.addEventListener('click',()=>{if(!autoSwing)triggerSwing(swState);});
+
+  function frame(){
+    const now=performance.now();
+    t+=.016;
+    cx.clearRect(0,0,W,H);
+    const bob=Math.sin(t*3)*1.5,cy=baseY+bob;
+
+    if(autoSwing&&now-lastAutoSwing>800){lastAutoSwing=now;triggerSwing(swState);}
+
+    const sw=getSwingTransform(swState, now);
+
+    // 記錄殘影（揮擊中每幀記錄）
+    if(sw.phase==='slash'||sw.phase==='thrust'){
+      swState.ghosts.push({angle:sw.angle, ox:sw.ox, oy:sw.oy, life:1, cy});
+      if(swState.ghosts.length>MAX_GHOSTS) swState.ghosts.shift();
+    }
+    // 殘影衰減
+    for(let i=swState.ghosts.length-1;i>=0;i--){
+      swState.ghosts[i].life-=.08;
+      if(swState.ghosts[i].life<=0) swState.ghosts.splice(i,1);
+    }
+
+    // pivot 位置
+    const pivotX=centerX+f*r*.9;
+    const pivotY=cy-r*.15;
+
+    // bg
+    const bg=cx.createRadialGradient(centerX,baseY,0,centerX,baseY,90);
+    bg.addColorStop(0,"rgba(255,146,43,.06)");bg.addColorStop(1,"transparent");
+    cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+
+    // shadow
+    cx.fillStyle="rgba(0,0,0,.18)";
+    cx.beginPath();cx.ellipse(centerX,baseY+r+3,r*.7,3,0,0,TAU);cx.fill();
+
+    // ═══ 殘影繪製（在劍和身體之後） ═══
+    swState.ghosts.forEach(g=>{
+      cx.save();
+      cx.translate(pivotX+g.ox, g.cy-r*.15+g.oy);
+      cx.rotate(baseAng+g.angle);
+      // 殘影用金色半透明劍形
+      cx.globalAlpha=g.life*.25;
+      cx.fillStyle="#FFD43B";
+      cx.beginPath();
+      cx.moveTo(-3,0);cx.lineTo(-2,-r*1.7);cx.lineTo(0,-r*2.05);cx.lineTo(2,-r*1.7);cx.lineTo(3,0);
+      cx.closePath();cx.fill();
+      // 殘影外發光
+      cx.shadowColor="#FFD43B";cx.shadowBlur=8;
+      cx.globalAlpha=g.life*.1;
+      cx.fill();
+      cx.restore();
+    });
+
+    // ═══ 劍 ═══
+    cx.save();
+    cx.translate(pivotX+sw.ox, pivotY+sw.oy);
+    cx.rotate(baseAng+sw.angle);
+    if(sw.phase==='idle') cx.rotate(Math.sin(t*5)*.06);
+    drawSword(cx, r, t, swordE, 1);
+    cx.restore();
+
+    // ═══ 斬擊弧 ═══
+    drawSlashArc(cx, pivotX, pivotY, r, sw, baseAng);
+
+    // ═══ 身體 ═══
+    cx.save();
+    const bodyGrad=cx.createRadialGradient(centerX-f*r*.1,cy-r*.3,r*.1,centerX,cy,r);
+    bodyGrad.addColorStop(0,"#fff");
+    bodyGrad.addColorStop(.25,"#ffe0b2");
+    bodyGrad.addColorStop(.7,"#FF922B");
+    bodyGrad.addColorStop(1,"#E8590C");
+    cx.beginPath();cx.arc(centerX,cy,r,0,TAU);cx.fillStyle=bodyGrad;cx.fill();
+    cx.strokeStyle="rgba(255,255,255,.12)";cx.lineWidth=1;cx.stroke();
+    cx.restore();
+
+    // ═══ 頭帶 ═══
+    cx.save();
+    cx.strokeStyle="#FF922B";cx.lineWidth=3;cx.globalAlpha=.85;
+    cx.shadowColor="#FF922B";cx.shadowBlur=6;
+    cx.beginPath();cx.arc(centerX,cy-1,r+1.5,-PI*.8,-PI*.55);cx.stroke();
+    cx.lineWidth=2.2;cx.lineCap="round";
+    const hbx=centerX-f*r*.85,hby=cy-r*.55;
+    const windPush=sw.phase==='slash'||sw.phase==='thrust'?4:0;
+    cx.beginPath();cx.moveTo(hbx,hby);
+    cx.quadraticCurveTo(hbx-f*10,hby+5+Math.sin(t*4)*4+windPush,hbx-f*16,hby+10+Math.sin(t*3)*5+windPush);
+    cx.stroke();
+    cx.lineWidth=1.5;
+    cx.beginPath();cx.moveTo(hbx-f*1,hby+2);
+    cx.quadraticCurveTo(hbx-f*8,hby+8+Math.sin(t*3.5)*3+windPush*.7,hbx-f*13,hby+14+Math.sin(t*2.8)*4+windPush*.5);
+    cx.stroke();
+    cx.restore();
+
+    // ═══ 粒子 ═══
+    for(let i=0;i<3;i++){
+      const a=t*2.2+i*TAU/3;
+      const extra=sw.phase==='slash'||sw.phase==='thrust'?8:0;
+      const dist=28+Math.sin(t*2.5+i)*4+extra;
+      const px=centerX+Math.cos(a)*dist,py=cy+Math.sin(a)*dist;
+      cx.save();
+      cx.globalAlpha=.2+Math.sin(t*3.5+i)*.1+(extra?.15:0);
+      cx.shadowColor="#FFD43B";cx.shadowBlur=5;
+      cx.fillStyle="#FFD43B";
+      cx.beginPath();
+      cx.moveTo(px,py-2);cx.lineTo(px+1.3,py);cx.lineTo(px,py+2);cx.lineTo(px-1.3,py);
+      cx.closePath();cx.fill();
+      cx.restore();
+    }
+
+    // ═══ 狀態文字 ═══
+    cx.fillStyle="rgba(255,255,255,.15)";cx.font="10px monospace";
+    cx.fillText(sw.phase,8,H-8);
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+drawScene("cv", false);
+drawScene("cv2", true);
+</script>
+</body>
+</html>

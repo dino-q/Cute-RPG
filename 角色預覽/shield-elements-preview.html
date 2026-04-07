@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>坦克元素盾牌預覽</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a18;color:#fff;font-family:'Nunito','Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px}
+h1{font-size:18px;color:#FFD43B;margin-bottom:12px}
+.grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:900px}
+.cell{text-align:center}
+.cell canvas{border:1px solid rgba(255,255,255,.06);border-radius:10px}
+.label{font-size:11px;font-weight:700;margin-top:4px}
+</style>
+</head>
+<body>
+<h1>坦克 — 元素盾牌變化預覽</h1>
+<div class="grid">
+  <div class="cell"><canvas id="c0" width="160" height="160"></canvas><div class="label" style="color:#51CF66">基礎盾牌</div></div>
+  <div class="cell"><canvas id="c1" width="160" height="160"></canvas><div class="label" style="color:#FF6B6B">🔥 熔岩盾</div></div>
+  <div class="cell"><canvas id="c2" width="160" height="160"></canvas><div class="label" style="color:#66D9E8">❄️ 冰霜盾</div></div>
+  <div class="cell"><canvas id="c3" width="160" height="160"></canvas><div class="label" style="color:#FAB005">⚡ 雷電盾</div></div>
+  <div class="cell"><canvas id="c4" width="160" height="160"></canvas><div class="label" style="color:#A9E34B">🌿 劇毒盾</div></div>
+  <div class="cell"><canvas id="c5" width="160" height="160"></canvas><div class="label" style="color:#FF922B">🐉 龍鱗盾</div></div>
+  <div class="cell"><canvas id="c6" width="160" height="160"></canvas><div class="label" style="color:#F06595">⭐ 星輝盾</div></div>
+</div>
+
+<script>
+const PI=Math.PI,TAU=PI*2;
+
+const ELEM={
+  none:     {main:"#868E96",light:"#ADB5BD",dark:"#495057",edge:"#51CF66",gem:"#51CF66",particle:"#51CF66",bodyCol:"#51CF66",bodyMid:"#c8e6c9",bodyDark:"#2E7D32"},
+  fire:     {main:"#6a2a2a",light:"#8B4040",dark:"#3a1515",edge:"#FF4500",gem:"#FF6B6B",particle:"#FF6B6B",bodyCol:"#51CF66",bodyMid:"#c8e6c9",bodyDark:"#2E7D32"},
+  ice:      {main:"#5a7a8a",light:"#8abace",dark:"#2a4a5a",edge:"#66D9E8",gem:"#66D9E8",particle:"#66D9E8",bodyCol:"#51CF66",bodyMid:"#c8e6c9",bodyDark:"#2E7D32"},
+  lightning:{main:"#6a5520",light:"#a08530",dark:"#3a2a08",edge:"#FAB005",gem:"#FFD43B",particle:"#FAB005",bodyCol:"#51CF66",bodyMid:"#c8e6c9",bodyDark:"#2E7D32"},
+  poison:   {main:"#2a4a2a",light:"#4a7a3a",dark:"#0a2a0a",edge:"#A9E34B",gem:"#69DB7C",particle:"#A9E34B",bodyCol:"#51CF66",bodyMid:"#c8e6c9",bodyDark:"#2E7D32"},
+  dragon:   {main:"#6a4020",light:"#a07030",dark:"#3a1a08",edge:"#FF922B",gem:"#FFD43B",particle:"#FF922B",bodyCol:"#51CF66",bodyMid:"#c8e6c9",bodyDark:"#2E7D32"},
+  star:     {main:"#4a2a4a",light:"#7a4a7a",dark:"#2a0a2a",edge:"#F06595",gem:"#DA77F2",particle:"#F06595",bodyCol:"#51CF66",bodyMid:"#c8e6c9",bodyDark:"#2E7D32"}
+};
+
+function drawElementShield(cx, e, t){
+  // 盾牌主體（六角形）
+  const shieldGrad=cx.createLinearGradient(-12,-15,12,16);
+  shieldGrad.addColorStop(0,e.light);
+  shieldGrad.addColorStop(.4,e.main);
+  shieldGrad.addColorStop(.7,e.main);
+  shieldGrad.addColorStop(1,e.dark);
+  cx.fillStyle=shieldGrad;
+  cx.beginPath();
+  cx.moveTo(0,-15);cx.lineTo(12,-8);cx.lineTo(11,7);cx.lineTo(0,16);cx.lineTo(-11,7);cx.lineTo(-12,-8);
+  cx.closePath();cx.fill();
+
+  // 邊框發光
+  cx.shadowColor=e.edge;cx.shadowBlur=8;
+  cx.strokeStyle=e.edge;cx.lineWidth=1.8;cx.stroke();
+  cx.shadowBlur=0;
+
+  // 內邊框
+  cx.strokeStyle="rgba(255,255,255,.12)";cx.lineWidth=.8;
+  cx.beginPath();
+  cx.moveTo(0,-12);cx.lineTo(9,-6);cx.lineTo(8,5);cx.lineTo(0,13);cx.lineTo(-8,5);cx.lineTo(-9,-6);
+  cx.closePath();cx.stroke();
+
+  // 頂部高光
+  cx.fillStyle="rgba(255,255,255,.1)";
+  cx.beginPath();
+  cx.moveTo(-8,-7);cx.lineTo(0,-13);cx.lineTo(8,-7);cx.lineTo(3,-3);cx.lineTo(-3,-3);
+  cx.closePath();cx.fill();
+
+  // 鉚釘
+  const rivets=[[-7,-5],[7,-5],[-7,4],[7,4],[0,-12],[0,13]];
+  rivets.forEach(([rx,ry])=>{
+    cx.fillStyle=e.dark;
+    cx.beginPath();cx.arc(rx,ry,1.2,0,TAU);cx.fill();
+    cx.fillStyle="rgba(255,255,255,.2)";
+    cx.beginPath();cx.arc(rx-.3,ry-.3,.5,0,TAU);cx.fill();
+  });
+
+  // 中心寶石
+  cx.fillStyle=e.gem;
+  cx.shadowColor=e.gem;cx.shadowBlur=6;
+  cx.beginPath();cx.arc(0,1,2.8,0,TAU);cx.fill();
+  cx.shadowBlur=0;
+  cx.fillStyle="rgba(255,255,255,.4)";
+  cx.beginPath();cx.arc(-.7,.2,1,0,TAU);cx.fill();
+}
+
+// 各元素獨立紋章繪製
+function drawEmblem(cx, elemKey, t){
+  cx.save();
+  const pulse=.5+Math.sin(t*3)*.2;
+
+  if(elemKey==="none"){
+    // 十字紋章
+    cx.strokeStyle="#51CF66";cx.lineWidth=1;cx.globalAlpha=.5;
+    cx.beginPath();cx.arc(0,1,5,0,TAU);cx.stroke();
+    cx.beginPath();cx.moveTo(0,-4);cx.lineTo(0,6);cx.stroke();
+    cx.beginPath();cx.moveTo(-5,1);cx.lineTo(5,1);cx.stroke();
+  }
+  if(elemKey==="fire"){
+    // 火焰紋章
+    cx.globalAlpha=.6;cx.fillStyle="#FF4500";
+    cx.beginPath();
+    cx.moveTo(0,-5);cx.quadraticCurveTo(3,-2,2,1);cx.quadraticCurveTo(3,3,0,6);
+    cx.quadraticCurveTo(-3,3,-2,1);cx.quadraticCurveTo(-3,-2,0,-5);
+    cx.closePath();cx.fill();
+    cx.fillStyle="#FFD43B";cx.globalAlpha=.5;
+    cx.beginPath();
+    cx.moveTo(0,-2);cx.quadraticCurveTo(1.5,0,1,2);cx.quadraticCurveTo(0,4,0,4);
+    cx.quadraticCurveTo(0,4,-1,2);cx.quadraticCurveTo(-1.5,0,0,-2);
+    cx.closePath();cx.fill();
+  }
+  if(elemKey==="ice"){
+    // 雪花紋章
+    cx.strokeStyle="#66D9E8";cx.lineWidth=.8;cx.globalAlpha=.6;
+    for(let i=0;i<6;i++){
+      const a=i*PI/3;
+      cx.beginPath();cx.moveTo(0,1);
+      cx.lineTo(Math.cos(a)*5,1+Math.sin(a)*5);cx.stroke();
+      // 小分支
+      const mx=Math.cos(a)*3,my=1+Math.sin(a)*3;
+      cx.beginPath();cx.moveTo(mx,my);
+      cx.lineTo(mx+Math.cos(a+.5)*2,my+Math.sin(a+.5)*2);cx.stroke();
+      cx.beginPath();cx.moveTo(mx,my);
+      cx.lineTo(mx+Math.cos(a-.5)*2,my+Math.sin(a-.5)*2);cx.stroke();
+    }
+  }
+  if(elemKey==="lightning"){
+    // 閃電紋章
+    cx.fillStyle="#FAB005";cx.globalAlpha=.7;
+    cx.beginPath();
+    cx.moveTo(-1,-6);cx.lineTo(2,-6);cx.lineTo(0,-1);cx.lineTo(3,-1);
+    cx.lineTo(-1,7);cx.lineTo(0,2);cx.lineTo(-3,2);
+    cx.closePath();cx.fill();
+  }
+  if(elemKey==="poison"){
+    // 骷髏紋章
+    cx.fillStyle="#A9E34B";cx.globalAlpha=.5;
+    // 頭
+    cx.beginPath();cx.arc(0,-1,3.5,0,TAU);cx.fill();
+    // 眼眶
+    cx.fillStyle=ELEM.poison.dark;
+    cx.beginPath();cx.arc(-1.3,-1.5,1,0,TAU);cx.fill();
+    cx.beginPath();cx.arc(1.3,-1.5,1,0,TAU);cx.fill();
+    // 下顎
+    cx.fillStyle="#A9E34B";cx.globalAlpha=.4;
+    cx.fillRect(-2,2,4,2.5);
+    cx.fillStyle=ELEM.poison.dark;
+    cx.fillRect(-1.2,2.3,.6,1.5);cx.fillRect(.6,2.3,.6,1.5);
+  }
+  if(elemKey==="dragon"){
+    // 龍爪紋章
+    cx.strokeStyle="#FF922B";cx.lineWidth=1.2;cx.globalAlpha=.6;
+    // 三爪
+    cx.beginPath();cx.moveTo(-3,4);cx.quadraticCurveTo(-2,-1,-3,-5);cx.stroke();
+    cx.beginPath();cx.moveTo(0,4);cx.quadraticCurveTo(0,-1,0,-6);cx.stroke();
+    cx.beginPath();cx.moveTo(3,4);cx.quadraticCurveTo(2,-1,3,-5);cx.stroke();
+    // 爪尖
+    cx.fillStyle="#FFD43B";cx.globalAlpha=.5;
+    cx.beginPath();cx.arc(-3,-5,1,0,TAU);cx.fill();
+    cx.beginPath();cx.arc(0,-6,1,0,TAU);cx.fill();
+    cx.beginPath();cx.arc(3,-5,1,0,TAU);cx.fill();
+  }
+  if(elemKey==="star"){
+    // 星形紋章
+    cx.fillStyle="#F06595";cx.globalAlpha=.6;
+    cx.beginPath();
+    for(let i=0;i<10;i++){
+      const a=-PI/2+PI*i/5;
+      const rr=i%2===0?5:2.2;
+      const sx=Math.cos(a)*rr,sy=1+Math.sin(a)*rr;
+      i===0?cx.moveTo(sx,sy):cx.lineTo(sx,sy);
+    }
+    cx.closePath();cx.fill();
+    cx.fillStyle="#DA77F2";cx.globalAlpha=.4;
+    cx.beginPath();
+    for(let i=0;i<10;i++){
+      const a=-PI/2+PI*i/5;
+      const rr=i%2===0?3:1.2;
+      const sx=Math.cos(a)*rr,sy=1+Math.sin(a)*rr;
+      i===0?cx.moveTo(sx,sy):cx.lineTo(sx,sy);
+    }
+    cx.closePath();cx.fill();
+  }
+
+  cx.restore();
+}
+
+function drawScene(canvasId, elemKey){
+  const cv=document.getElementById(canvasId);
+  const cx=cv.getContext("2d");
+  const W=cv.width,H=cv.height,centerX=W/2,baseY=H/2+10,r=22,f=1;
+  const e=ELEM[elemKey];
+  let t=0;
+
+  function frame(){
+    t+=.016;
+    cx.clearRect(0,0,W,H);
+    const bob=Math.sin(t*2.5)*1.2,cy=baseY+bob;
+
+    // bg aura
+    const bg=cx.createRadialGradient(centerX,baseY,0,centerX,baseY,70);
+    bg.addColorStop(0,e.particle+"15");bg.addColorStop(1,"transparent");
+    cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+
+    // shadow
+    cx.fillStyle="rgba(0,0,0,.2)";
+    cx.beginPath();cx.ellipse(centerX,baseY+r+3,r*.7,3,0,0,TAU);cx.fill();
+
+    // body
+    cx.save();
+    cx.strokeStyle="rgba(81,207,102,.15)";cx.lineWidth=2;
+    cx.beginPath();cx.arc(centerX,cy,r+3,0,TAU);cx.stroke();
+    const bodyGrad=cx.createRadialGradient(centerX-f*r*.1,cy-r*.3,r*.15,centerX,cy,r);
+    bodyGrad.addColorStop(0,"#fff");
+    bodyGrad.addColorStop(.2,e.bodyMid);
+    bodyGrad.addColorStop(.6,e.bodyCol);
+    bodyGrad.addColorStop(1,e.bodyDark);
+    cx.beginPath();cx.arc(centerX,cy,r,0,TAU);cx.fillStyle=bodyGrad;cx.fill();
+    cx.strokeStyle="rgba(255,255,255,.1)";cx.lineWidth=1;cx.stroke();
+    cx.restore();
+
+    // shield (in front of body)
+    cx.save();
+    cx.translate(centerX+f*r*.7, cy);
+    cx.rotate(Math.sin(t*3)*.03);
+
+    drawElementShield(cx, e, t);
+    drawEmblem(cx, elemKey, t);
+
+    cx.restore();
+
+    // element-specific edge effects
+    if(elemKey==="fire"){
+      // fire sparks around shield edge
+      for(let i=0;i<3;i++){
+        const a=-PI*.3+i*PI*.3;
+        const sx=centerX+f*r*.7+Math.cos(a)*14;
+        const sy=cy+Math.sin(a)*14;
+        const sparkLife=(t*25+i*10)%15;
+        cx.save();cx.globalAlpha=.5-sparkLife*.03;
+        cx.fillStyle=i%2?"#FF4500":"#FFD43B";
+        cx.beginPath();cx.arc(sx,sy-sparkLife*.5,1,0,TAU);cx.fill();
+        cx.restore();
+      }
+    }
+    if(elemKey==="ice"){
+      // frost shimmer
+      cx.save();cx.globalAlpha=.06+Math.sin(t*2)*.03;
+      cx.strokeStyle="#66D9E8";cx.lineWidth=1;
+      cx.beginPath();cx.arc(centerX+f*r*.7,cy,18,0,TAU);cx.stroke();
+      cx.restore();
+    }
+    if(elemKey==="lightning"){
+      // arc between shield and body
+      if(Math.sin(t*7)>.5){
+        cx.save();cx.strokeStyle="#FAB005";cx.lineWidth=.8;cx.globalAlpha=.5;
+        const ax=centerX+r*.3,ay=cy-3;
+        cx.beginPath();cx.moveTo(ax,ay);
+        cx.lineTo(ax+4,ay+2);cx.lineTo(ax+2,ay+5);cx.lineTo(ax+6,ay+7);
+        cx.stroke();cx.restore();
+      }
+    }
+    if(elemKey==="poison"){
+      // drip from shield bottom
+      const dripY=cy+17+((t*15)%10);
+      cx.save();cx.globalAlpha=.5-((t*15)%10)*.04;
+      cx.fillStyle="#A9E34B";
+      cx.beginPath();cx.arc(centerX+f*r*.7,dripY,1.2,0,TAU);cx.fill();
+      cx.restore();
+    }
+    if(elemKey==="dragon"){
+      // heat distortion
+      cx.save();cx.globalAlpha=.08+Math.sin(t*3)*.04;
+      cx.strokeStyle="#FF922B";cx.lineWidth=1.5;
+      cx.beginPath();cx.arc(centerX+f*r*.7,cy,17+Math.sin(t*4)*2,0,TAU);cx.stroke();
+      cx.restore();
+    }
+    if(elemKey==="star"){
+      // star sparkles
+      for(let i=0;i<2;i++){
+        const sa=t*2.5+i*PI;
+        const sd=18+Math.sin(t*2+i)*4;
+        const spx=centerX+f*r*.7+Math.cos(sa)*sd,spy=cy+Math.sin(sa)*sd;
+        cx.save();cx.globalAlpha=.3+Math.sin(t*4+i)*.15;
+        cx.fillStyle="#F06595";
+        cx.beginPath();
+        cx.moveTo(spx,spy-2.5);cx.lineTo(spx+1,spy);cx.lineTo(spx,spy+2.5);cx.lineTo(spx-1,spy);
+        cx.closePath();cx.fill();
+        cx.restore();
+      }
+    }
+
+    // aura rings
+    cx.save();
+    cx.strokeStyle=e.edge;cx.lineWidth=1;
+    cx.globalAlpha=.1+Math.sin(t*2)*.05;
+    cx.beginPath();cx.arc(centerX,cy,r+8,0,TAU);cx.stroke();
+    cx.setLineDash([3,3]);cx.globalAlpha=.06+Math.sin(t*2+PI)*.03;
+    cx.beginPath();cx.arc(centerX,cy,r+13,0,TAU);cx.stroke();
+    cx.setLineDash([]);
+    cx.restore();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+drawScene("c0","none");
+drawScene("c1","fire");
+drawScene("c2","ice");
+drawScene("c3","lightning");
+drawScene("c4","poison");
+drawScene("c5","dragon");
+drawScene("c6","star");
+</script>
+</body>
+</html>
