@@ -407,9 +407,7 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
 }
 
 export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
-  if (!g) { console.warn("applyCoopState: g is null"); return; }
-  if (!g._acsDbg) g._acsDbg = 0;
-  if (++g._acsDbg % 60 === 0) console.log("CLIENT state recv:", { ene: data.ene?.length, p2: !!data.p2, run: data.run });
+  if (!g) return;
   // 更新雙方玩家（含角色類型同步）
   if (data.p1) { if (data.p1.charType) g.charType = data.p1.charType; Object.assign(g.p, data.p1); g.p.maxHp = data.p1.mhp; }
   if (data.p2 && g.p2) { if (data.p2.charType) g.p2.charType = data.p2.charType; Object.assign(g.p2, data.p2); g.p2.maxHp = data.p2.mhp; }
@@ -465,11 +463,8 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
 }
 
 export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, setPar, getDashGhosts, setDashGhosts, drawPlayer, drawEnemy, drawMinimap, CHAR, getP2SkillCdEnd, aim, $) {
-  if (!g || !cx) { console.warn("clientRenderLoop: missing g or cx"); return; }
+  if (!g || !cx) return;
   const now = g.time || performance.now();
-  // debug: 每 120 幀印一次狀態
-  if (!g._crlDbg) g._crlDbg = 0;
-  if (++g._crlDbg % 120 === 0) console.log("CLIENT render:", { ene: g.ene?.length, p1: !!g.p, p2: !!g.p2, p2x: g.p2?.x|0, VW, VH });
   const cm = cam();
   cx.clearRect(0, 0, VW, VH); cx.save(); cx.translate(-cm.x, -cm.y);
   // background

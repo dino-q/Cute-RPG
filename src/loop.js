@@ -42,7 +42,7 @@ import {
 } from "./combat.js";
 import {
   initSkills, setSkillsG, setSkillsCoopState, setSkillsClientSkillReq, getSkillsClientSkillReq,
-  getDashGhosts, resetDashGhosts, SKILL_CDS,
+  getDashGhosts, setDashGhosts, resetDashGhosts, SKILL_CDS,
   getSkillCdEnd, setSkillCdEnd, getP2SkillCdEnd, setP2SkillCdEnd,
   p2UseSkill, useCharSkill, skillSnipe, skillGhostSlash, skillTaunt, _startDash, doUlt
 } from "./skills.js";
@@ -1554,12 +1554,6 @@ export function loop(){
 
   /* ════ DRAW ════ */
   // CLIENT: 用 clientRenderLoop 渲染 HOST 傳來的狀態，跳過 HOST 繪圖路徑
-  // 畫面 debug：直接畫在 canvas 上讓手機也看得到
-  if(_isCoopMode){
-    cx.save();cx.fillStyle="#FFD43B";cx.font="bold 12px sans-serif";cx.textAlign="left";
-    var _dbg="C:"+(_isClientMode?"Y":"N")+" R:"+(_net?_net.role:"null")+" Cn:"+(_net?_net.connected:"?")+" E:"+(g.ene?g.ene.length:"?")+" P2:"+(g.p2?"Y":"N");
-    cx.fillText(_dbg,10,20);cx.restore();
-  }
   if(_isClientMode){
     _clientRenderLoop(g,cx,cam,VW,VH,BR,PR,par,filterPar,setPar,getDashGhosts,setDashGhosts,drawPlayer,drawEnemy,drawMinimap,CHAR,getP2SkillCdEnd,aim,$);
     raf=requestAnimationFrame(loop);
@@ -2589,9 +2583,6 @@ export function loop(){
   setHudSkillCd(getSkillCdEnd());hud();drawMinimap();
   // Host: 每幀送狀態給 Client + debug
   if(_isCoopMode&&_net&&_net.role==="host"){
-    // HOST debug 在右上角（綠色）
-    cx.save();cx.fillStyle="#51CF66";cx.font="bold 11px sans-serif";cx.textAlign="right";
-    cx.fillText("HOST Cn:"+(_net.connected?"Y":"N")+" Open:"+(_net.conn?(_net.conn.open?"Y":"N"):"X")+" E:"+g.ene.length,VW-10,20);cx.restore();
     if(_net.connected&&_net.conn&&_net.conn.open){
       const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);
     }
