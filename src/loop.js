@@ -1554,8 +1554,12 @@ export function loop(){
 
   /* ════ DRAW ════ */
   // CLIENT: 用 clientRenderLoop 渲染 HOST 傳來的狀態，跳過 HOST 繪圖路徑
-  if(!g._loopDbg)g._loopDbg=0;
-  if(++g._loopDbg%300===0)console.log("loop:",{isClient:_isClientMode,coop:_isCoopMode,role:_net&&_net.role,conn:_net&&_net.connected});
+  // 畫面 debug：直接畫在 canvas 上讓手機也看得到
+  if(_isCoopMode){
+    cx.save();cx.fillStyle="#FFD43B";cx.font="bold 12px sans-serif";cx.textAlign="left";
+    var _dbg="C:"+(_isClientMode?"Y":"N")+" R:"+(_net?_net.role:"null")+" Cn:"+(_net?_net.connected:"?")+" E:"+(g.ene?g.ene.length:"?")+" P2:"+(g.p2?"Y":"N");
+    cx.fillText(_dbg,10,20);cx.restore();
+  }
   if(_isClientMode){
     _clientRenderLoop(g,cx,cam,VW,VH,BR,PR,par,filterPar,setPar,getDashGhosts,setDashGhosts,drawPlayer,drawEnemy,drawMinimap,CHAR,getP2SkillCdEnd,aim,$);
     raf=requestAnimationFrame(loop);
