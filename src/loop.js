@@ -2587,10 +2587,14 @@ export function loop(){
   }
 
   setHudSkillCd(getSkillCdEnd());hud();drawMinimap();
-  // Host: 每 2 幀送狀態給 Client
-  if(_isCoopMode&&_net&&_net.role==="host"&&_net.connected&&_net.conn&&_net.conn.open){
-    if(!g._syncFrame)g._syncFrame=0;
-    {const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);} // 每幀同步（減少LAG）
+  // Host: 每幀送狀態給 Client + debug
+  if(_isCoopMode&&_net&&_net.role==="host"){
+    // HOST debug 在右上角（綠色）
+    cx.save();cx.fillStyle="#51CF66";cx.font="bold 11px sans-serif";cx.textAlign="right";
+    cx.fillText("HOST Cn:"+(_net.connected?"Y":"N")+" Open:"+(_net.conn?(_net.conn.open?"Y":"N"):"X")+" E:"+g.ene.length,VW-10,20);cx.restore();
+    if(_net.connected&&_net.conn&&_net.conn.open){
+      const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);
+    }
   }
   }catch(err){console.error("Game loop error:",err);}
   raf=requestAnimationFrame(loop);
