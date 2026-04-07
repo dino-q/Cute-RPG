@@ -397,9 +397,9 @@ export function updateStageBoss(e,now,dt){
     setShake(.6,8);sfxBossAtk("phase");
     g.dn.push({x:e.x,y:e.y-e.r-20,d:"💩 狂暴！便便軍團！",life:3,color:"#8B6914",big:1});
     const mw=mapW(),mh=mapH();
-    for(let i=0;i<20;i++){
+    for(let i=0;i<10;i++){
       const mx=rn(40,mw-40),my=rn(40,mh-40);
-      g.ene.push({x:mx,y:my,hp:9999999,mhp:9999999,speed:1.0,color:"#C4A882",t:rn(0,10),r:16,st:0,
+      g.ene.push({x:mx,y:my,hp:500,mhp:500,speed:1.0,color:"#C4A882",t:rn(0,10),r:16,st:0,
         boss:false,mega:false,tier:0,face:1,xp:0,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:0,
         role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
         ragePoo:true});}

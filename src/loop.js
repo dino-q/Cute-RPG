@@ -1524,9 +1524,11 @@ export function loop(){
 
   // particles（HOST + CLIENT 都要跑，用於視覺衰減）
   filterPar(p=>{p.x+=(p.vx||0)*dt;p.y+=(p.vy||0)*dt;p.life-=.03*dt;if(p.sz)p.sz*=.98;return p.life>0;});
+  // 限制傷害數字數量，避免 boss 戰過多數字堆疊
+  if(g.dn.length>60)g.dn.splice(0,g.dn.length-60);
   g.dn=g.dn.filter(d=>{
     if(d._arc||(typeof d.d==="number")||(d._playerDmg)){
-      if(!d._arc){d._arc=1;d.vx=rn(-.5,.5);d.vy=rn(-3.2,-2.4);d.g=.16;}
+      if(!d._arc){d._arc=1;d.vx=rn(-1.5,1.5);d.vy=rn(-3.5,-2.0);d.g=.16;}
       d.x+=d.vx*dt;d.vy+=d.g*dt;d.y+=d.vy*dt;
     }else d.y-=1.1*dt;
     d.life-=.025*dt;

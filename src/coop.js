@@ -151,6 +151,7 @@ export function _coopDoCreate(code) {
       netObj.connected = true;
       $("coopStatusText").textContent = "對方已連線！";
       $("coopConnected").style.display = "block";
+      $("coopStartBtn").style.display = "block"; // HOST 顯示開始按鈕
       conn.on("data", data => {
         if (!data) return;
         const p2i = _getP2Input();
