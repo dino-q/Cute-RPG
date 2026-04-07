@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Dino真是個小天才</title>
+<meta name="theme-color" content="#141428">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="./assets/index-Bwk4Iq23.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-nxynEEAt.css">
+</head>
+<body>
+<!-- 卡片詳細說明彈窗 -->
+<div id="cardTip" style="display:none;position:fixed;z-index:9999;inset:0;background:rgba(0,0,0,.6);justify-content:center;align-items:center;pointer-events:auto" onclick="this.style.display='none'">
+  <div id="cardTipBox" style="background:rgba(16,16,36,.97);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:18px 20px;max-width:300px;width:88%;text-align:center;pointer-events:auto" onclick="event.stopPropagation()">
+    <div id="ctEmoji" style="font-size:36px"></div>
+    <div id="ctName" style="font-size:16px;font-weight:900;margin:4px 0"></div>
+    <div id="ctMeta" style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:10px"></div>
+    <div id="ctLevels" style="text-align:left;font-size:11px;line-height:1.8"></div>
+    <button onclick="document.getElementById('cardTip').style.display='none'" style="margin-top:12px;padding:8px 28px;font-size:12px;font-weight:700;border:none;border-radius:10px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);cursor:pointer;touch-action:manipulation">關閉</button>
+  </div>
+</div>
+<div id="app">
+<canvas id="cv"></canvas>
+<canvas id="fx"></canvas>
+<canvas id="minimap" width="80" height="80"></canvas>
+<div id="hud">
+  <div class="hbar"><span class="hlbl" style="color:#FF6B6B" id="hl">❤️100/100</span><div class="hbg"><div class="hfill" id="hb" style="background:linear-gradient(90deg,#FF6B6B,#FF8787);width:100%"></div></div></div>
+  <div class="hbar"><span class="hlbl" style="color:#74C0FC" id="ll">Lv.1</span><div class="hbg" style="height:3px"><div class="hfill" id="eb" style="background:linear-gradient(90deg,#74C0FC,#4DABF7);width:0%"></div></div></div>
+  <div class="hbar"><span class="hlbl" style="color:#DA77F2" id="ulbl">💎0%</span><div class="hbg" style="height:4px;background:rgba(190,78,219,.16)"><div class="hfill" id="ub" style="background:linear-gradient(90deg,#BE4BDB,#DA77F2,#FFD43B);width:0%"></div></div></div>
+  <div id="hud2"><span id="sl" style="color:#FFD43B">⭐0</span><span id="ulr" style="color:rgba(190,78,219,.7)">💎0%</span><span id="kl" style="color:rgba(255,255,255,.2)">💀0</span></div>
+  <div id="p2hud" style="display:none;margin-top:2px">
+    <div class="hbar"><span class="hlbl" style="color:#F06595;font-size:8px" id="p2hl">🤝 P2 ❤️100/100</span><div class="hbg" style="height:3px"><div class="hfill" id="p2hb" style="background:linear-gradient(90deg,#F06595,#FF8FA3);width:100%"></div></div></div>
+    <div class="hbar"><span class="hlbl" style="color:#F06595;font-size:8px" id="p2ll">P2 Lv.1</span><div class="hbg" style="height:2px"><div class="hfill" id="p2eb" style="background:linear-gradient(90deg,#F06595,#FF8FA3);width:0%"></div></div></div>
+  </div>
+</div>
+<div id="ctl">
+  <div class="joyW" id="jzL" style="width:min(140px,34vw);height:min(140px,34vw);margin-bottom:14px"><div class="joyR"><div class="joyK jkL" id="jkL"></div></div></div>
+  <div id="rbtns" style="width:min(200px,48vw);height:min(230px,52vh)">
+    <div id="combo" style="position:absolute;top:0;left:50%;transform:translateX(-50%)"></div>
+    <!-- 攻擊搖桿（錨點，右下） -->
+    <div class="joyW" id="jzR" style="position:absolute;bottom:0;right:0;width:min(120px,29vw);height:min(120px,29vw)"><div class="joyR"><div class="joyK jkR" id="jkR"></div></div></div>
+    <!-- 弧形環繞：半徑100px，角度200°/240°/280°（間隔40°） -->
+    <!-- 大招 280° -->
+    <div id="ultW" style="position:absolute;bottom:158px;right:0px;z-index:2"><div id="ultR"><div id="ultI">💎</div></div><div id="ultL">長壓集氣</div></div>
+    <!-- 技能 240° -->
+    <div id="skillBtn" onclick="useCharSkill()" style="position:absolute;bottom:147px;right:84px;z-index:2;width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(255,212,59,.1),rgba(20,20,40,.5));border:1.5px solid rgba(255,212,59,.3);display:flex;justify-content:center;align-items:center;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;box-shadow:0 0 8px rgba(255,212,59,.15);color:rgba(255,212,59,.7);opacity:.7"><span id="skillIcon">🎯</span><div id="skillCd" style="position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;font-size:10px;color:#fff"></div></div>
+    <!-- 閃避 200° -->
+    <div id="dodgeBtn" style="position:absolute;bottom:94px;right:128px;z-index:2;width:min(52px,13vw);height:min(52px,13vw);border-radius:50%;background:radial-gradient(circle,rgba(116,192,252,.1),rgba(20,20,40,.5));border:1.5px solid rgba(116,192,252,.3);display:flex;justify-content:center;align-items:center;font-size:18px;cursor:pointer;touch-action:manipulation;box-shadow:0 0 8px rgba(116,192,252,.15);opacity:.7">💨</div>
+  </div>
+</div>
+
+<!-- Title -->
+<div id="titleOv" class="ov" style="background:linear-gradient(140deg,#141428,#1a1a35 40%,#0f1a2e)">
+<div class="panel" style="background:transparent;border:none">
+  <canvas id="heroCanvas" width="160" height="60" style="margin:0 auto;display:block;filter:drop-shadow(0 0 20px rgba(116,192,252,.55))"></canvas>
+  <h1 style="font-size:30px;font-weight:900;color:#fff;margin:4px 0 0;text-shadow:0 0 25px rgba(116,192,252,.3)">Dino真是個小天才</h1>
+  <p style="color:rgba(255,255,255,.35);font-size:12px;margin:0 0 20px;letter-spacing:2px">Cute Dungeon Adventure</p>
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:10px">
+    <button class="btn btn-b" onclick="showCharSelect('classic')" style="width:210px;padding:12px;font-size:14px">⚔️ 經典模式</button>
+    <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">大量敵人 AOE爽快</div>
+    <button class="btn btn-g" onclick="showCharSelect('elite')" style="width:210px;padding:12px;font-size:14px">👑 精英模式</button>
+    <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">少量精英 走位策略</div>
+    <button class="btn btn-p" onclick="window._showCoopLobby()" style="width:210px;padding:12px;font-size:14px">🤝 雙人通關</button>
+    <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">兩人連線合作打Boss</div>
+    <button class="btn btn-d" onclick="showCharSelect('practice')" style="width:210px;padding:12px;font-size:14px">🎯 練習模式</button>
+  </div>
+  <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
+    左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
+  </div>
+  <div style="color:rgba(255,255,255,.2);font-size:8px;margin-top:8px">v5.47</div>
+</div>
+</div>
+
+<!-- Character Select -->
+<div id="charSelectOv" class="ov" style="display:none;background:linear-gradient(140deg,#141428,#1a1a35 40%,#0f1a2e)">
+<div class="panel" style="background:transparent;border:none;max-width:420px">
+  <h2 style="color:#FFD43B;font-size:20px;margin:0 0 4px;text-align:center">選擇角色</h2>
+  <p style="color:rgba(255,255,255,.3);font-size:10px;text-align:center;margin:0 0 14px">每個角色有不同的攻擊方式和被動技能</p>
+  <div style="display:flex;gap:6px;justify-content:center">
+    <div onclick="pickChar('gunner')" style="cursor:pointer;flex:1;max-width:115px;background:rgba(116,192,252,.06);border:2px solid rgba(116,192,252,.2);border-radius:12px;padding:10px 6px;text-align:center">
+      <div style="font-size:28px">🔫</div>
+      <div style="color:#74C0FC;font-weight:900;font-size:12px">槍手</div>
+      <div style="color:rgba(255,255,255,.35);font-size:8px;margin:2px 0">遠程射擊</div>
+      <div style="font-size:7px;color:rgba(255,255,255,.25);line-height:1.3">HP100 攻2.5 暴擊5%</div>
+      <div style="font-size:7px;color:#74C0FC;margin-top:3px">🎯 狙擊</div>
+    </div>
+    <div onclick="pickChar('swordsman')" style="cursor:pointer;flex:1;max-width:115px;background:rgba(255,146,43,.06);border:2px solid rgba(255,146,43,.2);border-radius:12px;padding:10px 6px;text-align:center">
+      <div style="font-size:28px">⚔️</div>
+      <div style="color:#FF922B;font-weight:900;font-size:12px">劍士</div>
+      <div style="color:rgba(255,255,255,.35);font-size:8px;margin:2px 0">近戰範圍</div>
+      <div style="font-size:7px;color:rgba(255,255,255,.25);line-height:1.3">HP150 攻3 閃避8%</div>
+      <div style="font-size:7px;color:#FF922B;margin-top:3px">⚔️ 鬼斬</div>
+    </div>
+    <div onclick="pickChar('tank')" style="cursor:pointer;flex:1;max-width:115px;background:rgba(81,207,102,.06);border:2px solid rgba(81,207,102,.2);border-radius:12px;padding:10px 6px;text-align:center">
+      <div style="font-size:28px">🛡️</div>
+      <div style="color:#51CF66;font-weight:900;font-size:12px">坦克</div>
+      <div style="color:rgba(255,255,255,.35);font-size:8px;margin:2px 0">盾擊格擋</div>
+      <div style="font-size:7px;color:rgba(255,255,255,.25);line-height:1.3">HP200 攻2 減傷15%</div>
+      <div style="font-size:7px;color:#51CF66;margin-top:3px">🛡️ 嘲諷</div>
+    </div>
+  </div>
+  <button onclick="document.getElementById('charSelectOv').style.display='none';document.getElementById('titleOv').style.display='flex'" style="margin-top:14px;padding:8px 24px;font-size:12px;border:none;border-radius:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);cursor:pointer;touch-action:manipulation">← 返回</button>
+</div>
+</div>
+
+<!-- Co-op Lobby -->
+<div id="coopOv" class="ov" style="display:none;background:linear-gradient(140deg,#141428,#1a1a35 40%,#0f1a2e)">
+<div class="panel" style="background:rgba(20,20,40,.95);border:1px solid rgba(240,101,149,.25);max-width:340px;text-align:center;padding:28px 24px">
+  <h2 style="color:#F06595;font-size:22px;margin:0 0 6px">🤝 雙人通關</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:10px;margin:0 0 20px">WebRTC P2P 連線，一起打 Boss！</p>
+  <div id="coopMenu">
+    <button onclick="coopShowCreate()" style="width:100%;padding:14px;font-size:15px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#F06595,#DA77F2);color:#fff;cursor:pointer;margin-bottom:10px;box-shadow:0 4px 14px rgba(240,101,149,.3)">🏠 建立房間</button>
+    <button onclick="coopShowJoin()" style="width:100%;padding:14px;font-size:15px;font-weight:700;border:none;border-radius:12px;background:rgba(240,101,149,.12);color:#F06595;cursor:pointer;border:1px solid rgba(240,101,149,.3)">🔗 加入房間</button>
+  </div>
+  <div id="coopCreate" style="display:none">
+    <div style="color:rgba(255,255,255,.5);font-size:11px;margin-bottom:10px">選擇房間密碼方式</div>
+    <button onclick="coopCreateRoom()" style="width:100%;padding:13px;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#FFD43B,#FCC419);color:#1a1a35;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 12px rgba(255,212,59,.3)">🎲 隨機生成密碼</button>
+    <div style="color:rgba(255,255,255,.35);font-size:9px;margin-bottom:8px">— 或 —</div>
+    <input id="coopHostCode" type="text" maxlength="12" placeholder="輸入自訂密碼" style="width:100%;padding:12px;font-size:15px;font-weight:700;border:1px solid rgba(240,101,149,.3);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;text-align:center;letter-spacing:3px;font-family:'Nunito',sans-serif;margin-bottom:8px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button onclick="coopCreateCustom()" style="width:100%;padding:13px;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#F06595,#DA77F2);color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(240,101,149,.3)">✅ 用這個密碼建立</button>
+  </div>
+  <div id="coopJoin" style="display:none">
+    <div style="color:rgba(255,255,255,.5);font-size:11px;margin-bottom:10px">輸入對方的房間密碼</div>
+    <input id="coopCodeInput" type="text" maxlength="12" placeholder="房間密碼" style="width:100%;padding:12px;font-size:15px;font-weight:700;border:1px solid rgba(240,101,149,.3);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;text-align:center;letter-spacing:3px;font-family:'Nunito',sans-serif;margin-bottom:8px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button onclick="coopJoinRoom()" style="width:100%;padding:13px;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#F06595,#DA77F2);color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(240,101,149,.3)">🔗 加入房間</button>
+  </div>
+  <div id="coopStatus" style="display:none;padding:16px 0">
+    <div id="coopRoomDisplay" style="font-size:32px;font-weight:900;letter-spacing:8px;color:#FFD43B;text-shadow:0 0 15px rgba(255,212,59,.4);margin-bottom:8px"></div>
+    <div id="coopStatusText" style="color:rgba(255,255,255,.5);font-size:12px">等待對方加入...</div>
+    <div id="coopConnected" style="display:none;margin-top:16px">
+      <div style="color:#51CF66;font-size:14px;font-weight:700;margin-bottom:12px">✅ 已連線！</div>
+      <button id="coopStartBtn" onclick="coopStart()" style="width:100%;padding:14px;font-size:16px;font-weight:900;border:none;border-radius:12px;background:linear-gradient(135deg,#51CF66,#20C997);color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(81,207,102,.3)">▶ 開始遊戲</button>
+    </div>
+  </div>
+  <button onclick="coopBack()" style="margin-top:12px;padding:8px 20px;font-size:11px;border:none;border-radius:8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);cursor:pointer">← 返回</button>
+</div>
+</div>
+
+<!-- Tutorial -->
+<div id="tutOv" class="ov" style="display:none;background:rgba(10,10,24,.97)">
+<div class="panel" style="text-align:left;font-size:12px;color:rgba(255,255,255,.7);line-height:1.8;max-width:380px">
+  <h2 style="text-align:center;color:#fff;font-size:20px;margin:0 0 12px">📖 操作說明</h2>
+  <div style="background:rgba(116,192,252,.08);border-radius:10px;padding:10px 14px;margin-bottom:10px">
+    <div style="color:#74C0FC;font-weight:700;font-size:13px;margin-bottom:4px">📱 手機操作</div>
+    🕹️ <b>左搖桿</b> — 移動角色<br>
+    🎯 <b>右搖桿</b> — 撥動瞄準＋連射（放開自動瞄準最近敵人）<br>
+    💎 <b>集氣按鈕</b> — 長壓充能，集滿後點一下引爆全屏大招
+  </div>
+  <div style="background:rgba(116,192,252,.08);border-radius:10px;padding:10px 14px;margin-bottom:10px">
+    <div style="color:#74C0FC;font-weight:700;font-size:13px;margin-bottom:4px">⌨️ 電腦操作</div>
+    <b>方向鍵</b> — 移動 ｜ <b>Space</b> — 射擊 ｜ <b>E</b> — 集氣/大招 ｜ <b>Q</b> — 閃避 ｜ <b>W</b> — 技能
+  </div>
+  <div style="background:rgba(255,215,75,.06);border-radius:10px;padding:10px 14px;margin-bottom:10px">
+    <div style="color:#FFD43B;font-weight:700;font-size:13px;margin-bottom:4px">🎮 遊戲玩法</div>
+    🗺️ <b>探索大地圖</b> — 四處移動探索，找到寶箱並攻擊它解鎖新卡牌<br>
+    👾 <b>敵人會進化</b> — ●史萊姆 ▲惡魔 ◆魔像 ⬠長老 ★遠古<br>
+    🎭 <b>特殊敵人</b> — 🌀包圍者 🎯射手 💨衝刺者 🛡️盾兵（後期逐漸出現）<br>
+    👑 <b>小王掉落升級卡</b> — 每擊殺一定數量出現小王，打贏獲得卡牌選擇<br>
+    ⚡ <b>長壓集氣</b> — 按住大招鍵充能，集滿後點一下引爆，放開會慢慢消散<br>
+    🔄 <b>重複卡牌自動升級</b> — 同張卡 Lv1→Lv2→Lv3，效果大幅增強
+  </div>
+  <div style="background:rgba(218,119,242,.06);border-radius:10px;padding:10px 14px;margin-bottom:14px">
+    <div style="color:#DA77F2;font-weight:700;font-size:13px;margin-bottom:4px">🃏 卡牌類型</div>
+    🔥 <b style="color:#FF6B6B">攻擊型</b> — 改變子彈屬性、增加傷害，有華麗攻擊特效<br>
+    🛡️ <b style="color:#51CF66">被動型</b> — 閃避、回血、反彈、護盾等持續生效<br>
+    ⭐ <b style="color:#FFD43B">稀有度 R / SR / SSR</b> — SSR 有強力特殊效果
+  </div>
+  <div style="text-align:center"><button class="btn btn-g" onclick="startGame()">🎮 出發冒險！</button></div>
+</div>
+</div>
+
+<!-- Card Pick -->
+<div id="pickOv" class="ov" style="display:none;background:rgba(10,10,24,.94)" ontouchstart="event.stopPropagation()">
+<div class="panel" id="pickPanel" style="touch-action:manipulation;overflow:visible"></div>
+</div>
+
+<!-- Game Over -->
+<div id="overOv" class="ov" style="display:none;background:rgba(10,10,24,.95)">
+<div class="panel" id="overPanel"></div>
+</div>
+
+<!-- 設定面板 -->
+<div id="settingsOv" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;touch-action:manipulation" onclick="if(event.target===this)closeSettings()">
+<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:18px;padding:24px 28px;min-width:260px;max-width:320px;border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 32px rgba(0,0,0,.5)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div style="font-size:18px;font-weight:900;color:#fff">⚙️ 設定</div>
+    <button onclick="closeSettings()" style="width:44px;height:44px;min-width:44px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;font-size:20px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation">✕</button>
+  </div>
+  <div id="settingsBody">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="color:#fff;font-size:14px;font-weight:700">🔊 音效</div>
+      <button id="sfxToggle" onclick="toggleMute()" style="width:52px;height:28px;border-radius:14px;border:none;cursor:pointer;position:relative;transition:background .2s;touch-action:manipulation">
+        <div id="sfxKnob" style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>
+      </button>
+    </div>
+    <div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <button onclick="toggleStatsPanel()" style="width:100%;padding:10px;font-size:14px;font-weight:700;border:none;border-radius:10px;background:rgba(116,192,252,.12);color:#74C0FC;cursor:pointer;touch-action:manipulation;border:1px solid rgba(116,192,252,.2)">📊 查看素質 / 卡片</button>
+    </div>
+    <div id="settingsStats" style="display:none;max-height:50vh;overflow-y:auto;padding:8px 0;touch-action:pan-y;-webkit-overflow-scrolling:touch"></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+    <button onclick="closeSettings()" style="width:100%;padding:12px;font-size:15px;font-weight:900;border:none;border-radius:12px;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;cursor:pointer;touch-action:manipulation;box-shadow:0 4px 12px rgba(124,58,237,.4)">▶ 返回遊戲</button>
+    <button onclick="settingsGoHome()" style="width:100%;padding:12px;font-size:15px;font-weight:900;border:none;border-radius:12px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);cursor:pointer;touch-action:manipulation;border:1px solid rgba(255,255,255,.1)">🏠 返回首頁</button>
+  </div>
+</div>
+</div>
+
+<!-- Victory Cutscene -->
+<div id="endCutsceneOv" style="display:none;position:fixed;inset:0;z-index:999;background:#000">
+<video id="endVid" playsinline preload="auto" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain"></video>
+<canvas id="endFx" style="position:absolute;inset:0;pointer-events:none"></canvas>
+<div id="endTitle" style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;pointer-events:none">
+<div id="endTitleText" style="font-size:48px;font-weight:900;color:#fff;text-shadow:0 0 30px #FFD700,0 0 60px #FF6B00,0 4px 8px rgba(0,0,0,.8);letter-spacing:6px;opacity:0;transform:scale(1.8)">VICTORY</div>
+<div id="endSubText" style="font-size:15px;color:#B197FC;opacity:0;margin-top:10px;letter-spacing:3px">— 惡魔已被淨化 —</div>
+</div>
+</div>
+<!-- Victory -->
+<div id="victoryOv" class="ov" style="display:none;background:linear-gradient(180deg,#1a0a2e,#0f0a1e)">
+<canvas id="vicFx" style="position:absolute;inset:0;pointer-events:none"></canvas>
+<div class="panel" id="victoryPanel" style="background:transparent;border:none;z-index:2;position:relative"></div>
+</div>
+
+<!-- Practice Mode -->
+<div id="practiceOv" style="display:none;position:fixed;inset:0;pointer-events:none;z-index:200">
+  <div id="pracBackdrop" onclick="pracCloseOnBlank()" style="display:none;position:absolute;inset:0;pointer-events:auto;z-index:201"></div>
+  <!-- 頂部工具列：兩行，避免擋到面板 -->
+  <div id="pracToolbar" style="position:absolute;top:4px;left:50%;transform:translateX(-50%);pointer-events:auto;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;max-width:95vw;z-index:203">
+    <button onclick="pracTogglePanel('cards')" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,215,0,.2);color:#FFD43B;font-weight:700;border:1px solid rgba(255,215,0,.3);cursor:pointer">🃏卡片</button>
+    <button onclick="pracTogglePanel('enemies')" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,107,107,.2);color:#FF6B6B;font-weight:700;border:1px solid rgba(255,107,107,.3);cursor:pointer">👾敵人</button>
+    <button onclick="pracTogglePanel('stats')" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(116,192,252,.2);color:#74C0FC;font-weight:700;border:1px solid rgba(116,192,252,.3);cursor:pointer">📊能力值</button>
+    <button onclick="pracSpawn()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:#51CF66;color:#000;font-weight:700;border:none;cursor:pointer">▶出怪</button>
+    <button onclick="pracClear()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:#FF6B6B;color:#fff;font-weight:700;border:none;cursor:pointer">清場</button>
+    <button id="pracHpBtn" onclick="pracToggleHp()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,107,107,.2);color:#FF6B6B;font-weight:700;border:1px solid rgba(255,107,107,.3);cursor:pointer">❤️無限血量</button>
+    <button id="pracCoopBtn" onclick="pracToggleCoop()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🤝雙人(AI)</button>
+    <button id="pracP2CharBtn" onclick="pracCycleP2Char()" style="display:none;padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🤖AI:槍手</button>
+    <button id="pracRoomBtn" onclick="pracCoopRoom()" style="display:none;padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🔗建房</button>
+    <button id="pracJoinBtn" onclick="pracCoopJoin()" style="display:none;padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(240,101,149,.15);color:#F06595;font-weight:700;border:1px solid rgba(240,101,149,.3);cursor:pointer">🔗加入</button>
+    <button id="pracCharBtn" onclick="pracSwitchChar()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,212,59,.15);color:#FFD43B;font-weight:700;border:1px solid rgba(255,212,59,.3);cursor:pointer">🔄角色</button>
+    <button onclick="exitPractice()" style="padding:4px 8px;font-size:9px;border-radius:5px;background:rgba(255,255,255,.15);color:#fff;font-weight:700;border:none;cursor:pointer">退出練習</button>
+  </div>
+  <!-- 左側卡片抽屜 -->
+  <div id="pracCards" style="display:none;pointer-events:auto;position:absolute;left:0;top:0;bottom:0;width:52%;max-width:220px;overflow-y:scroll;overflow-x:hidden;padding:28px 6px 6px;background:rgba(10,10,24,.93);border-right:1px solid rgba(255,255,255,.1);font-size:10px;-webkit-overflow-scrolling:touch;touch-action:pan-y;z-index:202">
+  </div>
+  <!-- 右側敵人抽屜 -->
+  <div id="pracEnemies" style="display:none;pointer-events:auto;position:absolute;right:0;top:0;bottom:0;width:48%;max-width:200px;overflow-y:scroll;overflow-x:hidden;padding:28px 6px 6px;background:rgba(10,10,24,.93);border-left:1px solid rgba(255,255,255,.1);font-size:10px;-webkit-overflow-scrolling:touch;touch-action:pan-y;z-index:202">
+  </div>
+  <!-- 底部能力值面板 -->
+  <div id="pracStats" style="display:none;pointer-events:auto;position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:92%;max-width:400px;max-height:50%;overflow-y:scroll;padding:10px;background:rgba(10,10,24,.94);border:1px solid rgba(116,192,252,.2);border-radius:10px;font-size:10px;-webkit-overflow-scrolling:touch;touch-action:pan-y;z-index:202">
+  </div>
+</div>
+
+</div>
+<!-- 設定鍵：放在所有元素最後，確保不被遮擋 -->
+<button id="settingsBtn" onclick="openSettings()" style="position:fixed;top:6px;right:6px;z-index:99999;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation;pointer-events:auto;transition:background .2s">⚙️</button>
+</body>
+</html>
