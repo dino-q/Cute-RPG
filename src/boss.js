@@ -545,7 +545,8 @@ export function updateStageBoss(e,now,dt){
       cx.globalAlpha=.15+prog*.15;cx.fillStyle="#9B59B6";
       cx.beginPath();cx.arc(lx,ly,mr*.6,0,Math.PI*2);cx.fill();
       cx.restore();
-      g.dn.push({x:lx,y:ly-mr-5,d:"⚡",life:0.1,color:"#9B59B6"});
+      // 不再每幀 push damage number — 改用低頻閃爍
+      if(Math.random()<.1)g.dn.push({x:lx,y:ly-mr-5,d:"⚡",life:0.3,color:"#9B59B6"});
     }
     // === 通用：執行瞬移 ===
     if(e._teleExe&&now>=e._teleExe){e._teleExe=0;e._teleLandShow=0;sfxBossAtk("teleport");

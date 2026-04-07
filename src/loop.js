@@ -193,6 +193,7 @@ export function loop(){
       cx.fillStyle=d.color;cx.textAlign="center";cx.fillText(d.d,d.x,d.y);cx.restore();});
     cx.restore();raf=requestAnimationFrame(loop);return;}
   if(!g||!g.run){raf=requestAnimationFrame(loop);return;}
+  try{ // 保護 loop 不被未捕獲異常中斷
   // Client: 送操作，然後和 HOST 共用同一套渲染代碼
   const _isClientMode=!!(_isCoopMode&&_net&&_net.role==="client"&&_net.connected);
   if(_isClientMode){
@@ -625,6 +626,12 @@ export function loop(){
     if(cw.phase==="rest"&&now>=cw.restEnd){
       cw.num++;cw.phase="active";cw.spawned=0;cw.spawnT=now;cw.waveStart=now;cw.raged=false;
       g.wave=cw.num; // 同步 wave（影響敵人成長）
+      // 經驗追趕提示：wave 超過 level 太多時提醒玩家撿經驗球
+      var _wlGap=cw.num-g.level;
+      if(_wlGap>=5&&!g["_gapWarn"+Math.floor(_wlGap/3)]){
+        g["_gapWarn"+Math.floor(_wlGap/3)]=true;
+        showHint(_wlGap>=8?"⚠️ 等級嚴重落後！綠色經驗球有追趕加成，快去撿！":"💡 等級落後了，記得靠近綠色經驗球來升級！");
+      }
       // 計算這波數量
       var wn=cw.num;
       var isBossWave=wn%8===0;
@@ -1167,13 +1174,15 @@ export function loop(){
     }
   }}});});
 
-  // exp orbs
+  // exp orbs — 含追趕加成：wave 超過 level 越多，經驗倍率越高
+  var _xpGap=Math.max(0,(g.wave||1)-g.level);
+  var _xpCatchUp=_xpGap>3?Math.min(3,1+_xpGap*.2):1; // gap>3 開始加成，上限 3 倍
   var ep=60*(g.p.expR||1);g.orbs=g.orbs.filter(o=>{
     var d1=di(o,g.p),d2=(_isCoopMode&&g.p2)?di(o,g.p2):Infinity;
     var nearP=(_isCoopMode&&g.p2&&d1>d2)?g.p2:g.p,d=Math.min(d1,d2);
     if(d<ep){var s=Math.max(3,(ep-d)/ep*8),dx2=nearP.x-o.x,dy2=nearP.y-o.y,dd=Math.sqrt(dx2*dx2+dy2*dy2)||1;o.x+=dx2/dd*s*dt;o.y+=dy2/dd*s*dt;}
-    if(d1<PR+8){g.exp+=o.xp;return false;}
-    if(_isCoopMode&&g.p2&&d2<PR+8){g.p2Exp+=o.xp;return false;}
+    if(d1<PR+8){g.exp+=Math.ceil(o.xp*_xpCatchUp);return false;}
+    if(_isCoopMode&&g.p2&&d2<PR+8){g.p2Exp+=Math.ceil(o.xp*_xpCatchUp);return false;}
     o.life-=.001*dt;return o.life>0;});
 
   // enemy-player (with i-frame protection)
@@ -1304,6 +1313,7 @@ export function loop(){
       if(freeCard){showPick("crate",freeCard);}
       else{g.run=true;}
     }
+    if(g.level===2&&!g._hint2){g._hint2=1;showHint("💚 擊殺敵人會掉綠色經驗球，靠近自動吸取！");}
     if(g.level===3&&!g._hint3){g._hint3=1;showHint("📦 探索地圖找寶箱，打開獲得卡牌！");}
     if(g.level===6&&!g._hint6){g._hint6=1;showHint("⚠️ 新型敵人出現了！小心包圍！");}
     if(g.level===8&&!g._hint8){g._hint8=1;showHint("🎯 遠程射手出沒，注意閃避子彈！");}
@@ -1543,6 +1553,13 @@ export function loop(){
   if(getPhoenixT()>0)setPhoenixT(Math.max(0,getPhoenixT()-.016*dt));
 
   /* ════ DRAW ════ */
+  // CLIENT: 用 clientRenderLoop 渲染 HOST 傳來的狀態，跳過 HOST 繪圖路徑
+  if(_isClientMode){
+    _clientRenderLoop(g,cx,cam,VW,VH,BR,PR,par,filterPar,setPar,getDashGhosts,setDashGhosts,drawPlayer,drawEnemy,drawMinimap,CHAR,getP2SkillCdEnd,aim,$);
+    raf=requestAnimationFrame(loop);
+    return;
+  }
+
   const cm=cam();
   const _sx=_shakeT>0?(Math.random()-.5)*2*_shakePow*_shakeT:0;
   const _sy=_shakeT>0?(Math.random()-.5)*2*_shakePow*_shakeT:0;
@@ -2569,5 +2586,6 @@ export function loop(){
     if(!g._syncFrame)g._syncFrame=0;
     {const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);} // 每幀同步（減少LAG）
   }
+  }catch(err){console.error("Game loop error:",err);}
   raf=requestAnimationFrame(loop);
 }

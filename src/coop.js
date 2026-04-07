@@ -207,7 +207,7 @@ export function coopJoinRoom() {
           $("coopOv").style.display = "none";
           $("charSelectOv").style.display = "flex";
         }
-        if (data.t === "state") { const g = _g(); if (g) applyCoopState(data); }
+        if (data.t === "state") { const g = _g(); if (g) applyCoopState(data, g, _showOver, setPar, setDashGhosts); }
         if (data.t === "p2pick") { const g = _g(); if (g) showCoopPick(data); }
         if (data.t === "over") { const g = _g(); if (g) { g.run = false; _showOver(); } }
       });
