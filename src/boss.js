@@ -127,7 +127,9 @@ function estimateBossDPS(lv){
     return Math.min(estDps,secCap);
   }
   const bulletDmg=(2.2+p.atk*.7)*(p.elemBoost||1)*(p.levelDmgMul||1)*(p.bossDmg||1);
-  const bossDR=lv===20?.1:.01;
+  // bossDR：估算 Boss 的有效減傷（含護盾 uptime、走位 miss 等）
+  // 便便 Boss 防禦型 ~40% 有效傷害，惡魔 Boss ~30%
+  const bossDR=lv===20?.4:.3;
   return bulletDmg*hitsPerSec*bossDR;
 }
 
@@ -142,11 +144,14 @@ export function triggerStageBoss(lv){
   const angelKey="_angelOffer"+lv;
   if(estTime>120&&!g[angelKey]){
     // 預估超過2分鐘，出天使寶箱（每個Boss各一次機會）
-    g[angelKey]=true;
-    g._pendingStageBoss=lv;
-    g.run=false;
-    showAngelCard();
-    return;
+    // 若選卡中(pickOpen)則跳過天使卡，避免 g.run 卡死
+    if(!g.pickOpen){
+      g[angelKey]=true;
+      g._pendingStageBoss=lv;
+      g.run=false;
+      showAngelCard();
+      return;
+    }
   }
 
   g.ene.forEach(e=>{if(!e.stageBoss)burst(e.x,e.y,e.color,5);});
