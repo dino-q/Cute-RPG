@@ -55,7 +55,8 @@ export function setP2SkillCdEnd(v) { _p2SkillCdEnd = v; }
 const SKILL_FN = {
   gunner:    (now, pp, isP2) => skillSnipe(now, pp, isP2),
   swordsman: (now, pp, isP2) => skillGhostSlash(now, pp, isP2),
-  tank:      (now, pp, isP2) => skillTaunt(now, pp, isP2)
+  tank:      (now, pp, isP2) => skillTaunt(now, pp, isP2),
+  assassin:  (now, pp, isP2) => skillShadowStrike(now, pp, isP2)
 };
 export function registerSkill(charType, fn) { SKILL_FN[charType] = fn; }
 
@@ -182,6 +183,21 @@ export function skillTaunt(now, _pp, _isP2) {
   setShake(.3, 5);
 }
 
+/* ═══ assassin: shadow strike (影襲) ═══ */
+// 放置閃光標記 → 自由行動 4 秒 → 自動回歸（回程無敵）→ CD 1.7 秒
+export function skillShadowStrike(now, _pp, _isP2) {
+  if (!_pp) _pp = g.p;
+  if (g._shadowReturn) return;
+  sfx("ult");
+  g._shadowReturn = { x: _pp.x, y: _pp.y, t: now, dur: 4000 };
+  // 施放時重設 CD 為 0（讓按鈕顯示標記期間不可用）
+  _skillCdEnd = now + 99999; // 暫時鎖住，回歸時再設真正 CD
+  const cdEl = $("skillCd"); if (cdEl) { cdEl.style.display = "flex"; cdEl.textContent = "⏳"; }
+  burst(_pp.x, _pp.y, "#fff", 12);
+  burst(_pp.x, _pp.y, "#DDB4FE", 8);
+  g.dn.push({ x: _pp.x, y: _pp.y - 30, d: "🗡️ 影襲！4秒後回歸", life: 2, color: "#DDB4FE", big: 1 });
+}
+
 /* ═══ dash (lightning step) ═══ */
 export function _startDash(now) {
   if (!g) return;
@@ -206,7 +222,8 @@ export function doUlt() {
   if (_net && _net.role === "client") { setClientUltReq(true); return; }
   const isBH = !!g.p.hasBH;
   const isTS = !!g.p.hasTS;
-  const isCd = isBH || isTS;
+  const isMF = !!g.p.hasMF;
+  const isCd = isBH || isTS || isMF;
   const isLS = !!g.p.lStep;
   const now = performance.now();
   if (isCd && now < (g.ultCdEnd || 0)) return;
@@ -219,7 +236,7 @@ export function doUlt() {
   const ultLv = g.p.ultLv || 0;
   const _comboMul = _comboUlt ? 3 : 1;
   const baseDmg = (ULT_D + g.p.atk * 6 + g.level * 5) * (g.p.ultDmgMul || 1) * (1 + ultLv * .35) * _comboMul;
-  const cdVal = (isBH ? BH_COOLDOWN_MS : (g.p.tsCd || 15e3)) / (g.p.ultRate || 1) * (1 - (g.p.ultCdReduce || 0));
+  const cdVal = (isBH ? BH_COOLDOWN_MS : isMF ? (g.p.mfCd || 12e3) : (g.p.tsCd || 15e3)) / (g.p.ultRate || 1) * (1 - (g.p.ultCdReduce || 0));
   if (isBH) {
     g.bhEnd = now + BH_DURATION_MS;
     g.bhPow = 1 + ultLv * .45;
@@ -235,8 +252,22 @@ export function doUlt() {
     const cols = ["#74C0FC", "#4DABF7", "#339AF0", "#fff"];
     for (let i = 0; i < 30 && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / 30, v = rn(3, 8); par.push({ x: g.p.x + Math.cos(a) * 15, y: g.p.y + Math.sin(a) * 15, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.2, color: cols[i % cols.length], sz: rn(3, 7) }); }
   }
+  if (isMF) {
+    const _mfDur = g.p.mfDur || 1500;
+    g.mfEnd = now + _mfDur;
+    g.mfPx = g.p.x; g.mfPy = g.p.y;
+    g.mfR = g.p.mfR || 200;
+    g.mfDmgMul = g.p.mfDmgMul || 1;
+    g.mfSlow = g.p.mfSlow || 0;
+    g.p._iFrameEnd = Math.max(g.p._iFrameEnd || 0, now + 1500);
+    burst(g.p.x, g.p.y, "#339AF0", 20);
+    g.dn.push({ x: g.p.x, y: g.p.y - 30, d: "🧲 磁力場！", life: 2, color: "#339AF0", big: 1 });
+    for (let i = 0; i < 24 && par.length < MAX_PARTICLES; i++) {
+      const a = TAU * i / 24; par.push({ x: g.p.x + Math.cos(a) * 80, y: g.p.y + Math.sin(a) * 80, vx: -Math.cos(a) * rn(2, 4), vy: -Math.sin(a) * rn(2, 4), life: 1, color: i % 2 ? "#339AF0" : "#74C0FC", sz: rn(3, 6) });
+    }
+  }
   if (isCd) g.ultCdEnd = now + cdVal;
-  if (!isTS || isBH) {
+  if (!isTS && !isMF || isBH) {
     g.ene.forEach(e => { const ud = (_isElite() && e.stageBoss) ? Math.min(baseDmg, e.mhp * .05) : baseDmg; e.hp -= ud; g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(ud), life: 1.3, color: isBH ? "#868E96" : "#FFD43B", big: 1 }); if (e.hp <= 0) burst(e.x, e.y, e.color, 14); });
     settleEnemyDeaths();
   }

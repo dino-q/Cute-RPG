@@ -1,7 +1,6 @@
 node_modules/
 dist/
 backups/
-參考資料，不須上傳/
 *.log
 .DS_Store
 Thumbs.db

@@ -61,13 +61,13 @@ export function hud() {
   $("ll").textContent = "Lv." + _hudLv;
   $("eb").style.width = (_hudExp / _hudExpTo * 100) + "%";
   $("sl").textContent = "⭐" + g.score; $("kl").textContent = "💀" + g.kills;
-  const _hasBH = !!_hudP.hasBH, _hasTS = !!_hudP.hasTS, _hasLS = !!_hudP.lStep, _hasCd = _hasBH || _hasTS;
-  const _ultCount = (_hasBH ? 1 : 0) + (_hasTS ? 1 : 0) + (_hasLS ? 1 : 0);
+  const _hasBH = !!_hudP.hasBH, _hasTS = !!_hudP.hasTS, _hasMF = !!_hudP.hasMF, _hasLS = !!_hudP.lStep, _hasCd = _hasBH || _hasTS || _hasMF;
+  const _ultCount = (_hasBH ? 1 : 0) + (_hasTS ? 1 : 0) + (_hasMF ? 1 : 0) + (_hasLS ? 1 : 0);
   if (_hasCd) {
-    const cdMs = (_hasBH ? BH_COOLDOWN_MS : (_hasTS ? (_hudP.tsCd || 15e3) : 15e3)) / (_hudP.ultRate || 1);
-    const icon = _ultCount >= 2 ? "🔮" : _hasBH ? "🕳️" : "⏸️";
-    const label = [_hasBH ? "黑洞" : null, _hasTS ? "時停" : null, _hasLS ? "閃電步" : null].filter(Boolean).join("+");
-    const cdColor = _hasBH ? "#495057" : "#74C0FC";
+    const cdMs = (_hasBH ? BH_COOLDOWN_MS : _hasMF ? (_hudP.mfCd || 12e3) : (_hasTS ? (_hudP.tsCd || 15e3) : 15e3)) / (_hudP.ultRate || 1);
+    const icon = _ultCount >= 2 ? "🔮" : _hasBH ? "🕳️" : _hasMF ? "🧲" : "⏸️";
+    const label = [_hasBH ? "黑洞" : null, _hasMF ? "磁力場" : null, _hasTS ? "時停" : null, _hasLS ? "閃電步" : null].filter(Boolean).join("+");
+    const cdColor = _hasBH ? "#495057" : _hasMF ? "#339AF0" : "#74C0FC";
     const now = performance.now(), cdLeft = Math.max(0, (g.ultCdEnd || 0) - now), ready = cdLeft <= 0;
     const pct = ready ? 1 : 1 - cdLeft / cdMs;
     $("ultR").style.background = "conic-gradient(" + cdColor + " " + (pct * 360) + "deg,rgba(190,78,219,.1) " + (pct * 360) + "deg)";

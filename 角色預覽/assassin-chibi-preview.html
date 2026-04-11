@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>刺客角色預覽 — Chibi 風格</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a18;color:#fff;font-family:'Nunito','Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+h1{font-size:22px;color:#BE4BDB;margin-bottom:6px;text-shadow:0 0 12px rgba(190,75,219,.4)}
+.sub{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:24px}
+.cards{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;width:320px;text-align:center;position:relative}
+.card canvas{display:block;margin:0 auto 12px}
+.name{font-size:20px;font-weight:900;color:#BE4BDB;margin-bottom:2px}
+.role{font-size:11px;color:rgba(255,255,255,.4);margin-bottom:10px;letter-spacing:2px}
+.stats{text-align:left;font-size:11px;line-height:1.9}
+.stats .row{display:flex;justify-content:space-between}
+.stats .lbl{color:rgba(255,255,255,.45)}
+.stats .val{color:#fff;font-weight:700}
+.desc{margin-top:10px;font-size:11px;color:rgba(255,255,255,.35);line-height:1.6;text-align:left;border-top:1px solid rgba(255,255,255,.06);padding-top:8px}
+.tag{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin:0 2px}
+.compare{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:24px}
+.compare .card{width:260px}
+.compare .card.swordsman .name{color:#FF922B}
+.note{margin-top:24px;font-size:11px;color:rgba(255,255,255,.25);max-width:700px;text-align:center;line-height:1.8;border-top:1px solid rgba(255,255,255,.06);padding-top:14px}
+</style>
+</head>
+<body>
+<h1>刺客角色預覽 — Chibi 風格</h1>
+<div class="sub">紫色球形刺客，風格與劍士完全一致 — Canvas 動態繪製</div>
+
+<div class="cards">
+<div class="card">
+  <canvas id="assassin" width="300" height="300"></canvas>
+  <div class="name">影刃 — 刺客</div>
+  <div class="role">ASSASSIN</div>
+  <div class="stats">
+    <div class="row"><span class="lbl">HP</span><span class="val" style="color:#FF6B6B">60 (極低)</span></div>
+    <div class="row"><span class="lbl">攻擊力</span><span class="val">2.5 (中)</span></div>
+    <div class="row"><span class="lbl">攻速</span><span class="val" style="color:#FFD43B">×2.1 (極快)</span></div>
+    <div class="row"><span class="lbl">移速</span><span class="val">5.2 (微快)</span></div>
+    <div class="row"><span class="lbl">暴擊率</span><span class="val" style="color:#F06595">15%</span></div>
+    <div class="row"><span class="lbl">閃避率</span><span class="val" style="color:#BE4BDB">40% (最高)</span></div>
+    <div class="row"><span class="lbl">被動</span><span class="val" style="color:#BE4BDB">疾風連刺 + 擊殺加速</span></div>
+  </div>
+  <div class="desc">
+    疾風連刺型。攻速極快、閃避率最高、暴擊率15%，但血量極低。<br>
+    <span class="tag" style="background:#BE4BDB30;color:#BE4BDB">被動：疾風連刺</span> 攻速極快(150ms)，高暴擊+高閃避<br>
+    <span class="tag" style="background:#DA77F230;color:#DA77F2">被動：擊殺加速</span> 擊殺敵人後獲得2秒加速
+  </div>
+</div>
+</div>
+
+<div class="sub" style="margin-top:24px">▼ 風格對比 — 劍士 vs 刺客</div>
+<div class="compare">
+<div class="card swordsman">
+  <canvas id="swordsman" width="220" height="220"></canvas>
+  <div class="name">雷恩 — 劍士</div>
+  <div class="role">SWORDSMAN (參考)</div>
+</div>
+<div class="card">
+  <canvas id="assassinSm" width="220" height="220"></canvas>
+  <div class="name">影刃 — 刺客</div>
+  <div class="role">ASSASSIN</div>
+</div>
+</div>
+
+<div class="note">
+  設計要點：與劍士同樣的 chibi 圓潤風格、高光漸層、發光特效、動感姿勢<br>
+  紫色主色調 + 黑色忍者頭罩面罩(無眼睛) + 短雙匕首 + 飄揚紫色絲帶
+</div>
+
+<script>
+const PI=Math.PI,TAU=PI*2;
+
+function drawAssassin(canvasId, large){
+  const cv=document.getElementById(canvasId);
+  const cx=cv.getContext("2d");
+  const W=cv.width,H=cv.height,centerX=W/2,baseY=H/2+10;
+  const r=large?24:18;
+  let t=0;
+
+  function frame(){
+    t+=0.016;
+    cx.clearRect(0,0,W,H);
+    const bob=Math.sin(t*3.5)*1.5,cy=baseY+bob,f=1;
+    // lean forward for attack pose
+    const lean=Math.sin(t*2)*.02;
+
+    // background aura — dark purple atmosphere
+    const bg=cx.createRadialGradient(centerX,baseY,0,centerX,baseY,large?110:85);
+    bg.addColorStop(0,"rgba(190,75,219,.1)");bg.addColorStop(.5,"rgba(100,30,140,.04)");bg.addColorStop(1,"transparent");
+    cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+
+    // subtle dark mist
+    cx.save();
+    cx.globalAlpha=.04+Math.sin(t*.8)*.02;
+    for(let i=0;i<3;i++){
+      const mx=centerX+Math.sin(t*.5+i*2.1)*40;
+      const my=cy+20+Math.cos(t*.3+i*1.7)*10;
+      const mg=cx.createRadialGradient(mx,my,0,mx,my,30);
+      mg.addColorStop(0,"rgba(100,30,140,.15)");mg.addColorStop(1,"transparent");
+      cx.fillStyle=mg;cx.fillRect(mx-30,my-30,60,60);
+    }
+    cx.restore();
+
+    // shadow
+    cx.fillStyle="rgba(0,0,0,.22)";
+    cx.beginPath();cx.ellipse(centerX,baseY+r+3,r*.65,3,0,0,TAU);cx.fill();
+
+    // === PURPLE RIBBON / TAIL (behind body) ===
+    cx.save();
+    cx.lineCap="round";cx.globalAlpha=.85;
+    cx.shadowColor="#BE4BDB";cx.shadowBlur=8;
+    // main ribbon
+    cx.strokeStyle="#BE4BDB";cx.lineWidth=large?3.5:2.5;
+    const rbx=centerX-f*r*.8, rby=cy-r*.3;
+    cx.beginPath();cx.moveTo(rbx,rby);
+    cx.quadraticCurveTo(rbx-f*14,rby+6+Math.sin(t*4)*5, rbx-f*28,rby+12+Math.sin(t*3)*7);
+    cx.stroke();
+    // secondary ribbon
+    cx.lineWidth=large?2.2:1.8;cx.strokeStyle="#9C36B5";
+    cx.beginPath();cx.moveTo(rbx-f*2,rby+3);
+    cx.quadraticCurveTo(rbx-f*10,rby+10+Math.sin(t*3.5)*4, rbx-f*22,rby+18+Math.sin(t*2.8)*6);
+    cx.stroke();
+    // third thin ribbon
+    cx.lineWidth=large?1.5:1;cx.strokeStyle="#DA77F2";cx.globalAlpha=.5;
+    cx.beginPath();cx.moveTo(rbx-f*1,rby+5);
+    cx.quadraticCurveTo(rbx-f*8,rby+14+Math.sin(t*3)*3, rbx-f*18,rby+22+Math.sin(t*2.5)*5);
+    cx.stroke();
+    cx.shadowBlur=0;
+    cx.restore();
+
+    // === DUAL DAGGERS — fast cross-slash animation ===
+    // cross cycle: sin drives spread→cross→spread at high speed
+    const crossAmt=Math.sin(t*10); // -1=crossed, +1=spread
+    const crossSpd=Math.cos(t*10); // velocity for motion blur
+    const spread=crossAmt*.45;     // rotation offset from center
+    const pivotX=centerX+f*r*.65, pivotY=cy;
+
+    // slash trail (X-shaped afterimage when crossing)
+    if(Math.abs(crossSpd)>.7){
+      cx.save();
+      cx.globalAlpha=.12+Math.abs(crossSpd)*.08;
+      cx.strokeStyle="#DA77F2";cx.lineWidth=large?1.5:1;cx.lineCap="round";
+      // upper trail
+      cx.beginPath();cx.moveTo(pivotX-4,pivotY-r*.6);cx.lineTo(pivotX+r*.5,pivotY+r*.3);cx.stroke();
+      // lower trail
+      cx.beginPath();cx.moveTo(pivotX-4,pivotY+r*.6);cx.lineTo(pivotX+r*.5,pivotY-r*.3);cx.stroke();
+      cx.restore();
+    }
+
+    // helper: draw one dagger
+    function _drawDagger(offY, baseRot, crossRot){
+      cx.save();
+      cx.translate(pivotX, pivotY+offY);
+      cx.rotate(baseRot+crossRot);
+      cx.shadowColor="#BE4BDB";cx.shadowBlur=7;
+      // blade
+      const bg=cx.createLinearGradient(0,-r*.65,0,0);
+      bg.addColorStop(0,"#fff");bg.addColorStop(.25,"#E8E8E8");bg.addColorStop(.6,"#CED4DA");bg.addColorStop(1,"#ADB5BD");
+      cx.fillStyle=bg;
+      cx.beginPath();
+      cx.moveTo(-1.8,0);cx.lineTo(-1.2,-r*.55);cx.lineTo(0,-r*.72);cx.lineTo(1.2,-r*.55);cx.lineTo(1.8,0);
+      cx.closePath();cx.fill();
+      // blade highlight
+      cx.strokeStyle="rgba(255,255,255,.5)";cx.lineWidth=.5;
+      cx.beginPath();cx.moveTo(0,-r*.1);cx.lineTo(0,-r*.65);cx.stroke();
+      // purple edge glow
+      cx.strokeStyle="rgba(190,75,219,.3)";cx.lineWidth=.8;
+      cx.beginPath();cx.moveTo(1.4,-r*.1);cx.lineTo(.9,-r*.5);cx.stroke();
+      // guard
+      cx.shadowBlur=0;
+      cx.fillStyle="#9C36B5";
+      cx.beginPath();cx.moveTo(-5,-1);cx.lineTo(-4.5,1.5);cx.lineTo(4.5,1.5);cx.lineTo(5,-1);cx.closePath();cx.fill();
+      cx.strokeStyle="#6a2a78";cx.lineWidth=.5;cx.stroke();
+      cx.fillStyle="#FFD43B";cx.beginPath();cx.arc(0,.2,1.3,0,TAU);cx.fill();
+      // handle
+      cx.fillStyle="#2a0a30";cx.fillRect(-1.8,1.5,3.6,r*.2);
+      cx.strokeStyle="#5a2a68";cx.lineWidth=.6;
+      for(let i=0;i<2;i++){cx.beginPath();cx.moveTo(-1.8,2.5+i*2);cx.lineTo(1.8,3.5+i*2);cx.stroke();}
+      cx.restore();
+    }
+
+    // upper dagger: base angle up, crosses downward
+    _drawDagger(-r*.15, f>0?-.4:.4+PI, spread);
+    // lower dagger: base angle down, crosses upward
+    _drawDagger(r*.15,  f>0?.4:-.4+PI, -spread);
+
+    // === BODY (purple sphere with chibi gradient) ===
+    cx.save();
+    const bodyGrad=cx.createRadialGradient(centerX-f*r*.12,cy-r*.32,r*.08,centerX,cy,r);
+    bodyGrad.addColorStop(0,"#fff");
+    bodyGrad.addColorStop(.2,"#e5c8f5");
+    bodyGrad.addColorStop(.55,"#BE4BDB");
+    bodyGrad.addColorStop(.8,"#9C36B5");
+    bodyGrad.addColorStop(1,"#6a2078");
+    cx.beginPath();cx.arc(centerX,cy,r,0,TAU);cx.fillStyle=bodyGrad;cx.fill();
+    // subtle outline
+    cx.strokeStyle="rgba(255,255,255,.1)";cx.lineWidth=1;cx.stroke();
+    // inner shine (top-left highlight)
+    cx.fillStyle="rgba(255,255,255,.1)";
+    cx.beginPath();cx.arc(centerX-r*.15,cy-r*.25,r*.42,0,TAU);cx.fill();
+    // second smaller highlight
+    cx.fillStyle="rgba(255,255,255,.08)";
+    cx.beginPath();cx.arc(centerX-r*.25,cy-r*.35,r*.2,0,TAU);cx.fill();
+    cx.restore();
+
+    // === NINJA HOOD (black triangle on head) ===
+    cx.save();
+    cx.shadowColor="rgba(0,0,0,.6)";cx.shadowBlur=4;
+    // hood base arc
+    cx.fillStyle="#1a1a2e";
+    cx.beginPath();
+    cx.arc(centerX,cy-r*.1,r+1,-PI*.95,-PI*.05);
+    cx.lineTo(centerX+f*2,cy-r*1.55);
+    cx.closePath();
+    cx.fill();
+    // hood gradient overlay
+    const hoodGrad=cx.createLinearGradient(centerX,cy-r*1.5,centerX,cy-r*.2);
+    hoodGrad.addColorStop(0,"#2a2a3e");
+    hoodGrad.addColorStop(.5,"#1a1a2e");
+    hoodGrad.addColorStop(1,"#0a0a15");
+    cx.fillStyle=hoodGrad;
+    cx.beginPath();
+    cx.arc(centerX,cy-r*.1,r*.95,-PI*.9,-PI*.1);
+    cx.lineTo(centerX+f*2,cy-r*1.45);
+    cx.closePath();
+    cx.fill();
+    // hood tip highlight
+    cx.fillStyle="rgba(255,255,255,.06)";
+    cx.beginPath();cx.arc(centerX,cy-r*1.2,3,0,TAU);cx.fill();
+    cx.shadowBlur=0;
+    cx.restore();
+
+    // === MASK (dark arc below hood, covering lower face) ===
+    cx.save();
+    cx.strokeStyle="#1a1a2e";cx.lineWidth=large?3.5:2.8;
+    cx.shadowColor="#000";cx.shadowBlur=3;
+    cx.beginPath();
+    cx.arc(centerX,cy+r*.1,r-2,PI*.05,PI*.95);
+    cx.stroke();
+    // second mask line (thinner)
+    cx.strokeStyle="rgba(26,26,46,.6)";cx.lineWidth=large?2:1.5;
+    cx.beginPath();
+    cx.arc(centerX,cy+r*.15,r-4,PI*.15,PI*.85);
+    cx.stroke();
+    cx.shadowBlur=0;
+    cx.restore();
+
+    // (no eyes — hood + mask covers entire face, mysterious)
+
+    // === EDGE GLOW (purple halo around body) ===
+    cx.save();
+    const edgeGlow=cx.createRadialGradient(centerX,cy,r-2,centerX,cy,r+6);
+    edgeGlow.addColorStop(0,"transparent");
+    edgeGlow.addColorStop(.6,"rgba(190,75,219,.08)");
+    edgeGlow.addColorStop(1,"rgba(190,75,219,.02)");
+    cx.fillStyle=edgeGlow;
+    cx.beginPath();cx.arc(centerX,cy,r+6,0,TAU);cx.fill();
+    cx.restore();
+
+    // === SHADOW PARTICLES (dark purple, mysterious) ===
+    for(let i=0;i<5;i++){
+      const a=t*2+i*TAU/5;
+      const dist=(large?34:28)+Math.sin(t*2.2+i*1.4)*4;
+      const px=centerX+Math.cos(a)*dist, py=cy+Math.sin(a)*dist;
+      cx.save();
+      cx.globalAlpha=.22+Math.sin(t*3+i)*.1;
+      cx.shadowColor="#BE4BDB";cx.shadowBlur=4;
+      cx.fillStyle="#DA77F2";
+      // diamond shaped (like swordsman qi particles)
+      cx.translate(px,py);cx.rotate(a+t);
+      cx.beginPath();cx.moveTo(0,-2.5);cx.lineTo(1.8,0);cx.lineTo(0,2.5);cx.lineTo(-1.8,0);cx.closePath();
+      cx.fill();
+      cx.restore();
+    }
+
+    // === SPEED LINES (showing agility) ===
+    cx.save();cx.globalAlpha=.1+Math.sin(t*6)*.05;
+    cx.lineCap="round";
+    for(let i=0;i<5;i++){
+      cx.strokeStyle=i%2?"#DA77F2":"#BE4BDB";cx.lineWidth=.8+Math.random()*.4;
+      cx.beginPath();
+      const ly=cy-12+i*6;
+      cx.moveTo(centerX-f*22,ly);
+      cx.lineTo(centerX-f*(34+Math.sin(t*5+i)*5),ly);
+      cx.stroke();
+    }
+    cx.restore();
+
+    // === OUTER AURA PULSE ===
+    cx.save();
+    cx.strokeStyle="#BE4BDB";cx.lineWidth=1;
+    cx.globalAlpha=.06+Math.sin(t*1.8)*.03;
+    cx.beginPath();cx.arc(centerX,cy,r+16,0,TAU);cx.stroke();
+    cx.setLineDash([4,4]);cx.globalAlpha=.04+Math.sin(t*1.8+PI)*.02;
+    cx.beginPath();cx.arc(centerX,cy,r+22,0,TAU);cx.stroke();
+    cx.setLineDash([]);
+    cx.restore();
+
+    // === BLADE GLINT (sparkle at cross point when daggers meet) ===
+    if(crossAmt<-.6){
+      cx.save();
+      const gi=(-crossAmt-.6)/.4; // 0→1 as blades fully cross
+      cx.globalAlpha=gi*.7;
+      cx.shadowColor="#fff";cx.shadowBlur=8;
+      cx.fillStyle="#fff";
+      cx.beginPath();cx.arc(pivotX+r*.15,pivotY,large?3:2,0,TAU);cx.fill();
+      // purple spark
+      cx.fillStyle="#DA77F2";cx.shadowColor="#BE4BDB";
+      cx.beginPath();cx.arc(pivotX+r*.15,pivotY,(large?2:1.5)*gi,0,TAU);cx.fill();
+      cx.restore();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function drawSwordsman(canvasId){
+  const cv=document.getElementById(canvasId);
+  const cx=cv.getContext("2d");
+  const W=cv.width,H=cv.height,centerX=W/2,baseY=H/2+10,r=18;
+  let t=0;
+  function frame(){
+    t+=0.016;
+    cx.clearRect(0,0,W,H);
+    const bob=Math.sin(t*3)*1.5,cy=baseY+bob,f=1;
+    const bg=cx.createRadialGradient(centerX,baseY,0,centerX,baseY,85);
+    bg.addColorStop(0,"rgba(255,146,43,.08)");bg.addColorStop(1,"transparent");
+    cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+    cx.fillStyle="rgba(0,0,0,.18)";cx.beginPath();cx.ellipse(centerX,baseY+r+3,r*.7,3,0,0,TAU);cx.fill();
+    // sword
+    cx.save();
+    cx.translate(centerX+f*r*.9,cy-r*.15);cx.rotate(-.5);cx.rotate(Math.sin(t*5)*.06);
+    cx.shadowColor="#FFD43B";cx.shadowBlur=12;
+    const bladeGrad=cx.createLinearGradient(0,-r*1.8,0,0);
+    bladeGrad.addColorStop(0,"#fff");bladeGrad.addColorStop(.3,"#E8E8E8");bladeGrad.addColorStop(.7,"#CED4DA");bladeGrad.addColorStop(1,"#ADB5BD");
+    cx.fillStyle=bladeGrad;cx.beginPath();cx.moveTo(-2.8,0);cx.lineTo(-2.2,-r*1.7);cx.lineTo(0,-r*2);cx.lineTo(2.2,-r*1.7);cx.lineTo(2.8,0);cx.closePath();cx.fill();
+    cx.strokeStyle="rgba(255,255,255,.5)";cx.lineWidth=.6;cx.beginPath();cx.moveTo(0,-r*.2);cx.lineTo(0,-r*1.85);cx.stroke();
+    cx.shadowBlur=0;
+    cx.fillStyle="#FFD43B";cx.beginPath();cx.moveTo(-8,-1);cx.lineTo(-7,2);cx.lineTo(7,2);cx.lineTo(8,-1);cx.closePath();cx.fill();
+    cx.fillStyle="#FF6B6B";cx.beginPath();cx.arc(0,.5,1.8,0,TAU);cx.fill();
+    cx.fillStyle="#5C3A1E";cx.fillRect(-2.5,2,5,r*.4);
+    cx.fillStyle="#FFD43B";cx.beginPath();cx.arc(0,2+r*.4+2,2.5,0,TAU);cx.fill();
+    cx.restore();
+    // body
+    const bodyGrad=cx.createRadialGradient(centerX-f*r*.1,cy-r*.3,r*.1,centerX,cy,r);
+    bodyGrad.addColorStop(0,"#fff");bodyGrad.addColorStop(.25,"#ffe0b2");bodyGrad.addColorStop(.7,"#FF922B");bodyGrad.addColorStop(1,"#E8590C");
+    cx.beginPath();cx.arc(centerX,cy,r,0,TAU);cx.fillStyle=bodyGrad;cx.fill();
+    cx.strokeStyle="rgba(255,255,255,.12)";cx.lineWidth=1;cx.stroke();
+    cx.fillStyle="rgba(255,255,255,.08)";cx.beginPath();cx.arc(centerX-3,cy-6,r*.45,0,TAU);cx.fill();
+    // headband
+    cx.save();cx.strokeStyle="#FF922B";cx.lineWidth=3;cx.globalAlpha=.85;cx.shadowColor="#FF922B";cx.shadowBlur=6;
+    cx.beginPath();cx.arc(centerX,cy-1,r+1.5,-PI*.8,-PI*.15);cx.stroke();
+    cx.lineWidth=2.2;cx.lineCap="round";
+    const hbx=centerX-f*r*.85,hby=cy-r*.55;
+    cx.beginPath();cx.moveTo(hbx,hby);cx.quadraticCurveTo(hbx-f*10,hby+5+Math.sin(t*4)*4,hbx-f*16,hby+10+Math.sin(t*3)*5);cx.stroke();
+    cx.lineWidth=1.5;cx.beginPath();cx.moveTo(hbx-f*1,hby+2);cx.quadraticCurveTo(hbx-f*8,hby+8+Math.sin(t*3.5)*3,hbx-f*13,hby+14+Math.sin(t*2.8)*4);cx.stroke();
+    cx.restore();
+    // speed lines
+    cx.save();cx.globalAlpha=.12+Math.sin(t*6)*.06;cx.lineCap="round";
+    for(let i=0;i<4;i++){cx.strokeStyle=i%2?"#FFD43B":"#FF922B";cx.lineWidth=1+Math.random()*.5;cx.beginPath();const ly=cy-10+i*7;cx.moveTo(centerX-f*24,ly);cx.lineTo(centerX-f*(36+Math.sin(t*5+i)*6),ly);cx.stroke();}
+    cx.restore();
+    for(let i=0;i<3;i++){const a=t*2.2+i*TAU/3;const dist=28+Math.sin(t*2.5+i)*4;cx.save();cx.globalAlpha=.2+Math.sin(t*3.5+i)*.1;cx.shadowColor="#FFD43B";cx.shadowBlur=5;cx.fillStyle="#FFD43B";const px=centerX+Math.cos(a)*dist,py=cy+Math.sin(a)*dist;cx.translate(px,py);cx.rotate(a);cx.beginPath();cx.moveTo(0,-2.5);cx.lineTo(1.5,0);cx.lineTo(0,2.5);cx.lineTo(-1.5,0);cx.closePath();cx.fill();cx.restore();}
+    cx.save();cx.strokeStyle="#FF922B";cx.lineWidth=1;cx.globalAlpha=.06+Math.sin(t*1.5)*.03;cx.beginPath();cx.arc(centerX,cy,r+14,0,TAU);cx.stroke();cx.restore();
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+drawAssassin("assassin", true);
+drawAssassin("assassinSm", false);
+drawSwordsman("swordsman");
+</script>
+</body>
+</html>

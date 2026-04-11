@@ -361,6 +361,7 @@ export function updateStageBoss(e,now,dt){
               if(e._p3cycle&&e._p3cycle!=="idle")e._p3cycle="idle";
               e._p3dashN=0;
               g.run=true;g.lf=n2;g.lS=n2;g.laF=n2;
+              g.p._iFrameEnd=n2+2000; // 交易結束2秒無敵
             }
           };
           const doDealTap=(ev)=>{ev.preventDefault();ev.stopPropagation();doDealConfirm();};
@@ -368,10 +369,11 @@ export function updateStageBoss(e,now,dt){
           confirmBtn.addEventListener("touchstart",doDealTap,{passive:false});
         },500);
       }
-      if(newPhase===3){
+      if(newPhase===3&&!e._p3triggered){
+        e._p3triggered=true;
         bossBgmSetBpm(160);
-        e.bossType="armor"; // 最終階段獲得護甲，降低物理傷害
-        e._p3armor=0.5; // 50% 減傷
+        e.bossType="armor";
+        e._p3armor=0.5;
         g.dn.push({x:e.x,y:e.y-e.r-20,d:"😈 最終階段！護甲強化！",life:3,color:"#C0392B",big:1});
       }
     }
@@ -396,18 +398,27 @@ export function updateStageBoss(e,now,dt){
     e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
   }
 
-  // 💩 半血狂暴：抖動 + 召喚20個半透明便便散佈地圖
+  // 💩 半血狂暴：全螢幕警告2秒 → 召喚透明便便
   if(lv===20&&e.hp<e.mhp*.5&&!e._pooRageSpawned){
-    e._pooRageSpawned=true;e._pooRage=true;
+    e._pooRageSpawned=true;e._pooRage=true;e._pooWarnEnd=now+2000;
     setShake(.6,8);sfxBossAtk("phase");
-    g.dn.push({x:e.x,y:e.y-e.r-20,d:"💩 狂暴！便便軍團！",life:3,color:"#8B6914",big:1});
-    const mw=mapW(),mh=mapH();
-    for(let i=0;i<10;i++){
-      const mx=rn(40,mw-40),my=rn(40,mh-40);
-      g.ene.push({x:mx,y:my,hp:500,mhp:500,speed:1.0,color:"#C4A882",t:rn(0,10),r:16,st:0,
-        boss:false,mega:false,tier:0,face:1,xp:0,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:0,
-        role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
-        ragePoo:true});}
+    g.dn.push({x:e.x,y:e.y-e.r-20,d:"⚠️ 便便軍團來襲！無法破壞！",life:3,color:"#FF4040",big:1});
+  }
+  if(lv===20&&e._pooWarnEnd&&!e._pooRageSpawnDone){
+    // 警告期間閃爍提示
+    if(now<e._pooWarnEnd){
+      g._pooWarnAlpha=.3+Math.sin(now/80)*.2;
+    }else{
+      // 警告結束，生成便便
+      e._pooRageSpawnDone=true;g._pooWarnAlpha=0;
+      const mw=mapW(),mh=mapH();
+      for(let i=0;i<10;i++){
+        const mx=rn(40,mw-40),my=rn(40,mh-40);
+        g.ene.push({x:mx,y:my,hp:500,mhp:500,speed:1.0,color:"#C4A882",t:rn(0,10),r:16,st:0,
+          boss:false,mega:false,tier:0,face:1,xp:0,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:0,
+          role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
+          ragePoo:true});}
+    }
   }
 
   // 💩 Attacks
@@ -626,7 +637,7 @@ export function drawStageBoss(e,now){
     cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2.2+Math.sin(now/100)*3,0,Math.PI*2);cx.stroke();
     if(phase>=2){cx.globalAlpha=ringPulse*.6;cx.strokeStyle=phase===2?"#E74C3C":"#FF4040";cx.lineWidth=1.5;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2.8+Math.sin(now/80)*4,0,Math.PI*2);cx.stroke();}
     if(phase===3){cx.globalAlpha=.2+Math.sin(now/60)*.1;cx.fillStyle="#E74C3C";cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*3.2,0,Math.PI*2);cx.fill();}}
-  cx.globalAlpha=e.st>0?.85:1;cx.font=`${lv===20?e.r*1.8:e.r*2}px 'Nunito',sans-serif`;cx.textAlign="center";cx.textBaseline="middle";
+  cx.globalAlpha=e.st>0?.85:1;cx.font=`${lv===20?e.r*1.8:e.r*2}px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif`;cx.textAlign="center";cx.textBaseline="middle";
   cx.save();cx.translate(e.x,e.y+bounce);cx.scale(scaleX,scaleY);
   if(lv===20){const rageShake=e._pooRage?(Math.random()-.5)*.15:0;cx.rotate(Math.sin(now/500)*.06+rageShake);cx.fillText("💩",0,0);}
   else{
@@ -679,9 +690,17 @@ export function drawMiniEnemy(e,now){
   cx.save();const bounce=Math.sin(now/120+e.t)*3,wobble=Math.sin(now/200+e.t*2)*.15;
   cx.translate(e.x,e.y+bounce);cx.rotate(wobble);
   const sz=e.ragePoo?16:e.miniPoo?20:16;
-  cx.font=sz+"px 'Nunito',sans-serif";cx.textAlign="center";cx.textBaseline="middle";
+  cx.font=sz+"px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";cx.textAlign="center";cx.textBaseline="middle";
   if(e.ragePoo){cx.globalAlpha=.5;cx.fillText("💩",0,0);}
   else cx.fillText(e.miniPoo?"💩":"😈",0,0);
+  cx.rotate(-wobble);
+  // HP bar
+  if(!e.ragePoo){
+    const hpR=e.hp/e.mhp,bw=sz*1.4,bh=3,bx=-bw/2,by=-sz/2-6;
+    cx.globalAlpha=.6;cx.fillStyle="rgba(0,0,0,.4)";cx.fillRect(bx,by,bw,bh);
+    cx.fillStyle=hpR>.5?"#51CF66":hpR>.25?"#FFA94D":"#FF6B6B";
+    cx.fillRect(bx,by,bw*hpR,bh);
+  }
   cx.restore();
 }
 

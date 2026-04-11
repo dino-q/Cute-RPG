@@ -88,18 +88,11 @@ async function main() {
 
     // 收集 JS 錯誤
     const jsErrors = [];
-    const _ignored404 = new Set(); // 追蹤已知可忽略的 404（如 favicon）
     page.on('pageerror', (err) => jsErrors.push(err.message));
-    page.on('response', (resp) => {
-      if (resp.status() >= 400 && resp.url().includes('favicon')) _ignored404.add(resp.url());
-    });
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
         const t = msg.text();
-        if (t.includes('favicon') || t.includes('net::') || t.includes('Font')) return;
-        // 忽略僅由 favicon 404 觸發的通用 "Failed to load resource" 訊息
-        if (t.includes('Failed to load resource') && _ignored404.size > 0 && jsErrors.length === 0) return;
-        jsErrors.push(t);
+        if (!t.includes('favicon') && !t.includes('net::') && !t.includes('Font')) jsErrors.push(t);
       }
     });
 

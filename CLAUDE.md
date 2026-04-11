@@ -73,6 +73,7 @@ npm run verify   # 完整驗證 (build + 選擇性 Puppeteer)
 - 遊戲有 4 個模式：classic, elite, coop, practice — 全部必須正常運作
 - HTML inline onclick 對應 window.xxx 函式 — 修改時需同步更新
 - 媒體檔在 assets/ 目錄，Vite 自動複製到 dist/
+- **禁止刪除根目錄下的 `index - *備份*.html` 備份檔案** — 這些是重要的歷史版本備份，絕對不能刪除或移動
 
 ## ✅ 重構完成（全部階段 0→5 完成）
 

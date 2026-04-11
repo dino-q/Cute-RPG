@@ -76,7 +76,7 @@ function startUltPress(){
   if(!g)return;
   const _net=_getNet();
   if(_net&&_net.role==="client"){_clientUltReq=true;return;} // CLIENT 直接發 flag
-  if(g.p.hasBH||g.p.hasTS){if(performance.now()>=(g.ultCdEnd||0))_doUlt();}
+  if(g.p.hasBH||g.p.hasTS||g.p.hasMF){if(performance.now()>=(g.ultCdEnd||0))_doUlt();}
   else if(g.ultCharge>=ULT_CHARGE_NEED)_doUlt();
   else g.ultHold=true;
 }

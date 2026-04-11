@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>完整怪獸圖鑑 — 像素風</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px;min-height:100vh}
+h1{font-size:24px;color:#FF6B6B;margin-bottom:4px;text-shadow:0 0 12px rgba(255,107,107,.4)}
+.sub{font-size:12px;color:rgba(255,255,255,.35);margin-bottom:24px}
+.section{width:100%;max-width:1100px;margin-bottom:28px}
+.section-title{font-size:16px;color:#FFD43B;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,215,75,.15);letter-spacing:2px}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;width:140px;text-align:center}
+.card.wide{width:200px}
+.card canvas{display:block;margin:0 auto 6px;image-rendering:pixelated}
+.name{font-size:13px;font-weight:700}
+.tag{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1px;margin-top:2px}
+.t0 .name{color:#2ECC71} .t1 .name{color:#9B59B6} .t2 .name{color:#ADB5BD} .t3 .name{color:#BE4BDB} .t4 .name{color:#FF4444}
+.role .name{color:#FFA94D} .boss .name{color:#FFD43B} .elite .name{color:#E74C3C}
+.note{margin-top:20px;font-size:11px;color:rgba(255,255,255,.25);max-width:800px;text-align:center;line-height:1.8;border-top:1px solid rgba(255,255,255,.06);padding-top:14px}
+</style>
+</head>
+<body>
+<h1>完整怪獸圖鑑 — 像素風預覽</h1>
+<div class="sub">所有 Tier、Role、Boss、Stage Boss 一覽</div>
+
+<div class="section">
+<div class="section-title">基礎 Tier 0~4 — 一般怪獸</div>
+<div class="row">
+  <div class="card t0"><canvas id="t0" width="120" height="120"></canvas><div class="name">史萊姆</div><div class="tag">TIER 0 · 圓形</div></div>
+  <div class="card t1"><canvas id="t1" width="120" height="120"></canvas><div class="name">蝙蝠</div><div class="tag">TIER 1 · 三角</div></div>
+  <div class="card t2"><canvas id="t2" width="120" height="120"></canvas><div class="name">哥布林</div><div class="tag">TIER 2 · 正方</div></div>
+  <div class="card t3"><canvas id="t3" width="120" height="120"></canvas><div class="name">暗影巫師</div><div class="tag">TIER 3 · 五角</div></div>
+  <div class="card t4"><canvas id="t4" width="120" height="120"></canvas><div class="name">炎魔</div><div class="tag">TIER 4 · 星形</div></div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">特殊 Role — 役職變體</div>
+<div class="row">
+  <div class="card role"><canvas id="rf" width="120" height="120"></canvas><div class="name">側翼者</div><div class="tag">FLANKER · 紫色漩渦</div></div>
+  <div class="card role"><canvas id="rs" width="120" height="120"></canvas><div class="name">射手</div><div class="tag">SHOOTER · 紅色準星</div></div>
+  <div class="card role"><canvas id="rd" width="120" height="120"></canvas><div class="name">衝刺者</div><div class="tag">DASHER · 衝刺軌跡</div></div>
+  <div class="card role"><canvas id="rsh" width="120" height="120"></canvas><div class="name">盾衛</div><div class="tag">SHIELD · 藍色護盾弧</div></div>
+  <div class="card role"><canvas id="re" width="120" height="120"></canvas><div class="name">精英怪</div><div class="tag">ELITE · 紅色光環</div></div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">Stage Boss — 關卡 Boss</div>
+<div class="row">
+  <div class="card wide boss"><canvas id="b20" width="180" height="180"></canvas><div class="name">Lv20 💩 便便王</div><div class="tag">STAGE BOSS · 召喚小兵+暴怒</div></div>
+  <div class="card wide boss"><canvas id="b30" width="180" height="180"></canvas><div class="name">Lv30 😈 惡魔領主</div><div class="tag">STAGE BOSS · 三階段+傳送</div></div>
+  <div class="card wide boss"><canvas id="bw" width="180" height="180"></canvas><div class="name">普通 Boss</div><div class="tag">WAVE BOSS · 韌性/防禦型</div></div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">小兵 — Boss 召喚物</div>
+<div class="row">
+  <div class="card t0"><canvas id="mp" width="120" height="120"></canvas><div class="name">小便便</div><div class="tag">MINI POO · 💩 Boss 召喚</div></div>
+  <div class="card t3"><canvas id="md" width="120" height="120"></canvas><div class="name">小惡魔</div><div class="tag">MINI DEMON · 😈 Boss 召喚</div></div>
+  <div class="card t4"><canvas id="rp" width="120" height="120"></canvas><div class="name">暴怒便便</div><div class="tag">RAGE POO · 半透明亂跑</div></div>
+</div>
+</div>
+
+<div class="note">
+  共計：5 Tier 基礎怪 × 5 Role 變體 + 2 Stage Boss + 1 Wave Boss + 3 召喚小兵 = 完整怪獸系統<br>
+  像素風設計讓每個 Tier 有獨立生物主題，不再是幾何形狀，但仍保留 Tier 等級感
+</div>
+
+<script>
+function px(c,x,y,w,h,color){c.fillStyle=color;c.fillRect(x,y,w||1,h||1)}
+function drawSprite(id,size,fn){
+  const cv=document.getElementById(id),ctx=cv.getContext('2d');
+  const off=document.createElement('canvas');off.width=size;off.height=size;
+  fn(off.getContext('2d'),size);
+  ctx.imageSmoothingEnabled=false;
+  const s=cv.width,pad=8;
+  ctx.drawImage(off,0,0,size,size,pad,pad,s-pad*2,s-pad*2);
+}
+
+// ═══ TIER 0: Slime (史萊姆) ═══
+drawSprite('t0',32,function(c){
+  // Body
+  px(c,12,18,9,1,'#2ECC71');px(c,10,17,13,1,'#2ECC71');
+  px(c,9,14,15,3,'#27AE60');px(c,10,12,13,2,'#2ECC71');
+  px(c,11,11,11,1,'#2ECC71');px(c,12,10,9,1,'#2ECC71');
+  px(c,13,9,7,1,'#3BDE80');
+  px(c,12,10,3,2,'#5BEE9A');px(c,13,9,2,1,'#8BFFC0');
+  // Eyes
+  px(c,13,13,2,2,'#fff');px(c,18,13,2,2,'#fff');
+  px(c,14,14,1,1,'#1a1a2e');px(c,19,14,1,1,'#1a1a2e');
+  // Mouth
+  px(c,15,16,3,1,'#1a6e3a');
+  // Drip
+  px(c,22,17,2,3,'#27AE60');px(c,23,20,1,1,'#2ECC71');
+  px(c,10,19,13,1,'#1a6e3a');
+});
+
+// ═══ TIER 1: Bat (蝙蝠) ═══
+drawSprite('t1',32,function(c){
+  px(c,14,13,5,4,'#6a4a7a');px(c,15,12,3,1,'#7a5a8a');px(c,15,17,3,1,'#5a3a6a');
+  px(c,15,10,3,2,'#7a5a8a');
+  px(c,14,8,1,2,'#6a4a7a');px(c,18,8,1,2,'#6a4a7a');
+  px(c,14,8,1,1,'#8a6a9a');px(c,18,8,1,1,'#8a6a9a');
+  px(c,15,10,1,1,'#FF4444');px(c,17,10,1,1,'#FF4444');
+  px(c,15,12,1,1,'#fff');px(c,17,12,1,1,'#fff');
+  // Wings
+  px(c,6,11,8,1,'#5a3a6a');px(c,4,12,10,1,'#6a4a7a');px(c,3,13,11,1,'#5a3a6a');
+  px(c,4,14,4,1,'#6a4a7a');px(c,10,14,4,1,'#6a4a7a');
+  px(c,5,15,2,1,'#5a3a6a');px(c,11,15,2,1,'#5a3a6a');
+  px(c,19,11,8,1,'#5a3a6a');px(c,19,12,10,1,'#6a4a7a');px(c,19,13,11,1,'#5a3a6a');
+  px(c,19,14,4,1,'#6a4a7a');px(c,25,14,4,1,'#6a4a7a');
+  px(c,20,15,2,1,'#5a3a6a');px(c,26,15,2,1,'#5a3a6a');
+  px(c,6,12,2,1,'#7a5a8a');px(c,25,12,2,1,'#7a5a8a');
+});
+
+// ═══ TIER 2: Goblin (哥布林) ═══
+drawSprite('t2',32,function(c){
+  px(c,10,8,2,1,'#558B2F');px(c,21,8,2,1,'#558B2F');
+  px(c,11,7,1,1,'#66AA33');px(c,21,7,1,1,'#66AA33');
+  px(c,13,6,7,1,'#7CB342');px(c,12,7,9,5,'#689F38');px(c,13,12,7,1,'#689F38');
+  px(c,13,8,3,2,'#FFD43B');px(c,17,8,3,2,'#FFD43B');
+  px(c,14,9,1,1,'#1a1a00');px(c,18,9,1,1,'#1a1a00');
+  px(c,16,10,1,1,'#558B2F');
+  px(c,13,11,7,1,'#3a5a1a');px(c,14,11,1,1,'#fff');px(c,16,11,1,1,'#fff');px(c,18,11,1,1,'#fff');
+  px(c,12,13,9,1,'#8B6914');px(c,11,14,11,5,'#A0522D');px(c,13,17,7,2,'#8B6914');
+  px(c,9,14,2,4,'#689F38');px(c,22,14,2,4,'#689F38');
+  px(c,24,10,2,3,'#8B4513');px(c,23,8,4,2,'#6D3A0A');
+  px(c,12,19,3,3,'#689F38');px(c,18,19,3,3,'#689F38');
+  px(c,11,22,4,1,'#558B2F');px(c,18,22,4,1,'#558B2F');
+});
+
+// ═══ TIER 3: Shadow Mage (暗影巫師) ═══
+drawSprite('t3',32,function(c){
+  // Hood
+  px(c,12,4,9,1,'#5a1a6a');px(c,11,5,11,3,'#4a1060');
+  px(c,16,3,1,1,'#7a3a8a');
+  // Face shadow
+  px(c,12,8,9,3,'#2a0a30');
+  // Glowing eyes
+  px(c,14,9,2,1,'#DA77F2');px(c,18,9,2,1,'#DA77F2');
+  px(c,14,9,1,1,'#fff');px(c,19,9,1,1,'#fff');
+  // Robe body
+  px(c,10,11,13,1,'#5a1a6a');px(c,9,12,15,9,'#4a1060');
+  px(c,11,12,11,6,'#3a0a50');
+  // Magical symbols on robe
+  px(c,15,14,3,1,'#DA77F2');px(c,16,13,1,3,'#DA77F2');
+  // Staff (left)
+  px(c,7,5,1,16,'#5C3A1E');px(c,6,4,3,1,'#BE4BDB');px(c,5,3,5,1,'#DA77F2');
+  px(c,7,2,1,1,'#fff');
+  // Robe bottom (jagged)
+  px(c,9,21,3,1,'#4a1060');px(c,13,21,2,2,'#4a1060');
+  px(c,18,21,2,2,'#4a1060');px(c,21,21,3,1,'#4a1060');
+  // Aura particles
+  px(c,5,10,1,1,'#DA77F2');px(c,26,8,1,1,'#DA77F2');
+  px(c,4,15,1,1,'#9C36B5');px(c,27,13,1,1,'#9C36B5');
+});
+
+// ═══ TIER 4: Flame Demon (炎魔) ═══
+drawSprite('t4',32,function(c){
+  // Horns
+  px(c,11,3,2,1,'#8B0000');px(c,10,4,2,2,'#A00000');
+  px(c,20,3,2,1,'#8B0000');px(c,21,4,2,2,'#A00000');
+  // Head
+  px(c,13,5,7,1,'#C0392B');px(c,12,6,9,5,'#E74C3C');px(c,13,11,7,1,'#C0392B');
+  px(c,13,7,2,2,'#FFD43B');px(c,18,7,2,2,'#FFD43B');
+  px(c,14,8,1,1,'#FF0');px(c,19,8,1,1,'#FF0');
+  px(c,14,10,5,1,'#8B0000');px(c,15,10,1,1,'#fff');px(c,17,10,1,1,'#fff');
+  // Wings
+  px(c,3,10,2,1,'#8B0000');px(c,2,11,4,1,'#A00000');px(c,1,12,6,1,'#8B0000');
+  px(c,2,13,5,1,'#C0392B');px(c,3,14,5,1,'#A00000');
+  px(c,28,10,2,1,'#8B0000');px(c,27,11,4,1,'#A00000');px(c,26,12,6,1,'#8B0000');
+  px(c,26,13,5,1,'#C0392B');px(c,24,14,5,1,'#A00000');
+  // Body
+  px(c,10,12,13,1,'#C0392B');px(c,10,13,13,8,'#E74C3C');
+  px(c,13,14,7,3,'#C0392B');px(c,15,15,3,1,'#FFD43B');px(c,16,14,1,3,'#FFD43B');
+  px(c,8,13,2,5,'#E74C3C');px(c,23,13,2,5,'#E74C3C');
+  px(c,7,18,2,1,'#FFD43B');px(c,24,18,2,1,'#FFD43B');
+  px(c,10,21,13,1,'#8B0000');px(c,14,21,5,1,'#FFD43B');
+  px(c,11,22,4,4,'#C0392B');px(c,18,22,4,4,'#C0392B');
+  px(c,10,26,5,2,'#4a0000');px(c,18,26,5,2,'#4a0000');
+  // Fire aura
+  px(c,7,6,1,1,'#FF6');px(c,25,5,1,1,'#FF6');px(c,6,19,1,1,'#F80');px(c,26,20,1,1,'#F80');
+});
+
+// ═══ ROLES (以 Tier 1 蝙蝠為基底示範) ═══
+function drawRoleBase(c, color){
+  // Simple circular enemy base
+  for(let dy=-6;dy<=6;dy++) for(let dx=-6;dx<=6;dx++){
+    if(dx*dx+dy*dy<=42) px(c,16+dx,16+dy,1,1,color);
+  }
+  // Eyes
+  px(c,13,14,2,2,'#fff');px(c,18,14,2,2,'#fff');
+  px(c,14,15,1,1,'#1a1a2e');px(c,19,15,1,1,'#1a1a2e');
+  px(c,14,18,5,1,'#a04040');
+}
+
+// Flanker
+drawSprite('rf',32,function(c){
+  drawRoleBase(c,'#FFA94D');
+  // Purple spiral rings
+  px(c,6,12,2,1,'#DA77F2');px(c,5,14,1,2,'#DA77F2');
+  px(c,6,17,2,1,'#DA77F2');px(c,8,18,1,2,'#DA77F2');
+  px(c,24,12,2,1,'#DA77F2');px(c,26,14,1,2,'#DA77F2');
+  px(c,24,17,2,1,'#DA77F2');px(c,22,18,1,2,'#DA77F2');
+  // Speed lines
+  px(c,2,15,3,1,'#DA77F2');px(c,27,15,3,1,'#DA77F2');
+});
+
+// Shooter
+drawSprite('rs',32,function(c){
+  drawRoleBase(c,'#FF6B6B');
+  // Crosshair above
+  px(c,16,3,1,5,'#FF4444');px(c,13,5,7,1,'#FF4444');
+  // Circle
+  px(c,14,3,1,1,'#FF4444');px(c,18,3,1,1,'#FF4444');
+  px(c,14,7,1,1,'#FF4444');px(c,18,7,1,1,'#FF4444');
+  // Bullet projectile
+  px(c,26,16,3,1,'#FF6B6B');px(c,27,15,1,3,'#FF8');
+});
+
+// Dasher
+drawSprite('rd',32,function(c){
+  drawRoleBase(c,'#E8590C');
+  // Dash trail (ghost)
+  for(let dy=-4;dy<=4;dy++) for(let dx=-4;dx<=4;dx++){
+    if(dx*dx+dy*dy<=20) px(c,8+dx,16+dy,1,1,'rgba(232,89,12,.3)');
+  }
+  // Speed lines
+  px(c,1,14,5,1,'#FF4444');px(c,1,16,4,1,'#FF4444');px(c,2,18,3,1,'#FF4444');
+  // Direction arrow
+  px(c,25,16,3,1,'#FF4444');px(c,27,15,1,1,'#FF4444');px(c,27,17,1,1,'#FF4444');
+  px(c,28,16,1,1,'#FF8');
+});
+
+// Shield
+drawSprite('rsh',32,function(c){
+  drawRoleBase(c,'#868E96');
+  // Shield arc (blue)
+  px(c,22,10,2,1,'#4DABF7');px(c,23,11,2,3,'#4DABF7');px(c,23,14,2,5,'#4DABF7');
+  px(c,22,19,2,1,'#4DABF7');px(c,23,12,1,6,'#74C0FC');
+  // HP buff indicator
+  px(c,14,24,5,2,'#4DABF7');
+});
+
+// Elite
+drawSprite('re',32,function(c){
+  // Red glow aura
+  for(let dy=-9;dy<=9;dy++) for(let dx=-9;dx<=9;dx++){
+    const d=dx*dx+dy*dy;
+    if(d<=85 && d>50) px(c,16+dx,16+dy,1,1,'#E74C3C');
+  }
+  // Body (red enemy)
+  for(let dy=-5;dy<=5;dy++) for(let dx=-5;dx<=5;dx++){
+    if(dx*dx+dy*dy<=30) px(c,16+dx,16+dy,1,1,'#C0392B');
+  }
+  for(let dy=-4;dy<=4;dy++) for(let dx=-4;dx<=4;dx++){
+    if(dx*dx+dy*dy<=20) px(c,16+dx,16+dy,1,1,'#E74C3C');
+  }
+  px(c,13,14,2,2,'#fff');px(c,18,14,2,2,'#fff');
+  px(c,14,15,1,1,'#FF0');px(c,19,15,1,1,'#FF0');
+  px(c,14,18,5,1,'#8B0000');
+  // Shield icon
+  px(c,15,10,3,1,'#4DABF7');px(c,15,11,3,1,'#4DABF7');px(c,16,12,1,1,'#4DABF7');
+});
+
+// ═══ STAGE BOSS: Lv20 Poo ═══
+drawSprite('b20',48,function(c){
+  // Main poo body (stacked swirls)
+  // Bottom layer
+  px(c,14,32,21,3,'#8B6914');px(c,12,31,25,1,'#A07020');
+  px(c,16,35,17,2,'#7a5a10');
+  // Middle layer
+  px(c,16,26,17,6,'#A07020');px(c,14,27,21,4,'#8B6914');
+  px(c,18,25,13,1,'#B08030');
+  // Top layer
+  px(c,18,20,13,6,'#A07020');px(c,20,18,9,2,'#B08030');
+  px(c,22,16,5,2,'#C09040');
+  // Tip (swirl top)
+  px(c,23,14,3,2,'#C09040');px(c,25,13,2,1,'#B08030');px(c,26,12,1,1,'#A07020');
+  // Shine highlights
+  px(c,19,20,2,2,'#C09040');px(c,15,28,2,2,'#B08030');
+  // Face
+  px(c,19,27,3,3,'#fff');px(c,27,27,3,3,'#fff');
+  px(c,20,28,2,2,'#1a1a2e');px(c,28,28,2,2,'#1a1a2e');
+  px(c,20,28,1,1,'#fff');px(c,28,28,1,1,'#fff');
+  // Eyebrows (angry)
+  px(c,18,26,4,1,'#6a4a00');px(c,27,26,4,1,'#6a4a00');
+  // Mouth
+  px(c,22,32,5,1,'#6a4a00');px(c,23,33,3,1,'#8a6a10');
+  // Crown (boss indicator)
+  px(c,20,12,9,2,'#FFD43B');px(c,21,10,2,2,'#FFD43B');px(c,24,10,1,2,'#FFD43B');px(c,26,10,2,2,'#FFD43B');
+  px(c,22,9,1,1,'#FFF');px(c,24,9,1,1,'#FF6B6B');px(c,27,9,1,1,'#FFF');
+  // Stink lines
+  px(c,10,18,1,3,'#8a8');px(c,8,16,1,3,'#8a8');px(c,37,17,1,3,'#8a8');px(c,39,19,1,3,'#8a8');
+});
+
+// ═══ STAGE BOSS: Lv30 Demon Lord ═══
+drawSprite('b30',48,function(c){
+  // Horns (large)
+  px(c,11,6,3,2,'#4a0040');px(c,9,4,3,2,'#6a0060');px(c,8,2,2,2,'#8a0080');px(c,7,1,2,1,'#9B59B6');
+  px(c,34,6,3,2,'#4a0040');px(c,36,4,3,2,'#6a0060');px(c,38,2,2,2,'#8a0080');px(c,39,1,2,1,'#9B59B6');
+  // Head
+  px(c,16,6,16,2,'#9B59B6');px(c,14,8,20,10,'#8E44AD');px(c,16,18,16,2,'#7D3C98');
+  // Forehead gem
+  px(c,22,7,4,2,'#FF4444');px(c,23,7,2,1,'#FF8');
+  // Eyes (three phases shown: purple->red)
+  px(c,18,11,4,3,'#fff');px(c,26,11,4,3,'#fff');
+  px(c,19,12,3,2,'#E74C3C');px(c,27,12,3,2,'#E74C3C');
+  px(c,20,12,1,1,'#FF0');px(c,28,12,1,1,'#FF0');
+  // Nose
+  px(c,23,15,2,1,'#6a2a60');
+  // Mouth (grinning with fangs)
+  px(c,18,16,12,2,'#4a0040');
+  px(c,19,16,1,2,'#fff');px(c,22,16,1,2,'#fff');px(c,25,16,1,2,'#fff');px(c,28,16,1,2,'#fff');
+  // Body (armored)
+  px(c,12,20,24,14,'#6a2a60');px(c,14,20,20,10,'#8E44AD');
+  // Chest symbol (pentagram)
+  px(c,22,22,4,1,'#FF4444');px(c,21,23,6,1,'#FF4444');
+  px(c,23,24,2,3,'#FF4444');px(c,22,24,1,1,'#FFD43B');px(c,25,24,1,1,'#FFD43B');
+  // Shoulder pads
+  px(c,9,20,4,4,'#9B59B6');px(c,35,20,4,4,'#9B59B6');
+  px(c,10,20,2,1,'#BE4BDB');px(c,36,20,2,1,'#BE4BDB');
+  // Wings (large, behind)
+  px(c,3,12,3,1,'#6a0060');px(c,1,14,5,1,'#8a0080');px(c,0,16,6,2,'#6a0060');
+  px(c,2,18,5,2,'#8a0080');px(c,4,20,4,2,'#6a0060');px(c,6,22,3,2,'#8a0080');
+  px(c,42,12,3,1,'#6a0060');px(c,42,14,5,1,'#8a0080');px(c,42,16,6,2,'#6a0060');
+  px(c,41,18,5,2,'#8a0080');px(c,40,20,4,2,'#6a0060');px(c,39,22,3,2,'#8a0080');
+  // Arms
+  px(c,8,22,4,6,'#8E44AD');px(c,36,22,4,6,'#8E44AD');
+  // Claws
+  px(c,7,28,2,1,'#FFD43B');px(c,6,29,1,1,'#FFD43B');
+  px(c,38,28,2,1,'#FFD43B');px(c,40,29,1,1,'#FFD43B');
+  // Belt
+  px(c,12,34,24,2,'#4a0040');px(c,21,34,6,2,'#FFD43B');
+  // Legs
+  px(c,16,36,6,6,'#7D3C98');px(c,26,36,6,6,'#7D3C98');
+  px(c,15,42,7,2,'#4a0040');px(c,26,42,7,2,'#4a0040');
+  // Tail
+  px(c,23,36,2,1,'#7D3C98');px(c,22,37,2,1,'#6a2a60');px(c,21,38,2,1,'#7D3C98');
+  px(c,20,39,2,1,'#6a2a60');px(c,18,39,3,1,'#9B59B6');
+  // Phase aura dots
+  px(c,5,8,1,1,'#BE4BDB');px(c,43,10,1,1,'#E74C3C');px(c,3,30,1,1,'#9B59B6');px(c,44,28,1,1,'#FF4444');
+});
+
+// ═══ Wave Boss (普通 Boss - larger enemy) ═══
+drawSprite('bw',48,function(c){
+  // Large star shape (tier 4 boss, scaled up)
+  const cx0=24,cy0=24;
+  // Body glow
+  for(let dy=-14;dy<=14;dy++) for(let dx=-14;dx<=14;dx++){
+    const d=Math.sqrt(dx*dx+dy*dy);
+    if(d<=14 && d>11) px(c,cx0+dx,cy0+dy,1,1,'#FFD43B');
+  }
+  // Star body
+  const pts=[];
+  for(let i=0;i<10;i++){
+    const a=Math.PI/2+i*Math.PI/5;
+    const rr=i%2===0?11:5;
+    pts.push([cx0+Math.cos(a)*rr|0, cy0-Math.sin(a)*rr|0]);
+  }
+  // Fill star roughly
+  for(let dy=-11;dy<=11;dy++) for(let dx=-11;dx<=11;dx++){
+    const d=Math.sqrt(dx*dx+dy*dy);
+    const a=Math.atan2(-dy,dx);
+    const sa=((a+Math.PI*2.5)%(Math.PI*2))/(Math.PI*2)*10;
+    const si=sa|0, sf=sa-si;
+    const r1=si%2===0?11:5, r2=(si+1)%2===0?11:5;
+    const maxR=r1*(1-sf)+r2*sf;
+    if(d<=maxR) px(c,cx0+dx,cy0+dy,1,1,d<maxR*.6?'#FA5252':'#E03131');
+  }
+  // Face
+  px(c,20,22,3,3,'#fff');px(c,26,22,3,3,'#fff');
+  px(c,21,23,2,2,'#FF0');px(c,27,23,2,2,'#FF0');
+  px(c,22,23,1,1,'#C00');px(c,28,23,1,1,'#C00');
+  px(c,23,27,3,1,'#8B0000');
+  // Dashed ring
+  for(let i=0;i<24;i++){
+    if(i%3===0) continue;
+    const a=i*Math.PI*2/24;
+    px(c,cx0+Math.cos(a)*16|0, cy0-Math.sin(a)*16|0, 1,1,'#FFD43B');
+  }
+  // Crown
+  px(c,20,11,9,2,'#FFD43B');px(c,21,9,2,2,'#FFD43B');px(c,24,9,1,2,'#FFD43B');px(c,26,9,2,2,'#FFD43B');
+});
+
+// ═══ Mini Poo ═══
+drawSprite('mp',24,function(c){
+  px(c,8,14,9,2,'#A0822A');px(c,9,12,7,2,'#8B6914');
+  px(c,10,10,5,2,'#A0822A');px(c,11,8,3,2,'#B08030');px(c,12,7,2,1,'#C09040');
+  px(c,10,13,2,1,'#fff');px(c,14,13,2,1,'#fff');
+  px(c,11,13,1,1,'#333');px(c,15,13,1,1,'#333');
+  px(c,11,15,3,1,'#6a4a00');
+});
+
+// ═══ Mini Demon ═══
+drawSprite('md',24,function(c){
+  // Small purple demon
+  px(c,8,5,1,2,'#6a0060');px(c,15,5,1,2,'#6a0060');
+  px(c,9,7,6,5,'#8E44AD');px(c,10,6,4,1,'#9B59B6');
+  px(c,10,8,2,2,'#fff');px(c,13,8,2,2,'#fff');
+  px(c,11,9,1,1,'#E74C3C');px(c,14,9,1,1,'#E74C3C');
+  px(c,11,11,3,1,'#4a0040');
+  px(c,9,12,6,4,'#7D3C98');
+  px(c,7,10,2,3,'#6a0060');px(c,15,10,2,3,'#6a0060');
+  px(c,10,16,2,2,'#6a2a60');px(c,13,16,2,2,'#6a2a60');
+  // Mini wings
+  px(c,5,9,3,1,'#6a0060');px(c,16,9,3,1,'#6a0060');
+});
+
+// ═══ Rage Poo (semi-transparent style) ═══
+drawSprite('rp',24,function(c){
+  c.globalAlpha=0.5;
+  px(c,8,14,9,2,'#A0822A');px(c,9,12,7,2,'#8B6914');
+  px(c,10,10,5,2,'#A0822A');px(c,11,8,3,2,'#B08030');px(c,12,7,2,1,'#C09040');
+  px(c,10,13,2,1,'#fff');px(c,14,13,2,1,'#fff');
+  px(c,11,13,1,1,'#333');px(c,15,13,1,1,'#333');
+  c.globalAlpha=0.7;
+  // Angry eyebrows
+  px(c,9,12,3,1,'#6a4a00');px(c,13,12,3,1,'#6a4a00');
+  // Angry mouth
+  px(c,11,15,3,1,'#FF4444');
+  c.globalAlpha=1;
+  // Rage aura
+  px(c,6,10,1,1,'#F44');px(c,18,9,1,1,'#F44');px(c,5,15,1,1,'#F44');px(c,19,14,1,1,'#F44');
+});
+</script>
+</body>
+</html>

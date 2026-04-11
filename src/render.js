@@ -56,6 +56,84 @@ export function bCol() { const f = g.p.fx; if (f.dragon) return { f: "#FF922B", 
 export function drawPoly(x, y, r, sides, rot) { cx.beginPath(); for (let i = 0; i <= sides; i++) { const a = rot + Math.PI * 2 * i / sides; i === 0 ? cx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : cx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } cx.closePath(); cx.fill(); }
 export function drawStar(x, y, r, pts, rot) { cx.beginPath(); for (let i = 0; i < pts * 2; i++) { const a = rot + Math.PI * i / pts, rr = i % 2 === 0 ? r : r * .5; i === 0 ? cx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr) : cx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } cx.closePath(); cx.fill(); }
 
+/* ═══ tier pixel sprites (tiers 1-4) ═══ */
+let _tierSprites = null;
+function _spx(c, x, y, w, h, color) { c.fillStyle = color; c.fillRect(x, y, w || 1, h || 1); }
+function _getTierSprites() {
+  if (_tierSprites) return _tierSprites;
+  _tierSprites = {};
+  // Tier 1: Bat (蝙蝠)
+  { const cv = document.createElement('canvas'); cv.width = 32; cv.height = 32; const c = cv.getContext('2d');
+    _spx(c,14,13,5,4,'#6a4a7a');_spx(c,15,12,3,1,'#7a5a8a');_spx(c,15,17,3,1,'#5a3a6a');
+    _spx(c,15,10,3,2,'#7a5a8a');
+    _spx(c,14,8,1,2,'#6a4a7a');_spx(c,18,8,1,2,'#6a4a7a');
+    _spx(c,14,8,1,1,'#8a6a9a');_spx(c,18,8,1,1,'#8a6a9a');
+    _spx(c,15,10,1,1,'#FF4444');_spx(c,17,10,1,1,'#FF4444');
+    _spx(c,15,12,1,1,'#fff');_spx(c,17,12,1,1,'#fff');
+    _spx(c,6,11,8,1,'#5a3a6a');_spx(c,4,12,10,1,'#6a4a7a');_spx(c,3,13,11,1,'#5a3a6a');
+    _spx(c,4,14,4,1,'#6a4a7a');_spx(c,10,14,4,1,'#6a4a7a');
+    _spx(c,5,15,2,1,'#5a3a6a');_spx(c,11,15,2,1,'#5a3a6a');
+    _spx(c,19,11,8,1,'#5a3a6a');_spx(c,19,12,10,1,'#6a4a7a');_spx(c,19,13,11,1,'#5a3a6a');
+    _spx(c,19,14,4,1,'#6a4a7a');_spx(c,25,14,4,1,'#6a4a7a');
+    _spx(c,20,15,2,1,'#5a3a6a');_spx(c,26,15,2,1,'#5a3a6a');
+    _spx(c,6,12,2,1,'#7a5a8a');_spx(c,25,12,2,1,'#7a5a8a');
+    _tierSprites[1] = cv; }
+  // Tier 2: Goblin (哥布林)
+  { const cv = document.createElement('canvas'); cv.width = 32; cv.height = 32; const c = cv.getContext('2d');
+    _spx(c,10,8,2,1,'#558B2F');_spx(c,21,8,2,1,'#558B2F');
+    _spx(c,11,7,1,1,'#66AA33');_spx(c,21,7,1,1,'#66AA33');
+    _spx(c,13,6,7,1,'#7CB342');_spx(c,12,7,9,5,'#689F38');_spx(c,13,12,7,1,'#689F38');
+    _spx(c,13,8,3,2,'#FFD43B');_spx(c,17,8,3,2,'#FFD43B');
+    _spx(c,14,9,1,1,'#1a1a00');_spx(c,18,9,1,1,'#1a1a00');
+    _spx(c,16,10,1,1,'#558B2F');
+    _spx(c,13,11,7,1,'#3a5a1a');_spx(c,14,11,1,1,'#fff');_spx(c,16,11,1,1,'#fff');_spx(c,18,11,1,1,'#fff');
+    _spx(c,12,13,9,1,'#8B6914');_spx(c,11,14,11,5,'#A0522D');_spx(c,13,17,7,2,'#8B6914');
+    _spx(c,9,14,2,4,'#689F38');_spx(c,22,14,2,4,'#689F38');
+    _spx(c,24,10,2,3,'#8B4513');_spx(c,23,8,4,2,'#6D3A0A');
+    _spx(c,12,19,3,3,'#689F38');_spx(c,18,19,3,3,'#689F38');
+    _spx(c,11,22,4,1,'#558B2F');_spx(c,18,22,4,1,'#558B2F');
+    _tierSprites[2] = cv; }
+  // Tier 3: Shadow Mage (暗影巫師)
+  { const cv = document.createElement('canvas'); cv.width = 32; cv.height = 32; const c = cv.getContext('2d');
+    _spx(c,12,4,9,1,'#5a1a6a');_spx(c,11,5,11,3,'#4a1060');
+    _spx(c,16,3,1,1,'#7a3a8a');
+    _spx(c,12,8,9,3,'#2a0a30');
+    _spx(c,14,9,2,1,'#DA77F2');_spx(c,18,9,2,1,'#DA77F2');
+    _spx(c,14,9,1,1,'#fff');_spx(c,19,9,1,1,'#fff');
+    _spx(c,10,11,13,1,'#5a1a6a');_spx(c,9,12,15,9,'#4a1060');
+    _spx(c,11,12,11,6,'#3a0a50');
+    _spx(c,15,14,3,1,'#DA77F2');_spx(c,16,13,1,3,'#DA77F2');
+    _spx(c,7,5,1,16,'#5C3A1E');_spx(c,6,4,3,1,'#BE4BDB');_spx(c,5,3,5,1,'#DA77F2');
+    _spx(c,7,2,1,1,'#fff');
+    _spx(c,9,21,3,1,'#4a1060');_spx(c,13,21,2,2,'#4a1060');
+    _spx(c,18,21,2,2,'#4a1060');_spx(c,21,21,3,1,'#4a1060');
+    _spx(c,5,10,1,1,'#DA77F2');_spx(c,26,8,1,1,'#DA77F2');
+    _spx(c,4,15,1,1,'#9C36B5');_spx(c,27,13,1,1,'#9C36B5');
+    _tierSprites[3] = cv; }
+  // Tier 4: Flame Demon (炎魔)
+  { const cv = document.createElement('canvas'); cv.width = 32; cv.height = 32; const c = cv.getContext('2d');
+    _spx(c,11,3,2,1,'#8B0000');_spx(c,10,4,2,2,'#A00000');
+    _spx(c,20,3,2,1,'#8B0000');_spx(c,21,4,2,2,'#A00000');
+    _spx(c,13,5,7,1,'#C0392B');_spx(c,12,6,9,5,'#E74C3C');_spx(c,13,11,7,1,'#C0392B');
+    _spx(c,13,7,2,2,'#FFD43B');_spx(c,18,7,2,2,'#FFD43B');
+    _spx(c,14,8,1,1,'#FF0');_spx(c,19,8,1,1,'#FF0');
+    _spx(c,14,10,5,1,'#8B0000');_spx(c,15,10,1,1,'#fff');_spx(c,17,10,1,1,'#fff');
+    _spx(c,3,10,2,1,'#8B0000');_spx(c,2,11,4,1,'#A00000');_spx(c,1,12,6,1,'#8B0000');
+    _spx(c,2,13,5,1,'#C0392B');_spx(c,3,14,5,1,'#A00000');
+    _spx(c,28,10,2,1,'#8B0000');_spx(c,27,11,4,1,'#A00000');_spx(c,26,12,6,1,'#8B0000');
+    _spx(c,26,13,5,1,'#C0392B');_spx(c,24,14,5,1,'#A00000');
+    _spx(c,10,12,13,1,'#C0392B');_spx(c,10,13,13,8,'#E74C3C');
+    _spx(c,13,14,7,3,'#C0392B');_spx(c,15,15,3,1,'#FFD43B');_spx(c,16,14,1,3,'#FFD43B');
+    _spx(c,8,13,2,5,'#E74C3C');_spx(c,23,13,2,5,'#E74C3C');
+    _spx(c,7,18,2,1,'#FFD43B');_spx(c,24,18,2,1,'#FFD43B');
+    _spx(c,10,21,13,1,'#8B0000');_spx(c,14,21,5,1,'#FFD43B');
+    _spx(c,11,22,4,4,'#C0392B');_spx(c,18,22,4,4,'#C0392B');
+    _spx(c,10,26,5,2,'#4a0000');_spx(c,18,26,5,2,'#4a0000');
+    _spx(c,7,6,1,1,'#FF6');_spx(c,25,5,1,1,'#FF6');_spx(c,6,19,1,1,'#F80');_spx(c,26,20,1,1,'#F80');
+    _tierSprites[4] = cv; }
+  return _tierSprites;
+}
+
 /* ═══ weapon config ═══ */
 // [bladeColor, glowColor, lengthMul, width, guardColor]
 export const WP = {
@@ -284,6 +362,161 @@ export function drawPlayer(x, y, r, t, col, face) {
     cx.beginPath(); cx.moveTo(hbx - f * 1, hby + 2);
     cx.quadraticCurveTo(hbx - f * 8, hby + 8 + Math.sin(t * 3.5) * 3, hbx - f * 13, hby + 14 + Math.sin(t * 2.8) * 4);
     cx.stroke(); cx.restore();
+  } else if (ct === "assassin") {
+    // ─── 刺客（參考 assassin-chibi-preview）：頭罩 + 飄帶 + 交叉匕首 ───
+    const _aAd = (g && g.ad) ? g.ad : { x: f, y: 0 };
+    const _aAng = Math.atan2(_aAd.y, _aAd.x);
+    const _now = performance.now();
+    // 隱身效果（影襲 or 暗影步擊殺）
+    const _shadowActive = g && (
+      (g.p._shadowStrikeEnd && _now < g.p._shadowStrikeEnd) ||
+      (g.p._shadowStepEnd && _now < g.p._shadowStepEnd)
+    );
+    if (_shadowActive) {
+      cx.globalAlpha = .35 + Math.sin(_now / 50) * .12;
+      // 隱身紫色光環特效
+      cx.save();
+      cx.strokeStyle = "#DA77F2"; cx.lineWidth = 1.5;
+      cx.globalAlpha = .3 + Math.sin(_now / 100) * .15;
+      cx.shadowColor = "#BE4BDB"; cx.shadowBlur = 10;
+      cx.setLineDash([4, 4]);
+      cx.beginPath(); cx.arc(x, cy, r + 5 + Math.sin(_now / 150) * 2, 0, TAU); cx.stroke();
+      cx.setLineDash([]);
+      cx.shadowBlur = 0;
+      cx.restore();
+      cx.globalAlpha = .35 + Math.sin(_now / 50) * .12;
+    }
+
+    // === 紫色飄帶（身體後方）===
+    cx.save(); cx.lineCap = "round"; cx.globalAlpha = .85;
+    cx.shadowColor = "#BE4BDB"; cx.shadowBlur = 6;
+    const rbx = x - f * r * .8, rby = cy - r * .3;
+    cx.strokeStyle = "#BE4BDB"; cx.lineWidth = 2.5;
+    cx.beginPath(); cx.moveTo(rbx, rby);
+    cx.quadraticCurveTo(rbx - f * 14, rby + 6 + Math.sin(t * 4) * 5, rbx - f * 28, rby + 12 + Math.sin(t * 3) * 7);
+    cx.stroke();
+    cx.lineWidth = 1.8; cx.strokeStyle = "#9C36B5";
+    cx.beginPath(); cx.moveTo(rbx - f * 2, rby + 3);
+    cx.quadraticCurveTo(rbx - f * 10, rby + 10 + Math.sin(t * 3.5) * 4, rbx - f * 22, rby + 18 + Math.sin(t * 2.8) * 6);
+    cx.stroke();
+    cx.lineWidth = 1; cx.strokeStyle = "#DA77F2"; cx.globalAlpha = .5;
+    cx.beginPath(); cx.moveTo(rbx - f * 1, rby + 5);
+    cx.quadraticCurveTo(rbx - f * 8, rby + 14 + Math.sin(t * 3) * 3, rbx - f * 18, rby + 22 + Math.sin(t * 2.5) * 5);
+    cx.stroke();
+    cx.shadowBlur = 0; cx.restore();
+
+    // === 雙匕首（交叉斬動畫）===
+    let dPush = 0;
+    const crossAmt = _atkA ? Math.sin(t * 10) : Math.sin(t * 6) * .3;
+    const crossSpd = _atkA ? Math.cos(t * 10) : 0;
+    if (_atkA) {
+      const t1 = 60, t2 = 100, t3 = 90;
+      if (_atkEl < t1) { dPush = (_atkEl / t1) * 14; }
+      else if (_atkEl < t1 + t2) { dPush = 14 * (1 - (_atkEl - t1) / t2 * .5); }
+      else if (_atkEl < t1 + t2 + t3) { dPush = 7 * (1 - (_atkEl - t1 - t2) / t3); }
+    }
+    const pivotX = x + f * r * .65 + Math.cos(_aAng) * dPush, pivotY = cy + Math.sin(_aAng) * dPush * .5;
+    const spread = crossAmt * .45;
+    // 斬擊殘影
+    if (_atkA && Math.abs(crossSpd) > .7) {
+      cx.save(); cx.globalAlpha = .12 + Math.abs(crossSpd) * .08;
+      cx.strokeStyle = "#DA77F2"; cx.lineWidth = 1; cx.lineCap = "round";
+      cx.beginPath(); cx.moveTo(pivotX - 4, pivotY - r * .6); cx.lineTo(pivotX + r * .5, pivotY + r * .3); cx.stroke();
+      cx.beginPath(); cx.moveTo(pivotX - 4, pivotY + r * .6); cx.lineTo(pivotX + r * .5, pivotY - r * .3); cx.stroke();
+      cx.restore();
+    }
+    // 匕首繪製 helper
+    const _drawDagger = (offY, baseRot, crossRot) => {
+      cx.save();
+      cx.translate(pivotX, pivotY + offY);
+      cx.rotate(baseRot + crossRot);
+      cx.shadowColor = "#BE4BDB"; cx.shadowBlur = 5;
+      const bg2 = cx.createLinearGradient(0, -r * .65, 0, 0);
+      bg2.addColorStop(0, "#fff"); bg2.addColorStop(.25, "#E8E8E8"); bg2.addColorStop(.6, "#CED4DA"); bg2.addColorStop(1, "#ADB5BD");
+      cx.fillStyle = bg2;
+      cx.beginPath(); cx.moveTo(-1.8, 0); cx.lineTo(-1.2, -r * .55); cx.lineTo(0, -r * .72); cx.lineTo(1.2, -r * .55); cx.lineTo(1.8, 0); cx.closePath(); cx.fill();
+      cx.strokeStyle = "rgba(255,255,255,.5)"; cx.lineWidth = .5;
+      cx.beginPath(); cx.moveTo(0, -r * .1); cx.lineTo(0, -r * .65); cx.stroke();
+      cx.strokeStyle = "rgba(190,75,219,.3)"; cx.lineWidth = .8;
+      cx.beginPath(); cx.moveTo(1.4, -r * .1); cx.lineTo(.9, -r * .5); cx.stroke();
+      cx.shadowBlur = 0;
+      cx.fillStyle = "#9C36B5";
+      cx.beginPath(); cx.moveTo(-5, -1); cx.lineTo(-4.5, 1.5); cx.lineTo(4.5, 1.5); cx.lineTo(5, -1); cx.closePath(); cx.fill();
+      cx.fillStyle = "#FFD43B"; cx.beginPath(); cx.arc(0, .2, 1.3, 0, TAU); cx.fill();
+      cx.fillStyle = "#2a0a30"; cx.fillRect(-1.8, 1.5, 3.6, r * .2);
+      cx.restore();
+    };
+    _drawDagger(-r * .15, f > 0 ? -.4 : -.4 + PI, spread);
+    _drawDagger(r * .15, f > 0 ? .4 : .4 + PI, -spread);
+    // 交叉火花
+    if (_atkA && crossAmt < -.6) {
+      cx.save();
+      const gi = (-crossAmt - .6) / .4;
+      cx.globalAlpha = gi * .7; cx.shadowColor = "#fff"; cx.shadowBlur = 8; cx.fillStyle = "#fff";
+      cx.beginPath(); cx.arc(pivotX + r * .15, pivotY, 2, 0, TAU); cx.fill();
+      cx.fillStyle = "#DA77F2"; cx.shadowColor = "#BE4BDB";
+      cx.beginPath(); cx.arc(pivotX + r * .15, pivotY, 1.5 * gi, 0, TAU); cx.fill();
+      cx.restore();
+    }
+
+    // === 身體（紫色球 chibi 漸層）===
+    const bg = cx.createRadialGradient(x - f * r * .12, cy - r * .32, r * .08, x, cy, r);
+    bg.addColorStop(0, "#fff"); bg.addColorStop(.2, "#F3E4FF"); bg.addColorStop(.55, "#DDB4FE"); bg.addColorStop(.8, "#C577F2"); bg.addColorStop(1, "#9C36B5");
+    cx.beginPath(); cx.arc(x, cy, r, 0, TAU); cx.fillStyle = bg; cx.fill();
+    cx.strokeStyle = "rgba(255,255,255,.1)"; cx.lineWidth = 1; cx.stroke();
+    cx.fillStyle = "rgba(255,255,255,.1)";
+    cx.beginPath(); cx.arc(x - r * .15, cy - r * .25, r * .42, 0, TAU); cx.fill();
+    cx.fillStyle = "rgba(255,255,255,.08)";
+    cx.beginPath(); cx.arc(x - r * .25, cy - r * .35, r * .2, 0, TAU); cx.fill();
+
+    // === 面罩（紫色弧線，簡潔神秘）===
+    cx.save(); cx.globalAlpha = .8;
+    cx.strokeStyle = "#9C36B5"; cx.lineWidth = 2;
+    cx.beginPath(); cx.arc(x, cy + 1, r - 2, PI * .1, PI * .9); cx.stroke();
+    cx.restore();
+
+    // === 邊緣光暈 ===
+    cx.save();
+    const edgeGlow = cx.createRadialGradient(x, cy, r - 2, x, cy, r + 6);
+    edgeGlow.addColorStop(0, "transparent"); edgeGlow.addColorStop(.6, "rgba(190,75,219,.08)"); edgeGlow.addColorStop(1, "rgba(190,75,219,.02)");
+    cx.fillStyle = edgeGlow; cx.beginPath(); cx.arc(x, cy, r + 6, 0, TAU); cx.fill();
+    cx.restore();
+
+    // === 暗影粒子（旋轉菱形）===
+    for (let i = 0; i < 5; i++) {
+      const a = t * 2 + i * TAU / 5;
+      const dist = r * 1.6 + Math.sin(t * 2.2 + i * 1.4) * 4;
+      const px = x + Math.cos(a) * dist, py = cy + Math.sin(a) * dist;
+      cx.save(); cx.globalAlpha = .22 + Math.sin(t * 3 + i) * .1;
+      cx.shadowColor = "#BE4BDB"; cx.shadowBlur = 4; cx.fillStyle = "#DA77F2";
+      cx.translate(px, py); cx.rotate(a + t);
+      cx.beginPath(); cx.moveTo(0, -2.5); cx.lineTo(1.8, 0); cx.lineTo(0, 2.5); cx.lineTo(-1.8, 0); cx.closePath();
+      cx.fill(); cx.restore();
+    }
+
+    // === 速度線 ===
+    cx.save(); cx.globalAlpha = .1 + Math.sin(t * 6) * .05; cx.lineCap = "round";
+    for (let i = 0; i < 5; i++) {
+      cx.strokeStyle = i % 2 ? "#DA77F2" : "#BE4BDB"; cx.lineWidth = .8;
+      const ly = cy - 12 + i * 6;
+      cx.beginPath(); cx.moveTo(x - f * 22, ly); cx.lineTo(x - f * (34 + Math.sin(t * 5 + i) * 5), ly); cx.stroke();
+    }
+    cx.restore();
+
+    // === 脈衝環 ===
+    cx.save(); cx.strokeStyle = "#BE4BDB"; cx.lineWidth = 1;
+    cx.globalAlpha = .06 + Math.sin(t * 1.8) * .03;
+    cx.beginPath(); cx.arc(x, cy, r + 16, 0, TAU); cx.stroke();
+    cx.restore();
+
+    // 擊殺加速特效
+    if (g && g.p._killSpeedEnd && _now < g.p._killSpeedEnd) {
+      cx.save(); cx.globalAlpha = .3 + Math.sin(_now / 80) * .1;
+      cx.strokeStyle = "#DA77F2"; cx.lineWidth = 1.5;
+      cx.beginPath(); cx.arc(x, cy, r + 4, 0, TAU); cx.stroke();
+      cx.restore();
+    }
+    if (_shadowActive) { cx.globalAlpha = 1; }
   } else {
     // ─── 坦克（也作為未知角色的 fallback）：身體 + 盾（盾擊推出動畫）───
     const tr = r * 1.1;
@@ -370,7 +603,7 @@ export function drawEnemy(e) {
     cx.beginPath(); cx.arc(x, cy, r * (1.55 - .45 * p), 0, Math.PI * 2); cx.stroke();
     cx.setLineDash([]); cx.restore();
   }
-  // shape by tier
+  // shape by tier — 幾何圖形（圓/三角/菱形/五角/星形）
   cx.fillStyle = e.color;
   if (tier === 0) { cx.beginPath(); cx.arc(x, cy, r, 0, Math.PI * 2); cx.fill(); }
   else if (tier === 1) { drawPoly(x, cy, r, 3, -Math.PI / 2 + Math.sin(e.t) * .15 + f * .1); }

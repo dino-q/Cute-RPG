@@ -1,12 +1,12 @@
 /* ═══════════ PRACTICE MODE ═══════════ */
-import { RC, CHAR, MODE } from "./config.js";
+import { RC, CHAR, MODE, charCfg } from "./config.js";
 import { $, rn, cl } from "./utils.js";
 import { C } from "./cards.js";
 import { bgmStop } from "./audio.js";
 import { SPAWN_R, ER } from "./config.js";
 import { burst } from "./render.js";
 import { spawn, setEnemiesPracticeMode, setEnemiesCoopMode } from "./enemies.js";
-import { addCard } from "./cards-ui.js";
+import { addCard, showCoinFlip } from "./cards-ui.js";
 import { setStageBoss, triggerStageBoss, bossBgmStop } from "./boss.js";
 import { setCombatCoopState } from "./combat.js";
 import { setSkillsCoopState } from "./skills.js";
@@ -88,7 +88,11 @@ export function showCardTip(cid) {
   $("ctName").textContent = c.n;
   $("ctMeta").innerHTML = `<span style="color:${RC2[c.r]}">${c.r}</span> · ${tp2} · ${charLabel}${c.once ? " · 限定一次" : ""}`;
   let lvHtml = "";
+  // 影分身：依角色顯示不同說明
+  const _tipCt = _deps.getG() ? _deps.getG().charType : (_deps.getCharType() || "gunner");
+  const _cloneDescs = c.n === "影分身" ? c.d.map(() => _tipCt === "assassin" ? "每3秒召喚分身攻擊敵人" : _tipCt === "gunner" ? "100%前後攻擊" : "100%全方位攻擊") : null;
   c.d.forEach((desc, i) => {
+    if (_cloneDescs) desc = _cloneDescs[i];
     const lvCol = i === 0 ? "#74C0FC" : i === 1 ? "#DA77F2" : "#FFD43B";
     lvHtml += `<div style="padding:4px 8px;margin:3px 0;border-radius:6px;background:rgba(255,255,255,.04);border-left:3px solid ${lvCol}">
       <span style="color:${lvCol};font-weight:900;font-size:10px">Lv.${i + 1}</span>
@@ -118,10 +122,14 @@ export function pracTogglePanel(which) {
 export function pracRefreshStats() {
   const g = _deps.getG(); if (!g) return;
   const p = g.p, s = $("pracStats");
+  const _cc = charCfg(g.charType);
+  const _atkSpd = _cc.atkType === "melee" && _cc.atkCD > 0
+    ? (1000 / (_cc.atkCD * (p.fr || 1))).toFixed(1) + "次/秒"
+    : Math.round(1000 / (115 * (p.fr || 1))) + "發/秒";
   let h = '<div style="color:#74C0FC;font-weight:900;font-size:12px;margin-bottom:6px">🧙 主角能力值</div>';
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-bottom:8px">';
   const ps = [
-    ["攻擊力", Math.round(p.atk)], ["射速", Math.round(1000 / (115 * (p.fr || 1))) + "發/秒"],
+    ["攻擊力", Math.round(p.atk)], ["攻速", _atkSpd],
     ["分裂", p.split || 1], ["穿透", p.pierce || 0],
     ["暴擊率", Math.round((p.crit || .05) * 100) + "%"], ["護甲", Math.round((p.armor || 0) * 100) + "%"],
     ["閃避", Math.round((p.dodge || 0) * 100) + "%"], ["移速", p.speed?.toFixed(1)],
@@ -189,8 +197,11 @@ export function pracCycleCard(cid) {
   else if (cur === 0) _pracCardLvs[cid] = 1;
   else if (cur === 1) _pracCardLvs[cid] = 2;
   else delete _pracCardLvs[cid];
-  pracRebuildCards();
+  try { pracRebuildCards(); } catch (e) { console.warn("pracRebuildCards error:", e); }
   pracUpdateCardUI(cid);
+  // 探索靴擲幣（選卡時觸發）
+  const g = _deps.getG();
+  if (g && g.p._coinFlip) { g.p._coinFlip = false; showCoinFlip(g.p); }
 }
 
 export function pracUpdateCardUI(cid) {
@@ -223,6 +234,9 @@ export function pracRebuildCards() {
   g.p.invCD = 0; g.p.invDur = 0; g.p._inv = false; g.p._invEnd = 0; g.p.contactCap = 100;
   g.p._ghostSlash = 0; g.p._qiEvery = 0; g.p._qiMul = 0; g.p._drawSlash = 0; g.p._bleedChance = 0;
   g.p._quake = 0; g.p._ironWill = 0; g.p._guardAura = 0; g.p._lightSaber = false; g.p._dragonBreath = 0;
+  g.p._shadowStep = 0; g.p._shadowStepEnd = 0; g.p._critDmgMul = 1; g.p._poisonBlade = 0; g.p._chainKill = false; g.p._atkDodge = 0;
+  g.p._cloneCD = 0; g.p._cloneT = 0; g._clones = [];
+  g.p.hasMF = false; g.p.mfCd = 0; g.p.mfR = 0; g.p.mfDur = 0; g.p.mfDmgMul = 0; g.p.mfSlow = 0; g.mfEnd = 0;
   Object.entries(_pracCardLvs).forEach(([cid, targetLv]) => {
     const cd = C.find(c => c.id === +cid); if (!cd) return;
     for (let l = 0; l <= targetLv; l++) {
@@ -312,10 +326,10 @@ export function exitPractice() {
 // ─── Switch character ─────────────────────────────────────────────────────────
 export function pracSwitchChar() {
   const g = _deps.getG();
-  const chars = ["gunner", "swordsman", "tank"];
-  const names = { "gunner": "🔫槍手", "swordsman": "⚔️劍士", "tank": "🛡️坦克" };
+  const chars = ["gunner", "swordsman", "tank", "assassin"];
+  const names = { "gunner": "🔫槍手", "swordsman": "⚔️劍士", "tank": "🛡️坦克", "assassin": "🗡️刺客" };
   const cur = g ? g.charType : _deps.getCharType();
-  const idx = (chars.indexOf(cur) + 1) % 3;
+  const idx = (chars.indexOf(cur) + 1) % chars.length;
   const next = chars[idx];
   _deps.setCharType(next);
   if (g) {
@@ -366,11 +380,11 @@ export function pracToggleCoop() {
 export function pracCycleP2Char() {
   const g = _deps.getG();
   if (!g || !g.p2) return;
-  const types = ["gunner", "swordsman", "tank"];
-  const names = { gunner: "槍手", swordsman: "劍士", tank: "坦克" };
-  const icons = { gunner: "🔫", swordsman: "⚔️", tank: "🛡️" };
+  const types = ["gunner", "swordsman", "tank", "assassin"];
+  const names = { gunner: "槍手", swordsman: "劍士", tank: "坦克", assassin: "刺客" };
+  const icons = { gunner: "🔫", swordsman: "⚔️", tank: "🛡️", assassin: "🗡️" };
   const cur = g.p2.charType || "gunner";
-  const next = types[(types.indexOf(cur) + 1) % 3];
+  const next = types[(types.indexOf(cur) + 1) % types.length];
   g.p2.charType = next;
   const CC = CHAR[next];
   g.p2.hp = CC.startHp; g.p2.maxHp = CC.startHp; g.p2.atk = CC.startAtk; g.p2.speed = CC.startSpeed; g.p2.armor = CC.armor; g.p2.dodge = CC.dodge; g.p2.crit = CC.crit; g.p2.fr = CC.fr;
@@ -419,13 +433,14 @@ export function openPractice() {
     const g2 = _deps.getG();
     const _pct = g2 ? g2.charType : (_deps.getCharType() || "gunner");
     C.filter(c => !c.charReq || c.charReq === _pct).forEach(c => {
-      h2 += `<div id="prc_${c.id}" onclick="pracCycleCard(${c.id})" oncontextmenu="event.preventDefault();showCardTip(${c.id})" data-cid="${c.id}" style="display:flex;align-items:center;gap:3px;padding:3px 4px;margin:1px 0;border-radius:4px;background:rgba(255,255,255,.03);cursor:pointer;border:1px solid ${RC[c.r]}20;color:${RC[c.r]};user-select:none;-webkit-user-select:none">
+      h2 += `<div id="prc_${c.id}" onclick="window.pracCycleCard(${c.id})" oncontextmenu="event.preventDefault();window.showCardTip(${c.id})" data-cid="${c.id}" style="display:flex;align-items:center;gap:3px;padding:3px 4px;margin:1px 0;border-radius:4px;background:rgba(255,255,255,.03);cursor:pointer;border:1px solid ${RC[c.r]}20;color:${RC[c.r]};user-select:none;-webkit-user-select:none">
         <span style="font-size:12px">${c.e}</span>
         <span style="font-size:8px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.n}</span>
         <span class="pracLvBadge" style="font-size:8px;font-weight:900;min-width:24px;text-align:center;border-radius:3px;padding:1px 3px"></span>
       </div>`;
     });
     cc2.innerHTML = h2;
+    // 長按觸發（手機）
     cc2.querySelectorAll('[data-cid]').forEach(el => {
       let _lpT = 0;
       el.addEventListener('touchstart', e => { _lpT = setTimeout(() => { e.preventDefault(); showCardTip(parseInt(el.dataset.cid)); }, 500); }, { passive: false });

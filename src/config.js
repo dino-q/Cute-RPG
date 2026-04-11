@@ -26,16 +26,17 @@ export const ROLE_NORMAL = "n", ROLE_FLANKER = "f", ROLE_SHOOTER = "s", ROLE_DAS
 export const CHAR = {
   gunner:    {startHp:100,startAtk:2.5,startSpeed:5, fr:1,   crit:.05, dodge:0,   armor:0,   col:"#74C0FC",colMid:"#d4e8ff",colDark:"#4DABF7",
               passive:"狙擊：子彈穿透全部 傷害1.5倍 CD5秒",passiveKey:"none",
-              atkType:"ranged", atkCD:null/*uses HOLD_CD*/, animDur:200, skillIcon:"🎯", skillCD:3000},
+              atkType:"ranged", atkCD:null, animDur:200, skillIcon:"🎯", skillCD:3000},
   swordsman: {startHp:150,startAtk:5,  startSpeed:5.5,fr:1,  crit:.05, dodge:.08, armor:.05, col:"#FF922B",colMid:"#ffe0b2",colDark:"#E8590C",
               passive:"劍氣：每5次攻擊釋放穿透劍氣(200%傷害)",passiveKey:"swordqi",
               atkType:"melee", atkCD:320, animDur:320, skillIcon:"⚔️", skillCD:3000},
   tank:      {startHp:200,startAtk:3,  startSpeed:4, fr:1,   crit:.05, dodge:0,   armor:.15, col:"#51CF66",colMid:"#c8e6c9",colDark:"#2E7D32",
               passive:"鐵壁：受傷反彈15%+每5秒回10HP",passiveKey:"ironwall",
-              atkType:"melee", atkCD:280, animDur:280, skillIcon:"🛡️", skillCD:5000}
+              atkType:"melee", atkCD:280, animDur:280, skillIcon:"🛡️", skillCD:5000},
+  assassin:  {startHp:60, startAtk:2.5,startSpeed:5.7,fr:1,   crit:.15, dodge:.40, armor:0,   col:"#DDB4FE",colMid:"#F3E4FF",colDark:"#C577F2",
+              passive:"疾風連刺：攻速極快、閃避率極高，擊殺敵人加速2秒",passiveKey:"swiftstrike",
+              atkType:"melee", atkCD:150, animDur:150, skillIcon:"🗡️", skillCD:1700}
 };
-
-// Helper: get char config with fallback to gunner
 export function charCfg(ct) { return CHAR[ct] || CHAR.gunner; }
 
 export const MODE = {
@@ -78,7 +79,8 @@ export const RC = {R:"#74C0FC", SR:"#DA77F2", SSR:"#FFD43B"};
 export const RECOMMENDED = {
   tank: new Set(["大地震擊","鋼鐵意志","堅韌心","生命果","石膚術","荊棘之盾"]),
   gunner: new Set(["無盡之刃","分裂彈","鐵壁金身","創世神力","萬物吞噬","影分身"]),
-  swordsman: new Set(["鐵壁金身","天使之翼","毀滅之手","劍氣強化","拔刀術","萬物吞噬","創世神力","達摩的光劍"])
+  swordsman: new Set(["鐵壁金身","天使之翼","毀滅之手","劍氣強化","拔刀術","萬物吞噬","創世神力","達摩的光劍"]),
+  assassin: new Set(["致命打擊","暗影步","毒刃","連環殺戮","無盡之刃","鐵壁金身"])
 };
 
 export const RG = {R:"0 0 6px #74C0FC40", SR:"0 0 10px #DA77F260", SSR:"0 0 14px #FFD43B80,0 0 28px #FF922B40"};

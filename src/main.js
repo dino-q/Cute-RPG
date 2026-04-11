@@ -11,7 +11,7 @@ import {
   pickRole
 } from "./config.js";
 import { di, cl, rn, $ } from "./utils.js";
-import { C, rndBuff } from "./cards.js";
+import { C, rndBuff, setCardsIsElite } from "./cards.js";
 import { sfx, sfxShoot, sfxHit, sfxCtx, getActx, bgmPlay, bgmStop, bgmRef, setMuted, getMuted, toggleMuteState } from "./audio.js";
 import { setCx, getCx, setG, getG, setFxQ, getFxQ, par, resetPar, setPar, filterPar, resetLtnRingIdx, burst, addLtn, bCol, drawPoly, drawStar, WP, getWpn, drawPlayer, drawEnemy } from "./render.js";
 import { initHud, setHudG, setHudCoopState, setHudSkillCd, getHudSkillCd, setHudAim, setHudVW, setHudVH, showPlayerDmg, hud, showHint, drawMinimap } from "./hud.js";
@@ -71,6 +71,7 @@ let _mode = "classic";
 let _charType = "gunner";
 
 function _isElite() { return _mode === "elite" || _mode === "coop"; }
+setCardsIsElite(_isElite);
 
 // expForLevel → ui.js
 
@@ -214,7 +215,7 @@ window.startGame=window.SG=function(mode){
   });
   syncLoopState({g,cx,fxctx,fxc,VW,VH,mode:_mode,charType:_charType,isCoopMode:_isCoopMode,net:_net,p2AI:_p2AI,p2Input:_p2Input,inv,inv2});
   g._p2AtkAnim={active:false,startT:0};g._p2WbSwing=0;setP2SkillCdEnd(0);
-  if(_mode==="elite"||_mode==="coop"){g.p.expR=99;} // 精英/coop 模式內建全螢幕磁力吸經驗
+  g.p.expR=99; // 所有模式內建全螢幕自動吸取經驗
   if(_mode==="classic"){g.p.splash=20;} // 經典模式內建基礎濺射（20px）
   // Co-op: 初始化 P2
   g.p2=null;g.p2Level=1;g.p2Exp=0;g.p2ExpTo=expForLevel(1);
