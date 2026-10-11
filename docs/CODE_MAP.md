@@ -40,3 +40,5 @@
 
 ♻️ 沿用 drawPixelGunner、drawPixelMelee、createRolePortrait。
 🆕 新寫 drawSpriteWithEyes（既有 PNG 眼睛尺寸不一致，生成及縮放无法保證一致）。
+
+♻️ 沿用 drawPixelMelee：坦克盾牌按各方向本體範圍裁繪並縮小為 75%；盾擊衝擊弧由同一繪製入口處理，供單人、雙人及展示頁共用；loop 不再疊加舊版坦克模糊特效。

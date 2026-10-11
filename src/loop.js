@@ -2176,50 +2176,6 @@ export function loop(){
         cx.globalAlpha=sw*.35;cx.strokeStyle="#fff";cx.lineWidth=1.5*sw;cx.shadowBlur=0;
         cx.beginPath();cx.arc(g.p.x,g.p.y,swR*.75,aa-swArc*.4,aa+swArc*.4);cx.stroke();
       }
-    }else if(g.charType==="tank"){
-      const swR=PR*5*(1-sw*.2);
-      if(_hasDbl){
-        // 影分身：360°衝擊波環
-        cx.globalAlpha=sw*.2;cx.fillStyle="rgba(81,207,102,.15)";
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR,0,TAU);cx.fill();
-        const swR2=PR*3.5*(1-sw*.2);
-        cx.globalAlpha=sw*.35;cx.fillStyle="rgba(81,207,102,.25)";
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR2,0,TAU);cx.fill();
-        cx.strokeStyle="#51CF66";cx.lineWidth=3*sw;cx.shadowColor="#51CF66";cx.shadowBlur=8*sw;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR,0,TAU);cx.stroke();
-        cx.globalAlpha=sw*.15;cx.strokeStyle="#868E96";cx.lineWidth=2*sw;cx.shadowBlur=0;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR*1.1,0,TAU);cx.stroke();
-      }else{
-        // 盾擊衝擊波（精確對照 tank-preview A.盾擊）
-        const pushP=sw>.65?sw/.65:1-((1-sw)/.35); // 推出→回收的進度
-        const p2=1-sw; // 0→1 動畫進度
-        // 盾前方位置（推出時前移）
-        const shPush=pushP>0?pushP:0;
-        const shFx=g.p.x+Math.cos(aa)*(PR+shPush*28);
-        const shFy=g.p.y+Math.sin(aa)*(PR+shPush*28);
-        // 衝擊波（p2 在 0.25~0.7 之間顯示）
-        if(p2>.25&&p2<.7){
-          const wp=(p2-.25)/.45;
-          cx.save();
-          // 外層金色弧
-          cx.globalAlpha=(1-wp)*.5;cx.strokeStyle="#FFD43B";cx.lineWidth=3*(1-wp);
-          cx.shadowColor="#FFD43B";cx.shadowBlur=8;
-          cx.beginPath();cx.arc(shFx+Math.cos(aa)*12,shFy+Math.sin(aa)*12,8+wp*35,aa-PI*.35,aa+PI*.35);cx.stroke();
-          // 內層橘色弧
-          cx.strokeStyle="#FF922B";cx.lineWidth=2*(1-wp);cx.shadowBlur=0;
-          cx.beginPath();cx.arc(shFx+Math.cos(aa)*12,shFy+Math.sin(aa)*12,4+wp*25,aa-PI*.25,aa+PI*.25);cx.stroke();
-          cx.restore();
-        }
-        // 碎片（p2 在 0.3~0.65 之間顯示）
-        if(p2>.3&&p2<.65){
-          const sp2=(p2-.3)/.35;
-          for(let i=0;i<6;i++){
-            const fa=aa-.8+i*.32;const fd=10+sp2*30;
-            cx.save();cx.globalAlpha=(1-sp2)*.7;cx.fillStyle=i%2?"#FFD43B":"#FF922B";
-            cx.beginPath();cx.arc(shFx+Math.cos(fa)*fd,shFy+Math.sin(fa)*fd,1.5+Math.random(),0,TAU);cx.fill();cx.restore();
-          }
-        }
-      }
     }else if(g.charType==="assassin"){
       const swR=PR*2.8*(1-sw*.3);
       if(_hasDbl){

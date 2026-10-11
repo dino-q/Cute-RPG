@@ -4,6 +4,8 @@ let atlas,contract,swordAtlas,swordContract,assassinAtlas,assassinContract,shiel
 export const assassinActionsReady=Promise.all([new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Cannot load assassin-action.png"));image.src=import.meta.env.BASE_URL+"assassin-action.png";}),fetch(import.meta.env.BASE_URL+"assassin-action.json").then(r=>{if(!r.ok)throw Error("Cannot load assassin-action.json");return r.json();})]).then(([image,data])=>{assassinAtlas=image;assassinContract=data;return true;}).catch(error=>{console.error("Assassin actions unavailable; using dual-dagger fallback.",error);return false;});
 export const tankShieldReady=new Promise(resolve=>{const image=new Image();image.onload=()=>{shieldAtlas=image;resolve(true);};image.onerror=()=>{console.error("Cannot load tank-shield.png; using original shield.");resolve(false);};image.src=import.meta.env.BASE_URL+"tank-shield.png";});
 export const swordActionsReady=Promise.all([new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Cannot load swordsman-action.png"));image.src=import.meta.env.BASE_URL+"swordsman-action.png";}),fetch(import.meta.env.BASE_URL+"swordsman-action.json").then(r=>{if(!r.ok)throw Error("Cannot load swordsman-action.json");return r.json();})]).then(([image,data])=>{swordAtlas=image;swordContract=data;return true;}).catch(error=>{console.error("Sword actions unavailable; using continuous weapon motion.",error);return false;});
+// Visible shield bounds exclude detached generation scraps beside the actual shield.
+const shieldBounds=[[26,20,5,24],[23,20,10,24],[25,20,13,24],[26,20,12,24],[26,20,4,24],[23,20,11,24],[24,20,15,24],[26,20,11,24]];
 const models=new WeakMap();
 export const meleeSpritesReady=Promise.all([
  new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Cannot load melee-pixel.png'));img.src=import.meta.env.BASE_URL+'melee-pixel.png';}),
@@ -61,16 +63,29 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const drawWeapon=()=>{
   ctx.save();ctx.translate(pivotX,pivotY);ctx.rotate(weaponAngle+(role==='tank'?0:Math.PI/2));
   if(role==='swordsman')weapons.sword(ctx);
-  else if(role==='tank'){if(shieldAtlas){ctx.rotate(-weaponAngle);ctx.drawImage(shieldAtlas,index*64,0,64,64,-32*scale,-32*scale,64*scale,64*scale);}else{ctx.scale(.55*scale,.55*scale);weapons.shield(ctx);}}
+  else if(role==='tank'){
+   ctx.rotate(-weaponAngle);
+   const shieldScale=.75*scale;
+   if(shieldAtlas){const [sx,sy,sw,sh]=shieldBounds[index];ctx.drawImage(shieldAtlas,index*64+sx,sy,sw,sh,-sw*shieldScale/2,-sh*shieldScale/2,sw*shieldScale,sh*shieldScale);}
+   else{ctx.scale(.4125*scale,.4125*scale);weapons.shield(ctx);}
+  }
   else {ctx.scale(scale,scale);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-17,3,15);ctx.fillStyle='#9586ae';ctx.fillRect(2,-14,1,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,5);ctx.translate(-9,5);ctx.rotate(.55);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-14,3,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,4);}
   ctx.restore();
   // Small arm connects the translated weapon grip back to its body hand.
   ctx.save();ctx.strokeStyle='#efb789';ctx.lineWidth=3*scale;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(handX,handY);ctx.lineTo(pivotX,pivotY);ctx.stroke();ctx.restore();
  };
  if(Math.sin(model.angle)<-.15){drawWeapon();drawBody();}else{drawBody();drawWeapon();}
- if(active&&progress>.2&&progress<.75){
-  ctx.save();ctx.globalAlpha*=Math.sin(clamp((progress-.2)/.55)*Math.PI)*.65;ctx.strokeStyle=fx.fire?'#f6a35a':fx.ice?'#9ad5ed':role==='tank'?'#acd895':role==='assassin'?'#d4aff5':'#ffe0a3';ctx.lineWidth=role==='assassin'?2:3;
-  ctx.beginPath();if(role==='assassin'){ctx.moveTo(pivotX,pivotY);ctx.lineTo(pivotX+Math.cos(attackAngle)*r*1.8,pivotY+Math.sin(attackAngle)*r*1.8);}else{ctx.arc(handX,handY,r*(role==='tank'?1.1:1.7),weaponAngle-.7,weaponAngle+.25);}ctx.stroke();ctx.restore();
+ if(role==='tank'&&active&&progress>.2&&progress<.6){
+  // One crisp impact rim, attached to the shield push. No filled haze or duplicate trail.
+  const impact=(progress-.2)/.4;
+  ctx.save();ctx.globalAlpha*=Math.sin(impact*Math.PI)*.7;ctx.shadowBlur=0;ctx.strokeStyle=fx.fire?'#f6a35a':fx.ice?'#9ad5ed':'#d7edbf';ctx.lineWidth=Math.max(1,Math.round(scale));
+  const allAround=(player?.dblAtk||0)>=1;
+  const rim=allAround?r*3:r*.6;
+  ctx.beginPath();ctx.arc(allAround?bx:pivotX,allAround?by:pivotY,rim,allAround?0:attackAngle-.65,allAround?Math.PI*2:attackAngle+.65);ctx.stroke();ctx.restore();
+ }
+ if(role!=='tank'&&active&&progress>.2&&progress<.75){
+  ctx.save();ctx.globalAlpha*=Math.sin(clamp((progress-.2)/.55)*Math.PI)*.65;ctx.strokeStyle=fx.fire?'#f6a35a':fx.ice?'#9ad5ed':role==='assassin'?'#d4aff5':'#ffe0a3';ctx.lineWidth=role==='assassin'?2:3;
+  ctx.beginPath();if(role==='assassin'){ctx.moveTo(pivotX,pivotY);ctx.lineTo(pivotX+Math.cos(attackAngle)*r*1.8,pivotY+Math.sin(attackAngle)*r*1.8);}else{ctx.arc(handX,handY,r*1.7,weaponAngle-.7,weaponAngle+.25);}ctx.stroke();ctx.restore();
  }
  ctx.restore();return true;
 }
