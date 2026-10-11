@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>Phoenix Preview v3</title>
+<style>
+body{margin:0;background:#0a0a18;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;color:#fff;gap:16px}
+canvas{border:1px solid rgba(255,255,255,.08);border-radius:8px}
+.row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.label{font-size:11px;color:#666;text-align:center;margin-top:4px}
+h2{color:#FF922B;margin:0;font-size:16px;text-shadow:0 0 15px rgba(255,146,43,.4)}
+button{background:linear-gradient(135deg,#FF922B,#FF6B6B);border:none;color:#fff;padding:10px 24px;border-radius:25px;font-weight:700;cursor:pointer;font-size:14px;margin-top:8px}
+</style>
+</head><body>
+
+<h2>Phoenix Preview v3</h2>
+
+<div class="row">
+  <div><canvas id="c1" width="300" height="300"></canvas><div class="label">靜態展翅</div></div>
+  <div><canvas id="c2" width="300" height="300"></canvas><div class="label">揮翅動畫</div></div>
+</div>
+<div class="row">
+  <div><canvas id="c3" width="450" height="350"></canvas><div class="label">飛入動畫（3秒循環）</div></div>
+</div>
+<button onclick="exportPNG()">下載透明 PNG</button>
+
+<script>
+/*
+  參考圖分析：
+  - 圓胖橘色鳥身，中心偏上有強烈白色高光
+  - 兩側各有 3-4 片大型羽毛狀翅膀，金黃色，向上展開
+  - 翅膀是實心填充+亮邊，像真正的鳥翅膀形狀
+  - 左下有 4-5 條紅色尖銳火焰尾羽，像手指張開
+  - 身體下半部漸變為尖尾
+  - 胸口有明亮白色光暈
+  - 無眼睛版本
+*/
+
+// flapPhase: 0=靜止展翅, 用 sin 波驅動揮翅動畫
+function drawPhoenix(ctx, cx, cy, size, time, flapPhase) {
+  const s = size / 128;
+  const t = time || 0;
+  const flap = flapPhase != null ? flapPhase : 0; // -1~1 翅膀揮動
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // ========== 外層光暈 ==========
+  ctx.save();
+  const og = ctx.createRadialGradient(0, 0, 0, 0, 0, 90*s);
+  og.addColorStop(0, "rgba(255,160,50,.2)");
+  og.addColorStop(0.5, "rgba(255,120,30,.05)");
+  og.addColorStop(1, "rgba(255,100,30,0)");
+  ctx.fillStyle = og;
+  ctx.beginPath(); ctx.arc(0, 0, 90*s, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // ========== 翅膀（每側 4 片羽毛，帶揮翅動畫） ==========
+  function drawWing(side) {
+    // flap 控制整體翅膀角度：0=水平展開, 正=往上揮, 負=往下揮
+    // 基礎角度偏移讓翅膀有揮動感
+    const flapAngle = flap * 30; // 最大 ±30 度揮動
+
+    const feathers = [
+      {a: -75, len: 75, w: 20, curve: 18},   // 最外（最上），最長
+      {a: -55, len: 68, w: 18, curve: 14},
+      {a: -35, len: 58, w: 17, curve: 11},
+      {a: -18, len: 45, w: 15, curve: 8},    // 最內（最下），最短
+    ];
+
+    feathers.forEach((f, i) => {
+      // 揮翅：外層羽毛擺幅更大
+      const flapEffect = flapAngle * (1 - i * 0.15);
+      const angle = (f.a + flapEffect) * Math.PI / 180;
+      const len = f.len * s;
+      const w = f.w * s;
+
+      // 起點：從身體側邊
+      const ox = side * 20 * s;
+      const oy = -5 * s;
+      // 終點
+      const tipX = ox + Math.cos(angle) * len * side;
+      const tipY = oy + Math.sin(angle) * len;
+      // 弧線控制點
+      const curv = f.curve * s;
+      const midX = (ox + tipX) / 2;
+      const midY = (oy + tipY) / 2;
+      // 羽毛彎曲方向（向外凸）
+      const perpX = -Math.sin(angle) * curv * side;
+      const perpY = Math.cos(angle) * curv;
+
+      ctx.save();
+
+      // 羽毛填充
+      const fg = ctx.createLinearGradient(ox, oy, tipX, tipY);
+      fg.addColorStop(0, "#FF922B");
+      fg.addColorStop(0.35, "#FFC040");
+      fg.addColorStop(0.7, "#FFD43B");
+      fg.addColorStop(1, "#FFE880");
+
+      ctx.shadowColor = "#FFD43B";
+      ctx.shadowBlur = 14 * s;
+      ctx.fillStyle = fg;
+      ctx.globalAlpha = 0.85;
+
+      // 葉片形：上弧+下弧
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.quadraticCurveTo(midX + perpX, midY + perpY, tipX, tipY);
+      ctx.quadraticCurveTo(midX - perpX * 0.5, midY - perpY * 0.5, ox, oy);
+      ctx.closePath();
+      ctx.fill();
+
+      // 亮邊
+      ctx.shadowBlur = 5 * s;
+      ctx.strokeStyle = "#FFE873";
+      ctx.lineWidth = 2 * s;
+      ctx.globalAlpha = 0.65;
+      ctx.stroke();
+
+      // 中脈
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(255,255,220,.35)";
+      ctx.lineWidth = 1 * s;
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.quadraticCurveTo(midX + perpX*0.3, midY + perpY*0.3, tipX, tipY);
+      ctx.stroke();
+
+      ctx.restore();
+    });
+  }
+
+  drawWing(1);
+  drawWing(-1);
+  ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+  // ========== 身體（圓形） ==========
+  const bodyR = 26 * s;
+
+  ctx.save();
+  ctx.shadowColor = "#FF922B";
+  ctx.shadowBlur = 20*s;
+
+  const bg = ctx.createRadialGradient(-3*s, -6*s, 2*s, 0, 2*s, bodyR*1.1);
+  bg.addColorStop(0, "#FFFFFF");
+  bg.addColorStop(0.15, "#FFF0D6");
+  bg.addColorStop(0.35, "#FFB74D");
+  bg.addColorStop(0.6, "#FF922B");
+  bg.addColorStop(0.85, "#E8590C");
+  bg.addColorStop(1, "#D9480F");
+  ctx.fillStyle = bg;
+
+  ctx.beginPath();
+  ctx.arc(0, 0, bodyR, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  // 身體霓虹邊
+  ctx.save();
+  ctx.shadowColor = "#FFD43B";
+  ctx.shadowBlur = 6*s;
+  ctx.strokeStyle = "rgba(255,220,80,.3)";
+  ctx.lineWidth = 1.5*s;
+  ctx.beginPath();
+  ctx.arc(0, 0, bodyR, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 胸口白色高光
+  ctx.save();
+  const hl = ctx.createRadialGradient(-2*s, -4*s, 0, 0, 0, bodyR*0.65);
+  hl.addColorStop(0, "rgba(255,255,255,.85)");
+  hl.addColorStop(0.25, "rgba(255,255,255,.35)");
+  hl.addColorStop(0.55, "rgba(255,240,200,.1)");
+  hl.addColorStop(1, "rgba(255,200,100,0)");
+  ctx.fillStyle = hl;
+  ctx.beginPath(); ctx.arc(-2*s, -4*s, bodyR*0.65, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // ========== 頭頂火苗 ==========
+  const flames = [
+    {x: 0, h: 20, w: 5, c: "#FFD43B", p: 0},
+    {x: -5, h: 15, w: 4, c: "#FF922B", p: 1.3},
+    {x: 5, h: 14, w: 4, c: "#FF922B", p: 2.1},
+  ];
+  flames.forEach(f => {
+    const sway = Math.sin(t/140 + f.p) * 3*s;
+    const h = f.h*s + Math.sin(t/170+f.p)*2*s;
+    const bx = f.x*s, by = -bodyR*0.95;
+
+    ctx.save();
+    ctx.shadowColor = f.c;
+    ctx.shadowBlur = 6*s;
+    ctx.globalAlpha = 0.8;
+
+    const fg = ctx.createLinearGradient(bx, by, bx+sway, by-h);
+    fg.addColorStop(0, f.c);
+    fg.addColorStop(1, "rgba(255,255,200,0)");
+    ctx.fillStyle = fg;
+
+    ctx.beginPath();
+    ctx.moveTo(bx - f.w*s*0.5, by);
+    ctx.quadraticCurveTo(bx + sway, by - h, bx + sway*0.5, by - h);
+    ctx.quadraticCurveTo(bx + sway, by - h*0.5, bx + f.w*s*0.5, by);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  });
+
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+// ===== 靜態（展翅） + 揮翅動畫 =====
+function renderStatic() {
+  const now = Date.now();
+  // 左：靜態展翅
+  const c1 = document.getElementById('c1').getContext('2d');
+  c1.clearRect(0,0,300,300);
+  c1.fillStyle = "#0a0a18"; c1.fillRect(0,0,300,300);
+  drawPhoenix(c1, 150, 160, 150, now, 0);
+
+  // 右：揮翅動畫（sin 波驅動）
+  const c2 = document.getElementById('c2').getContext('2d');
+  c2.clearRect(0,0,300,300);
+  c2.fillStyle = "#0a0a18"; c2.fillRect(0,0,300,300);
+  const flapCycle = Math.sin(now / 180); // 揮翅週期
+  drawPhoenix(c2, 150, 160, 150, now, flapCycle);
+}
+
+// ===== 飛入動畫 =====
+let animStart = Date.now();
+function renderFlyIn() {
+  const cv = document.getElementById('c3');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = "#0a0a18"; ctx.fillRect(0,0,W,H);
+
+  const now = Date.now();
+  const targetX = 225, targetY = 200;
+
+  // 簡易主角
+  const pg = ctx.createRadialGradient(targetX, targetY-2, 2, targetX, targetY, 18);
+  pg.addColorStop(0,"#fff"); pg.addColorStop(.3,"#d4e8ff"); pg.addColorStop(1,"#74C0FC");
+  ctx.beginPath(); ctx.arc(targetX, targetY, 18, 0, Math.PI*2);
+  ctx.fillStyle = pg; ctx.fill();
+
+  const elapsed = (now - animStart) % 3500;
+  const flyDur = 1800;
+  const progress = Math.min(elapsed / flyDur, 1);
+  const ease = progress * progress * (3 - 2 * progress);
+
+  const sx = W + 60, sy = -50;
+  const ex = targetX + 5, ey = targetY - 55;
+  const px = sx + (ex - sx) * ease;
+  const py = sy + (ey - sy) * ease;
+  const sc = 40 + ease * 60;
+
+  // 拖尾粒子
+  if (progress < 1) {
+    for (let i = 0; i < 20; i++) {
+      const pt = Math.max(0, progress - i*0.022);
+      const pe = pt*pt*(3-2*pt);
+      const ppx = sx + (ex-sx)*pe;
+      const ppy = sy + (ey-sy)*pe;
+      ctx.globalAlpha = Math.pow(1-i/20, 2) * 0.6;
+      ctx.shadowColor = "#FF922B"; ctx.shadowBlur = 6;
+      ctx.fillStyle = ["#FF6B6B","#FF922B","#FFD43B"][i%3];
+      ctx.beginPath();
+      ctx.arc(ppx+Math.sin(now/80+i*2)*4, ppy+Math.cos(now/100+i*1.5)*4, 3.5-i*0.14, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+  }
+
+  // 到達爆發
+  if (progress >= 1) {
+    const bt = Math.min((elapsed - flyDur) / 1000, 1);
+    if (bt < 1) {
+      ["#FF922B","#FFD43B","#FF6B6B"].forEach((col,i) => {
+        ctx.globalAlpha = (1-bt)*(0.4-i*0.08);
+        ctx.shadowColor = col; ctx.shadowBlur = 12;
+        ctx.strokeStyle = col; ctx.lineWidth = 2.5-i*0.5;
+        ctx.beginPath(); ctx.arc(targetX, targetY-20, bt*(50+i*20), 0, Math.PI*2); ctx.stroke();
+      });
+      const fg = ctx.createRadialGradient(targetX, ey, 0, targetX, ey, 130);
+      fg.addColorStop(0, `rgba(255,220,80,${(1-bt)*0.25})`);
+      fg.addColorStop(1, "rgba(255,146,43,0)");
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+      ctx.fillStyle = fg; ctx.fillRect(0,0,W,H);
+    }
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+  }
+
+  // 鳳凰（飛行中揮翅，到達後展開）
+  ctx.globalAlpha = Math.min(progress*4, 1);
+  const flyFlap = progress < 1 ? Math.sin(now / 120) : Math.sin(now / 300) * 0.3;
+  ctx.save();
+  ctx.translate(px, py);
+  if(progress < 1) ctx.rotate(-0.3 * (1-ease)); // 飛行傾斜
+  drawPhoenix(ctx, 0, 0, sc, now, flyFlap);
+  ctx.restore();
+  ctx.globalAlpha = 1;
+
+  requestAnimationFrame(renderFlyIn);
+}
+
+function exportPNG() {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 512;
+  drawPhoenix(c.getContext('2d'), 256, 270, 280, Date.now(), 0);
+  const a = document.createElement('a');
+  a.download = 'phoenix_512.png'; a.href = c.toDataURL('image/png'); a.click();
+}
+
+function loop() { renderStatic(); requestAnimationFrame(loop); }
+loop(); renderFlyIn();
+</script>
+</body></html>
