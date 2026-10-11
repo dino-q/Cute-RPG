@@ -1,4 +1,4 @@
-import { cardEmblem } from "./button-art.js";
+import { cardEmblem, pixelEmblem } from "./button-art.js";
 /**
  * ui.js — 選單、設定、結果畫面、cutscene、鳳凰復活動畫
  * 依賴：state, config, utils, audio, render, hud, input
@@ -273,7 +273,7 @@ export function showVictoryScreen() {
   const elapsed = ((performance.now() - (g._startTime || performance.now())) / 1000) | 0;
   const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
   p.innerHTML = `
-    <div style="font-size:52px;animation:fl 2s ease-in-out infinite;margin-bottom:8px">🏆</div>
+    <div class="screen-emblem">${pixelEmblem("crown")}</div>
     <h1 style="font-size:26px;font-weight:900;color:#FFD43B;margin:0 0 6px;text-shadow:0 0 20px #FFD43B60;animation:fadeIn .8s both">恭喜通關！</h1>
     <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 18px;animation:fadeIn 1s .3s both">你擊敗了最終魔王！</p>
     <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid rgba(255,215,0,.15);animation:fadeIn 1s .6s both">
@@ -289,7 +289,7 @@ export function showVictoryScreen() {
       <div style="color:#FFD43B;font-size:20px;font-weight:900;margin-bottom:8px">${inv.length} / 52</div>
       <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;max-height:100px;overflow-y:auto">${inv.map(ci => { const cd = C.find(c => c.id === ci.id); return cd ? `<span style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:5px;padding:2px 5px;font-size:10px;border:1px solid ${RC[cd.r]}25;color:${RC[cd.r]}">${cardEmblem(cd,true)}${cd.n}<span style="font-size:8px;font-weight:900;background:${LVC[ci.lv]};color:#000;border-radius:2px;padding:0 3px;margin-left:2px">Lv${ci.lv + 1}</span></span>` : ""; }).join("")}</div>
     </div>
-    <button class="btn btn-b" style="margin-top:18px;animation:fadeIn 1s 1.2s both;box-shadow:0 0 20px rgba(255,215,0,.3)" onclick="SG()">🎮 再來一次</button>`;
+    <button class="btn btn-b" style="margin-top:18px;animation:fadeIn 1s 1.2s both;box-shadow:0 0 20px rgba(255,215,0,.3)" onclick="SG()"> 再來一次</button>`;
   // Victory particle effects
   const vicC = $("vicFx"); vicC.width = VW; vicC.height = VH;
   const vctx = vicC.getContext("2d");
@@ -349,7 +349,7 @@ export function showOver() {
         return `<span style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:5px;padding:2px 6px;font-size:10px;border:1px solid ${RC[cd.r]}25;color:${RC[cd.r]}">${cardEmblem(cd,true)}${cd.n}<span style="font-size:8px;font-weight:900;background:${LVC[ci.lv]};color:#000;border-radius:2px;padding:0 3px;margin-left:2px">Lv${ci.lv + 1}</span></span>`;
       }).join("") + '</div>';
   }
-  p.innerHTML = `<div style="font-size:48px;margin-bottom:6px">😵</div><h1 style="font-size:24px;font-weight:900;color:#FF6B6B;margin:0 0 12px">冒險結束！</h1><div style="background:rgba(255,255,255,.03);border-radius:12px;padding:14px 24px;margin-bottom:12px;border:1px solid rgba(255,255,255,.05)"><div style="color:rgba(255,255,255,.4);font-size:11px">最終分數</div><div style="color:#FFD43B;font-size:34px;font-weight:900">${g.score}</div><div style="display:flex;gap:16px;justify-content:center;margin-top:8px"><div><div style="color:rgba(255,255,255,.3);font-size:10px">等級</div><div style="color:#74C0FC;font-size:16px;font-weight:700">${g.level}</div></div><div><div style="color:rgba(255,255,255,.3);font-size:10px">擊殺</div><div style="color:#FF6B6B;font-size:16px;font-weight:700">${g.kills}</div></div></div></div>${cardsHtml}<button class="btn btn-b" style="margin-top:12px" onclick="SG()">🔄 再來一次</button><button class="btn" style="margin-top:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)" onclick="overGoHome()">🏠 返回首頁</button>`;
+  p.innerHTML = `<div class="screen-emblem">${pixelEmblem("skull")}</div><h1 style="font-size:24px;font-weight:900;color:#FF6B6B;margin:0 0 12px">冒險結束！</h1><div style="background:rgba(255,255,255,.03);border-radius:12px;padding:14px 24px;margin-bottom:12px;border:1px solid rgba(255,255,255,.05)"><div style="color:rgba(255,255,255,.4);font-size:11px">最終分數</div><div style="color:#FFD43B;font-size:34px;font-weight:900">${g.score}</div><div style="display:flex;gap:16px;justify-content:center;margin-top:8px"><div><div style="color:rgba(255,255,255,.3);font-size:10px">等級</div><div style="color:#74C0FC;font-size:16px;font-weight:700">${g.level}</div></div><div><div style="color:rgba(255,255,255,.3);font-size:10px">擊殺</div><div style="color:#FF6B6B;font-size:16px;font-weight:700">${g.kills}</div></div></div></div>${cardsHtml}<button class="btn btn-b" style="margin-top:12px" onclick="SG()"> 再來一次</button><button class="btn" style="margin-top:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)" onclick="overGoHome()"> 返回首頁</button>`;
   show("over");
 }
 
@@ -368,7 +368,8 @@ export function openSettings() {
   const tog = document.getElementById("sfxToggle");
   const knob = document.getElementById("sfxKnob");
   if (tog && knob) {
-    tog.style.background = muted ? "rgba(255,255,255,.15)" : "#7C3AED";
+    tog.style.background = muted ? "#394653" : "#7eaf84";
+    tog.setAttribute("aria-pressed",String(!muted));
     knob.style.left = muted ? "3px" : "27px";
   }
 }
@@ -405,7 +406,7 @@ export function toggleStatsPanel() {
     ss.style.display = "block";
     if (!g) { ss.innerHTML = '<div style="color:rgba(255,255,255,.4)">遊戲未開始</div>'; return; }
     const p = g.p;
-    let h = '<div style="color:#74C0FC;font-weight:900;font-size:12px;margin-bottom:6px">🧙 主角能力值</div>';
+    let h = '<h3 class="settings-section-title">'+pixelEmblem('shield')+'角色能力</h3>';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-bottom:8px">';
     const _cc = charCfg(g.charType);
     const _atkSpd = _cc.atkType === "melee" && _cc.atkCD > 0
@@ -424,14 +425,14 @@ export function toggleStatsPanel() {
       ["等級傷害", ((p.levelDmgMul || 1) * 100 - 100).toFixed(0) + "%"], ["風刃", p.windBlades || 0],
       ["召喚球", p.orbiters || 0], ["迴力鏢", p.boomerang || 0],
     ];
-    ps.forEach(([k, v]) => { h += `<div style="display:flex;justify-content:space-between;padding:1px 0"><span style="color:rgba(255,255,255,.5)">${k}</span><span style="color:#fff;font-weight:700">${v}</span></div>`; });
+    ps.forEach(([k, v]) => { h += `<div class="settings-stat-row"><span style="color:rgba(255,255,255,.5)">${k}</span><span style="color:#fff;font-weight:700">${v}</span></div>`; });
     h += '</div>';
     if (inv.length) {
       h += '<div style="color:rgba(255,255,255,.4);font-size:10px;margin-bottom:4px">卡牌（' + inv.length + '/52）</div>';
-      h += '<div style="display:flex;gap:2px;flex-wrap:wrap;">';
+      h += '<div class="settings-card-list">';
       inv.forEach(ci => {
         const cd = C.find(c => c.id === ci.id);
-        if (cd) h += `<span style="font-size:10px;background:rgba(255,255,255,.06);border-radius:3px;padding:1px 4px;color:${RC[cd.r]}">${cardEmblem(cd,true)}${cd.n}</span>`;
+        if (cd) h += `<div class="settings-card-row" style="--card-color:${RC[cd.r]}">${cardEmblem(cd,true)}<span>${cd.n}</span><b>${cd.r} · Lv${ci.lv+1}</b></div>`;
       });
       h += '</div>';
     }
@@ -526,7 +527,7 @@ export function phoenixAnimLoop() {
     if (progress >= 1) {
       a.phase = "burst"; a.startTime = now;
       burst(a.targetX, a.targetY, "#FF922B", 15); burst(a.targetX, a.targetY, "#FFD43B", 10);
-      g.dn.push({ x: a.targetX, y: a.targetY - 35, d: "🔥 不死鳥復活！", life: 2.5, color: "#FF922B", big: 1 });
+      g.dn.push({ x: a.targetX, y: a.targetY - 35, d: " 不死鳥復活！", life: 2.5, color: "#FF922B", big: 1 });
       g.ene.forEach(oe => {
         const rdx = oe.x - a.targetX, rdy = oe.y - a.targetY, rd = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
         oe.x += rdx / rd * SPAWN_R; oe.y += rdy / rd * SPAWN_R; oe.frozen = 2000;

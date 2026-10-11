@@ -26,16 +26,16 @@ export const ROLE_NORMAL = "n", ROLE_FLANKER = "f", ROLE_SHOOTER = "s", ROLE_DAS
 export const CHAR = {
   gunner:    {startHp:100,startAtk:2.5,startSpeed:5, fr:1,   crit:.05, dodge:0,   armor:0,   col:"#74C0FC",colMid:"#d4e8ff",colDark:"#4DABF7",
               passive:"狙擊：子彈穿透全部 傷害1.5倍 CD5秒",passiveKey:"none",
-              atkType:"ranged", atkCD:null, animDur:200, skillIcon:"🎯", skillCD:3000},
+              atkType:"ranged", atkCD:null, animDur:200, skillIcon:"狙擊", skillCD:3000},
   swordsman: {startHp:150,startAtk:5,  startSpeed:5.5,fr:1,  crit:.05, dodge:.08, armor:.05, col:"#FF922B",colMid:"#ffe0b2",colDark:"#E8590C",
               passive:"劍氣：每5次攻擊釋放穿透劍氣(200%傷害)",passiveKey:"swordqi",
-              atkType:"melee", atkCD:320, animDur:320, skillIcon:"⚔️", skillCD:3000},
+              atkType:"melee", atkCD:320, animDur:320, skillIcon:"鬼斬", skillCD:3000},
   tank:      {startHp:200,startAtk:3,  startSpeed:4, fr:1,   crit:.05, dodge:0,   armor:.15, col:"#51CF66",colMid:"#c8e6c9",colDark:"#2E7D32",
               passive:"鐵壁：受傷反彈15%+每5秒回10HP",passiveKey:"ironwall",
-              atkType:"melee", atkCD:280, animDur:280, skillIcon:"🛡️", skillCD:5000},
+              atkType:"melee", atkCD:280, animDur:280, skillIcon:"嘲諷", skillCD:5000},
   assassin:  {startHp:60, startAtk:2.5,startSpeed:5.7,fr:1,   crit:.15, dodge:.40, armor:0,   col:"#DDB4FE",colMid:"#F3E4FF",colDark:"#C577F2",
               passive:"疾風連刺：攻速極快、閃避率極高，擊殺敵人加速2秒",passiveKey:"swiftstrike",
-              atkType:"melee", atkCD:150, animDur:150, skillIcon:"🗡️", skillCD:1700}
+              atkType:"melee", atkCD:150, animDur:150, skillIcon:"影襲", skillCD:1700}
 };
 export function charCfg(ct) { return CHAR[ct] || CHAR.gunner; }
 

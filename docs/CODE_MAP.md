@@ -24,3 +24,9 @@
 
 ♻️ 沿用 drawPlayer、fire、swordSwing、shieldBash、daggerStrike、getWpn 與原技能／卡片效果。
 🆕 新寫共用按鈕徽章與像素近戰繪圖（原本幾何球體沒有全身姿勢與圖片手部錨點）。
+
+| assassinActionsReady / tankShieldReady | src/melee-sprite.js | 載入全身雙短刀四階段動作與八方向直立盾牌。 |
+| prepare-eye-weapon-revision.py | scripts/prepare-eye-weapon-revision.py | 匯出生成的點狀眼修正版、雙刀動作與盾牌；共用頭部尺度和腳底對齊。 |
+
+♻️ 沿用 drawPixelMelee、cardEmblem、pixelEmblem、toggleStatsPanel、openSettings。
+🆕 新寫素材載入與匯出流程（既有素材只有單刀與程式繪製盾牌）。

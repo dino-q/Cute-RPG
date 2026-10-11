@@ -107,7 +107,7 @@ export function skillSnipe(now, _pp, _isP2) {
     const mzX = _pp.x + Math.cos(ba2) * PR, mzY = _pp.y + Math.sin(ba2) * PR;
     burst(mzX, mzY, ohBonus > 1 ? "#FF4500" : "#FFD43B", 12); burst(mzX, mzY, "#fff", 6);
     setShake(ohBonus > 1 ? .5 : .3, ohBonus > 1 ? 8 : 5);
-    g.dn.push({ x: _pp.x, y: _pp.y - 30, d: ohBonus > 1 ? "🔥 過熱狙擊！！" : "🎯 狙擊！", life: 1.5, color: ohBonus > 1 ? "#FF4500" : "#FFD43B", big: 1 });
+    g.dn.push({ x: _pp.x, y: _pp.y - 30, d: ohBonus > 1 ? " 過熱狙擊！！" : " 狙擊！", life: 1.5, color: ohBonus > 1 ? "#FF4500" : "#FFD43B", big: 1 });
   }, 400);
 }
 
@@ -152,7 +152,7 @@ export function skillGhostSlash(now, _pp, _isP2) {
     });
   }, 100);
   for (let i = 0; i < 16; i++) { const a = PI * 2 * i / 16; par.push({ x: _pp.x + Math.cos(a) * 15, y: _pp.y + Math.sin(a) * 15, vx: Math.cos(a) * 3, vy: Math.sin(a) * 3, life: .6, color: i % 2 ? "#FF922B" : "#FFD43B", sz: rn(2, 5) }); }
-  g.dn.push({ x: _pp.x, y: _pp.y - 30, d: "⚔️ 鬼斬", life: 1.2, color: "#FF922B", big: 1 });
+  g.dn.push({ x: _pp.x, y: _pp.y - 30, d: " 鬼斬", life: 1.2, color: "#FF922B", big: 1 });
   var _gsAtkRef = _isP2 ? "_p2AtkAnim" : "_atkAnim";
   if (!g[_gsAtkRef]) g[_gsAtkRef] = { active: false, startT: 0 }; g[_gsAtkRef].active = true; g[_gsAtkRef].startT = performance.now();
 }
@@ -164,7 +164,7 @@ export function skillTaunt(now, _pp, _isP2) {
   g.ene.forEach(e => {
     if (e.hp <= 0) return;
     e._tauntEnd = now + 3000; e._tauntTarget = _isP2 ? "p2" : "p1"; e.st = 0;
-    g.dn.push({ x: e.x, y: e.y - e.r - 8, d: "⚠️", life: 1, color: "#FF6B6B", big: 1 });
+    g.dn.push({ x: e.x, y: e.y - e.r - 8, d: "", life: 1, color: "#FF6B6B", big: 1 });
   });
   if (_pp._tauntAtkBonus > 0) { _pp.atk -= _pp._tauntAtkBonus; }
   const _tauntBonus = Math.floor(2 * (_pp.ultDmgMul || 1));
@@ -177,7 +177,7 @@ export function skillTaunt(now, _pp, _isP2) {
       par.push({ x: _pp.x + Math.cos(a) * (12 + rOff), y: _pp.y + Math.sin(a) * (12 + rOff), vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, life: 1 + ring * .25, color: cols[(i + ring) % 5], sz: rn(2.5, 6 + ring) });
     }
   }
-  g.dn.push({ x: _pp.x, y: _pp.y - 40, d: "🛡️ 嘲諷！", life: 2.5, color: "#51CF66", big: 1 });
+  g.dn.push({ x: _pp.x, y: _pp.y - 40, d: " 嘲諷！", life: 2.5, color: "#51CF66", big: 1 });
   burst(_pp.x, _pp.y, "#51CF66", 30); burst(_pp.x, _pp.y, "#FFD43B", 20); burst(_pp.x, _pp.y, "#FF4040", 10);
   g._tauntRingT = now;
   setShake(.3, 5);
@@ -192,10 +192,10 @@ export function skillShadowStrike(now, _pp, _isP2) {
   g._shadowReturn = { x: _pp.x, y: _pp.y, t: now, dur: 4000 };
   // 施放時重設 CD 為 0（讓按鈕顯示標記期間不可用）
   _skillCdEnd = now + 99999; // 暫時鎖住，回歸時再設真正 CD
-  const cdEl = $("skillCd"); if (cdEl) { cdEl.style.display = "flex"; cdEl.textContent = "⏳"; }
+  const cdEl = $("skillCd"); if (cdEl) { cdEl.style.display = "flex"; cdEl.textContent = "冷卻"; }
   burst(_pp.x, _pp.y, "#fff", 12);
   burst(_pp.x, _pp.y, "#DDB4FE", 8);
-  g.dn.push({ x: _pp.x, y: _pp.y - 30, d: "🗡️ 影襲！4秒後回歸", life: 2, color: "#DDB4FE", big: 1 });
+  g.dn.push({ x: _pp.x, y: _pp.y - 30, d: " 影襲！4秒後回歸", life: 2, color: "#DDB4FE", big: 1 });
 }
 
 /* ═══ dash (lightning step) ═══ */
@@ -209,10 +209,10 @@ export function _startDash(now) {
   g.p._dashSpd = g.p.lStepSpd || 8;
   g.p._inv = true;
   burst(g.p.x, g.p.y, "#FFE066", 6);
-  g.dn.push({ x: g.p.x, y: g.p.y - 20, d: "⚡衝刺", life: 1, color: "#FFE066" });
+  g.dn.push({ x: g.p.x, y: g.p.y - 20, d: "衝刺", life: 1, color: "#FFE066" });
   g.ene.forEach(e => { if ((e.boss || e.stageBoss) && e.hp > 0 && di(e, g.p) < 80) {
     const ld2 = Math.min(g.p.atk * 3, e.mhp * .05); e.hp -= ld2;
-    burst(e.x, e.y, "#FFE066", 8); g.dn.push({ x: e.x, y: e.y - e.r, d: "⚡" + Math.floor(ld2), life: 1, color: "#FFE066", big: 1 });
+    burst(e.x, e.y, "#FFE066", 8); g.dn.push({ x: e.x, y: e.y - e.r, d: "" + Math.floor(ld2), life: 1, color: "#FFE066", big: 1 });
   } });
 }
 
@@ -248,7 +248,7 @@ export function doUlt() {
     g.ene.forEach(e => { e.frozen = Math.max(e.frozen || 0, frzDur); const td = (_isElite() && e.stageBoss) ? Math.min(tsDmg, e.mhp * .05) : tsDmg; e.hp -= td; g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(td), life: 1.3, color: "#74C0FC" }); if (e.hp <= 0) burst(e.x, e.y, e.color, 10); });
     settleEnemyDeaths();
     burst(g.p.x, g.p.y, "#74C0FC", 25);
-    g.dn.push({ x: g.p.x, y: g.p.y - 30, d: isBH ? "🕳️⏸️黑洞+時停" : "⏸️時間停止+凍結傷害", life: 1.5, color: "#74C0FC", big: 1 });
+    g.dn.push({ x: g.p.x, y: g.p.y - 30, d: isBH ? "黑洞+時停" : "時間停止+凍結傷害", life: 1.5, color: "#74C0FC", big: 1 });
     const cols = ["#74C0FC", "#4DABF7", "#339AF0", "#fff"];
     for (let i = 0; i < 30 && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / 30, v = rn(3, 8); par.push({ x: g.p.x + Math.cos(a) * 15, y: g.p.y + Math.sin(a) * 15, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.2, color: cols[i % cols.length], sz: rn(3, 7) }); }
   }
@@ -261,7 +261,7 @@ export function doUlt() {
     g.mfSlow = g.p.mfSlow || 0;
     g.p._iFrameEnd = Math.max(g.p._iFrameEnd || 0, now + 1500);
     burst(g.p.x, g.p.y, "#339AF0", 20);
-    g.dn.push({ x: g.p.x, y: g.p.y - 30, d: "🧲 磁力場！", life: 2, color: "#339AF0", big: 1 });
+    g.dn.push({ x: g.p.x, y: g.p.y - 30, d: " 磁力場！", life: 2, color: "#339AF0", big: 1 });
     for (let i = 0; i < 24 && par.length < MAX_PARTICLES; i++) {
       const a = TAU * i / 24; par.push({ x: g.p.x + Math.cos(a) * 80, y: g.p.y + Math.sin(a) * 80, vx: -Math.cos(a) * rn(2, 4), vy: -Math.sin(a) * rn(2, 4), life: 1, color: i % 2 ? "#339AF0" : "#74C0FC", sz: rn(3, 6) });
     }
@@ -277,8 +277,8 @@ export function doUlt() {
   g.ultFlash = isBH ? 1 : isTS ? .6 : (_comboUlt ? 1.5 : 1); g.ultType = isBH ? "bh" : "n"; if (!isCd) g.ultCharge = 0; sfx("ult");
   if (isLS) _startDash(now);
   if (_comboUlt) {
-    g.dn.push({ x: g.p.x, y: g.p.y - 50, d: "🌟 合體大招！×3 傷害！", life: 3, color: "#FFD43B", big: 1 });
-    g.dn.push({ x: g.p2.x, y: g.p2.y - 50, d: "🌟 合體大招！", life: 3, color: "#F06595", big: 1 });
+    g.dn.push({ x: g.p.x, y: g.p.y - 50, d: " 合體大招！×3 傷害！", life: 3, color: "#FFD43B", big: 1 });
+    g.dn.push({ x: g.p2.x, y: g.p2.y - 50, d: " 合體大招！", life: 3, color: "#F06595", big: 1 });
     burst(g.p.x, g.p.y, "#FFD43B", 25); burst(g.p2.x, g.p2.y, "#F06595", 25);
     sfx("phoenix");
   }

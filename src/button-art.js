@@ -46,6 +46,7 @@ export function setActionEmblem(id,kind,label,key='') {
  el.innerHTML=pixelEmblem(kind)+'<span class="action-name">'+label+'</span>'+(key?'<kbd>'+key+'</kbd>':'');
 }
 export function installGameButtons() {
+ document.querySelectorAll("[data-emblem]").forEach(el=>{el.innerHTML=pixelEmblem(el.dataset.emblem);});
  document.querySelectorAll('#charSelectOv [onclick^="pickChar"]').forEach(el=>{
   const role=el.getAttribute('onclick').match(/pickChar\('([^']+)'\)/)?.[1];
   if(!roleArt[role])return;

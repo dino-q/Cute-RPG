@@ -1,3 +1,4 @@
+import { cardEmblem } from "./button-art.js";
 /* ═══ coop.js — PeerJS 連線、狀態同步 ═══ */
 import { Peer } from "peerjs";
 import { $ } from "./utils.js";
@@ -160,7 +161,7 @@ export function _coopDoCreate(code) {
   });
   peer.on("error", err => {
     if (err.type === "unavailable-id") {
-      $("coopStatusText").textContent = "❌ 此密碼已被使用，請換一個";
+      $("coopStatusText").textContent = " 此密碼已被使用，請換一個";
       $("coopConnected").style.display = "none";
       setTimeout(() => { $("coopMenu").style.display = "block"; $("coopStatus").style.display = "none"; $("coopCreate").style.display = "none"; $("coopJoin").style.display = "none"; }, 2000);
     } else { $("coopStatusText").textContent = "錯誤：" + err.type; }
@@ -327,7 +328,7 @@ export function showCoopPick(data) {
   if (!cards || !cards.length) return;
   // 移除舊的 overlay（如果還在）
   const old = document.getElementById("_p2PickOv"); if (old) old.remove();
-  const title = bigLeft > 0 ? `📦 大寶箱！(剩餘${bigLeft}次)` : "📦 寶箱解鎖！選擇一張卡牌";
+  const title = bigLeft > 0 ? ` 大寶箱！(剩餘${bigLeft}次)` : " 寶箱解鎖！選擇一張卡牌";
   let h = '<div style="position:fixed;inset:0;background:rgba(10,10,24,.92);z-index:50;display:flex;justify-content:center;align-items:center" id="_p2PickOv">';
   h += '<div style="background:rgba(12,12,30,.96);border-radius:16px;border:1px solid rgba(240,101,149,.2);padding:20px;max-width:360px;width:90%;text-align:center">';
   h += `<div style="color:#F06595;font-size:14px;font-weight:700;margin-bottom:10px">${title}</div>`;
@@ -335,13 +336,13 @@ export function showCoopPick(data) {
   cards.forEach((c, ci) => {
     const rc = { R: "#74C0FC", SR: "#DA77F2", SSR: "#FFD43B" }[c.r] || "#fff";
     h += `<div id="_p2c${ci}" style="width:100px;background:rgba(255,255,255,.04);border:2px solid ${rc}40;border-radius:12px;padding:10px 6px;text-align:center">`;
-    h += `<div style="font-size:28px">${c.e}</div>`;
+    h += `${cardEmblem(c)}`;
     h += `<div style="color:${rc};font-weight:700;font-size:12px;margin:4px 0">${c.n}</div>`;
     h += `<div style="color:${rc};font-size:9px">${c.r}</div>`;
     h += `<div style="color:rgba(255,255,255,.4);font-size:8px;margin-top:4px;line-height:1.3">${c.d[0]}</div>`;
     h += `<div style="display:flex;gap:4px;margin-top:6px;justify-content:center">`;
     h += `<button onclick="_p2PickCard(${c.id})" style="padding:4px 10px;font-size:10px;border:none;border-radius:6px;background:${rc};color:#000;font-weight:700;cursor:pointer">選擇</button>`;
-    h += `<button onclick="_p2RerollCard(${ci})" id="_p2rr${ci}" style="padding:4px 8px;font-size:9px;border:1px solid rgba(255,255,255,.2);border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);cursor:pointer">🔄</button>`;
+    h += `<button onclick="_p2RerollCard(${ci})" id="_p2rr${ci}" style="padding:4px 8px;font-size:9px;border:1px solid rgba(255,255,255,.2);border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);cursor:pointer"></button>`;
     h += `</div></div>`;
   });
   h += '</div></div></div>';
@@ -470,7 +471,7 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
     cx.fillRect(c.x - cs2 / 2, c.y - cs2 / 2, cs2, cs2);
     cx.strokeStyle = c.bigChest ? "#FCC419" : "#E8590C"; cx.lineWidth = 1.5; cx.strokeRect(c.x - cs2 / 2, c.y - cs2 / 2, cs2, cs2);
     cx.fillStyle = "#fff"; cx.globalAlpha = .6; cx.font = "bold 8px sans-serif"; cx.textAlign = "center";
-    cx.fillText(c.bigChest ? "👑" : "📦", c.x, c.y + 3);
+    cx.fillText(c.bigChest ? "" : "", c.x, c.y + 3);
     cx.restore();
   });
   // enemies
@@ -522,12 +523,12 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   if (g._heatWarn && g.p2) {
     cx.save(); cx.font = "bold 9px Nunito,sans-serif"; cx.textAlign = "center";
     cx.fillStyle = "#FF4500"; cx.globalAlpha = Math.sin(now / 60) > 0 ? .8 : 0;
-    cx.fillText("⚠ 過熱警告", g.p2.x, g.p2.y + PR + 18); cx.restore();
+    cx.fillText(" 過熱警告", g.p2.x, g.p2.y + PR + 18); cx.restore();
   }
   if (g.heatCD > 0 && g.p2) {
     cx.save(); cx.font = "bold 9px Nunito,sans-serif"; cx.textAlign = "center";
     cx.fillStyle = "#FF4040"; cx.globalAlpha = .6 + Math.sin(now / 80) * .3;
-    cx.fillText("🔥 冷卻 " + (g.heatCD / 1000).toFixed(1) + "s", g.p2.x, g.p2.y + PR + 18); cx.restore();
+    cx.fillText(" 冷卻 " + (g.heatCD / 1000).toFixed(1) + "s", g.p2.x, g.p2.y + PR + 18); cx.restore();
   }
   // 連攜光環
   if (g._coopLink && g.p2) {
@@ -591,22 +592,22 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   if (g._remotePickOpen) {
     cx.save(); cx.font = "bold 14px 'Nunito',sans-serif"; cx.textAlign = "center";
     cx.fillStyle = "rgba(0,0,0,.6)"; cx.fillRect(VW / 2 - 80, VH / 2 - 15, 160, 30);
-    cx.fillStyle = "#FFD43B"; cx.fillText("🃏 對方選卡中...", VW / 2, VH / 2 + 5);
+    cx.fillStyle = "#FFD43B"; cx.fillText(" 對方選卡中...", VW / 2, VH / 2 + 5);
     cx.restore();
   }
   cx.restore();
   // CLIENT HUD：顯示 P2（自己）的數據
   if (g.p2 && g._clientP2Hp !== undefined) {
     const _hp2 = g._clientP2Hp, _mhp2 = g._clientP2Mhp || 1;
-    $("hl").textContent = "❤️" + Math.floor(_hp2) + "/" + _mhp2;
+    $("hl").textContent = "HP " + Math.floor(_hp2) + "/" + _mhp2;
     $("hb").style.width = Math.max(0, Math.min(100, _hp2 / _mhp2 * 100)) + "%";
     $("ll").textContent = "Lv." + (g.p2Level || 1);
     // 集氣條
     const _ult2 = g._clientP2Ult || 0, _ultN2 = g._clientP2UltNeed || 100;
     const _up2 = Math.min(1, _ult2 / _ultN2);
     $("ub").style.width = (_up2 * 100) + "%";
-    $("ulbl").textContent = _up2 >= 1 ? "💥MAX" : "💎" + Math.floor(_up2 * 100) + "%";
-    $("ulr").textContent = _up2 >= 1 ? "💥 READY" : "💎" + Math.floor(_up2 * 100) + "%";
+    $("ulbl").textContent = _up2 >= 1 ? "MAX" : "" + Math.floor(_up2 * 100) + "%";
+    $("ulr").textContent = _up2 >= 1 ? " READY" : "" + Math.floor(_up2 * 100) + "%";
     $("ulr").style.color = _up2 >= 1 ? "#FFD43B" : "rgba(190,78,219,.85)";
   }
   // 技能 CD 顯示
@@ -615,8 +616,8 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   if (_skEl) { if (_skCd > 0) { _skEl.style.display = "flex"; _skEl.textContent = (_skCd / 1000).toFixed(1); } else { _skEl.style.display = "none"; } }
   // 波次/分數/擊殺
   const _sl = $("sl"), _kl = $("kl");
-  if (_sl) _sl.textContent = "⭐" + (g.score || 0);
-  if (_kl) _kl.textContent = "💀" + (g.kills || 0);
+  if (_sl) _sl.textContent = "分數 " + (g.score || 0);
+  if (_kl) _kl.textContent = "擊殺 " + (g.kills || 0);
   // Combo 文字
   const _cmb = g._clientP2Combo || 0;
   const _cEl = $("combo");
@@ -637,16 +638,16 @@ export function pracCoopRoom(opts) {
   setP2AI(true); // 先用 AI，等對方加入後切換
   peer.on("open", () => {
     const g = getG();
-    g.dn.push({ x: g.p.x, y: g.p.y - 40, d: "🔗 房間：" + roomCode + " 等待加入...", life: 4, color: "#F06595", big: 1 });
-    $("pracRoomBtn").textContent = "🔗" + roomCode;
+    g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 房間：" + roomCode + " 等待加入...", life: 4, color: "#F06595", big: 1 });
+    $("pracRoomBtn").textContent = "" + roomCode;
   });
   peer.on("connection", conn => {
     netObj.conn = conn;
     conn.on("open", () => {
       netObj.connected = true; setP2AI(false); // 對方加入，關閉 AI
       const g = getG();
-      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: "✅ 對方已加入！", life: 3, color: "#51CF66", big: 1 });
-      $("pracRoomBtn").textContent = "✅已連線";
+      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 對方已加入！", life: 3, color: "#51CF66", big: 1 });
+      $("pracRoomBtn").textContent = "已連線";
       conn.on("data", data => {
         const g2 = getG();
         const p2i = getP2Input();
@@ -659,15 +660,15 @@ export function pracCoopRoom(opts) {
           g2.p2.hp = CC3.startHp; g2.p2.maxHp = CC3.startHp; g2.p2.atk = CC3.startAtk; g2.p2.speed = CC3.startSpeed; g2.p2.armor = CC3.armor; g2.p2.dodge = CC3.dodge; g2.p2.crit = CC3.crit; g2.p2.fr = CC3.fr;
         }
       });
-      conn.on("close", () => { netObj.connected = false; setP2AI(true); const g3 = getG(); g3.dn.push({ x: g3.p.x, y: g3.p.y - 40, d: "⚠️ 對方已離線，切換 AI", life: 3, color: "#FF6B6B", big: 1 }); });
+      conn.on("close", () => { netObj.connected = false; setP2AI(true); const g3 = getG(); g3.dn.push({ x: g3.p.x, y: g3.p.y - 40, d: " 對方已離線，切換 AI", life: 3, color: "#FF6B6B", big: 1 }); });
     });
   });
   peer.on("error", err => {
     const g = getG();
     if (err.type === "unavailable-id") {
-      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: "❌ 此密碼已被使用，請換一個", life: 3, color: "#FF6B6B", big: 1 });
-      $("pracRoomBtn").textContent = "🔗建房";
-    } else { g.dn.push({ x: g.p.x, y: g.p.y - 40, d: "❌ 錯誤：" + err.type, life: 3, color: "#FF6B6B", big: 1 }); }
+      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 此密碼已被使用，請換一個", life: 3, color: "#FF6B6B", big: 1 });
+      $("pracRoomBtn").textContent = "建房";
+    } else { g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 錯誤：" + err.type, life: 3, color: "#FF6B6B", big: 1 }); }
   });
 }
 
@@ -688,16 +689,16 @@ export function pracCoopJoin(opts) {
     conn.on("open", () => {
       netObj.connected = true; setP2AI(false);
       const g = getG();
-      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: "✅ 已加入 " + roomCode + "！", life: 3, color: "#51CF66", big: 1 });
-      $("pracJoinBtn").textContent = "✅已連線";
+      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 已加入 " + roomCode + "！", life: 3, color: "#51CF66", big: 1 });
+      $("pracJoinBtn").textContent = "已連線";
       // Client 送操作、收狀態
       conn.on("data", data => {
         const g2 = getG();
         if (data && data.t === "state" && g2) applyCoopState(data, g2, _showOver, setPar, setDashGhosts);
         if (data && data.t === "p2pick") showCoopPick(data);
       });
-      conn.on("close", () => { netObj.connected = false; const g3 = getG(); g3.dn.push({ x: g3.p.x, y: g3.p.y - 40, d: "⚠️ 已斷線", life: 3, color: "#FF6B6B", big: 1 }); });
+      conn.on("close", () => { netObj.connected = false; const g3 = getG(); g3.dn.push({ x: g3.p.x, y: g3.p.y - 40, d: " 已斷線", life: 3, color: "#FF6B6B", big: 1 }); });
     });
-    conn.on("error", err => { const g = getG(); g.dn.push({ x: g.p.x, y: g.p.y - 40, d: "❌ 連線失敗：" + err.type, life: 3, color: "#FF6B6B", big: 1 }); });
+    conn.on("error", err => { const g = getG(); g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 連線失敗：" + err.type, life: 3, color: "#FF6B6B", big: 1 }); });
   });
 }

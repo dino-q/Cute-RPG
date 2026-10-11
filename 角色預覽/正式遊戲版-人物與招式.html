@@ -1,8 +1,8 @@
 <!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>正式遊戲版｜人物與招式</title><style>body{margin:0;padding:28px;background:#111d28;color:#efe2c5;font:15px 'Microsoft JhengHei',sans-serif;text-align:center}h1{font-size:26px;letter-spacing:3px}p{color:#a8b6be;line-height:1.8}.grid{display:grid;grid-template-columns:repeat(2,minmax(220px,320px));gap:18px;justify-content:center}.role{background:#203242;border:2px solid var(--color);box-shadow:0 5px 0 #080f18;padding:12px}canvas{width:220px;height:180px;image-rendering:pixelated}button,a{display:inline-block;cursor:pointer;background:#ddc99f;color:#182b38;border:2px solid #080f18;border-radius:3px;padding:10px 22px;text-decoration:none;font:inherit;box-shadow:0 3px 0 #080f18}input{width:min(360px,80vw)}label{display:block;margin:18px}h2{font-size:18px;margin:4px}small{display:block;color:#b3c1c8;margin:8px}@media(max-width:540px){.grid{grid-template-columns:1fr}body{padding:16px}}</style><h1>正式遊戲版 · 人物與招式</h1><p>平常面向正面。調整攻擊方向，再按各角色的招式。<br>劍士：提劍 → 跨步橫斬 → 收勢 → 回到架式。</p><label>攻擊方向 <input id="direction" type="range" min="-180" max="180" value="0"><output id="angle">右方 · 0°</output></label><div id="roles" class="grid"></div><p><a href="../">進入遊戲</a></p><small id="status">載入角色圖檔…</small><script type="module">
 import{drawPlayer,setCx,setG}from '../src/render.js';
 import{gunnerSpriteReady}from '../src/gunner-sprite.js';
-import{meleeSpritesReady,swordActionsReady}from '../src/melee-sprite.js';
-const roster=[['gunner','槍手','射擊','#82c7e8',200],['swordsman','劍士','橫斬','#f6b363',320],['tank','坦克','盾擊','#9bd78b',280],['assassin','刺客','突刺','#d4aff5',150]];
+import{meleeSpritesReady,swordActionsReady,assassinActionsReady,tankShieldReady}from '../src/melee-sprite.js';
+const roster=[['gunner','槍手','射擊','#82c7e8',200],['swordsman','劍士','橫斬','#f6b363',320],['tank','坦克','盾擊','#9bd78b',280],['assassin','刺客','雙刀交叉斬','#d4aff5',150]];
 const views=[];const roles=document.getElementById('roles');let angle=0;
 document.getElementById('direction').oninput=e=>{angle=Number(e.target.value)*Math.PI/180;document.getElementById('angle').textContent=e.target.value+'°';};
 for(const[role,name,move,color,duration]of roster){
@@ -12,6 +12,6 @@ for(const[role,name,move,color,duration]of roster){
  button.onclick=()=>{const now=performance.now();state.ad={x:Math.cos(angle),y:Math.sin(angle)};state._atkAnim={active:true,startT:now,angle};if(role==='gunner')state.p._pixelShotAt=now;};
  card.append(heading,canvas,document.createElement('br'),button);roles.append(card);views.push({canvas,state,color,duration});
 }
-await Promise.all([gunnerSpriteReady,meleeSpritesReady,swordActionsReady]);document.getElementById('status').textContent='這是動作展示頁。遊戲操作與效果由你自行試看。';
+await Promise.all([gunnerSpriteReady,meleeSpritesReady,swordActionsReady,assassinActionsReady,tankShieldReady]);document.getElementById('status').textContent='這是動作展示頁。遊戲操作與效果由你自行試看。';
 function render(){for(const{canvas,state,color,duration}of views){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,220,180);if(performance.now()-state._atkAnim.startT>=duration)state._atkAnim.active=false;setCx(ctx);setG(state);drawPlayer(110,85,28,0,color,1,state.p);}requestAnimationFrame(render);}render();
 </script></html>

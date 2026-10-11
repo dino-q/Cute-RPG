@@ -1,5 +1,7 @@
 // Directional bodies with continuous, hand-anchored weapon motion.
-let atlas,contract,swordAtlas,swordContract;
+let atlas,contract,swordAtlas,swordContract,assassinAtlas,assassinContract,shieldAtlas;
+export const assassinActionsReady=Promise.all([new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Cannot load assassin-action.png"));image.src=import.meta.env.BASE_URL+"assassin-action.png";}),fetch(import.meta.env.BASE_URL+"assassin-action.json").then(r=>{if(!r.ok)throw Error("Cannot load assassin-action.json");return r.json();})]).then(([image,data])=>{assassinAtlas=image;assassinContract=data;return true;}).catch(error=>{console.error("Assassin actions unavailable; using dual-dagger fallback.",error);return false;});
+export const tankShieldReady=new Promise(resolve=>{const image=new Image();image.onload=()=>{shieldAtlas=image;resolve(true);};image.onerror=()=>{console.error("Cannot load tank-shield.png; using original shield.");resolve(false);};image.src=import.meta.env.BASE_URL+"tank-shield.png";});
 export const swordActionsReady=Promise.all([new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Cannot load swordsman-action.png"));image.src=import.meta.env.BASE_URL+"swordsman-action.png";}),fetch(import.meta.env.BASE_URL+"swordsman-action.json").then(r=>{if(!r.ok)throw Error("Cannot load swordsman-action.json");return r.json();})]).then(([image,data])=>{swordAtlas=image;swordContract=data;return true;}).catch(error=>{console.error("Sword actions unavailable; using continuous weapon motion.",error);return false;});
 const models=new WeakMap();
 export const meleeSpritesReady=Promise.all([
@@ -25,14 +27,17 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const target=active||forceAim?attackAngle:moving?Math.atan2(dy,dx):Math.PI/2;
  model.angle+=angleDelta(model.angle,target)*Math.min(1,dt*(active?32:16));model.time=now;model.x=actualX;model.y=actualY;
  const index=((Math.round(model.angle/(Math.PI/4))%8)+8)%8;
- if(role==='swordsman'&&swordAtlas&&swordContract){
+ const actionAtlas=role==='swordsman'?swordAtlas:role==='assassin'?assassinAtlas:null;
+ const actionContract=role==='swordsman'?swordContract:role==='assassin'?assassinContract:null;
+ if(actionAtlas&&actionContract){
   // Each key pose animates hands, shoulders, stance AND the blade together.
   const lockedIndex=active?((Math.round(attackAngle/(Math.PI/4))%8)+8)%8:index;
   const row=active?(progress<.18?0:progress<.45?1:progress<.74?2:3):3;
-  const frame=swordContract.frames[row*8+lockedIndex];
+  const frame=actionContract.frames[row*8+lockedIndex];
   const stride=active?Math.sin(progress*Math.PI)*2.5*scale:0;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;
-  ctx.drawImage(swordAtlas,frame.x,frame.y,96,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale,96*scale);
+  if(role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now))ctx.globalAlpha*=.4;
+  ctx.drawImage(actionAtlas,frame.x,frame.y,96,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale,96*scale);
   ctx.restore();return true;
  }
  const frame=contract.roles[role][index];
@@ -55,8 +60,8 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const drawWeapon=()=>{
   ctx.save();ctx.translate(pivotX,pivotY);ctx.rotate(weaponAngle+(role==='tank'?0:Math.PI/2));
   if(role==='swordsman')weapons.sword(ctx);
-  else if(role==='tank'){ctx.scale(.55*scale,.55*scale);weapons.shield(ctx);}
-  else {ctx.scale(scale,scale);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-17,3,15);ctx.fillStyle='#9586ae';ctx.fillRect(2,-14,1,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,5);}
+  else if(role==='tank'){if(shieldAtlas){ctx.rotate(-weaponAngle);ctx.drawImage(shieldAtlas,index*64,0,64,64,-32*scale,-32*scale,64*scale,64*scale);}else{ctx.scale(.55*scale,.55*scale);weapons.shield(ctx);}}
+  else {ctx.scale(scale,scale);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-17,3,15);ctx.fillStyle='#9586ae';ctx.fillRect(2,-14,1,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,5);ctx.translate(-9,5);ctx.rotate(.55);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-14,3,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,4);}
   ctx.restore();
   // Small arm connects the translated weapon grip back to its body hand.
   ctx.save();ctx.strokeStyle='#efb789';ctx.lineWidth=3*scale;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(handX,handY);ctx.lineTo(pivotX,pivotY);ctx.stroke();ctx.restore();

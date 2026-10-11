@@ -64,18 +64,18 @@ export const PRAC_ENEMIES = [
   { id: "sq",        name: "魔像 ◆",         emoji: "◆",   tier: 2, boss: false, mega: false, desc: "Tier2 更硬" },
   { id: "pent",      name: "長老 ⬠",         emoji: "⬠",   tier: 3, boss: false, mega: false, desc: "Tier3 高血高攻" },
   { id: "star",      name: "遠古 ★",         emoji: "★",   tier: 4, boss: false, mega: false, desc: "Tier4 最強小怪" },
-  { id: "elite",     name: "精英怪",          emoji: "🔴",  tier: 2, boss: false, mega: false, elite: true, desc: "衝刺/護盾/震波 物理抗性 元素有效" },
-  { id: "shield",    name: "盾兵 🛡️",        emoji: "🛡️", tier: 1, boss: false, mega: false, role: 5, desc: "正面擋75%傷害 需繞背攻擊" },
-  { id: "shooter",   name: "射手 🎯",        emoji: "🎯",  tier: 1, boss: false, mega: false, role: 2, desc: "保持距離 發射遠程子彈" },
-  { id: "dasher",    name: "衝刺者 💨",      emoji: "💨",  tier: 1, boss: false, mega: false, role: 3, desc: "蓄力後高速衝刺 有預警動作" },
-  { id: "flanker",   name: "包圍者 🌀",      emoji: "🌀",  tier: 1, boss: false, mega: false, role: 1, desc: "環繞玩家軌道移動 逐漸逼近" },
-  { id: "boss",      name: "小王 ⭐",        emoji: "⭐",  tier: 3, boss: true,  mega: false, desc: "隨機韌性/防禦 散射/召喚/彈幕技能 有DPS上限" },
-  { id: "mega",      name: "巨王 👑",        emoji: "👑",  tier: 4, boss: true,  mega: true,  desc: "小王加強版 3倍體型 更高DPS上限" },
-  { id: "poo",       name: "💩 中場Boss",    emoji: "💩",  stage: 20, desc: "護盾/散射/增生 半血狂暴召喚20便便 防禦型" },
-  { id: "poo_rage",  name: "💩 中場Boss(狂暴)", emoji: "💩", stage: 20, pooRage: true, desc: "直接進入半血狂暴狀態" },
-  { id: "devil1",    name: "😈 魔王 Phase1", emoji: "😈",  stage: 30, devilPhase: 1, desc: "彈幕+十字波" },
-  { id: "devil2",    name: "😈 魔王 Phase2", emoji: "😈",  stage: 30, devilPhase: 2, desc: "惡魔交易+瞬移+小惡魔" },
-  { id: "devil3",    name: "😈 魔王 Phase3", emoji: "😈",  stage: 30, devilPhase: 3, desc: "衝刺循環+暗黑脈衝" },
+  { id: "elite",     name: "精英怪",          emoji: "",  tier: 2, boss: false, mega: false, elite: true, desc: "衝刺/護盾/震波 物理抗性 元素有效" },
+  { id: "shield",    name: "盾兵 ",        emoji: "", tier: 1, boss: false, mega: false, role: 5, desc: "正面擋75%傷害 需繞背攻擊" },
+  { id: "shooter",   name: "射手 ",        emoji: "",  tier: 1, boss: false, mega: false, role: 2, desc: "保持距離 發射遠程子彈" },
+  { id: "dasher",    name: "衝刺者 ",      emoji: "",  tier: 1, boss: false, mega: false, role: 3, desc: "蓄力後高速衝刺 有預警動作" },
+  { id: "flanker",   name: "包圍者 ",      emoji: "",  tier: 1, boss: false, mega: false, role: 1, desc: "環繞玩家軌道移動 逐漸逼近" },
+  { id: "boss",      name: "小王 ",        emoji: "",  tier: 3, boss: true,  mega: false, desc: "隨機韌性/防禦 散射/召喚/彈幕技能 有DPS上限" },
+  { id: "mega",      name: "巨王 ",        emoji: "",  tier: 4, boss: true,  mega: true,  desc: "小王加強版 3倍體型 更高DPS上限" },
+  { id: "poo",       name: " 中場Boss",    emoji: "",  stage: 20, desc: "護盾/散射/增生 半血狂暴召喚20便便 防禦型" },
+  { id: "poo_rage",  name: " 中場Boss(狂暴)", emoji: "", stage: 20, pooRage: true, desc: "直接進入半血狂暴狀態" },
+  { id: "devil1",    name: " 魔王 Phase1", emoji: "",  stage: 30, devilPhase: 1, desc: "彈幕+十字波" },
+  { id: "devil2",    name: " 魔王 Phase2", emoji: "",  stage: 30, devilPhase: 2, desc: "惡魔交易+瞬移+小惡魔" },
+  { id: "devil3",    name: " 魔王 Phase3", emoji: "",  stage: 30, devilPhase: 3, desc: "衝刺循環+暗黑脈衝" },
 ];
 
 // ─── showCardTip ──────────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ export function showCardTip(cid) {
   const RC2 = { R: "#74C0FC", SR: "#DA77F2", SSR: "#FFD43B" };
   const tp2 = c.tp === "atk" ? "攻擊" : "被動";
   const charLabel = c.charReq ? ({ gunner: "槍手專屬", swordsman: "劍士專屬", tank: "坦克專屬" }[c.charReq] || "") : "通用";
-  $("ctEmoji").textContent = c.e;
+  $("ctEmoji").innerHTML = cardEmblem(c);
   $("ctName").style.color = RC2[c.r] || "#fff";
   $("ctName").textContent = c.n;
   $("ctMeta").innerHTML = `<span style="color:${RC2[c.r]}">${c.r}</span> · ${tp2} · ${charLabel}${c.once ? " · 限定一次" : ""}`;
@@ -127,7 +127,7 @@ export function pracRefreshStats() {
   const _atkSpd = _cc.atkType === "melee" && _cc.atkCD > 0
     ? (1000 / (_cc.atkCD * (p.fr || 1))).toFixed(1) + "次/秒"
     : Math.round(1000 / (115 * (p.fr || 1))) + "發/秒";
-  let h = '<div style="color:#74C0FC;font-weight:900;font-size:12px;margin-bottom:6px">🧙 主角能力值</div>';
+  let h = '<div style="color:#74C0FC;font-weight:900;font-size:12px;margin-bottom:6px"> 主角能力值</div>';
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-bottom:8px">';
   const ps = [
     ["攻擊力", Math.round(p.atk)], ["攻速", _atkSpd],
@@ -152,7 +152,7 @@ export function pracRefreshStats() {
   const _mode = _deps.getMode();
   const isElite = _mode === "elite" || _mode === "coop";
   if (g.ene.length > 0) {
-    h += '<div style="color:#FF6B6B;font-weight:900;font-size:12px;margin:6px 0 4px">👾 場上敵人</div>';
+    h += '<div style="color:#FF6B6B;font-weight:900;font-size:12px;margin:6px 0 4px"> 場上敵人</div>';
     const angelMul = g.p._angelBuff ? 1.6 : 1;
     const acm = 1 + (g.p.armorCapBonus || 0);
     g.ene.forEach((e, i) => {
@@ -169,7 +169,7 @@ export function pracRefreshStats() {
         else cap = e.mhp / (e.mega ? 30 : 15) * angelMul * armMul;
         capStr = Math.round(cap) + "/秒";
       }
-      const def = e.bossType === "armor" ? "🛡️防禦" : e.bossType === "tough" ? "💪韌性" : "--";
+      const def = e.bossType === "armor" ? "防禦" : e.bossType === "tough" ? "韌性" : "--";
       let abilities = [];
       if (e.stageBoss === 20) abilities = ["環形散射", "召喚增生", "護盾(普攻無效)", "半血狂暴(20便便)"];
       else if (e.stageBoss === 30) { const ph = e.sbPhase || 1; abilities = ["Phase" + ph, "暗影彈幕"]; if (ph >= 2) abilities.push("十字波", "瞬移+抖動", "小惡魔", "惡魔交易"); if (ph >= 3) abilities.push("無預警瞬移", "暗黑脈衝"); }
@@ -300,7 +300,7 @@ export function pracToggleHp() {
   _pracFiniteHp = !_pracFiniteHp;
   if (_pracFiniteHp) { g.p.hp = 200; g.p.maxHp = 200; }
   else { g.p.hp = 99999; g.p.maxHp = 99999; }
-  $("pracHpBtn").textContent = _pracFiniteHp ? "❤️血量200" : "❤️無限血量";
+  $("pracHpBtn").textContent = _pracFiniteHp ? "血量200" : "無限血量";
   $("pracHpBtn").style.background = _pracFiniteHp ? "rgba(81,207,102,.2)" : "rgba(255,107,107,.2)";
   $("pracHpBtn").style.color = _pracFiniteHp ? "#51CF66" : "#FF6B6B";
   $("pracHpBtn").style.borderColor = _pracFiniteHp ? "rgba(81,207,102,.3)" : "rgba(255,107,107,.3)";
@@ -328,7 +328,7 @@ export function exitPractice() {
 export function pracSwitchChar() {
   const g = _deps.getG();
   const chars = ["gunner", "swordsman", "tank", "assassin"];
-  const names = { "gunner": "🔫槍手", "swordsman": "⚔️劍士", "tank": "🛡️坦克", "assassin": "🗡️刺客" };
+  const names = { "gunner": "槍手", "swordsman": "劍士", "tank": "坦克", "assassin": "刺客" };
   const cur = g ? g.charType : _deps.getCharType();
   const idx = (chars.indexOf(cur) + 1) % chars.length;
   const next = chars[idx];
@@ -338,7 +338,7 @@ export function pracSwitchChar() {
     const CC = CHAR[next];
     g.p.speed = CC.startSpeed; g.p.armor = CC.armor; g.p.dodge = CC.dodge; g.p.crit = CC.crit; g.p.fr = CC.fr;
   }
-  $("pracCharBtn").textContent = "🔄" + names[next];
+  $("pracCharBtn").textContent = "" + names[next];
   g.dn.push({ x: g.p.x, y: g.p.y - 40, d: "切換：" + names[next], life: 2, color: "#FFD43B", big: 1 });
   openPractice._rebuildCards && openPractice._rebuildCards();
 }
@@ -355,7 +355,7 @@ export function pracToggleCoop() {
   setEnemiesCoopMode(_isCoopMode); setCombatCoopState(_isCoopMode, _net, _p2AI); setSkillsCoopState(_isCoopMode, _net); setBossCoopMode(_isCoopMode);
   const btn = $("pracCoopBtn"), rbtn = $("pracRoomBtn");
   if (_isCoopMode) {
-    btn.textContent = "🤝雙人(ON)"; btn.style.background = "rgba(240,101,149,.4)"; btn.style.color = "#fff";
+    btn.textContent = "雙人(ON)"; btn.style.background = "rgba(240,101,149,.4)"; btn.style.color = "#fff";
     rbtn.style.display = "inline-block"; $("pracJoinBtn").style.display = "inline-block";
     $("pracP2CharBtn").style.display = "inline-block";
     if (g && !g.p2) {
@@ -367,7 +367,7 @@ export function pracToggleCoop() {
       inv2.length = 0; g.p2Level = 1; g.p2Exp = 0; g.p2ExpTo = 100;
     }
   } else {
-    btn.textContent = "🤝雙人(AI)"; btn.style.background = "rgba(240,101,149,.15)"; btn.style.color = "#F06595";
+    btn.textContent = "雙人(AI)"; btn.style.background = "rgba(240,101,149,.15)"; btn.style.color = "#F06595";
     rbtn.style.display = "none"; $("pracJoinBtn").style.display = "none";
     $("pracP2CharBtn").style.display = "none";
     _deps.setP2AI(false);
@@ -383,7 +383,7 @@ export function pracCycleP2Char() {
   if (!g || !g.p2) return;
   const types = ["gunner", "swordsman", "tank", "assassin"];
   const names = { gunner: "槍手", swordsman: "劍士", tank: "坦克", assassin: "刺客" };
-  const icons = { gunner: "🔫", swordsman: "⚔️", tank: "🛡️", assassin: "🗡️" };
+  const icons = { gunner: "", swordsman: "", tank: "", assassin: "" };
   const cur = g.p2.charType || "gunner";
   const next = types[(types.indexOf(cur) + 1) % types.length];
   g.p2.charType = next;
@@ -425,12 +425,12 @@ export function openPractice() {
   g.p.hp = 99999; g.p.maxHp = 99999; g.level = 12; g.wave = 12; g.p.atk = 30;
   requestAnimationFrame(() => {
     $("practiceOv").style.display = "block";
-    const hb = $("pracHpBtn"); hb.textContent = "❤️無限血量"; hb.style.background = "rgba(255,107,107,.2)"; hb.style.color = "#FF6B6B"; hb.style.borderColor = "rgba(255,107,107,.3)";
+    const hb = $("pracHpBtn"); hb.textContent = "無限血量"; hb.style.background = "rgba(255,107,107,.2)"; hb.style.color = "#FF6B6B"; hb.style.borderColor = "rgba(255,107,107,.3)";
   });
   // 建立卡片列表
   function _buildPracCards() {
     const cc2 = $("pracCards");
-    let h2 = '<div style="color:#FFD43B;font-weight:900;font-size:11px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(10,10,24,.95);z-index:1">🃏 卡片（點擊切換 / 長按說明）</div>';
+    let h2 = '<div style="color:#FFD43B;font-weight:900;font-size:11px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(10,10,24,.95);z-index:1"> 卡片（點擊切換 / 長按說明）</div>';
     const g2 = _deps.getG();
     const _pct = g2 ? g2.charType : (_deps.getCharType() || "gunner");
     C.filter(c => !c.charReq || c.charReq === _pct).forEach(c => {
@@ -453,7 +453,7 @@ export function openPractice() {
   openPractice._rebuildCards = _buildPracCards;
   // 建立敵人列表
   const ec = $("pracEnemies");
-  let ehtml = '<div style="color:#FF6B6B;font-weight:900;font-size:11px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(10,10,24,.95);z-index:1">👾 敵人（勾選後按出怪）</div>';
+  let ehtml = '<div style="color:#FF6B6B;font-weight:900;font-size:11px;text-align:center;padding:4px 0;position:sticky;top:0;background:rgba(10,10,24,.95);z-index:1"> 敵人（勾選後按出怪）</div>';
   PRAC_ENEMIES.forEach(pe => {
     ehtml += `<label style="display:flex;align-items:start;gap:3px;padding:4px;margin:2px 0;border-radius:5px;background:rgba(255,255,255,.04);cursor:pointer;color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.06)">
       <input type="checkbox" data-eid="${pe.id}" onchange="pracToggleEnemy('${pe.id}',this.checked)" style="margin:2px 0 0;width:13px;height:13px;flex-shrink:0">

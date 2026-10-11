@@ -107,7 +107,8 @@ function toggleMute(){
   const tog=document.getElementById("sfxToggle");
   const knob=document.getElementById("sfxKnob");
   if(tog&&knob){
-    tog.style.background=muted?"rgba(255,255,255,.15)":"#7C3AED";
+    tog.style.background=muted?"#394653":"#7eaf84";
+    tog.setAttribute("aria-pressed",String(!muted));
     knob.style.left=muted?"3px":"27px";
   }
   const ev=document.getElementById("endVid");

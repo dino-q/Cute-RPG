@@ -332,7 +332,7 @@ export function loop(){
   // heat system
   if(g.heatCD>0){g.heatCD-=dt*16.67;if(g.heatCD<=0){g.heatCD=0;g.heat=0;}}
   else if((g.huntModeUntil&&now<g.huntModeUntil)||(g._cw&&g._cw.raged&&g.ene.some(e=>e._rage&&e._rageDashes<3))){
-    if(!g._huntComboShown){g._huntComboShown=true;const hb=$("huntBanner");hb.style.display="block";hb.innerHTML='<div style="color:#fff;background:linear-gradient(135deg,rgba(250,82,82,.85),rgba(201,42,42,.85));border:1px solid #FFA8A8;border-radius:12px;padding:6px 18px;font-size:14px;font-weight:900;letter-spacing:2px;box-shadow:0 0 20px rgba(250,82,82,.5),0 0 40px rgba(250,82,82,.2);animation:huntPulse 1.5s ease-in-out infinite;backdrop-filter:blur(4px)">⚠️ 獵殺模式 ⚠️</div>';}
+    if(!g._huntComboShown){g._huntComboShown=true;const hb=$("huntBanner");hb.style.display="block";hb.innerHTML='<div style="color:#fff;background:linear-gradient(135deg,rgba(250,82,82,.85),rgba(201,42,42,.85));border:1px solid #FFA8A8;border-radius:12px;padding:6px 18px;font-size:14px;font-weight:900;letter-spacing:2px;box-shadow:0 0 20px rgba(250,82,82,.5),0 0 40px rgba(250,82,82,.2);animation:huntPulse 1.5s ease-in-out infinite;backdrop-filter:blur(4px)"> 獵殺模式 </div>';}
   }
   // ult charge — hold to charge, tap when full to detonate (non-black-hole)
   else if(g._huntComboShown){g._huntComboShown=false;$("huntBanner").style.display="none";$("huntBanner").innerHTML="";}
@@ -431,7 +431,7 @@ export function loop(){
   // 機關槍狂暴：連射3秒後觸發2秒加速
   if(g.p._minigunBerserk){
     if(aim.a){g.p._mgFireT=(g.p._mgFireT||0)+dt*16.67;
-      if(g.p._mgFireT>=3000&&!g.p._mgBerserkEnd){g.p._mgBerserkEnd=now+2000;g.dn.push({x:g.p.x,y:g.p.y-30,d:"🔥 狂暴射擊！",life:1.5,color:"#FF4500",big:1});}
+      if(g.p._mgFireT>=3000&&!g.p._mgBerserkEnd){g.p._mgBerserkEnd=now+2000;g.dn.push({x:g.p.x,y:g.p.y-30,d:" 狂暴射擊！",life:1.5,color:"#FF4500",big:1});}
     }else{g.p._mgFireT=0;g.p._mgBerserkEnd=0;}
   }
   var mgBerserkMul=(g.p._mgBerserkEnd&&now<g.p._mgBerserkEnd)?.5:1;
@@ -510,7 +510,7 @@ export function loop(){
         var p2Dmg=(ULT_D+g.p2.atk*6+g.p2Level*5);
         g.ene.forEach(e=>{var d2=di(g.p2,e);if(d2<200){e.hp-=p2Dmg;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(p2Dmg),life:1.3,color:"#F06595",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,10);}});
         burst(g.p2.x,g.p2.y,"#F06595",20);g.ultFlash=.5;sfx("ult");
-        g.dn.push({x:g.p2.x,y:g.p2.y-30,d:"💥 P2 大招！",life:1.5,color:"#F06595",big:1});
+        g.dn.push({x:g.p2.x,y:g.p2.y-30,d:" P2 大招！",life:1.5,color:"#F06595",big:1});
       }
     }
     if(g.p2._ultCooldown&&now>=g.p2._ultCooldown)g.p2._ultCooldown=0;
@@ -544,7 +544,7 @@ export function loop(){
   // 鋼鐵意志：<30% HP 自動減傷+回血
   if(g.p._ironWill&&g.p.hp>0){
     var iwActive=g.p.hp/g.p.maxHp<.3;
-    if(iwActive&&!g.p._iwActive){g.p._iwActive=true;g.dn.push({x:g.p.x,y:g.p.y-30,d:"💪 鋼鐵意志！",life:1.5,color:"#868E96",big:1});}
+    if(iwActive&&!g.p._iwActive){g.p._iwActive=true;g.dn.push({x:g.p.x,y:g.p.y-30,d:" 鋼鐵意志！",life:1.5,color:"#868E96",big:1});}
     if(!iwActive&&g.p._iwActive&&g.p.hp/g.p.maxHp>=.5)g.p._iwActive=false;
     if(g.p._iwActive){g.p.hp=Math.min(g.p.hp+g.p.maxHp*.03*dt/60,g.p.maxHp);}
   }
@@ -554,7 +554,7 @@ export function loop(){
     // 視覺光環在渲染區處理
   }
   // shield timer (守護星)
-  if(g.p.shieldCD>0){g.p._shT=(g.p._shT||0)+dt*16.67;if(g.p._shT>=g.p.shieldCD&&!g.p._sh){g.p._sh=true;g.p._shT=0;g.p._shSpawn=now;burst(g.p.x,g.p.y,"#4DABF7",12);g.dn.push({x:g.p.x,y:g.p.y-30,d:"🛡️守護星",life:1,color:"#4DABF7"});}}
+  if(g.p.shieldCD>0){g.p._shT=(g.p._shT||0)+dt*16.67;if(g.p._shT>=g.p.shieldCD&&!g.p._sh){g.p._sh=true;g.p._shT=0;g.p._shSpawn=now;burst(g.p.x,g.p.y,"#4DABF7",12);g.dn.push({x:g.p.x,y:g.p.y-30,d:"守護星",life:1,color:"#4DABF7"});}}
   // invincibility timer (天使之翼) — 用 game-time 計時，暫停時不消耗
   if(g.p.invCD>0){
     g.p._ivT=(g.p._ivT||0)+dt*16.67;
@@ -565,7 +565,7 @@ export function loop(){
   // === 龍寵物系統 ===
   if(g.p._dragonBreath&&!g._dragonPet){
     g._dragonPet={x:g.p.x-30,y:g.p.y-35,face:1,breathCycle:0,_tgtE:null};
-    g.dn.push({x:g.p.x,y:g.p.y-40,d:"🐉 噴火龍降臨！",life:2.5,color:"#FF922B",big:1});
+    g.dn.push({x:g.p.x,y:g.p.y-40,d:" 噴火龍降臨！",life:2.5,color:"#FF922B",big:1});
   }
   if(g._dragonPet){
     var _dp=g._dragonPet;
@@ -631,7 +631,7 @@ export function loop(){
     if(ew.active&&aliveEnemies===0){
       // 波次清完 → 休息（前期短，後期長）
       ew.active=false;ew.restEnd=now+(ew.num<6?1200:2000);
-      g.dn.push({x:g.p.x,y:g.p.y-40,d:"✨ 波次清除！",life:1.5,color:"#51CF66",big:1});
+      g.dn.push({x:g.p.x,y:g.p.y-40,d:" 波次清除！",life:1.5,color:"#51CF66",big:1});
     }
     if(!ew.active&&now>=ew.restEnd){
       ew.num++;ew.active=true;
@@ -640,18 +640,18 @@ export function loop(){
       var isMegaWave=ew.num%12===0;
       var isEliteWave=ew.num%4===0&&!isBossWave;
       if(isMegaWave){
-        g.dn.push({x:g.p.x,y:g.p.y-60,d:`👑 第${ew.num}波 — 巨王！`,life:2.5,color:"#FFD43B",big:1});
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:` 第${ew.num}波 — 巨王！`,life:2.5,color:"#FFD43B",big:1});
         sfx("boss");spawn(true,{mega:true});spawn(false);spawn(false);
       }else if(isBossWave){
-        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⭐ 第${ew.num}波 — 小王！`,life:2.5,color:"#FF922B",big:1});
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:` 第${ew.num}波 — 小王！`,life:2.5,color:"#FF922B",big:1});
         sfx("boss");spawn(true);
       }else if(isEliteWave){
-        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${ew.num}波 — 精英！`,life:2,color:"#E74C3C",big:1});
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:` 第${ew.num}波 — 精英！`,life:2,color:"#E74C3C",big:1});
         sfx("boss");
         for(var i=0;i<2;i++)spawn(false); // 精英機率 20%，大概 1 隻精英+1 小怪
       }else{
         var waveSize=Math.min(4,ew.num<4?3:2+Math.floor(ew.num/8));
-        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${ew.num}波`,life:1.5,color:"#FF6B6B"});
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:` 第${ew.num}波`,life:1.5,color:"#FF6B6B"});
         for(var i=0;i<waveSize;i++)spawn(false);
       }
     }
@@ -663,7 +663,7 @@ export function loop(){
     // 波次清完 → 休息
     if(cw.phase==="active"&&aliveClassic===0&&cw.spawned>=cw.target){
       cw.phase="rest";cw.restEnd=now+1500;
-      g.dn.push({x:g.p.x,y:g.p.y-40,d:"✨ 波次清除！",life:1.5,color:"#51CF66",big:1});
+      g.dn.push({x:g.p.x,y:g.p.y-40,d:" 波次清除！",life:1.5,color:"#51CF66",big:1});
     }
     // 休息結束 → 開始新波次
     if(cw.phase==="rest"&&now>=cw.restEnd){
@@ -673,7 +673,7 @@ export function loop(){
       var _wlGap=cw.num-g.level;
       if(_wlGap>=5&&!g["_gapWarn"+Math.floor(_wlGap/3)]){
         g["_gapWarn"+Math.floor(_wlGap/3)]=true;
-        showHint(_wlGap>=8?"⚠️ 等級嚴重落後！綠色經驗球有追趕加成，快去撿！":"💡 等級落後了，記得靠近綠色經驗球來升級！");
+        showHint(_wlGap>=8?" 等級嚴重落後！綠色經驗球有追趕加成，快去撿！":" 等級落後了，記得靠近綠色經驗球來升級！");
       }
       // 計算這波數量
       var wn=cw.num;
@@ -682,18 +682,18 @@ export function loop(){
       var isStrongWave=wn%4===0&&!isBossWave;
       if(isMegaWave){
         cw.target=spawnTargetForWave(wn);
-        g.dn.push({x:g.p.x,y:g.p.y-60,d:`👑 第${wn}波 — 巨王！(${cw.target}隻)`,life:2.5,color:"#FFD43B",big:1});
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:` 第${wn}波 — 巨王！(${cw.target}隻)`,life:2.5,color:"#FFD43B",big:1});
         sfx("boss");spawn(true,{mega:true});
       }else if(isBossWave){
         cw.target=spawnTargetForWave(wn);
-        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⭐ 第${wn}波 — 小王！(${cw.target}隻)`,life:2.5,color:"#FF922B",big:1});
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:` 第${wn}波 — 小王！(${cw.target}隻)`,life:2.5,color:"#FF922B",big:1});
         sfx("boss");spawn(true);
       }else if(isStrongWave){
         cw.target=Math.floor(spawnTargetForWave(wn)*1.2);
-        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${wn}波 — 強化！(${cw.target}隻)`,life:2,color:"#E74C3C",big:1});
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:` 第${wn}波 — 強化！(${cw.target}隻)`,life:2,color:"#E74C3C",big:1});
       }else{
         cw.target=spawnTargetForWave(wn);
-        g.dn.push({x:g.p.x,y:g.p.y-60,d:`⚠️ 第${wn}波 (${cw.target}隻)`,life:1.5,color:"#FF6B6B"});
+        g.dn.push({x:g.p.x,y:g.p.y-60,d:` 第${wn}波 (${cw.target}隻)`,life:1.5,color:"#FF6B6B"});
       }
     }
     // 漸進出怪：每0.3秒出2-3隻
@@ -705,7 +705,7 @@ export function loop(){
     // 暴走觸發：波次開始15秒後還有小怪存活
     if(cw.phase==="active"&&!cw.raged&&cw.spawned>=cw.target&&now-cw.waveStart>15000&&aliveClassic>0){
       cw.raged=true;
-      g.dn.push({x:g.p.x,y:g.p.y-50,d:"⚠️ 敵人暴走！",life:2.5,color:"#FF4040",big:1});
+      g.dn.push({x:g.p.x,y:g.p.y-50,d:" 敵人暴走！",life:2.5,color:"#FF4040",big:1});
       g.ene.forEach((e,ei)=>{
         if(e.hp<=0||e.boss||e.stageBoss)return;
         var delay=ei*200+Math.random()*400; // 每隻錯開 200~600ms
@@ -745,7 +745,7 @@ export function loop(){
         e._eDashing=true;e._eDashEnd=now+400;
         e._eDashDx=edx/ed;e._eDashDy=edy/ed;
         burst(e.x,e.y,"#E74C3C",6);
-        g.dn.push({x:e.x,y:e.y-e.r-8,d:"💨",life:.8,color:"#E74C3C"});
+        g.dn.push({x:e.x,y:e.y-e.r-8,d:"",life:.8,color:"#E74C3C"});
       }
       if(e._eDashing&&now<e._eDashEnd){
         e.x+=e._eDashDx*7*dt;e.y+=e._eDashDy*7*dt;
@@ -759,7 +759,7 @@ export function loop(){
       if(e._eShieldEnd&&now>=e._eShieldEnd){e._eShieldEnd=0;e._spawnShield=0;} // 護盾到期重設
       if(now>e._eShieldCD&&e.hp<e.mhp*.6&&!e._eShieldEnd){
         e._eShieldEnd=now+3000;e._eShieldCD=now+18000;
-        g.dn.push({x:e.x,y:e.y-e.r-8,d:"🛡️",life:1,color:"#4DABF7"});
+        g.dn.push({x:e.x,y:e.y-e.r-8,d:"",life:1,color:"#4DABF7"});
       }
       if(e._eShieldEnd&&now<e._eShieldEnd)e._spawnShield=now+50;
       // 範圍震波：每8秒，距離<80時
@@ -862,7 +862,7 @@ export function loop(){
         if(e._rageDashes>=3){
           // 3次完成 → 恢復冷靜
           e._rage=0;
-          g.dn.push({x:e.x,y:e.y-e.r-10,d:"😮‍💨",life:1,color:"#ADB5BD"});
+          g.dn.push({x:e.x,y:e.y-e.r-10,d:"",life:1,color:"#ADB5BD"});
         }else{
           // 下一次蓄力
           e._rageState="charge";e._rageT=now+400;
@@ -871,7 +871,7 @@ export function loop(){
     }else if(e._rage&&e._rageDashes>=3){
       e._rage=0;
       if(!g.ene.some(oe=>oe!==e&&oe._rage&&oe._rageDashes<3&&oe.hp>0)){
-        g.dn.push({x:g.p.x,y:g.p.y-40,d:"😮‍💨 敵人已恢復冷靜",life:2,color:"#ADB5BD",big:1});
+        g.dn.push({x:g.p.x,y:g.p.y-40,d:" 敵人已恢復冷靜",life:2,color:"#ADB5BD",big:1});
       }
     }else{
     // 撞擊後退開 1.5 秒
@@ -1017,14 +1017,14 @@ export function loop(){
       if(b.life<=0)return false;
       // hit player? (respects i-frame)
       if(!g.p._inv&&!bhSafe&&!(g.p._iFrameEnd>0&&now<g.p._iFrameEnd)&&di(b,g.p)<PR+4){
-        if(g.p.projImmune){burst(g.p.x,g.p.y,"#CED4DA",4);g.dn.push({x:g.p.x,y:g.p.y-25,d:"🔔彈開",life:1,color:"#CED4DA"});return false;}
+        if(g.p.projImmune){burst(g.p.x,g.p.y,"#CED4DA",4);g.dn.push({x:g.p.x,y:g.p.y-25,d:"彈開",life:1,color:"#CED4DA"});return false;}
         // 劍士：揮劍中擋子彈（30% 機率）
         if(g.charType==="swordsman"&&g._wbSwing>.3&&Math.random()<.3){
-          burst(g.p.x,g.p.y,"#FF922B",3);g.dn.push({x:g.p.x,y:g.p.y-25,d:"⚔️彈開",life:.8,color:"#FF922B"});return false;}
+          burst(g.p.x,g.p.y,"#FF922B",3);g.dn.push({x:g.p.x,y:g.p.y-25,d:"彈開",life:.8,color:"#FF922B"});return false;}
         // 坦克：內建遠距傷害減半
         var _tankProjMit=g.charType==="tank"?.5:1;
         if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});return false;}
-        if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"🛡️擋住",life:1,color:"#4DABF7",big:1});return false;}
+        if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"擋住",life:1,color:"#4DABF7",big:1});return false;}
         var lateMul=1+Math.max(0,g.wave-10)*.07;
         var surv=(g.p.armor||0)+(g.p.dodge||0)*.9;
         var survMit=1-Math.min(.42,surv*.36);
@@ -1171,7 +1171,7 @@ export function loop(){
       else burst(b.x,b.y,e.color,3);
       // 破甲箭命中 armor 型：碎甲火花
       if(b._armorPen>0&&e.bossType==="armor"){burst(b.x,b.y,"#FF922B",4);burst(b.x,b.y,"#fff",2);
-        if(Math.random()<.15)g.dn.push({x:e.x,y:e.y-e.r-8,d:"💥破甲",life:.6,color:"#D4A017"});}
+        if(Math.random()<.15)g.dn.push({x:e.x,y:e.y-e.r-8,d:"破甲",life:.6,color:"#D4A017"});}
       // 冰脆特效：冰色碎片 + 傷害數字改色
       if(_iceFragHit){burst(b.x,b.y,"#66D9E8",4);burst(b.x,b.y,"#fff",2);}
       g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(dmg),life:1,color:b.crit?"#FFD43B":_iceFragHit?"#66D9E8":"#fff",big:b.crit});
@@ -1268,14 +1268,14 @@ export function loop(){
       e._eDashing=false;e.dashState=3;e._retreatEnd=now+1000;
       e.st=Math.max(e.st||0,1500); // 長減速
       burst(g.p.x,g.p.y,"#51CF66",10);burst(e.x,e.y,"#FFD43B",6);
-      g.dn.push({x:g.p.x,y:g.p.y-25,d:"🛡️ 擋下！",life:1.2,color:"#51CF66",big:1});
+      g.dn.push({x:g.p.x,y:g.p.y-25,d:" 擋下！",life:1.2,color:"#51CF66",big:1});
       g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(blockDmg),life:1,color:"#FFD43B",big:1});
       sfxHit();_shakeT=.2;_shakePow=4;
       g.p._iFrameEnd=now+300;
       return true;
     }
     if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});if(g.p.dodgeAtk>0){e.hp-=g.p.dodgeAtk;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(g.p.dodgeAtk),life:1,color:"#FFE066"});}return _isWB||e.hp>0;}
-    if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"🛡️擋住",life:1,color:"#4DABF7",big:1});return true;}
+    if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"擋住",life:1,color:"#4DABF7",big:1});return true;}
     var lateMul=1+Math.max(0,g.wave-10)*.07;
     var surv=(g.p.armor||0)+(g.p.dodge||0)*.9;
     var survMit=1-Math.min(.42,surv*.36);
@@ -1320,12 +1320,12 @@ export function loop(){
     if(g.p2._downed&&!g.p._downed&&di(g.p,g.p2)<40){
       g.p2._rescueTimer=(g.p2._rescueTimer||0)+frameMs;
       if(g.p2._rescueTimer>=3000){g.p2._downed=false;g.p2.hp=Math.floor(g.p2.maxHp*.3);g.p2._iFrameEnd=now+2000;g.p2._rescueTimer=0;
-        g.dn.push({x:g.p2.x,y:g.p2.y-PR-10,d:"💚 救援成功！",life:2,color:"#51CF66",big:1});burst(g.p2.x,g.p2.y,"#51CF66",12);}
+        g.dn.push({x:g.p2.x,y:g.p2.y-PR-10,d:" 救援成功！",life:2,color:"#51CF66",big:1});burst(g.p2.x,g.p2.y,"#51CF66",12);}
     }else if(g.p2._downed){g.p2._rescueTimer=0;}
     if(g.p._downed&&!g.p2._downed&&di(g.p,g.p2)<40){
       g.p._rescueTimer=(g.p._rescueTimer||0)+frameMs;
       if(g.p._rescueTimer>=3000){g.p._downed=false;g.p.hp=Math.floor(g.p.maxHp*.3);g.p._iFrameEnd=now+2000;g.p._rescueTimer=0;
-        g.dn.push({x:g.p.x,y:g.p.y-PR-10,d:"💚 救援成功！",life:2,color:"#51CF66",big:1});burst(g.p.x,g.p.y,"#51CF66",12);}
+        g.dn.push({x:g.p.x,y:g.p.y-PR-10,d:" 救援成功！",life:2,color:"#51CF66",big:1});burst(g.p.x,g.p.y,"#51CF66",12);}
     }else if(g.p._downed){g.p._rescueTimer=0;}
     if(g.p2._iFrameEnd>0&&now>=g.p2._iFrameEnd)g.p2._iFrameEnd=0;
   }
@@ -1336,7 +1336,7 @@ export function loop(){
       var _mc2=MODE[_mode];g.p2.atk+=_mc2.atkPerLv;g.p2.maxHp+=_mc2.hpPerLv;g.p2.hp=g.p2.maxHp;
       if(g.p2Level%5===0){g.p2.levelDmgMul=(g.p2.levelDmgMul||1)+.1;}
       // P2 升級：生成寶箱（和 P1 一樣的生成規則）
-      if(g.p2Level>=2&&g.p2Level<=4){spawnBonusCrates(1);g.dn.push({x:g.p2.x,y:g.p2.y-30,d:"📦 P2 寶箱！",life:2,color:"#F06595",big:1});}
+      if(g.p2Level>=2&&g.p2Level<=4){spawnBonusCrates(1);g.dn.push({x:g.p2.x,y:g.p2.y-30,d:" P2 寶箱！",life:2,color:"#F06595",big:1});}
     }
   }
 
@@ -1346,7 +1346,7 @@ export function loop(){
     // stat boost on level up
     var _mc=MODE[_mode];g.p.atk+=_mc.atkPerLv;g.p.maxHp+=_mc.hpPerLv;g.p.hp=g.p.maxHp;
     if(g.level%5===0){g.p.levelDmgMul=(g.p.levelDmgMul||1)+.1;} // 每5等全傷害+10%
-    if(g.level%10===0){g.p.pierce=(g.p.pierce||0)+1;showHint("🔱 穿透+1！子彈可貫穿更多敵人");} // 每10等基礎穿透+1
+    if(g.level%10===0){g.p.pierce=(g.p.pierce||0)+1;showHint(" 穿透+1！子彈可貫穿更多敵人");} // 每10等基礎穿透+1
     // milestone hints — non-intrusive floating text
     // 經典模式 Lv2 送免費 R 攻擊卡
     if(_mode==="classic"&&g.level===2&&!g._freeCard){
@@ -1356,27 +1356,27 @@ export function loop(){
       if(freeCard){showPick("crate",freeCard);}
       else{g.run=true;}
     }
-    if(g.level===2&&!g._hint2){g._hint2=1;showHint("💚 擊殺敵人會掉綠色經驗球，靠近自動吸取！");}
-    if(g.level===3&&!g._hint3){g._hint3=1;showHint("📦 探索地圖找寶箱，打開獲得卡牌！");}
-    if(g.level===6&&!g._hint6){g._hint6=1;showHint("⚠️ 新型敵人出現了！小心包圍！");}
-    if(g.level===8&&!g._hint8){g._hint8=1;showHint("🎯 遠程射手出沒，注意閃避子彈！");}
-    if(g.level===10&&!g._hint10){g._hint10=1;showHint("💨 衝刺者與強化 Boss 登場！");}
+    if(g.level===2&&!g._hint2){g._hint2=1;showHint(" 擊殺敵人會掉綠色經驗球，靠近自動吸取！");}
+    if(g.level===3&&!g._hint3){g._hint3=1;showHint(" 探索地圖找寶箱，打開獲得卡牌！");}
+    if(g.level===6&&!g._hint6){g._hint6=1;showHint(" 新型敵人出現了！小心包圍！");}
+    if(g.level===8&&!g._hint8){g._hint8=1;showHint(" 遠程射手出沒，注意閃避子彈！");}
+    if(g.level===10&&!g._hint10){g._hint10=1;showHint(" 衝刺者與強化 Boss 登場！");}
     if(g.level%5===0){
       var eg=enemyGrowth(g.level);
       var dmgPct=Math.round((g.p.levelDmgMul-1)*100);
-      showHint(`⚔️ 敵人強化！你的全傷害+${dmgPct}%`);
+      showHint(` 敵人強化！你的全傷害+${dmgPct}%`);
     }
-    if(g.level>=12&&((g.p.armor||0)+(g.p.dodge||0))<.25)showHint("🛡️ 後期建議補防禦/閃避，不然很痛！");
+    if(g.level>=12&&((g.p.armor||0)+(g.p.dodge||0))<.25)showHint(" 後期建議補防禦/閃避，不然很痛！");
     // 寶箱系統（依模式不同）
     if(_mode==="elite"||_mode==="coop"){
       // 精英/coop模式：前8等每級1小寶箱，後半靠Boss獎勵
-      if(g.level>=2&&g.level<=8){spawnBonusCrates(1);showHint("📦 寶箱出現！");}
+      if(g.level>=2&&g.level<=8){spawnBonusCrates(1);showHint(" 寶箱出現！");}
       if(g.level===12&&!g._boss20){g._boss20=true;triggerStageBoss(20);}
-      if(g.level===16){spawnBonusCrates(1);showHint("📦 寶箱出現！");}
+      if(g.level===16){spawnBonusCrates(1);showHint(" 寶箱出現！");}
       if(g.level===20&&!g._boss30){g._boss30=true;triggerStageBoss(30);}
     }else{
       // 經典模式：3個前期小寶箱 + 3個大寶箱(各5選) = 18張卡
-      if(g.level>=2&&g.level<=4){spawnBonusCrates(1);showHint("📦 寶箱出現！");}
+      if(g.level>=2&&g.level<=4){spawnBonusCrates(1);showHint(" 寶箱出現！");}
       if(g.level===7){triggerBigChest(1);}
       if(g.level===14){triggerBigChest(1);}
       if(g.level===20&&!g._boss20){g._boss20=true;triggerStageBoss(20);} // boss後給大寶箱
@@ -1521,7 +1521,7 @@ export function loop(){
       if(e._coopShieldBrokenEnd>0&&now2>=e._coopShieldBrokenEnd){
         e._coopShield=true;e._coopShieldBrokenEnd=0;
         _coopGenCircles(e); // 護盾恢復時才重新生成圈
-        g.dn.push({x:e.x,y:e.y-e.r-15,d:"🛡️ 護盾恢復！新圈已生成",life:2.5,color:"#4DABF7",big:1});
+        g.dn.push({x:e.x,y:e.y-e.r-15,d:" 護盾恢復！新圈已生成",life:2.5,color:"#4DABF7",big:1});
         return;
       }
       // 圈位置固定，不自動重新定位
@@ -1532,7 +1532,7 @@ export function loop(){
         var p2c0=di(g.p2,c[0])<30,p2c1=di(g.p2,c[1])<30;
         if((p1c0&&p2c1)||(p1c1&&p2c0)){
           e._coopShield=false;e._coopShieldBrokenEnd=now2+3000;
-          g.dn.push({x:e.x,y:e.y-e.r-15,d:"💥 破盾！3秒攻擊窗口！",life:2.5,color:"#FFD43B",big:1});
+          g.dn.push({x:e.x,y:e.y-e.r-15,d:" 破盾！3秒攻擊窗口！",life:2.5,color:"#FFD43B",big:1});
           burst(e.x,e.y,"#FFD43B",15);sfx("boss");
         }
       }
@@ -1548,8 +1548,8 @@ export function loop(){
     if(!e._secReset||now-e._secReset>=1000){e._secSnap=e.hp;e._secReset=now;}
     var acm=(e.bossType==="armor")?_capArmorMul:1;
     var cap;
-    if(e.stageBoss===20)cap=e.mhp/(_isElite()?150:60)*_capAngelMul*acm;  // 💩：精英2.5分/經典1分
-    else if(e.stageBoss===30)cap=e.mhp/(_isElite()?240:90)*_capAngelMul*acm; // 😈：精英4分/經典1.5分
+    if(e.stageBoss===20)cap=e.mhp/(_isElite()?150:60)*_capAngelMul*acm;  // ：精英2.5分/經典1分
+    else if(e.stageBoss===30)cap=e.mhp/(_isElite()?240:90)*_capAngelMul*acm; // ：精英4分/經典1.5分
     else if(_isElite())cap=e.mhp/(e.mega?30:15)*_capAngelMul*acm; // 精英/coop波次Boss
     else return; // 經典波次Boss不限制
     var taken=Math.max(0,e._secSnap-e.hp);
@@ -1749,7 +1749,7 @@ export function loop(){
     cx.strokeStyle=isBig?"#FFD43B":"#FFD43B60";cx.lineWidth=isBig?2:1.5;cx.strokeRect(cr.x-sz,cr.y-sz,sz*2,sz*2);
     if(isBig){cx.strokeStyle="#fff";cx.lineWidth=1;cx.strokeRect(cr.x-sz+2,cr.y-sz+2,sz*2-4,sz*2-4);}
     cx.fillStyle="#FFD43B";cx.font=`bold ${isBig?16:10}px Nunito`;cx.textAlign="center";
-    cx.fillText(isBig?"👑":"📦",cr.x,cr.y+(isBig?6:4));
+    cx.fillText(isBig?"":"",cr.x,cr.y+(isBig?6:4));
     if(di(cr,g.p)<=crateSense){
       cx.strokeStyle=isBig?"rgba(255,215,0,.8)":"rgba(18,184,134,.75)";
       cx.lineWidth=2;cx.beginPath();
@@ -1971,7 +1971,7 @@ export function loop(){
     cx.globalAlpha=urgency>.75?.9+Math.sin(st2/60)*.1:.7;
     cx.font="bold 12px 'Nunito',sans-serif";
     cx.fillStyle=urgency>.75?"#FFD43B":"#DDB4FE";
-    cx.fillText("🗡️"+remaining.toFixed(1)+"s",g.p.x,g.p.y-PR-12);
+    cx.fillText(""+remaining.toFixed(1)+"s",g.p.x,g.p.y-PR-12);
     cx.restore();
   }
   // 影分身渲染（半透明 + 閃爍）
@@ -2000,7 +2000,7 @@ export function loop(){
     cx.restore();
     // show buff text occasionally
     if(!g._linkHintT||now-g._linkHintT>5000){g._linkHintT=now;
-      g.dn.push({x:mx2,y:my2-20,d:"⚡連攜 ATK+30%",life:1.5,color:"#FFD43B"});}
+      g.dn.push({x:mx2,y:my2-20,d:"連攜 ATK+30%",life:1.5,color:"#FFD43B"});}
   }
   // P2 (co-op)
   if(_isCoopMode&&g.p2){
@@ -2018,7 +2018,7 @@ export function loop(){
     if(g.p2._downed){
       cx.save();cx.font="bold 12px Nunito,sans-serif";cx.textAlign="center";
       cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/200)*.4;
-      cx.fillText("💀 SOS",g.p2.x,g.p2.y-PR-10);cx.restore();
+      cx.fillText(" SOS",g.p2.x,g.p2.y-PR-10);cx.restore();
     }
     // P2 rescue progress
     if(!g.p2._downed&&g.p._downed&&g.p._rescueTimer>0){
@@ -2036,7 +2036,7 @@ export function loop(){
   if(_isCoopMode&&g.p&&g.p._downed){
     cx.save();cx.font="bold 12px Nunito,sans-serif";cx.textAlign="center";
     cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/200)*.4;
-    cx.fillText("💀 SOS",g.p.x,g.p.y-PR-10);cx.restore();
+    cx.fillText(" SOS",g.p.x,g.p.y-PR-10);cx.restore();
   }
   // P2 downed indicator — already drawn inside P2 draw block (line ~1807)
   // 挑卡中提示（對方可見）
@@ -2044,12 +2044,12 @@ export function loop(){
     if(g.p._pickPending){
       cx.save();cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
       cx.fillStyle="#FFD43B";cx.globalAlpha=.7+Math.sin(now/300)*.3;
-      cx.fillText("🃏 挑卡中...",g.p.x,g.p.y-PR-18);cx.restore();
+      cx.fillText(" 挑卡中...",g.p.x,g.p.y-PR-18);cx.restore();
     }
     if(g.p2&&g.p2._pickPending){
       cx.save();cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
       cx.fillStyle="#FFD43B";cx.globalAlpha=.7+Math.sin(now/300)*.3;
-      cx.fillText("🃏 挑卡中...",g.p2.x,g.p2.y-PR-18);cx.restore();
+      cx.fillText(" 挑卡中...",g.p2.x,g.p2.y-PR-18);cx.restore();
     }
   }
   // 達摩的光劍：光束特效（狙擊風格，圓形收尾）
@@ -2260,7 +2260,7 @@ export function loop(){
     cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
     cx.fillStyle="#FF4500";cx.globalAlpha=blink>0?(.6+blink*.4):0; // 閃爍：亮→全透明→亮
     cx.shadowColor="#FF4500";cx.shadowBlur=6;
-    cx.fillText("⚠ 過熱警告",g.p.x,hbY2+10);
+    cx.fillText(" 過熱警告",g.p.x,hbY2+10);
     cx.restore();
   }
   if(g.heatCD>0){
@@ -2269,13 +2269,13 @@ export function loop(){
     cx.fillStyle="#FF4040";cx.globalAlpha=.6+Math.sin(now/80)*.3;
     cx.shadowColor="#FF4040";cx.shadowBlur=6;
     const sec=(g.heatCD/1000).toFixed(1);
-    cx.fillText("🔥 冷卻 "+sec+"s",g.p.x,hbY2+10);
+    cx.fillText(" 冷卻 "+sec+"s",g.p.x,hbY2+10);
     cx.restore();
   }
   // 大招就緒提示：角色頭上顯示1.5秒
   if(g._ultReadyUntil&&now<g._ultReadyUntil){
     const remain=(g._ultReadyUntil-now)/1500;
-    const label=g.p.lStep?"⚡ 閃電步就緒 ⚡":"💥 大招就緒 💥";
+    const label=g.p.lStep?" 閃電步就緒 ":" 大招就緒 ";
     cx.save();cx.font="bold 11px Nunito,sans-serif";cx.textAlign="center";
     cx.fillStyle="#FFD43B";cx.globalAlpha=Math.min(1,remain*2.5);
     cx.shadowColor="#BE4BDB";cx.shadowBlur=10;
@@ -2316,7 +2316,7 @@ export function loop(){
     const tPct=(g.p._tauntAtkEnd-now)/3000;
     cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
     cx.fillStyle="#51CF66";cx.globalAlpha=.7+Math.sin(now/200)*.2;
-    cx.fillText("🛡️ 嘲諷 "+tLeft+"s",g.p.x,g.p.y+PR+16);
+    cx.fillText(" 嘲諷 "+tLeft+"s",g.p.x,g.p.y+PR+16);
     // 持續時間進度條
     const bw2=PR*2,bh2=2.5,bx2=g.p.x-bw2/2,by2=g.p.y+PR+19;
     cx.globalAlpha=.4;cx.fillStyle="rgba(0,0,0,.3)";cx.fillRect(bx2,by2,bw2,bh2);
@@ -2373,7 +2373,7 @@ export function loop(){
     const qPct=(g.p._quakeCD-now)/3000;
     cx.save();cx.font="bold 8px Nunito,sans-serif";cx.textAlign="center";
     cx.fillStyle="#FF922B";cx.globalAlpha=.6;
-    cx.fillText("🌋 "+qLeft+"s",g.p.x,g.p.y+PR+28);
+    cx.fillText(" "+qLeft+"s",g.p.x,g.p.y+PR+28);
     cx.globalAlpha=.3;cx.fillStyle="rgba(0,0,0,.3)";cx.fillRect(g.p.x-PR,g.p.y+PR+30,PR*2,2);
     cx.globalAlpha=.7;cx.fillStyle="#FF922B";cx.fillRect(g.p.x-PR,g.p.y+PR+30,PR*2*qPct,2);
     cx.restore();
@@ -2382,7 +2382,7 @@ export function loop(){
   if(g.p._iwActive){
     cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
     cx.fillStyle="#868E96";cx.globalAlpha=.7+Math.sin(now/300)*.2;
-    cx.fillText("💪 鋼鐵意志",g.p.x,g.p.y-PR-20);
+    cx.fillText(" 鋼鐵意志",g.p.x,g.p.y-PR-20);
     // 灰色防護光圈
     cx.globalAlpha=.15+Math.sin(now/400)*.08;cx.strokeStyle="#868E96";cx.lineWidth=2;
     cx.beginPath();cx.arc(g.p.x,g.p.y,PR+6,0,TAU);cx.stroke();
@@ -2438,7 +2438,7 @@ export function loop(){
     cx.shadowBlur=0;
     // 蓄力文字
     if(sp>.5){cx.globalAlpha=(sp-.5)*1.5;cx.font="bold 10px Nunito,sans-serif";cx.textAlign="center";
-      cx.fillStyle="#FF4040";cx.fillText("🎯",g.p.x,g.p.y-PR-15);}
+      cx.fillStyle="#FF4040";cx.fillText("",g.p.x,g.p.y-PR-15);}
     cx.restore();
   }
   // 狙擊穿透光束（更粗更亮）
@@ -2515,7 +2515,7 @@ export function loop(){
     cx.restore();
   }
 
-  // 風刃視覺（🌪️漏斗形龍捲風 — 放大版 + 消散淡出）
+  // 風刃視覺（漏斗形龍捲風 — 放大版 + 消散淡出）
   if(g._wb&&g._wb.length>0){
     g._wb.forEach(wb=>{
       const fadeAlpha=wb.life<1000?wb.life/1000:1; // 最後1秒淡出
@@ -2748,7 +2748,7 @@ export function loop(){
       // label
       cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
       cx.fillStyle=pCol2;cx.globalAlpha=.9;
-      const lbl=_camO._downed?"💀 SOS "+dist:"🤝 "+dist;
+      const lbl=_camO._downed?" SOS "+dist:" "+dist;
       cx.fillText(lbl,ix,iy+18);
       cx.restore();
     }
@@ -2776,7 +2776,7 @@ export function loop(){
       fctx.globalAlpha=.7+pwFlash*.3;
       fctx.font="bold 22px Nunito,sans-serif";fctx.textAlign="center";fctx.textBaseline="middle";
       fctx.fillStyle="#FF4040";fctx.shadowColor="#FF4040";fctx.shadowBlur=15;
-      fctx.fillText("⚠️ 靠近Boss！",VW/2,VH*0.18);
+      fctx.fillText(" 靠近Boss！",VW/2,VH*0.18);
       fctx.font="bold 13px Nunito,sans-serif";fctx.fillStyle="#FFD43B";fctx.shadowColor="#FFD43B";
       fctx.fillText("進入Boss身邊的安全圈",VW/2,VH*0.24);
       fctx.shadowBlur=0;
@@ -2787,14 +2787,14 @@ export function loop(){
     fxc.style.display="block";
   }else{fxctx.clearRect(0,0,VW,VH);fxc.style.display="none";}
 
-  // 💩 便便軍團全螢幕警告
+  //  便便軍團全螢幕警告
   if(g._pooWarnAlpha>0){
     cx.save();cx.globalAlpha=g._pooWarnAlpha;
     cx.fillStyle="rgba(139,105,20,.15)";cx.fillRect(0,0,VW,VH);
     cx.strokeStyle="#FF4040";cx.lineWidth=4;cx.strokeRect(4,4,VW-8,VH-8);
     cx.globalAlpha=g._pooWarnAlpha+.3;
     cx.font="bold 28px 'Nunito',sans-serif";cx.textAlign="center";cx.fillStyle="#FF4040";
-    cx.fillText("⚠️ 便便軍團來襲！",VW/2,VH/2-20);
+    cx.fillText(" 便便軍團來襲！",VW/2,VH/2-20);
     cx.font="bold 16px 'Nunito',sans-serif";cx.fillStyle="#FFD43B";
     cx.fillText("無法破壞！只能閃避！",VW/2,VH/2+15);
     cx.restore();
@@ -2845,7 +2845,7 @@ export function loop(){
       const ax=VW-abS-6-col2*(abS+4),ay=abStartY+row2*abStep;
       cx.globalAlpha=.35;cx.fillStyle="#0a0a18";_rr(ax,ay,abS,abS,4);cx.fill();
       cx.globalAlpha=.25;cx.strokeStyle="#FFD43B";cx.lineWidth=1;_rr(ax,ay,abS,abS,4);cx.stroke();
-      cx.globalAlpha=.8;cx.font="14px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";cx.fillText("🔥",ax+abS/2,ay+abS/2);
+      cx.globalAlpha=.8;cx.font="14px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";cx.fillText("",ax+abS/2,ay+abS/2);
       cx.globalAlpha=.9;cx.font="bold 7px 'Nunito',sans-serif";cx.fillStyle="#FFD43B";cx.fillText("越戰越勇",ax+abS/2,ay+abS-3);
     }
     cx.restore();

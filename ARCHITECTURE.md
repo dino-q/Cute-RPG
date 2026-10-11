@@ -401,3 +401,12 @@ Title Screen
 - 劍士全身四階段姿勢：提劍、跨步橫斬、收勢、架式。盾與短刀以手部錨點連續推進、回收。attack angle 隨攻擊動畫同步至連線客戶端。
 - 此輪沿用原命中範圍與傷害結算時機；全身劍術目前四張關鍵姿勢，尚非大量逐格步行動畫。
 - 角色預覽/正式遊戲版-人物與招式.html 是手動展示頁，不執行自動測試。依使用者要求，本輪未執行 build 或瀏覽器功能測試。
+
+## 眼睛、雙刀、盾牌與全介面圖案更新
+
+- melee-sprite.js 新增 export assassinActionsReady、tankShieldReady。同模組載入 assassin-action.png/json（96×96 格、8方向×4階段）與 tank-shield.png（64×64 格、8方向）；既有 drawPixelMelee 沿用全身姿勢流程，雙刀隱身仍尊重玩家技能狀態。
+- 坦克盾牌始終直立，藉八方向圖呈現正面、斜面、侧面和背面；手部錨點與盾擊推進仍沿用。
+- index.html 的 settingsOv 改成冒險手冊，保留原事件與 sfxToggle、sfxKnob、settingsStats 識別碼。ui.js 沿用角色能力与背包資料，重排卡片列和能力列。
+- 首頁、職業、戰鬥控制、設定、卡片選擇／說明／背包、連線、練習、提示、勝敗介面全部巡查表情符號。卡片資料的舊 emoji 欄位清空，技能標示改文字，UI 用 button-art.js 共用像素圖案。歷史備份不修改。
+- hud.js 的大招就緒文字移除向下箭頭。
+- 使用者負責測試與驗證；本輪未跑 build、verify 或遊戲操作測試。

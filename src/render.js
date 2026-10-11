@@ -590,7 +590,7 @@ export function drawEnemy(e) {
     cx.globalAlpha = .3 + Math.sin(enow / 200) * .1; cx.fillStyle = "#E74C3C";
     cx.beginPath(); cx.arc(x, cy, r * 1.5, 0, Math.PI * 2); cx.fill(); cx.globalAlpha = 1;
     cx.globalAlpha = .6; cx.font = "8px 'Nunito',sans-serif"; cx.textAlign = "center";
-    cx.fillStyle = "#ADB5BD"; cx.fillText("🛡️物抗", x, cy - r - 6); cx.globalAlpha = 1;
+    cx.fillStyle = "#ADB5BD"; cx.fillText("物理抗性", x, cy - r - 6); cx.globalAlpha = 1;
     if (e._eShieldEnd && enow < e._eShieldEnd) {
       cx.globalAlpha = .4 + Math.sin(enow / 80) * .15; cx.strokeStyle = "#4DABF7"; cx.lineWidth = 2.5;
       cx.beginPath(); cx.arc(x, cy, r + 5, 0, Math.PI * 2); cx.stroke(); cx.globalAlpha = 1;

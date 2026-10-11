@@ -158,7 +158,7 @@ export function spawn(boss, opts = {}) {
       if (w >= eMC.eliteStartWave && Math.random() < eMC.eliteChance) {
         finalHp = Math.floor((eMC.eliteHpBase + w * eMC.eliteHpPerWave) * earlyRamp);
         isEliteEnemy = true;
-        if (!g._eliteHint) { g._eliteHint = true; showHint("⚠️ 精英怪有物理抗性！帶元素卡更有效"); }
+        if (!g._eliteHint) { g._eliteHint = true; showHint(" 精英怪有物理抗性！帶元素卡更有效"); }
       } else {
         finalHp = Math.floor((eMC.smallHpBase + w * eMC.smallHpPerWave) * earlyRamp);
       }
@@ -205,7 +205,7 @@ export function triggerSpikeWave(w) {
   });
   const label =
     w === 6 ? "敵人開始包夾！" :
-    w === 10 ? "⚠️ 強烈攻勢！撐過去就有獎勵！" :
+    w === 10 ? " 強烈攻勢！撐過去就有獎勵！" :
     w === 14 ? "精英突擊波！" :
     "終極混戰開始！";
   g.dn.push({ x: g.p.x, y: g.p.y - 60, d: label, life: 2.2, color: w === 10 ? "#FF6B6B" : "#FFD43B", big: 1 });
@@ -220,5 +220,5 @@ export function triggerHuntPressure(now) {
   const tier = Math.min(maxTierForWave(g.wave), 2 + Math.floor(g.wave / 8));
   const pack = g.wave < 8 ? [ROLE_FLANKER, ROLE_NORMAL] : [ROLE_DASHER, ROLE_SHOOTER, ROLE_FLANKER];
   pack.forEach(role => { const pre = g.ene.length; if (pre < MAX_ENEMIES) { spawn(false, { role, tier }); if (g.ene.length > pre) { const ne = g.ene[g.ene.length - 1]; ne._huntStart = now + Math.random() * 1200; ne._huntEnd = ne._huntStart + 1800 + Math.random() * 1500; } } });
-  g.dn.push({ x: g.p.x, y: g.p.y - 60, d: "⚠️ 被獵殺！快擊殺敵人止壓", life: 1.6, color: "#FF6B6B", big: 1 });
+  g.dn.push({ x: g.p.x, y: g.p.y - 60, d: " 被獵殺！快擊殺敵人止壓", life: 1.6, color: "#FF6B6B", big: 1 });
 }

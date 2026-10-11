@@ -125,7 +125,7 @@ export function settleEnemyDeaths(protectBoss) {
     g._surgeCleared10 = true;
     spawnBonusCrates(2);
     burst(g.p.x, g.p.y, "#FFD43B", 30);
-    g.dn.push({ x: g.p.x, y: g.p.y - 60, d: "🎉 攻勢通過！獲得2個寶箱！", life: 2.5, color: "#51CF66", big: 1 });
+    g.dn.push({ x: g.p.x, y: g.p.y - 60, d: " 攻勢通過！獲得2個寶箱！", life: 2.5, color: "#51CF66", big: 1 });
   }
 }
 
@@ -229,7 +229,7 @@ export function swordSwing(_pp, _isP2) {
     if (_pp._bleedChance && Math.random() < _pp._bleedChance) {
       e._bleedEnd = now + 2000; e._bleedDmg = _pp.atk * .3;
       for (let bi = 0; bi < 3; bi++) par.push({ x: e.x + rn(-5, 5), y: e.y + rn(-5, 5), vx: rn(-.5, .5), vy: rn(.5, 1.5), life: .5, color: "#FF4040", sz: rn(1.5, 3), g: .05 });
-      g.dn.push({ x: e.x + rn(-8, 8), y: e.y - e.r - 12, d: "🩸", life: .8, color: "#FF4040" });
+      g.dn.push({ x: e.x + rn(-8, 8), y: e.y - e.r - 12, d: "流血", life: .8, color: "#FF4040" });
     }
     const _meleeHeal = 3 + (_pp.ls > 0 ? _pp.ls * .3 : 0);
     if (_pp.hp < _pp.maxHp) { _pp.hp = Math.min(_pp.hp + _meleeHeal, _pp.maxHp); }
@@ -256,7 +256,7 @@ export function swordSwing(_pp, _isP2) {
           const px = _ltnSrc.x + (_ltnSrc.x - nearest.x) * -t2, py = _ltnSrc.y + (_ltnSrc.y - nearest.y) * -t2;
           par.push({ x: px, y: py, vx: rn(-1, 1), vy: rn(-1, 1), life: .35, color: sp % 2 ? "#FAB005" : "#FFD43B", sz: rn(2, 4) });
         }
-        g.dn.push({ x: nearest.x, y: nearest.y - nearest.r, d: "⚡" + Math.floor(jDmg), life: 1, color: "#FAB005", big: 1 });
+        g.dn.push({ x: nearest.x, y: nearest.y - nearest.r, d: "雷擊 " + Math.floor(jDmg), life: 1, color: "#FAB005", big: 1 });
         _ltnSrc = nearest;
       }
     }
@@ -343,7 +343,7 @@ export function swordSwing(_pp, _isP2) {
       }
     }
     burst(_pp.x, _pp.y, "#FFD43B", 15); burst(_pp.x, _pp.y, "#fff", 8);
-    g.dn.push({ x: _pp.x, y: _pp.y - 35, d: "⚔️ 劍氣！", life: 1.5, color: "#FFD43B", big: 1 });
+    g.dn.push({ x: _pp.x, y: _pp.y - 35, d: " 劍氣！", life: 1.5, color: "#FFD43B", big: 1 });
     setShake(.2, 4);
   }
 }
@@ -463,7 +463,7 @@ export function shieldBash(_pp, _isP2) {
     for (let i = 0; i < 12; i++) {
       const a = TAU * i / 12; par.push({ x: _pp.x + Math.cos(a) * rn(10, 30), y: _pp.y + Math.sin(a) * rn(10, 30), vx: Math.cos(a) * rn(2, 5), vy: Math.sin(a) * rn(2, 5) - 1, life: .7, color: i % 3 === 0 ? "#868E96" : i % 3 === 1 ? "#ADB5BD" : "#FF922B", sz: rn(3, 6), g: .15 });
     }
-    g.dn.push({ x: _pp.x, y: _pp.y - 40, d: "🌋 地震波！", life: 2, color: "#FF922B", big: 1 });
+    g.dn.push({ x: _pp.x, y: _pp.y - 40, d: " 地震波！", life: 2, color: "#FF922B", big: 1 });
     g.ultFlash = .4; g.ultType = "n";
   }
 }
@@ -514,7 +514,7 @@ export function daggerStrike(_pp, _isP2) {
     // 毒刃（卡片效果）
     if (_pp._poisonBlade && Math.random() < _pp._poisonBlade) {
       e.poisonT = Math.max(e.poisonT || 0, 2000); e.poisonLv = Math.max(e.poisonLv || 0, 1);
-      g.dn.push({ x: e.x + rn(-8, 8), y: e.y - e.r - 12, d: "☠️", life: .8, color: "#A9E34B" });
+      g.dn.push({ x: e.x + rn(-8, 8), y: e.y - e.r - 12, d: "中毒", life: .8, color: "#A9E34B" });
     }
     const hitCol = _assCrit ? "#FFD43B" : "#BE4BDB";
     burst(e.x, e.y, hitCol, _assCrit ? 8 : 5);

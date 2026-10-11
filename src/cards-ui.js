@@ -80,13 +80,13 @@ function buildCard(cd, w, i, wrap) {
   b.dataset.rarity = cd.r;
   b.style.cssText = `--rarity-color:${RC[cd.r]};width:100%;border:2px solid ${isUp ? LVC[nLv] : RC[cd.r]};animation:ci .35s ${i * .08}s both cubic-bezier(.34,1.56,.64,1);`;
   // The card settles after its entrance; no continual flashing.
-  const tpL = cd.tp === "atk" ? '<div style="font-size:8px;color:#FF6B6B;margin-bottom:1px">⚔️ 攻擊</div>' : '<div style="font-size:8px;color:#4DABF7;margin-bottom:1px">🛡️ 被動</div>';
-  const lvL = isUp ? `<div style="font-size:9px;color:#FFD43B;font-weight:900;margin-bottom:2px;text-shadow:0 0 6px #FFD43B">⬆Lv${dLv}</div>` : "";
+  const tpL = cd.tp === "atk" ? '<div style="font-size:8px;color:#FF6B6B;margin-bottom:1px"> 攻擊</div>' : '<div style="font-size:8px;color:#4DABF7;margin-bottom:1px"> 被動</div>';
+  const lvL = isUp ? `<div style="font-size:9px;color:#FFD43B;font-weight:900;margin-bottom:2px;text-shadow:0 0 6px #FFD43B">Lv${dLv}</div>` : "";
   const rarBadge = cd.r === "SSR" ? '<div style="font-size:9px;background:linear-gradient(90deg,#FFD43B,#FF6B6B,#DA77F2,#74C0FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:2px;margin-bottom:3px">✦ SSR ✦</div>' : `<div style="font-size:10px;color:${RC[cd.r]};font-weight:700;letter-spacing:1px;margin-bottom:3px">★${cd.r}</div>`;
   const _pct = _currentPickCtx ? _currentPickCtx.charType : (g ? g.charType : "gunner");
   const _recSet = RECOMMENDED[_pct];
   const _isRec = _recSet && _recSet.has(cd.n);
-  const recBadge = _isRec ? '<div style="font-size:8px;font-weight:900;color:#FFD43B;background:rgba(255,212,59,.15);border:1px solid rgba(255,212,59,.3);border-radius:4px;padding:1px 6px;margin-bottom:3px;display:inline-block">⭐ 推薦</div>' : "";
+  const recBadge = _isRec ? '<div style="font-size:8px;font-weight:900;color:#FFD43B;background:rgba(255,212,59,.15);border:1px solid rgba(255,212,59,.3);border-radius:4px;padding:1px 6px;margin-bottom:3px;display:inline-block"> 推薦</div>' : "";
   b.innerHTML = `${rarBadge}${tpL}${recBadge}${cardEmblem(cd)}<div style="font-size:12px;font-weight:900;margin-bottom:2px">${cd.n}</div>${lvL}<div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">${desc}</div>`;
   b.onclick = () => pickCard(cd, _bAddCard, _bpp, _binv);
   b.ontouchstart = e => { e.stopPropagation(); e.preventDefault(); pickCard(cd, _bAddCard, _bpp, _binv); };
@@ -207,9 +207,9 @@ export function showCoinFlip(_bpp, _onDone) {
     if (absScale > .15) {
       ctx.font = "bold 36px 'Nunito',sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
       if (!done) {
-        ctx.fillStyle = "#8B6914"; ctx.fillText(showFront ? "🍀" : "💀", 0, 2);
+        ctx.fillStyle = "#8B6914"; ctx.fillText(showFront ? "" : "", 0, 2);
       } else {
-        ctx.fillStyle = "#8B6914"; ctx.fillText(win ? "🍀" : "💀", 0, 2);
+        ctx.fillStyle = "#8B6914"; ctx.fillText(win ? "" : "", 0, 2);
       }
     }
     ctx.restore();
@@ -222,7 +222,7 @@ export function showCoinFlip(_bpp, _onDone) {
       // show result
       setTimeout(() => {
         if (win) {
-          txt.innerHTML = '<div style="color:#FFD43B;font-size:24px;text-shadow:0 0 20px #FFD43B">🍀 幸運！獲得寶箱！</div>';
+          txt.innerHTML = '<div style="color:#FFD43B;font-size:24px;text-shadow:0 0 20px #FFD43B"> 幸運！獲得寶箱！</div>';
           txt.style.opacity = "1";
           // spawn chest
           if (g) {
@@ -233,10 +233,10 @@ export function showCoinFlip(_bpp, _onDone) {
               if (Math.sqrt((cx2 - g.p.x) ** 2 + (cy2 - g.p.y) ** 2) >= 300) break;
             }
             g.crates.push({ x: cx2, y: cy2, hp: 30, mhp: 30, card: null, hits: 0, needed: rn(5, 8) | 0, unlockLv: 0, bigChest: false });
-            g.dn.push({ x: g.p.x, y: g.p.y - 50, d: "📦 寶箱出現！", life: 2.5, color: "#FFD43B", big: 1 });
+            g.dn.push({ x: g.p.x, y: g.p.y - 50, d: " 寶箱出現！", life: 2.5, color: "#FFD43B", big: 1 });
           }
         } else {
-          txt.innerHTML = '<div style="color:#ADB5BD;font-size:20px">💀 可惜！下次好運</div>';
+          txt.innerHTML = '<div style="color:#ADB5BD;font-size:20px"> 可惜！下次好運</div>';
           txt.style.opacity = "1";
         }
         // close after 1.5s
@@ -257,17 +257,17 @@ export function showAngelCard() {
   g.pickOpen = true; resetControls();
   const p = $("pickPanel");
   p.innerHTML = `
-    <div style="color:#FFF3BF;font-size:14px;font-weight:700;letter-spacing:2px;margin-bottom:8px">👼 小天使感應到你需要幫助</div>
+    <div style="color:#FFF3BF;font-size:14px;font-weight:700;letter-spacing:2px;margin-bottom:8px"> 小天使感應到你需要幫助</div>
     <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 14px">Boss 戰可能會很艱難，要接受祝福嗎？</p>
     <div style="display:flex;gap:10px;justify-content:center">
       <button class="cb" id="_angelYes" style="width:140px;border:2px solid #FFD43B;touch-action:manipulation">
         <div style="font-size:9px;background:linear-gradient(90deg,#FFD43B,#FF6B6B,#DA77F2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:2px;margin-bottom:3px">✦ 隱藏卡 ✦</div>
-        <div style="font-size:28px;margin-bottom:3px">🔥</div>
+        <div style="font-size:28px;margin-bottom:3px"></div>
         <div style="font-size:12px;font-weight:900;margin-bottom:2px">越戰越勇</div>
         <div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">Boss戰越久 傷害越高</div>
       </button>
       <button class="cb" id="_angelNo" style="width:140px;border:2px solid rgba(255,255,255,.2);touch-action:manipulation">
-        <div style="font-size:28px;margin-bottom:3px">💪</div>
+        <div style="font-size:28px;margin-bottom:3px"></div>
         <div style="font-size:12px;font-weight:900;margin-bottom:2px">不需要</div>
         <div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">我要靠自己的實力</div>
       </button>
@@ -276,10 +276,10 @@ export function showAngelCard() {
   const doChoice = (accept) => {
     if (accept) {
       g.p._angelBuff = true;
-      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: "👼 越戰越勇！", life: 2.5, color: "#FFD43B", big: 1 });
+      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 越戰越勇！", life: 2.5, color: "#FFD43B", big: 1 });
       sfx("levelup");
     } else {
-      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: "💪 靠自己！", life: 2, color: "#fff", big: 1 });
+      g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 靠自己！", life: 2, color: "#fff", big: 1 });
     }
     g.pickOpen = false;
     resumeGame(() => { if (_triggerStageBossFn) _triggerStageBossFn(g._pendingStageBoss); });
@@ -303,7 +303,7 @@ export function triggerBigChest(count) {
     const normalNeeded = rn(6, 10) | 0;
     g.crates.push({ x, y, hp: CRATE_HP, mhp: CRATE_HP, card: null, hits: 0, needed: Math.ceil(normalNeeded * 1.5), unlockLv: 0, bigChest: true });
   }
-  g.dn.push({ x: g.p.x, y: g.p.y - 50, d: "📦📦📦 大寶箱出現！", life: 2, color: "#FFD43B", big: 1 });
+  g.dn.push({ x: g.p.x, y: g.p.y - 50, d: " 大寶箱出現！", life: 2, color: "#FFD43B", big: 1 });
   sfx("chest");
 }
 
@@ -328,7 +328,7 @@ export function showPick(src, specificCard, pickCtx) {
   const p = $("pickPanel");
   const fateLeft = isFate ? (g._fateQueue || 0) : 0;
   const bigProgress = isBig && g._bigChestTotal ? ` (${g._bigChestTotal - g._bigChestLeft + 1}/${g._bigChestTotal})` : "";
-  const title = isBig ? `📦 大寶箱${bigProgress}` : isFate ? `🎰 命運重抽！(剩餘${fateLeft}次)` : isLucky ? "🍀 幸運抽卡！" : src === "boss" ? "👑 小王擊敗！" : src === "crate" ? "📦 寶箱解鎖！" : "⬆ 升級！";
+  const title = isBig ? ` 大寶箱${bigProgress}` : isFate ? ` 命運重抽！(剩餘${fateLeft}次)` : isLucky ? " 幸運抽卡！" : src === "boss" ? " 小王擊敗！" : src === "crate" ? " 寶箱解鎖！" : " 升級！";
   const subtitle = noReroll ? "選擇一張卡牌" : (pk.length > 1 ? "選擇一張卡牌（每張可重骰一次）" : "獲得卡牌");
   p.innerHTML = `<div style="color:#FFD43B;font-size:14px;font-weight:700;letter-spacing:3px;margin-bottom:4px">${title}</div>
     <p style="color:rgba(255,255,255,.4);font-size:11px;margin:0 0 14px">${subtitle}</p>
@@ -343,7 +343,7 @@ export function showPick(src, specificCard, pickCtx) {
     if (pk.length > 1 && !noReroll) {
       const rr = document.createElement("button");
       rr.style.cssText = "border:none;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:9px;font-weight:700;font-family:inherit;padding:4px 10px;border-radius:12px;cursor:pointer;transition:opacity .2s;";
-      rr.textContent = "🎲 重骰";
+      rr.textContent = " 重骰";
       rr.onclick = () => {
         const exc = new Set(roundSeen);
         const nw = pks(1, exc, _pinv, _pct);

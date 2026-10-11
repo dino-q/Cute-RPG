@@ -91,6 +91,6 @@
     "anchor_y_std": 0.002931753828592416,
     "anchor_y_mean": 0.8455175781250013
   },
-  "source": "exec-1c9fb8d2-77a2-4a09-bc22-f935d73c75aa.png",
-  "notes": "One static pose per direction. Shared scale; not a walk animation. Eye repair edited in the final runtime atlas; previous processing QC describes base layout, not post-edit verification."
+  "source": "exec-60911266-27c4-4f00-a52f-69e6fab3c25f.png",
+  "notes": "One static pose per direction. Shared scale; not a walk animation. Eye repair edited in the final runtime atlas; previous processing QC describes base layout, not post-edit verification. All visible eyes regenerated as dot eyes on 2026-10-11; no gameplay tests run."
 }

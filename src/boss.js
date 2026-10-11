@@ -1,4 +1,4 @@
-// Stage Boss system — Lv20 💩 / Lv30 😈
+// Stage Boss system — Lv20  / Lv30 
 import { MAX_PARTICLES, ROLE_NORMAL, PR } from "./config.js";
 import { di, cl, rn } from "./utils.js";
 import { sfx, sfxCtx, bgmRef, bgmStop } from "./audio.js";
@@ -48,7 +48,7 @@ function nearestPlayer(e) {
   return di(e, g.p) < di(e, g.p2) ? g.p : g.p2;
 }
 
-/* ═══════════ STAGE BOSS SYSTEM (Lv20 💩 / Lv30 😈) ═══════════ */
+/* ═══════════ STAGE BOSS SYSTEM (Lv20  / Lv30 ) ═══════════ */
 
 export function bossBgmStart(bpm){
   bossBgmStop();
@@ -162,7 +162,7 @@ export function triggerStageBoss(lv){
   g.run=false;
   const isPoo=lv===20;
   const bossCol=isPoo?"#8B6914":"#9B59B6";
-  const bossEmoji=isPoo?"💩":"😈";
+  const bossEmoji=isPoo?"":"";
   const bossTitle=isPoo?"中場 Boss 登場！":"最終魔王降臨！";
 
   // VW/VH — read from canvas at trigger time
@@ -214,7 +214,7 @@ export function triggerStageBoss(lv){
     txt.innerHTML=`
       <div style="font-size:60px;animation:fl 1.5s ease-in-out infinite;filter:drop-shadow(0 0 20px ${bossCol})">${bossEmoji}</div>
       <div style="font-size:20px;font-weight:900;color:${bossCol};text-shadow:0 0 20px ${bossCol};margin-top:8px;animation:fadeIn .5s both">${bossTitle}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;animation:fadeIn .8s .3s both">${isPoo?"🛡️ 防禦型 — 物理傷害降低":"💪 韌性型 — 免疫控制效果"}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;animation:fadeIn .8s .3s both">${isPoo?" 防禦型 — 物理傷害降低":" 韌性型 — 免疫控制效果"}</div>
     `;
     _entOv.appendChild(txt);
   },600);
@@ -266,13 +266,13 @@ export function updateStageBoss(e,now,dt){
     if(!e._shieldNextCD)e._shieldNextCD=now+6000;
     if(now>=e._shieldNextCD){e._spawnShield=now+2500;e._shieldNextCD=now+8500;
       sfxBossAtk("shockwave");
-      g.dn.push({x:e.x,y:e.y-e.r-18,d:"⚠️ 護盾啟動！普攻無效！",life:2.5,color:"#4DABF7",big:1});}
+      g.dn.push({x:e.x,y:e.y-e.r-18,d:" 護盾啟動！普攻無效！",life:2.5,color:"#4DABF7",big:1});}
   }
   const _sbt=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p;
   const dx=_sbt.x-e.x,dy=_sbt.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
   if(Math.abs(dx)>2)e.face=dx>0?1:-1;
 
-  // 😈 Phase transitions
+  //  Phase transitions
   if(lv===30){
     const hpPct=e.hp/e.mhp,newPhase=hpPct>.66?1:hpPct>.33?2:3;
     if(newPhase!==e.sbPhase){
@@ -325,10 +325,10 @@ export function updateStageBoss(e,now,dt){
           const txt=document.createElement("div");
           txt.style.cssText="position:relative;z-index:1;text-align:center;animation:fadeIn .5s both;pointer-events:auto";
           txt.innerHTML=`
-            <div style="font-size:28px;margin-bottom:6px">😈</div>
+            <div style="font-size:28px;margin-bottom:6px"></div>
             <div style="font-size:18px;font-weight:900;color:#9B59B6;text-shadow:0 0 15px #9B59B6;margin-bottom:10px">惡魔的交易</div>
-            <div style="font-size:12px;color:#FF4040;margin-bottom:6px">🚫 鐵壁金身被打破！遠距攻擊必定命中</div>
-            <div style="font-size:12px;color:#69DB7C;margin-bottom:14px">🩸 賦予武器吸血：攻擊5秒回復5HP</div>
+            <div style="font-size:12px;color:#FF4040;margin-bottom:6px"> 鐵壁金身被打破！遠距攻擊必定命中</div>
+            <div style="font-size:12px;color:#69DB7C;margin-bottom:14px"> 賦予武器吸血：攻擊5秒回復5HP</div>
             <button id="_dealConfirm" style="padding:10px 28px;font-size:14px;font-weight:900;border:2px solid #9B59B6;border-radius:12px;background:rgba(155,89,182,.2);color:#fff;cursor:pointer;touch-action:manipulation;box-shadow:0 0 20px rgba(155,89,182,.4);animation:gw .8s infinite">接受交易</button>
           `;
           _dealOv.appendChild(txt);
@@ -346,7 +346,7 @@ export function updateStageBoss(e,now,dt){
               const mhp3=800+g.wave*50;
               g.ene.push({x:mx,y:my,hp:mhp3,mhp:mhp3,speed:1.2,color:"#8E44AD",t:rn(0,10),r:14,st:0,boss:true,mega:false,tier:2,face:1,xp:15,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:2,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniDemon:true,bossType:Math.random()>.5?"tough":"armor",_demonTeleCD:performance.now()+5000});}
             sfxBossAtk("spawn");
-            g.dn.push({x:e.x,y:e.y-e.r-10,d:"👿 小惡魔降臨！",life:2,color:"#8E44AD",big:1});
+            g.dn.push({x:e.x,y:e.y-e.r-10,d:" 小惡魔降臨！",life:2,color:"#8E44AD",big:1});
             // 淡出 + 恢復遊戲
             if(_dealRaf)cancelAnimationFrame(_dealRaf);
             _dealOv.style.background="rgba(0,0,0,0)";_dealOv.style.pointerEvents="none";
@@ -374,7 +374,7 @@ export function updateStageBoss(e,now,dt){
         bossBgmSetBpm(160);
         e.bossType="armor";
         e._p3armor=0.5;
-        g.dn.push({x:e.x,y:e.y-e.r-20,d:"😈 最終階段！護甲強化！",life:3,color:"#C0392B",big:1});
+        g.dn.push({x:e.x,y:e.y-e.r-20,d:" 最終階段！護甲強化！",life:3,color:"#C0392B",big:1});
       }
     }
   }
@@ -383,7 +383,7 @@ export function updateStageBoss(e,now,dt){
   if(g.p._demonLifesteal&&aim.a){
     const dl=g.p._demonLifesteal;dl.accT+=dt*16.67;
     if(dl.accT>=5000){dl.accT-=5000;const heal=dl.healPer5;g.p.hp=Math.min(g.p.hp+heal,g.p.maxHp);
-      g.dn.push({x:g.p.x,y:g.p.y-30,d:"🩸+"+heal,life:.8,color:"#69DB7C"});}
+      g.dn.push({x:g.p.x,y:g.p.y-30,d:"+"+heal,life:.8,color:"#69DB7C"});}
   }
 
   // Move（撞擊後退開）
@@ -398,11 +398,11 @@ export function updateStageBoss(e,now,dt){
     e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
   }
 
-  // 💩 半血狂暴：全螢幕警告2秒 → 召喚透明便便
+  //  半血狂暴：全螢幕警告2秒 → 召喚透明便便
   if(lv===20&&e.hp<e.mhp*.5&&!e._pooRageSpawned){
     e._pooRageSpawned=true;e._pooRage=true;e._pooWarnEnd=now+2000;
     setShake(.6,8);sfxBossAtk("phase");
-    g.dn.push({x:e.x,y:e.y-e.r-20,d:"⚠️ 便便軍團來襲！無法破壞！",life:3,color:"#FF4040",big:1});
+    g.dn.push({x:e.x,y:e.y-e.r-20,d:" 便便軍團來襲！無法破壞！",life:3,color:"#FF4040",big:1});
   }
   if(lv===20&&e._pooWarnEnd&&!e._pooRageSpawnDone){
     // 警告期間閃爍提示
@@ -421,7 +421,7 @@ export function updateStageBoss(e,now,dt){
     }
   }
 
-  // 💩 Attacks
+  //  Attacks
   if(lv===20){
     if(now>e.sbAtkCD){e.sbAtkCD=now+(e._pooRage?3000:4000);sfxBossAtk("shockwave");
       for(let i=0;i<10;i++){const a=Math.PI*2*i/10;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*3,vy:Math.sin(a)*3,dmg:15+g.wave*1.2,life:1.2,color:"#8B6914"});}burst(e.x,e.y,"#8B6914",12);}
@@ -429,10 +429,10 @@ export function updateStageBoss(e,now,dt){
       const spnHp=400+g.wave*25;
       for(let i=0;i<3;i++){const a=Math.PI*2*i/3,mx=cl(e.x+Math.cos(a)*40,20,mapW()-20),my=cl(e.y+Math.sin(a)*40,20,mapH()-20);
         g.ene.push({x:mx,y:my,hp:spnHp,mhp:spnHp,speed:1.8,color:"#A0822A",t:rn(0,10),r:18,st:0,boss:true,mega:false,tier:1,face:1,xp:5,poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:1.5,role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,miniPoo:true,bossType:Math.random()>.5?"tough":"armor"});}
-      g.dn.push({x:e.x,y:e.y-e.r-10,d:"💩 增生！",life:1.5,color:"#A0822A"});}
+      g.dn.push({x:e.x,y:e.y-e.r-10,d:" 增生！",life:1.5,color:"#A0822A"});}
   }
 
-  // 😈 Attacks
+  //  Attacks
   if(lv===30){
     const phase=e.sbPhase,brgCD=phase===1?3000:phase===2?2200:1600;
     // Phase 3 循環中（非 idle/free）停止所有遠程攻擊
@@ -445,7 +445,7 @@ export function updateStageBoss(e,now,dt){
     // === Phase 2 瞬移（獨立，不走循環）===
     if(phase===2&&now>e.sbTeleCD&&!e._p3cycle){
       e.sbTeleCD=now+8000;
-      g.dn.push({x:g.p.x,y:g.p.y-50,d:"⚠️ 惡魔在身邊！",life:1.5,color:"#9B59B6",big:1});
+      g.dn.push({x:g.p.x,y:g.p.y-50,d:" 惡魔在身邊！",life:1.5,color:"#9B59B6",big:1});
       const tr=120+rn(0,40),ta=Math.random()*Math.PI*2;
       e._teleLandX=cl(g.p.x+Math.cos(ta)*tr,e.r,mapW()-e.r);
       e._teleLandY=cl(g.p.y+Math.sin(ta)*tr,e.r,mapH()-e.r);
@@ -457,7 +457,7 @@ export function updateStageBoss(e,now,dt){
       if(!e._p3cycle)e._p3cycle="idle";
       if(e._p3cycle==="idle"&&now>e.sbTeleCD){
         e._p3cycle="tele_warn";e._p3t=now;
-        g.dn.push({x:g.p.x,y:g.p.y-50,d:"⚠️ 惡魔在身邊！",life:1.5,color:"#9B59B6",big:1});
+        g.dn.push({x:g.p.x,y:g.p.y-50,d:" 惡魔在身邊！",life:1.5,color:"#9B59B6",big:1});
         const tr=90+rn(0,30),ta=Math.random()*Math.PI*2;
         e._teleLandX=cl(g.p.x+Math.cos(ta)*tr,e.r,mapW()-e.r);
         e._teleLandY=cl(g.p.y+Math.sin(ta)*tr,e.r,mapH()-e.r);
@@ -498,13 +498,13 @@ export function updateStageBoss(e,now,dt){
           if(e._p3dashN>=3){
             // 3次衝刺完成 → 進入脈衝預告
             e._p3cycle="pulse_warn";e._p3t=now;
-            g.dn.push({x:e.x,y:e.y-e.r-20,d:"⚠️ 暗黑脈衝！",life:2.2,color:"#FF4040",big:1});
+            g.dn.push({x:e.x,y:e.y-e.r-20,d:" 暗黑脈衝！",life:2.2,color:"#FF4040",big:1});
             g._pulseWarnEnd=now+2200; // 畫面警告計時
             sfxBossAtk("darkpulse");
           }else{
             // 下一次衝刺
             e._dashChargeEnd=now+400;
-            g.dn.push({x:e.x,y:e.y-e.r-10,d:"⚠️",life:0.5,color:"#FF4040"});
+            g.dn.push({x:e.x,y:e.y-e.r-10,d:"",life:0.5,color:"#FF4040"});
           }
         }
       }
@@ -562,7 +562,7 @@ export function updateStageBoss(e,now,dt){
       cx.beginPath();cx.arc(lx,ly,mr*.6,0,Math.PI*2);cx.fill();
       cx.restore();
       // 不再每幀 push damage number — 改用低頻閃爍
-      if(Math.random()<.1)g.dn.push({x:lx,y:ly-mr-5,d:"⚡",life:0.3,color:"#9B59B6"});
+      if(Math.random()<.1)g.dn.push({x:lx,y:ly-mr-5,d:"",life:0.3,color:"#9B59B6"});
     }
     // === 通用：執行瞬移 ===
     if(e._teleExe&&now>=e._teleExe){e._teleExe=0;e._teleLandShow=0;sfxBossAtk("teleport");
@@ -580,7 +580,7 @@ export function updateStageBoss(e,now,dt){
       if(phase===3&&e._p3cycle==="tele_warn"){
         e._p3cycle="dash";e._p3dashN=0;
         e._dashChargeEnd=now+400;
-        g.dn.push({x:e.x,y:e.y-e.r-10,d:"⚠️",life:0.5,color:"#FF4040"});
+        g.dn.push({x:e.x,y:e.y-e.r-10,d:"",life:0.5,color:"#FF4040"});
       }
     }
     // Phase 2 瞬移前抖動
@@ -639,16 +639,16 @@ export function drawStageBoss(e,now){
     if(phase===3){cx.globalAlpha=.2+Math.sin(now/60)*.1;cx.fillStyle="#E74C3C";cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*3.2,0,Math.PI*2);cx.fill();}}
   cx.globalAlpha=e.st>0?.85:1;cx.font=`${lv===20?e.r*1.8:e.r*2}px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif`;cx.textAlign="center";cx.textBaseline="middle";
   cx.save();cx.translate(e.x,e.y+bounce);cx.scale(scaleX,scaleY);
-  if(lv===20){const rageShake=e._pooRage?(Math.random()-.5)*.15:0;cx.rotate(Math.sin(now/500)*.06+rageShake);cx.fillText("💩",0,0);}
+  if(lv===20){const rageShake=e._pooRage?(Math.random()-.5)*.15:0;cx.rotate(Math.sin(now/500)*.06+rageShake);cx.fillText("",0,0);}
   else{
     if(e.sbPhase>=2)cx.translate((Math.random()-.5)*2,(Math.random()-.5)*2);
     // 亮色光暈底層（讓 emoji 從暗背景中突出）
     const gPhase=e.sbPhase||1;
     const glowCol=gPhase===1?"rgba(190,120,255,.6)":gPhase===2?"rgba(231,100,100,.6)":"rgba(255,80,80,.7)";
     cx.shadowColor=glowCol;cx.shadowBlur=20;
-    cx.fillText("😈",0,0);
+    cx.fillText("",0,0);
     // 再疊一層加強亮度
-    cx.shadowBlur=35;cx.globalAlpha=.5;cx.fillText("😈",0,0);
+    cx.shadowBlur=35;cx.globalAlpha=.5;cx.fillText("",0,0);
     cx.shadowBlur=0;
   }
   cx.restore();
@@ -691,8 +691,8 @@ export function drawMiniEnemy(e,now){
   cx.translate(e.x,e.y+bounce);cx.rotate(wobble);
   const sz=e.ragePoo?16:e.miniPoo?20:16;
   cx.font=sz+"px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";cx.textAlign="center";cx.textBaseline="middle";
-  if(e.ragePoo){cx.globalAlpha=.5;cx.fillText("💩",0,0);}
-  else cx.fillText(e.miniPoo?"💩":"😈",0,0);
+  if(e.ragePoo){cx.globalAlpha=.5;cx.fillText("",0,0);}
+  else cx.fillText(e.miniPoo?"":"",0,0);
   cx.rotate(-wobble);
   // HP bar
   if(!e.ragePoo){
@@ -713,8 +713,8 @@ export function checkStageBossDeath(){
     if(g._ew){g._ew.active=false;g._ew.restEnd=performance.now()+4000;}
     g.ebul=[]; // 清空敵彈
     if(lv===20){burst(e.x,e.y,"#8B6914",30);burst(e.x,e.y,"#FFD43B",20);sfx("phoenix");
-      g.dn.push({x:e.x,y:e.y-40,d:"💩 Boss 擊敗！",life:3,color:"#FFD43B",big:1});
-      g.dn.push({x:g.p.x,y:g.p.y-60,d:"📦 寶箱獎勵！",life:2.5,color:"#FFD43B",big:1});
+      g.dn.push({x:e.x,y:e.y-40,d:" Boss 擊敗！",life:3,color:"#FFD43B",big:1});
+      g.dn.push({x:g.p.x,y:g.p.y-60,d:" 寶箱獎勵！",life:2.5,color:"#FFD43B",big:1});
       setTimeout(()=>spawnBonusCrates(2),1500);
       g.ene=g.ene.filter(oe=>{if(oe===e||oe.miniPoo||oe.ragePoo){burst(oe.x,oe.y,"#A0822A",5);return false;}return true;});
       _stageBoss=null;
