@@ -1,3 +1,4 @@
+import { installGameButtons } from "./button-art.js";
 import S from "./state.js";
 import {
   PI, TAU, MW, MH, PR, ER, BR, PS,
@@ -233,7 +234,7 @@ window.startGame=window.SG=function(mode){
   // 設定技能按鈕圖示
   setSkillCdEnd(0);
   const _si=$("skillIcon"),_sc=$("skillCd");
-  if(_si)_si.textContent=(CHAR[_charType]||CHAR.gunner).skillIcon||"🎯";
+  if(_si){_si.textContent="";delete _si.dataset.art;}
   if(_sc)_sc.style.display="none";
   setTimeout(resetControls,60);setTimeout(resetControls,180);
 };
@@ -410,3 +411,5 @@ initPractice({
   show,
 });
 bindPracticeToWindow();
+
+installGameButtons();

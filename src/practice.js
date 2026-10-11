@@ -1,3 +1,4 @@
+import { cardEmblem } from "./button-art.js";
 /* ═══════════ PRACTICE MODE ═══════════ */
 import { RC, CHAR, MODE, charCfg } from "./config.js";
 import { $, rn, cl } from "./utils.js";
@@ -433,8 +434,8 @@ export function openPractice() {
     const g2 = _deps.getG();
     const _pct = g2 ? g2.charType : (_deps.getCharType() || "gunner");
     C.filter(c => !c.charReq || c.charReq === _pct).forEach(c => {
-      h2 += `<div id="prc_${c.id}" onclick="window.pracCycleCard(${c.id})" oncontextmenu="event.preventDefault();window.showCardTip(${c.id})" data-cid="${c.id}" style="display:flex;align-items:center;gap:3px;padding:3px 4px;margin:1px 0;border-radius:4px;background:rgba(255,255,255,.03);cursor:pointer;border:1px solid ${RC[c.r]}20;color:${RC[c.r]};user-select:none;-webkit-user-select:none">
-        <span style="font-size:12px">${c.e}</span>
+      h2 += `<div id="prc_${c.id}" onclick="window.pracCycleCard(${c.id})" oncontextmenu="event.preventDefault();window.showCardTip(${c.id})" class="practice-card" data-cid="${c.id}" style="display:flex;align-items:center;gap:3px;padding:3px 4px;margin:1px 0;border-radius:4px;background:rgba(255,255,255,.03);cursor:pointer;border:1px solid ${RC[c.r]}20;color:${RC[c.r]};user-select:none;-webkit-user-select:none">
+        ${cardEmblem(c,true)}
         <span style="font-size:8px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.n}</span>
         <span class="pracLvBadge" style="font-size:8px;font-weight:900;min-width:24px;text-align:center;border-radius:3px;padding:1px 3px"></span>
       </div>`;

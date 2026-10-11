@@ -1,3 +1,4 @@
+import { cardEmblem } from "./button-art.js";
 /**
  * ui.js — 選單、設定、結果畫面、cutscene、鳳凰復活動畫
  * 依賴：state, config, utils, audio, render, hud, input
@@ -286,7 +287,7 @@ export function showVictoryScreen() {
     <div style="animation:fadeIn 1s .9s both">
       <div style="color:rgba(255,255,255,.4);font-size:10px;margin-bottom:6px">收集卡牌</div>
       <div style="color:#FFD43B;font-size:20px;font-weight:900;margin-bottom:8px">${inv.length} / 52</div>
-      <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;max-height:100px;overflow-y:auto">${inv.map(ci => { const cd = C.find(c => c.id === ci.id); return cd ? `<span style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:5px;padding:2px 5px;font-size:10px;border:1px solid ${RC[cd.r]}25;color:${RC[cd.r]}">${cd.e}${cd.n}<span style="font-size:8px;font-weight:900;background:${LVC[ci.lv]};color:#000;border-radius:2px;padding:0 3px;margin-left:2px">Lv${ci.lv + 1}</span></span>` : ""; }).join("")}</div>
+      <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;max-height:100px;overflow-y:auto">${inv.map(ci => { const cd = C.find(c => c.id === ci.id); return cd ? `<span style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:5px;padding:2px 5px;font-size:10px;border:1px solid ${RC[cd.r]}25;color:${RC[cd.r]}">${cardEmblem(cd,true)}${cd.n}<span style="font-size:8px;font-weight:900;background:${LVC[ci.lv]};color:#000;border-radius:2px;padding:0 3px;margin-left:2px">Lv${ci.lv + 1}</span></span>` : ""; }).join("")}</div>
     </div>
     <button class="btn btn-b" style="margin-top:18px;animation:fadeIn 1s 1.2s both;box-shadow:0 0 20px rgba(255,215,0,.3)" onclick="SG()">🎮 再來一次</button>`;
   // Victory particle effects
@@ -345,7 +346,7 @@ export function showOver() {
     cardsHtml = '<div style="color:rgba(255,255,255,.3);font-size:10px;margin:8px 0 4px">收集卡牌</div><div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap">' +
       inv.map(ci => {
         const cd = C.find(c => c.id === ci.id);
-        return `<span style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:5px;padding:2px 6px;font-size:10px;border:1px solid ${RC[cd.r]}25;color:${RC[cd.r]}">${cd.e}${cd.n}<span style="font-size:8px;font-weight:900;background:${LVC[ci.lv]};color:#000;border-radius:2px;padding:0 3px;margin-left:2px">Lv${ci.lv + 1}</span></span>`;
+        return `<span style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:5px;padding:2px 6px;font-size:10px;border:1px solid ${RC[cd.r]}25;color:${RC[cd.r]}">${cardEmblem(cd,true)}${cd.n}<span style="font-size:8px;font-weight:900;background:${LVC[ci.lv]};color:#000;border-radius:2px;padding:0 3px;margin-left:2px">Lv${ci.lv + 1}</span></span>`;
       }).join("") + '</div>';
   }
   p.innerHTML = `<div style="font-size:48px;margin-bottom:6px">😵</div><h1 style="font-size:24px;font-weight:900;color:#FF6B6B;margin:0 0 12px">冒險結束！</h1><div style="background:rgba(255,255,255,.03);border-radius:12px;padding:14px 24px;margin-bottom:12px;border:1px solid rgba(255,255,255,.05)"><div style="color:rgba(255,255,255,.4);font-size:11px">最終分數</div><div style="color:#FFD43B;font-size:34px;font-weight:900">${g.score}</div><div style="display:flex;gap:16px;justify-content:center;margin-top:8px"><div><div style="color:rgba(255,255,255,.3);font-size:10px">等級</div><div style="color:#74C0FC;font-size:16px;font-weight:700">${g.level}</div></div><div><div style="color:rgba(255,255,255,.3);font-size:10px">擊殺</div><div style="color:#FF6B6B;font-size:16px;font-weight:700">${g.kills}</div></div></div></div>${cardsHtml}<button class="btn btn-b" style="margin-top:12px" onclick="SG()">🔄 再來一次</button><button class="btn" style="margin-top:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)" onclick="overGoHome()">🏠 返回首頁</button>`;
@@ -430,7 +431,7 @@ export function toggleStatsPanel() {
       h += '<div style="display:flex;gap:2px;flex-wrap:wrap;">';
       inv.forEach(ci => {
         const cd = C.find(c => c.id === ci.id);
-        if (cd) h += `<span style="font-size:10px;background:rgba(255,255,255,.06);border-radius:3px;padding:1px 4px;color:${RC[cd.r]}">${cd.e}${cd.n}</span>`;
+        if (cd) h += `<span style="font-size:10px;background:rgba(255,255,255,.06);border-radius:3px;padding:1px 4px;color:${RC[cd.r]}">${cardEmblem(cd,true)}${cd.n}</span>`;
       });
       h += '</div>';
     }

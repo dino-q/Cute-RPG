@@ -357,8 +357,8 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
   const cm = cam();
   return {
     t: "state",
-    p1: { x: g.p.x, y: g.p.y, hp: g.p.hp, mhp: g.p.maxHp, face: g.p.face, _downed: g.p._downed, _iFrameEnd: g.p._iFrameEnd, _rescueTimer: g.p._rescueTimer || 0, _pickPending: g.p._pickPending || false, charType: g.charType },
-    p2: { x: g.p2.x, y: g.p2.y, hp: g.p2.hp, mhp: g.p2.maxHp, face: g.p2.face, _downed: g.p2._downed, _iFrameEnd: g.p2._iFrameEnd, _rescueTimer: g.p2._rescueTimer || 0, _pickPending: g.p2._pickPending || false, charType: g.p2.charType },
+    p1: { x: g.p.x, y: g.p.y, hp: g.p.hp, mhp: g.p.maxHp, face: g.p.face, _downed: g.p._downed, _iFrameEnd: g.p._iFrameEnd, _rescueTimer: g.p._rescueTimer || 0, _pickPending: g.p._pickPending || false, charType: g.charType, _ad: g.ad, pixelShotAge: g.p._pixelShotAt ? Math.min(1000, performance.now() - g.p._pixelShotAt) : 1000 },
+    p2: { x: g.p2.x, y: g.p2.y, hp: g.p2.hp, mhp: g.p2.maxHp, face: g.p2.face, _downed: g.p2._downed, _iFrameEnd: g.p2._iFrameEnd, _rescueTimer: g.p2._rescueTimer || 0, _pickPending: g.p2._pickPending || false, charType: g.p2.charType, _ad: g.p2._ad, pixelShotAge: g.p2._pixelShotAt ? Math.min(1000, performance.now() - g.p2._pixelShotAt) : 1000 },
     ene: g.ene.map(e => ({ x: e.x, y: e.y, hp: e.hp, mhp: e.mhp, r: e.r, color: e.color, boss: e.boss, mega: e.mega, tier: e.tier, role: e.role, face: e.face, t: e.t, st: e.st, frozen: e.frozen, stageBoss: e.stageBoss, sbPhase: e.sbPhase, _coopShield: e._coopShield, _coopCircles: e._coopCircles, _coopShieldBrokenEnd: e._coopShieldBrokenEnd, _coopCircleTimer: e._coopCircleTimer, _rage: e._rage, _rageState: e._rageState, _rageDx: e._rageDx, _rageDy: e._rageDy, eliteEnemy: e.eliteEnemy, _eDashing: e._eDashing, _eShieldEnd: e._eShieldEnd, dashState: e.dashState, dashDx: e.dashDx, dashDy: e.dashDy, shieldAng: e.shieldAng, flankA: e.flankA, bhExeAt: e.bhExeAt, bossType: e.bossType, poisonT: e.poisonT, burnT: e.burnT, _tauntEnd: e._tauntEnd, _tauntTarget: e._tauntTarget })),
     bul: g.bul.filter(b => b.life > 0).map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, crit: b.crit, life: b.life })),
     ebul: g.ebul.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, color: b.color, life: b.life })),
@@ -380,9 +380,9 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
     ghostShadow: g._ghostShadow && g._ghostShadow.life > 0 ? { x: g._ghostShadow.x, y: g._ghostShadow.y, face: g._ghostShadow.face, life: g._ghostShadow.life } : null,
     ghostArc: g._ghostArc ? { x: g._ghostArc.x, y: g._ghostArc.y, ang: g._ghostArc.ang, t: g._ghostArc.t } : null,
     ultFlash: g.ultFlash || 0,
-    p1Atk: g._atkAnim ? { active: g._atkAnim.active, elapsed: performance.now() - g._atkAnim.startT, _qiSpin: g._atkAnim._qiSpin } : null,
+    p1Atk: g._atkAnim ? { active: g._atkAnim.active, elapsed: performance.now() - g._atkAnim.startT, _qiSpin: g._atkAnim._qiSpin, angle: g._atkAnim.angle } : null,
     p1Wb: g._wbSwing || 0,
-    p2Atk: g._p2AtkAnim ? { active: g._p2AtkAnim.active, elapsed: performance.now() - g._p2AtkAnim.startT, _qiSpin: g._p2AtkAnim._qiSpin } : null,
+    p2Atk: g._p2AtkAnim ? { active: g._p2AtkAnim.active, elapsed: performance.now() - g._p2AtkAnim.startT, _qiSpin: g._p2AtkAnim._qiSpin, angle: g._p2AtkAnim.angle } : null,
     p2Wb: g._p2WbSwing || 0,
     // P2 數據（CLIENT 需要顯示自己的 HUD）
     p2Hp: g.p2 ? g.p2.hp : 0, p2Mhp: g.p2 ? g.p2.maxHp : 0,
@@ -398,6 +398,8 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   // 更新雙方玩家（含角色類型同步）
   if (data.p1) { if (data.p1.charType) g.charType = data.p1.charType; Object.assign(g.p, data.p1); g.p.maxHp = data.p1.mhp; }
   if (data.p2 && g.p2) { if (data.p2.charType) g.p2.charType = data.p2.charType; Object.assign(g.p2, data.p2); g.p2.maxHp = data.p2.mhp; }
+  if (data.p1 && Number.isFinite(data.p1.pixelShotAge)) g.p._pixelShotAt = performance.now() - data.p1.pixelShotAge;
+  if (data.p2 && g.p2 && Number.isFinite(data.p2.pixelShotAge)) g.p2._pixelShotAt = performance.now() - data.p2.pixelShotAge;
   // 更新敵人
   if (data.ene) g.ene = data.ene;
   // 更新子彈
@@ -423,9 +425,9 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   if (data.ultFlash !== undefined) g.ultFlash = data.ultFlash;
   // 動畫同步：elapsed → 本地 startT
   var _syncNow = performance.now();
-  if (data.p1Atk) { g._atkAnim = { active: data.p1Atk.active, startT: _syncNow - data.p1Atk.elapsed, _qiSpin: data.p1Atk._qiSpin }; }
+  if (data.p1Atk) { g._atkAnim = { active: data.p1Atk.active, startT: _syncNow - data.p1Atk.elapsed, _qiSpin: data.p1Atk._qiSpin, angle: data.p1Atk.angle }; }
   if (data.p1Wb !== undefined) g._wbSwing = data.p1Wb;
-  if (data.p2Atk) { g._p2AtkAnim = { active: data.p2Atk.active, startT: _syncNow - data.p2Atk.elapsed, _qiSpin: data.p2Atk._qiSpin }; }
+  if (data.p2Atk) { g._p2AtkAnim = { active: data.p2Atk.active, startT: _syncNow - data.p2Atk.elapsed, _qiSpin: data.p2Atk._qiSpin, angle: data.p2Atk.angle }; }
   if (data.p2Wb !== undefined) g._p2WbSwing = data.p2Wb;
   // P2 HUD 數據（CLIENT 用）
   if (data.p2Hp !== undefined) g._clientP2Hp = data.p2Hp;
@@ -490,7 +492,7 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
     const _p1ct2 = g.charType, _p1atk2 = g._atkAnim, _p1wb2 = g._wbSwing;
     g.charType = g.p2.charType || "gunner";
     g._atkAnim = g._p2AtkAnim || { active: false, startT: 0 }; g._wbSwing = g._p2WbSwing || 0;
-    drawPlayer(g.p2.x, g.p2.y, PR, now / 1000, "#F06595", g.p2.face);
+    drawPlayer(g.p2.x, g.p2.y, PR, now / 1000, "#F06595", g.p2.face, g.p2);
     g.charType = _p1ct2; g._atkAnim = _p1atk2; g._wbSwing = _p1wb2; cx.restore();
   }
   // 粒子

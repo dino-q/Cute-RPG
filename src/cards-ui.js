@@ -1,3 +1,4 @@
+import { cardEmblem } from "./button-art.js";
 // Card selection UI, angel card, big chest
 import { CRATE_HP, RW, RC, LVC, RECOMMENDED } from "./config.js";
 import { rn, $ } from "./utils.js";
@@ -76,8 +77,9 @@ function buildCard(cd, w, i, wrap) {
   const rarAnim = cd.r === "SSR" ? "ssrRainbow 1.5s infinite" : cd.r === "SR" ? "srShine 1.2s infinite" : "none";
   const tpAnim = cd.tp === "atk" ? "atkPulse 1.5s infinite" : "defPulse 1.5s infinite";
   const mainAnim = cd.r === "SSR" ? rarAnim : tpAnim;
-  b.style.cssText = `width:100%;border:2px solid ${isUp ? LVC[nLv] : RC[cd.r]};animation:ci .35s ${i * .08}s both cubic-bezier(.34,1.56,.64,1);`;
-  setTimeout(() => { b.style.animation = mainAnim; }, 350 + i * 80);
+  b.dataset.rarity = cd.r;
+  b.style.cssText = `--rarity-color:${RC[cd.r]};width:100%;border:2px solid ${isUp ? LVC[nLv] : RC[cd.r]};animation:ci .35s ${i * .08}s both cubic-bezier(.34,1.56,.64,1);`;
+  // The card settles after its entrance; no continual flashing.
   const tpL = cd.tp === "atk" ? '<div style="font-size:8px;color:#FF6B6B;margin-bottom:1px">⚔️ 攻擊</div>' : '<div style="font-size:8px;color:#4DABF7;margin-bottom:1px">🛡️ 被動</div>';
   const lvL = isUp ? `<div style="font-size:9px;color:#FFD43B;font-weight:900;margin-bottom:2px;text-shadow:0 0 6px #FFD43B">⬆Lv${dLv}</div>` : "";
   const rarBadge = cd.r === "SSR" ? '<div style="font-size:9px;background:linear-gradient(90deg,#FFD43B,#FF6B6B,#DA77F2,#74C0FC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:2px;margin-bottom:3px">✦ SSR ✦</div>' : `<div style="font-size:10px;color:${RC[cd.r]};font-weight:700;letter-spacing:1px;margin-bottom:3px">★${cd.r}</div>`;
@@ -85,7 +87,7 @@ function buildCard(cd, w, i, wrap) {
   const _recSet = RECOMMENDED[_pct];
   const _isRec = _recSet && _recSet.has(cd.n);
   const recBadge = _isRec ? '<div style="font-size:8px;font-weight:900;color:#FFD43B;background:rgba(255,212,59,.15);border:1px solid rgba(255,212,59,.3);border-radius:4px;padding:1px 6px;margin-bottom:3px;display:inline-block">⭐ 推薦</div>' : "";
-  b.innerHTML = `${rarBadge}${tpL}${recBadge}<div style="font-size:30px;margin-bottom:3px">${cd.e}</div><div style="font-size:12px;font-weight:900;margin-bottom:2px">${cd.n}</div>${lvL}<div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">${desc}</div>`;
+  b.innerHTML = `${rarBadge}${tpL}${recBadge}${cardEmblem(cd)}<div style="font-size:12px;font-weight:900;margin-bottom:2px">${cd.n}</div>${lvL}<div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">${desc}</div>`;
   b.onclick = () => pickCard(cd, _bAddCard, _bpp, _binv);
   b.ontouchstart = e => { e.stopPropagation(); e.preventDefault(); pickCard(cd, _bAddCard, _bpp, _binv); };
   wrap.innerHTML = ""; wrap.appendChild(b);

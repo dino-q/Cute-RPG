@@ -381,3 +381,23 @@ Title Screen
 - **想改多人連線邏輯？** → 改 `src/coop.js`
 - **想改練習模式？** → 改 `src/practice.js`
 - **想改遊戲主迴圈節奏？** → 改 `src/loop.js` 的 `loop()` 函式
+
+## Pixel gunner appearance
+
+- `src/gunner-sprite.js` loads the generated eight-direction atlas and exports `gunnerSpriteReady`, `getGunnerPose`, `getGunnerMuzzle`, `drawPixelGunner`. It depends only on browser APIs. `render.js` and `combat.js` import it.
+- `drawPlayer(x,y,r,t,col,face,playerState)` retains the existing entry point; optional `playerState` selects P2 aim and shot timing.
+- `assets/gunner-pixel.png` and `assets/gunner-pixel.json` are served from Vite publicDir and copied to dist.
+- `角色預覽/gunner-pixel-preview.html` checks eight distinct directions using the actual renderer and displays recoil on demand.
+- Gameplay damage, movement speed, collision radius and other class appearances stay as configured. Gunner bullets and particles use the atlas muzzle coordinate. Co-op state includes aim and elapsed shot timing.
+- One static body pose per direction; no authored walk animation yet.
+
+## 正式遊戲版人物與介面
+
+新增模組與依賴：main.js → button-art.js；cards-ui.js / practice.js / ui.js / hud.js → button-art.js；render.js → melee-sprite.js。
+
+- button-art.js 匯出 pixelEmblem、cardEmblem、setActionEmblem、installGameButtons。沿用既有按鈕事件與卡片資料，建立職業徽章、像素人物肖像、技能標示與卡片效果徽章。
+- melee-sprite.js 匯出 meleeSpritesReady、swordActionsReady、drawPixelMelee。載入 melee-pixel.png/json 與 swordsman-action.png/json。
+- drawPlayer 新增可選第八參數 renderOptions；aiming:true 僅供方向展示。未攻擊槍手面向正面，近戰移動時轉向移動方向，停止後回正面。
+- 劍士全身四階段姿勢：提劍、跨步橫斬、收勢、架式。盾與短刀以手部錨點連續推進、回收。attack angle 隨攻擊動畫同步至連線客戶端。
+- 此輪沿用原命中範圍與傷害結算時機；全身劍術目前四張關鍵姿勢，尚非大量逐格步行動畫。
+- 角色預覽/正式遊戲版-人物與招式.html 是手動展示頁，不執行自動測試。依使用者要求，本輪未執行 build 或瀏覽器功能測試。

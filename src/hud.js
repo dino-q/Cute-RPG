@@ -1,3 +1,4 @@
+import { setActionEmblem } from "./button-art.js";
 // HUD, minimap, floating hints, player damage numbers
 import {
   BH_COOLDOWN_MS, ULT_CHARGE_NEED, PR,
@@ -34,6 +35,10 @@ export function showPlayerDmg(dmg, p) {
 /* ═══ HUD ═══ */
 export function hud() {
   if (!g) return;
+  const roleArt = {gunner:["gun","狙擊"],swordsman:["sword","鬼斬"],tank:["shield","嘲諷"],assassin:["dagger","影襲"]};
+  const currentRole = (_isCoopMode && _net?.role === "client" ? g.p2?.charType : g.charType) || "gunner";
+  const [skillArt, skillName] = roleArt[currentRole] || roleArt.gunner;
+  setActionEmblem("skillIcon", skillArt, skillName, "W");
   const _hudIsClient = !!(_isCoopMode && _net && _net.role === "client");
   const _hudP = _hudIsClient && g.p2 ? g.p2 : g.p;
   const _hudLv = _hudIsClient ? g.p2Level || 1 : g.level;
@@ -71,7 +76,7 @@ export function hud() {
     const now = performance.now(), cdLeft = Math.max(0, (g.ultCdEnd || 0) - now), ready = cdLeft <= 0;
     const pct = ready ? 1 : 1 - cdLeft / cdMs;
     $("ultR").style.background = "conic-gradient(" + cdColor + " " + (pct * 360) + "deg,rgba(190,78,219,.1) " + (pct * 360) + "deg)";
-    $("ultI").textContent = ready ? icon : "⏳";
+    setActionEmblem("ultI", ready ? (_hasBH ? "orb" : _hasMF ? "target" : "hourglass") : "hourglass", ready ? "大招" : "冷卻", "E");
     $("ultL").textContent = ready ? `⬇ ${label}就緒 ⬇` : `冷卻 ${Math.ceil(cdLeft / 1000)}s`;
     $("ub").style.width = (pct * 100) + "%";
     $("ulbl").textContent = ready ? `${icon}READY` : `⏳${Math.ceil(cdLeft / 1000)}s`;
@@ -83,7 +88,7 @@ export function hud() {
     const pct = Math.min(_hudUltCharge / ULT_CHARGE_NEED, 1);
     $("ultR").style.background = "conic-gradient(#BE4BDB " + (pct * 360) + "deg,rgba(190,78,219,.1) " + (pct * 360) + "deg)";
     const _lsReady = pct >= 1 && _hudP.lStep;
-    $("ultI").textContent = pct >= 1 ? (_lsReady ? "⚡" : "💥") : "💎";
+    setActionEmblem("ultI", pct >= 1 ? (_lsReady ? "bolt" : "burst") : "gem", pct >= 1 ? "發動" : "集氣", "E");
     $("ultL").textContent = pct >= 1 ? (_lsReady ? "⬇ 閃電步 ⬇" : "⬇ 發動 ⬇") : (g.ultHold || (_hudIsClient && aim.a)) ? "集氣中..." : "長壓集氣";
     $("ub").style.width = (pct * 100) + "%";
     $("ulbl").textContent = pct >= 1 ? "💥MAX" : `💎${Math.floor(pct * 100)}%`;

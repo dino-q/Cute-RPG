@@ -61,3 +61,39 @@ canvas{display:block;position:absolute;top:0;left:0;pointer-events:none}
 #ultL{position:absolute;top:-18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.9);font-size:min(10px,2.5vw);text-align:center;font-weight:900;letter-spacing:.5px;white-space:nowrap;text-shadow:0 0 10px rgba(190,78,219,.6)}
 #minimap{position:absolute;top:52px;right:8px;z-index:10;pointer-events:none;border:1px solid rgba(255,255,255,.1);border-radius:4px;display:none}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+
+/* 正式遊戲版：冒險手冊、像素金屬徽章 */
+:root{--game-ink:#111c27;--game-paper:#f3e3bf;--game-brass:#dfbf76}
+.pixel-emblem{width:26px;height:26px;display:inline-block;flex-shrink:0;filter:drop-shadow(2px 2px 0 #080f18);vertical-align:middle}
+button:focus-visible,[onclick]:focus-visible{outline:3px solid #fff0c7;outline-offset:4px}
+.btn{border-radius:5px;border:2px solid #0a1420;box-shadow:inset 0 2px 0 #ffffff35,0 4px 0 #080f18;letter-spacing:1px}
+#titleOv .btn{display:flex;align-items:center;gap:12px;text-align:left;color:#17212b!important;background:#ddc99f;box-shadow:inset 0 2px 0 #fff4d4,0 4px 0 #080f18;width:240px!important}
+#titleOv .btn-b{background:#a7cbd4}#titleOv .btn-g{background:#ddc492}#titleOv .btn-p{background:#b8c5a4}#titleOv .btn-d{background:#c1b8d0}
+#titleOv .pixel-emblem{filter:none}#titleOv .pixel-emblem path{fill:#253e50}.button-arrow{margin-left:auto;opacity:.6}
+#charSelectOv .panel{max-width:480px!important;width:min(94vw,480px)}
+#charSelectOv .panel>div{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px!important}
+.role-choice{position:relative;display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;min-height:128px;padding:14px 12px 30px;color:#f3e3bf;background:linear-gradient(135deg,#253445,#14212f);border:2px solid var(--role-color);border-radius:4px;box-shadow:inset 0 2px 0 #ffffff15,0 4px 0 #080f18;text-align:left;font-family:inherit;cursor:pointer;transition:transform .15s,background .15s}
+.role-choice:hover{transform:translateY(-3px);background:#2c3e50}.role-choice:active{transform:translateY(2px);box-shadow:none}
+.role-portrait{height:58px;display:grid;place-items:center;background:#0e1925;border:1px solid #ffffff20;box-shadow:inset 0 0 0 4px #172536}.role-portrait .pixel-emblem{width:40px;height:40px}
+.role-copy>div{font-size:10px!important;color:#c5c9c9!important;line-height:1.5!important}.role-copy>div:first-child{font-size:16px!important;letter-spacing:2px;color:var(--role-color)!important}.role-copy>div:last-child{color:var(--role-color)!important;margin-top:6px!important}
+.role-enter{position:absolute;bottom:8px;right:12px;font-size:9px;color:var(--role-color);letter-spacing:1px}
+.cb{position:relative;background:linear-gradient(155deg,#283645,#14202d);border-radius:4px;padding:14px 9px 16px;box-shadow:inset 0 0 0 3px #111b26,0 5px 0 #080f18;min-height:186px}
+.cb:before{content:'';position:absolute;top:5px;left:5px;right:5px;height:3px;background:var(--rarity-color,#dfbf76)}
+.cb:hover{background:#304457;transform:translateY(-3px)}.cb[data-rarity="SSR"]{background:linear-gradient(155deg,#463a27,#1b252c)}
+.card-emblem{display:inline-grid;place-items:center;position:relative;width:62px;height:58px;margin:7px auto 9px;background:#0c1722;border:1px solid var(--emblem-color);box-shadow:inset 0 0 0 3px #1a2937}
+.card-emblem .pixel-emblem{width:36px;height:36px}.card-emblem small{position:absolute;bottom:2px;right:4px;color:#a5afb8;font-size:8px;font-variant-numeric:tabular-nums;letter-spacing:1px}
+.card-emblem.compact{width:26px;height:26px;margin:0 5px 0 0;box-shadow:none;flex-shrink:0}.card-emblem.compact .pixel-emblem{width:18px;height:18px}.card-emblem.compact small{display:none}
+.practice-card{min-height:36px;margin:4px 0!important;background:#1b2b3a!important;border-radius:3px!important}.practice-card>span:nth-child(2){font-size:10px!important}
+#pracToolbar{gap:6px!important;padding:5px;background:#10202ce8;border:1px solid #77838c}
+#pracToolbar button{min-height:28px;padding:5px 9px!important;border-radius:3px!important;font-size:10px!important;box-shadow:inset 0 1px 0 #ffffff20,0 2px 0 #071019}
+#pracCards,#pracEnemies{padding-top:92px!important}
+#settingsBtn{width:68px!important;height:32px!important;border-radius:4px!important;gap:6px;border:1px solid #9dacb8!important;background:#162a39ed!important;font:11px inherit!important}#settingsBtn .pixel-emblem{width:17px;height:17px}#settingsBtn span{font-size:11px}
+#skillBtn,#dodgeBtn{border-radius:6px!important;box-shadow:inset 0 2px 0 #ffffff20,0 3px 0 #080f18!important}
+#skillIcon,#dodgeBtn,#ultI{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;position:relative;color:#f3e3bf}
+#skillIcon .pixel-emblem,#dodgeBtn .pixel-emblem{width:21px;height:21px}.action-name{font-size:9px;font-weight:900;line-height:1.1;letter-spacing:1px}
+#ctl kbd{position:absolute;top:1px;right:2px;color:#a5b5c0;font:8px monospace;line-height:1}#skillIcon{width:100%;height:100%}#skillCd{border-radius:5px!important}
+#ultI{border-radius:7px!important;box-shadow:inset 0 2px 0 #ffffff20,0 3px 0 #080f18}#ultI .pixel-emblem{width:28px;height:28px}#ultL{color:#eadbb7!important;font-size:10px;letter-spacing:1px}
+@media(max-width:420px){.role-choice{grid-template-columns:36px 1fr;padding:10px 7px 26px;gap:6px}.role-portrait{height:44px}.role-portrait .pixel-emblem{width:28px;height:28px}.role-copy>div{font-size:8px!important}.role-copy>div:first-child{font-size:14px!important}#charSelectOv .panel>div{gap:8px!important}.card-emblem{width:48px;height:48px}.card-emblem .pixel-emblem{width:28px;height:28px}}
+@media(prefers-reduced-motion:reduce){.btn,.role-choice,.cb{animation:none!important;transition:none!important}}
+
+.role-portrait{position:relative}.role-avatar{display:block;width:64px;height:64px;background-image:url('/melee-pixel.png');background-size:800% 300%;background-position:28.571% 0;image-rendering:pixelated}.role-avatar-tank{background-position:28.571% 50%}.role-avatar-assassin{background-position:28.571% 100%}.role-avatar-gunner{background-image:url('/gunner-pixel.png');background-size:400% 200%;background-position:66.667% 0}.role-weapon{position:absolute;bottom:-4px;right:-3px;background:#152332;border:1px solid var(--role-color);padding:2px}.role-weapon .pixel-emblem{width:14px;height:14px}@media(max-width:420px){.role-avatar{width:48px;height:48px}}

@@ -1,3 +1,4 @@
+import { getGunnerMuzzle } from "./gunner-sprite.js";
 // Combat: shooting, melee, collision, kill settlement
 import {
   PI, TAU, PR, ER,
@@ -140,11 +141,13 @@ export function fire(dmg, dx, dy, sp, p) {
   const shots = pp.split || 1, ba = Math.atan2(dy, dx), bc = heavy ? { f: "#FF922B", g: "#FF4500", t: "#FF922B" } : (p === g.p2 ? { f: "#F06595", g: "#DA77F2", t: "#F06595" } : bCol());
   const dbl = Math.random() < (pp.dblAtk || 0);
   const _ct = (p === g.p2) ? (g.p2.charType || "gunner") : (g ? g.charType : "gunner");
+  const _pixelOrigin = _ct === "gunner" ? getGunnerMuzzle(pp.x, pp.y, PR, { x: dx, y: dy }) : null;
+  if (_ct === "gunner") pp._pixelShotAt = performance.now();
   if (_ct === "gunner" && par.length < MAX_PARTICLES - 6) {
     const _fAd = (p === g.p2) ? (pp._ad || { x: pp.face || 1, y: 0 }) : ((g && g.ad) ? g.ad : { x: pp.face || 1, y: 0 });
     const _fAng = Math.atan2(_fAd.y, _fAd.x);
     const mzDist = PR * 1.2;
-    const mzX = pp.x + Math.cos(_fAng) * mzDist, mzY = pp.y + Math.sin(_fAng) * mzDist;
+    const mzX = _pixelOrigin ? _pixelOrigin.x : pp.x + Math.cos(_fAng) * mzDist, mzY = _pixelOrigin ? _pixelOrigin.y : pp.y + Math.sin(_fAng) * mzDist;
     const mzC = bc.f || "#FFE066";
     par.push({ x: mzX, y: mzY, vx: Math.cos(_fAng) * rn(1, 3), vy: Math.sin(_fAng) * rn(1, 3), life: .2, color: "#fff", sz: rn(3, 5) });
     for (let _fi = 0; _fi < 3; _fi++) {
@@ -165,7 +168,7 @@ export function fire(dmg, dx, dy, sp, p) {
         var _cyc = (_nt - pp._hmCycleT) % 3500;
         _hmOn = _cyc < 500;
       }
-      g.bul.push({ x: pp.x, y: pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
+      g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
     }
   });
 }
@@ -329,7 +332,7 @@ export function swordSwing(_pp, _isP2) {
     }
   }
   if (!g[_atkRef]) g[_atkRef] = { active: false, startT: 0 };
-  g[_atkRef].active = true; g[_atkRef].startT = performance.now(); g[_atkRef]._qiSpin = false;
+  g[_atkRef].active = true; g[_atkRef].startT = performance.now(); g[_atkRef].angle = atkAngle; g[_atkRef]._qiSpin = false;
   if (isQi) {
     g[_atkRef]._qiSpin = true;
     for (let ring = 0; ring < 3; ring++) {
@@ -424,7 +427,7 @@ export function shieldBash(_pp, _isP2) {
       }
     }
   } });
-  if (!g[_atkRef]) g[_atkRef] = { active: false, startT: 0 }; g[_atkRef].active = true; g[_atkRef].startT = performance.now();
+  if (!g[_atkRef]) g[_atkRef] = { active: false, startT: 0 }; g[_atkRef].active = true; g[_atkRef].startT = performance.now(); g[_atkRef].angle = atkAngle;
   for (let i = 0; i < 6; i++) {
     const a = atkAngle - arc + arc * 2 * i / 5;
     par.push({ x: _pp.x + Math.cos(a) * 15, y: _pp.y + Math.sin(a) * 15, vx: Math.cos(a) * 2.5, vy: Math.sin(a) * 2.5, life: .4, color: "#51CF66", sz: rn(2, 4) });
@@ -548,7 +551,7 @@ export function daggerStrike(_pp, _isP2) {
       }
     }
   } });
-  if (!g[_atkRef]) g[_atkRef] = { active: false, startT: 0 }; g[_atkRef].active = true; g[_atkRef].startT = performance.now();
+  if (!g[_atkRef]) g[_atkRef] = { active: false, startT: 0 }; g[_atkRef].active = true; g[_atkRef].startT = performance.now(); g[_atkRef].angle = atkAngle;
   // 匕首雙刃粒子
   for (let i = 0; i < 5; i++) {
     const a = atkAngle - arc * .3 + arc * .6 * i / 4;

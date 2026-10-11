@@ -1,0 +1,13 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>短髮像素槍手｜八方向實機繪圖</title><style>body{margin:0;background:#141428;color:#eee;font:16px system-ui;text-align:center;padding:12px}h1{font-size:24px}.grid{display:grid;grid-template-columns:repeat(3,140px);gap:8px;justify-content:center}.cell{background:#20203b;border:1px solid #363653;border-radius:10px;padding:10px}canvas{width:120px;height:112.5px;image-rendering:pixelated}.empty{visibility:hidden}button,a{color:#fff;background:#315b98;border:0;border-radius:8px;padding:10px 18px;cursor:pointer;display:inline-block;text-decoration:none;margin:16px}#status{font-size:13px;color:#9ee5b7}p{color:#b7bad0}@media(max-width:600px){.grid{grid-template-columns:repeat(3,100px);gap:4px}.cell{padding:2px}canvas{width:96px;height:90px}}</style><h1>短髮像素槍手 · 八方向</h1><p>使用遊戲內同一套角色繪圖。點「試射」看後座與槍口火光。</p><div class="grid" id="grid"></div><button id="shoot">試射</button><a href="../">進入遊戲</a><div id="status">載入角色…</div><script type="module">
+import {gunnerSpriteReady,getGunnerPose,getGunnerMuzzle} from '../src/gunner-sprite.js';
+import {drawPlayer,setCx,setG} from '../src/render.js';
+import {setMuted} from '../src/audio.js';
+setMuted(true);
+const layout=[['左上',5],['上',6],['右上',7],['左',4],['',null],['右',0],['左下',3],['下',2],['右下',1]];
+let shotAt; const views=[];
+for(const [label,index] of layout){const card=document.createElement('div');card.className='cell'+(index===null?' empty':'');const canvas=document.createElement('canvas');canvas.width=160;canvas.height=150;card.append(canvas,document.createTextNode(label));grid.append(card);if(index!==null)views.push({canvas,index});}
+await gunnerSpriteReady;
+document.getElementById('status').textContent='八方向攻擊展示 · 測試與驗證由玩家自行操作。';
+shoot.onclick=()=>{shotAt=performance.now();};
+function animate(){for(const {canvas,index}of views){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,160,150);setCx(ctx);setG({charType:'gunner',p:{fx:{},_pixelShotAt:shotAt},ad:{x:Math.cos(index*Math.PI/4),y:Math.sin(index*Math.PI/4)}});drawPlayer(80,70,36,0,'#74c0fc',1,undefined,{aiming:true});}requestAnimationFrame(animate);}animate();
+</script></html>

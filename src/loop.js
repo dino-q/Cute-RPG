@@ -2012,7 +2012,7 @@ export function loop(){
     const _p1ct=g.charType,_p1atk=g._atkAnim,_p1wb=g._wbSwing;
     g.charType=g.p2.charType||"gunner";
     g._atkAnim=g._p2AtkAnim||{active:false,startT:0};g._wbSwing=g._p2WbSwing||0;
-    drawPlayer(g.p2.x,g.p2.y,PR,g.time/1000,"#F06595",g.p2.face);
+    drawPlayer(g.p2.x,g.p2.y,PR,g.time/1000,"#F06595",g.p2.face,g.p2);
     g.charType=_p1ct;g._atkAnim=_p1atk;g._wbSwing=_p1wb;
     cx.restore();
     if(g.p2._downed){
@@ -2645,8 +2645,6 @@ export function loop(){
     cx.restore();
   }
 
-  // aim line
-  if(aim.a){cx.save();cx.globalAlpha=.3;cx.strokeStyle=bc.f;cx.lineWidth=1.5;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(g.p.x+g.ad.x*PR,g.p.y+g.ad.y*PR);cx.lineTo(g.p.x+g.ad.x*50,g.p.y+g.ad.y*50);cx.stroke();cx.setLineDash([]);cx.restore();}
 
   // particles
   par.forEach(p=>{cx.globalAlpha=p.life;cx.fillStyle=p.color;cx.beginPath();cx.arc(p.x,p.y,p.sz,0,Math.PI*2);cx.fill();});cx.globalAlpha=1;

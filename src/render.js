@@ -1,5 +1,7 @@
+import { drawPixelMelee } from "./melee-sprite.js";
 // Render module — drawing functions for player, enemy, particles, title hero
 import S from "./state.js";
+import { drawPixelGunner } from "./gunner-sprite.js";
 import {
   PI, TAU, MAX_PARTICLES, LIGHTNING_CAP,
   CHAR, ROLE_NORMAL, ROLE_FLANKER, ROLE_SHOOTER, ROLE_DASHER, ROLE_SHIELD
@@ -252,10 +254,11 @@ function _drawMiniShield(cx, fxObj) {
   cx.fillStyle = ec; cx.beginPath(); cx.arc(0, 1, 2, 0, Math.PI * 2); cx.fill();
 }
 
-export function drawPlayer(x, y, r, t, col, face) {
+export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
   cx.save(); const f = face || 1, bob = Math.sin(t * 3) * 1.5, cy = y + bob;
-  const fx = g ? g.p.fx : {};
-  const ct = g ? g.charType : "gunner";
+  const player = playerState || (g && g.p);
+  const fx = player ? player.fx || {} : {};
+  const ct = player?.charType || (g ? g.charType : "gunner");
   const cc = CHAR[ct] || CHAR.gunner;
   // shadow
   cx.fillStyle = "rgba(0,0,0,.2)"; cx.beginPath(); cx.ellipse(x, y + r + 2, r * (ct === "tank" ? .75 : .6), 2.5, 0, 0, Math.PI * 2); cx.fill();
@@ -265,7 +268,14 @@ export function drawPlayer(x, y, r, t, col, face) {
   const _atkEl = _atkA ? (performance.now() - g._atkAnim.startT) : 0;
   const _wbS = g && g._wbSwing || 0;
 
-  if (ct === "gunner") {
+  const meleeDirection=player?._ad||(g&&g.ad)||{x:0,y:1};
+  const pixelMelee=ct!=='gunner'&&drawPixelMelee(cx,ct,x,cy,r,meleeDirection,g?._atkAnim,player,fx,{sword:()=>_drawSword(cx,r*.7,fx),shield:()=>_drawMiniShield(cx,fx)},renderOptions?.aiming);
+  if (pixelMelee) {
+    // Continuous weapon animation already drawn; common card shields follow below.
+  } else if (ct === "gunner") {
+    const attacking = renderOptions?.aiming || (Number.isFinite(player?._pixelShotAt) && performance.now() - player._pixelShotAt < 550);
+    const direction = attacking ? (player?._ad || (g && g.ad) || { x: f, y: 0 }) : { x: 0, y: 1 };
+    if (!drawPixelGunner(cx, x, cy, r, direction, player?._pixelShotAt)) {
     // ─── 槍手：身體 + 槍（含後座力動畫）───
     const bg = cx.createRadialGradient(x - f * r * .1, cy - r * .3, r * .1, x, cy, r);
     bg.addColorStop(0, "#fff"); bg.addColorStop(.3, cc.colMid); bg.addColorStop(1, cc.col);
@@ -299,6 +309,7 @@ export function drawPlayer(x, y, r, t, col, face) {
     cx.translate(0, -14);
     _drawMiniGun(cx, fx);
     cx.restore();
+    }
   } else if (ct === "swordsman") {
     // ─── 劍士（參考 sword-swing-preview）：劍在後面 → 身體覆蓋 ───
     const wt = getWpn(fx), w = WP[wt] || WP.sword;
