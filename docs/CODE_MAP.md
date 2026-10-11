@@ -30,3 +30,8 @@
 
 ♻️ 沿用 drawPixelMelee、cardEmblem、pixelEmblem、toggleStatsPanel、openSettings。
 🆕 新寫素材載入與匯出流程（既有素材只有單刀與程式繪製盾牌）。
+
+| createRolePortrait | src/button-art.js | 讀取正面人物的可見範圍，以原生像素置中，避免透明留白和武器徽章遮擋。 |
+
+♻️ 沿用 installGameButtons、pixelEmblem 與既有角色圖。
+🆕 新寫 createRolePortrait（CSS 背景定位只會對齊整格，無法依每位角色可見範圍置中）。

@@ -45,6 +45,25 @@ export function setActionEmblem(id,kind,label,key='') {
  el.dataset.art=signature;
  el.innerHTML=pixelEmblem(kind)+'<span class="action-name">'+label+'</span>'+(key?'<kbd>'+key+'</kbd>':'');
 }
+// Center the visible sprite, rather than its transparent 64px cell.
+export function createRolePortrait(role) {
+ const canvas=document.createElement('canvas');canvas.width=48;canvas.height=56;canvas.className='role-face';canvas.setAttribute('aria-hidden','true');
+ const image=new Image();
+ image.onload=()=>{
+  const source=document.createElement('canvas');source.width=64;source.height=64;const context=source.getContext('2d',{willReadFrequently:true});
+  const row={swordsman:0,tank:1,assassin:2}[role]||0;
+  context.drawImage(image,128,role==='gunner'?0:row*64,64,64,0,0,64,64);
+  const data=context.getImageData(0,0,64,64).data;let left=64,top=64,right=-1,bottom=-1;
+  for(let y=0;y<64;y++)for(let x=0;x<64;x++)if(data[(y*64+x)*4+3]>=128){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+  if(right<left)return;
+  const width=right-left+1,height=bottom-top+1;
+  const target=canvas.getContext('2d');target.imageSmoothingEnabled=false;
+  target.drawImage(source,left,top,width,height,Math.round((48-width)/2),Math.round((56-height)/2),width,height);
+ };
+ image.onerror=()=>console.error('Cannot load role portrait: '+role);
+ image.src=import.meta.env.BASE_URL+(role==='gunner'?'gunner-pixel.png':'melee-pixel.png');return canvas;
+}
+
 export function installGameButtons() {
  document.querySelectorAll("[data-emblem]").forEach(el=>{el.innerHTML=pixelEmblem(el.dataset.emblem);});
  document.querySelectorAll('#charSelectOv [onclick^="pickChar"]').forEach(el=>{
@@ -54,7 +73,9 @@ export function installGameButtons() {
   const button=document.createElement('button');
   button.type='button';button.className='role-choice';button.setAttribute('onclick',el.getAttribute('onclick'));button.dataset.role=role;
   button.style.setProperty('--role-color',color);
-  button.innerHTML='<span class="role-portrait"><span class="role-avatar role-avatar-'+role+'"></span><span class="role-weapon">'+pixelEmblem(kind,color)+'</span>'+'</span><span class="role-copy">'+Array.from(el.children).slice(1).map(x=>x.outerHTML).join('')+'</span><span class="role-enter">選擇 →</span>';
+  button.innerHTML='<span class="role-portrait"></span><span class="role-copy">'+Array.from(el.children).slice(1).map(x=>x.outerHTML).join('')+'</span><span class="role-enter">選擇 →</span>';
+  button.querySelector('.role-portrait').append(createRolePortrait(role));
+  const title=button.querySelector('.role-copy').firstElementChild;title.classList.add('role-title');const badge=document.createElement('span');badge.className='role-weapon';badge.innerHTML=pixelEmblem(kind,color);title.prepend(badge);
   button.querySelector('.role-copy').lastElementChild.textContent='專屬技能 · '+skill;
   el.replaceWith(button);
  });

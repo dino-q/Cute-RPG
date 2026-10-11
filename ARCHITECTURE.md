@@ -410,3 +410,5 @@ Title Screen
 - 首頁、職業、戰鬥控制、設定、卡片選擇／說明／背包、連線、練習、提示、勝敗介面全部巡查表情符號。卡片資料的舊 emoji 欄位清空，技能標示改文字，UI 用 button-art.js 共用像素圖案。歷史備份不修改。
 - hud.js 的大招就緒文字移除向下箭頭。
 - 使用者負責測試與驗證；本輪未跑 build、verify 或遊戲操作測試。
+
+- button-art.js 新增 export createRolePortrait，供 installGameButtons 以原生像素繪製選角頭像。依透明度計算可見範圍，再置中至 48×56 畫布。武器徽章移至職業名稱旁。
