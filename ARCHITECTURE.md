@@ -419,3 +419,13 @@ Title Screen
 - 模組依賴：`gunner-sprite.js`、`melee-sprite.js`、`button-art.js` → `sprite-eyes.js`。
 - 函式索引：`drawSpriteWithEyes(ctx,image,key,sx,sy,cell,dx,dy,size)` 先繪角色，再以附近膚色遮掉原眼睛，依固定 2×2 原生格繪眼睛；輸出寬高取同一整數值，雙眼高度一致。
 - 圖片本身不改動；獨立直接顯示 PNG 的工具仍會看到原眼睛。遊戲與正式人物展示頁走共用繪製。
+
+## 裝置版面編輯
+
+- 模組總覽：`src/control-layout.js` 為裝置專屬的版面編輯與持久儲存；純前端，不上傳配置。
+- 模組依賴：main → control-layout；ui → control-layout；control-layout 透過注入 resize、resetControls 和 openSettings 串接原流程，避免循環相依。
+- 函式索引：`initControlLayout(deps)` 安裝工具、項目與事件；`openLayoutEditor()` 開啟；`getLayoutViewport(rect)` 計算畫面位置與寬高；`applyControlLayout()` 套用位置與縮放。
+- 設定入口：手機按鍵與畫面配置。直式／橫式分開存於 localStorage 的 cute-rpg-layout-v1。拖曳移動、兩指縮放、滑桿微調；支援儲存、取消、單項還原與整體還原。
+- 可調項目：遊戲畫面（寬、高、位置）、搖桿、攻擊、技能、閃避、大招、小地圖、各狀態列、設定鍵、提示與各練習工具按鈕／面板。
+- input 以顯示後的搖桿半徑計算力度，搖桿內球仍用原生尺寸計算位移；重綁觸控依真正按鍵位置判定。編輯時清除控制與鍵盤狀態。
+- ui.resize 同步本機、HUD、連線及 loop 的畫面尺寸。縮小畫面空出的部分為黑邊，可放虛擬控制。

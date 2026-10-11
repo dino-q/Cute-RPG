@@ -48,19 +48,22 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const strike=active&&progress>=.2&&progress<.65?ease((progress-.2)/.45):0;
  const recover=active&&progress>=.65?ease((progress-.65)/.35):0;
  const pulse=active?(progress<.2?-wind*.35:progress<.65?Math.sin(strike*Math.PI/2):1-recover):0;
- const push=pulse*(role==='assassin'?7:role==='tank'?5:3)*scale;
+ const push=pulse*(role==='assassin'?7:3)*scale;
  const bx=x+Math.cos(attackAngle)*push,by=y+Math.sin(attackAngle)*push;
  const lean=active?Math.cos(attackAngle)*pulse*.07:0;
  const left=bx-32*scale,top=by-40*scale;
  const handX=left+frame.hand[0]*scale,handY=top+frame.hand[1]*scale;
- const extension=active?Math.max(0,pulse)*(role==='assassin'?11:role==='tank'?7:2)*scale:0;
+ const extension=active?Math.max(0,pulse)*(role==='assassin'?11:2)*scale:0;
  const pivotX=handX+Math.cos(attackAngle)*extension,pivotY=handY+Math.sin(attackAngle)*extension;
  const swing=active?(progress<.2?-.4-wind*1.1:progress<.65?-1.5+strike*2.7:1.2*(1-recover)):-.45;
  const weaponAngle=(active?attackAngle:model.angle)+(role==='swordsman'?swing:0);
  const hidden=role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now);
  ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;if(hidden)ctx.globalAlpha*=.4;
  const drawBody=()=>{ctx.save();ctx.translate(bx,by);ctx.rotate(lean);drawSpriteWithEyes(ctx,atlas,'melee-pixel',frame.x,frame.y,64,-32*scale,-40*scale,64*scale);ctx.restore();};
+ const drawArm=()=>{ctx.save();ctx.strokeStyle='#efb789';ctx.lineWidth=(role==='tank'?1.5:3)*scale;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(handX,handY);ctx.lineTo(pivotX,pivotY);ctx.stroke();ctx.restore();};
  const drawWeapon=()=>{
+  // Tank forearm is short and sits BEHIND the shield, including south-facing attacks.
+  if(role==='tank')drawArm();
   ctx.save();ctx.translate(pivotX,pivotY);ctx.rotate(weaponAngle+(role==='tank'?0:Math.PI/2));
   if(role==='swordsman')weapons.sword(ctx);
   else if(role==='tank'){
@@ -71,8 +74,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
   }
   else {ctx.scale(scale,scale);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-17,3,15);ctx.fillStyle='#9586ae';ctx.fillRect(2,-14,1,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,5);ctx.translate(-9,5);ctx.rotate(.55);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-14,3,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,4);}
   ctx.restore();
-  // Small arm connects the translated weapon grip back to its body hand.
-  ctx.save();ctx.strokeStyle='#efb789';ctx.lineWidth=3*scale;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(handX,handY);ctx.lineTo(pivotX,pivotY);ctx.stroke();ctx.restore();
+  if(role!=='tank')drawArm();
  };
  if(Math.sin(model.angle)<-.15){drawWeapon();drawBody();}else{drawBody();drawWeapon();}
  if(role==='tank'&&active&&progress>.2&&progress<.6){

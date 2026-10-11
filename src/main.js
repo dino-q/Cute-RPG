@@ -1,3 +1,4 @@
+import { initControlLayout } from './control-layout.js';
 import { installGameButtons } from "./button-art.js";
 import S from "./state.js";
 import {
@@ -376,8 +377,8 @@ initUi({
   getInv: ()=>inv,
   getVW: ()=>VW,
   getVH: ()=>VH,
-  setVW: (v)=>{ VW=v; },
-  setVH: (v)=>{ VH=v; },
+  setVW: (v)=>{ VW=v; setLoopVWVH(VW,VH); setCoopVW(v); },
+  setVH: (v)=>{ VH=v; setLoopVWVH(VW,VH); setCoopVH(v); },
   getIsCoopMode: ()=>_isCoopMode,
   getCv: ()=>cv,
   getFxc: ()=>fxc,
@@ -414,3 +415,6 @@ initPractice({
 bindPracticeToWindow();
 
 installGameButtons();
+
+initControlLayout({resize,reset:()=>{resetControls();window.__lastTouchSnapshot=[];for(const key of Object.keys(ks))ks[key]=false;},returnToSettings:openSettings});
+resize();

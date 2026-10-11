@@ -42,3 +42,11 @@
 🆕 新寫 drawSpriteWithEyes（既有 PNG 眼睛尺寸不一致，生成及縮放无法保證一致）。
 
 ♻️ 沿用 drawPixelMelee：坦克盾牌按各方向本體範圍裁繪並縮小為 75%；盾擊衝擊弧由同一繪製入口處理，供單人、雙人及展示頁共用；loop 不再疊加舊版坦克模糊特效。
+
+| initControlLayout | src/control-layout.js | 建立裝置版面編輯、項目清單、拖曳與雙指缩放事件，串接原設定與 resize。 |
+| openLayoutEditor | src/control-layout.js | 暫存直／橫式配置，提供滑桿、還原、取消及本機儲存。 |
+| getLayoutViewport | src/control-layout.js | 沿用安全邊界，計算可移動與獨立寬高的遊戲畫面；空白區為黑邊。 |
+| applyControlLayout | src/control-layout.js | 套用裝置百分比位置及比例，介面顯示與尺寸變化時重新定位。 |
+
+♻️ 沿用 resize、openSettings、resetControls、setStick、drawPixelMelee。
+🆕 新寫 control-layout 模組（既有設定無版面資料、手勢編輯及方向別儲存）。坦克手臂位移縮至 2 原生單位、身體推出 3 單位，先畫前臂再畫盾牌。

@@ -1,3 +1,4 @@
+import { getLayoutViewport, applyControlLayout } from './control-layout.js';
 import { cardEmblem, pixelEmblem } from "./button-art.js";
 /**
  * ui.js — 選單、設定、結果畫面、cutscene、鳳凰復活動畫
@@ -58,8 +59,8 @@ export function expForLevel(lv) {
 
 // ── resize ────────────────────────────────────────────────────────────────────
 export function resize() {
-  const cv = _getCv();
-  const fxc = _getFxc();
+  const cv = _getCv() || document.getElementById('cv');
+  const fxc = _getFxc() || document.getElementById('fx');
   const g = _getG();
   let VW = _getVW();
   let VH = _getVH();
@@ -78,8 +79,9 @@ export function resize() {
     safeL = Math.round(r2.left); safeR = Math.round(sw - r2.right);
     document.body.removeChild(probe);
   }
-  const aw = sw - safeL - safeR;
-  const ah = sh - topPad - botPad;
+  const viewport = getLayoutViewport({left:safeL,top:topPad,width:sw-safeL-safeR,height:sh-topPad-botPad});
+  const aw = viewport.width;
+  const ah = viewport.height;
   const ratio = aw / ah;
   const newVW = isLand ? Math.round(400 * ratio) : 400;
   const newVH = isLand ? 400 : Math.round(400 / ratio);
@@ -87,11 +89,13 @@ export function resize() {
     VW = newVW; VH = newVH;
     _setVW(VW); _setVH(VH);
     setHudVW(VW); setHudVH(VH);
-    if (cv) { cv.width = VW; cv.height = VH; }
+    let pausedFrame;
+    if(cv && g && !g.run){pausedFrame=document.createElement('canvas');pausedFrame.width=cv.width;pausedFrame.height=cv.height;pausedFrame.getContext('2d').drawImage(cv,0,0);}
+    if (cv) { cv.width = VW; cv.height = VH; if(pausedFrame)cv.getContext('2d').drawImage(pausedFrame,0,0,VW,VH); }
     if (fxc) { fxc.width = VW; fxc.height = VH; }
   }
   [cv, fxc].forEach(c => {
-    if (c) { c.style.width = aw + "px"; c.style.height = ah + "px"; c.style.left = safeL + "px"; c.style.top = topPad + "px"; }
+    if (c) { c.style.width = aw + "px"; c.style.height = ah + "px"; c.style.left = viewport.left + "px"; c.style.top = viewport.top + "px"; }
   });
   const ctl = $("ctl");
   if (ctl && isLand) { ctl.style.paddingLeft = (safeL + 12) + "px"; ctl.style.paddingRight = (safeR + 12) + "px"; }
@@ -105,6 +109,7 @@ export function resize() {
     if (sb) { sb.style.bottom = "108px"; sb.style.right = "70px"; sb.style.width = "min(44px,11vw)"; sb.style.height = "min(44px,11vw)"; }
     if (db) { db.style.bottom = "58px"; db.style.right = "110px"; db.style.width = "min(44px,11vw)"; db.style.height = "min(44px,11vw)"; }
   }
+  applyControlLayout();
 }
 
 // ── show ──────────────────────────────────────────────────────────────────────
@@ -358,9 +363,10 @@ let _bossBgmStop = null;
 
 export function openSettings() {
   const g = _getG();
+  if (!_settingsOpen) _wasRunning = !!(g && g.run);
   _settingsOpen = true;
-  _wasRunning = !!(g && g.run);
-  if (g) g.run = false;
+  if (g) { g.run = false; g.ultHold = false; }
+  resetControls();
   const ov = document.getElementById("settingsOv");
   if (ov) ov.style.display = "flex";
   // 更新靜音按鈕狀態
@@ -382,7 +388,7 @@ export function closeSettings() {
   const ss = document.getElementById("settingsStats");
   if (ss) ss.style.display = "none";
   const g = _getG();
-  if (_wasRunning && g) g.run = true;
+  if (_wasRunning && g) { g.run = true; g.lf = performance.now(); }
 }
 
 export function settingsGoHome() {
