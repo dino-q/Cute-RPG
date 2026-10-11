@@ -82,6 +82,12 @@ export function awardEnemyKill(e) {
   g.ultCharge = Math.min(g.ultCharge + (g.p.ultRate || 1) * (e.boss ? 3 : 1), ULT_CHARGE_NEED);
   if (_prevUlt < ULT_CHARGE_NEED && g.ultCharge >= ULT_CHARGE_NEED) g._ultReadyUntil = performance.now() + 1500;
   g.orbs.push({ x: e.x, y: e.y, xp: e.xp * (g.p.expMul || 1), life: 1 });
+  // 暗影步：擊殺隱身+無敵
+  if (g.p._shadowStep > 0) {
+    const now = performance.now();
+    g.p._shadowStepEnd = now + g.p._shadowStep;
+    g.p._iFrameEnd = Math.max(g.p._iFrameEnd || 0, now + g.p._shadowStep);
+  }
   if (g.p.ls > 0) {
     g.p.hp = Math.min(g.p.hp + g.p.ls, g.p.maxHp);
     const dx = g.p.x - e.x, dy = g.p.y - e.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -193,7 +199,7 @@ export function swordSwing(_pp, _isP2) {
   const qiMul = isQi ? (_pp._qiMul || 2) : 1;
   const dmg = baseDmg; // capture for ghost slash closure
   g.ene.forEach(e => {
-    if (e.hp <= 0) return;
+    if (e.hp <= 0 || e.ragePoo) return;
     const dx = e.x - _pp.x, dy = e.y - _pp.y, d = Math.sqrt(dx * dx + dy * dy);
     const _bossReach = (e.boss || e.stageBoss) ? 30 : 0;
     if (d > range + e.r + _bossReach + (isQi ? 40 : 0)) return;
@@ -360,7 +366,7 @@ export function shieldBash(_pp, _isP2) {
   sfxShoot();
   if (_dblMelee2) { burst(_pp.x, _pp.y, "#868E96", 6); }
   g.ene.forEach(e => {
-    if (e.hp <= 0) return;
+    if (e.hp <= 0 || e.ragePoo) return;
     const dx = e.x - _pp.x, dy = e.y - _pp.y, d = Math.sqrt(dx * dx + dy * dy);
     const _bossReach2 = (e.boss || e.stageBoss) ? 30 : 0;
     if (d > range + e.r + _bossReach2) return;
@@ -459,6 +465,103 @@ export function shieldBash(_pp, _isP2) {
   }
 }
 
+/* ═══ daggerStrike (assassin melee) ═══ */
+export function daggerStrike(_pp, _isP2) {
+  if (!_pp) _pp = g.p; var _pad = _isP2 ? (g.p2 && g.p2._ad || { x: 0, y: -1 }) : g.ad; var _atkRef = _isP2 ? "_p2AtkAnim" : "_atkAnim"; var _pct = _isP2 ? (g.p2 ? g.p2.charType : "gunner") : g.charType; var _pinv = _isP2 ? inv2 : inv;
+  if (!g || !g.run) return;
+  const now = performance.now();
+  const splitBonus = Math.max(1, (_pp.split || 1) * .4 + .6);
+  let _assHeavy = false;
+  if (_pp.heavyEvery > 0) { _pp._heavyCount = (_pp._heavyCount || 0) + 1; if (_pp._heavyCount >= _pp.heavyEvery) { _pp._heavyCount = 0; _assHeavy = true; } }
+  const heavyMul = _assHeavy ? 2 : 1;
+  const berserkMul = (_pp.berserk && _pp.hp / _pp.maxHp < _pp.berserk) ? 2 : 1;
+  const baseDmg = (3.5 + _pp.atk) * splitBonus * heavyMul * berserkMul * (_pp.elemBoost || 1) * (_pp.levelDmgMul || 1);
+  const range = PR * 5;
+  const atkAngle = Math.atan2(_pad.y, _pad.x);
+  const _dblMelee = Math.random() < (_pp.dblAtk || 0);
+  const arc = _dblMelee ? TAU : PI * (.55 + Math.min(.3, (_pp.split || 1) * .04));
+  sfxShoot();
+  if (_dblMelee) { burst(_pp.x, _pp.y, "#868E96", 6); }
+  g.ene.forEach(e => {
+    if (e.hp <= 0 || e.ragePoo) return;
+    const dx = e.x - _pp.x, dy = e.y - _pp.y, d = Math.sqrt(dx * dx + dy * dy);
+    const _bossReach = (e.boss || e.stageBoss) ? 30 : 0;
+    if (d > range + e.r + _bossReach) return;
+    const ea = Math.atan2(dy, dx);
+    let da = Math.abs(((ea - atkAngle) % (PI * 2) + PI * 3) % (PI * 2) - PI);
+    if (da > arc) return;
+    const _assCrit = Math.random() < (_pp.crit || .20);
+    let fd = baseDmg * (_assCrit ? 2.5 : 1);
+    if (e.boss && e.bossType === "armor") fd *= .7;
+    if ((e.boss || e.mega) && _pp.bossDmg > 1) fd *= _pp.bossDmg;
+    if (!e.mega && _pp.mobDmg > 1) fd *= _pp.mobDmg;
+    if (_pp.iceFrag && (e.st > 0 || e.frozen > 0)) fd *= (1 + _pp.iceFrag);
+    if (e.eliteEnemy) { const hasEl = !!(_pp.fx.fire || _pp.fx.ice || _pp.fx.lightning || _pp.fx.poison || _pp.fx.dragon); if (hasEl) fd *= 1.2; else { fd *= .5; fd = Math.max(fd, 1); } }
+    if (e._coopShield) { fd = 0; }
+    e.hp -= fd;
+    e.st = Math.max(e.st || 0, 600);
+    if (_pp.bulletHeal > 0) { const mheal = Math.max(5, _pp.bulletHeal); _pp.hp = Math.min(_pp.hp + mheal, _pp.maxHp); _pp._healFlash = now; }
+    // 近戰回血（比劍士少一些）
+    const _meleeHeal = 2 + (_pp.ls > 0 ? _pp.ls * .2 : 0);
+    if (_pp.hp < _pp.maxHp) { _pp.hp = Math.min(_pp.hp + _meleeHeal, _pp.maxHp); }
+    const fx = _pp.fx;
+    if (fx.fire) { e.burnT = Math.max(e.burnT || 0, 1200 + Math.max(fx.fire || 0, 1) * 500); e.burnLv = Math.max(fx.fire || 0, 1); }
+    if (fx.poison && _pp.poison > 0) { e.poisonT = _pp.poison * 1000 * (_pp.elemBoost || 1); e.poisonLv = Math.max(fx.poison || 0, 1); }
+    if (fx.ice) { if (Math.random() < .2) e.frozen = Math.max(e.frozen || 0, 400); else e.st = Math.max(e.st || 0, 1000); }
+    // 毒刃（卡片效果）
+    if (_pp._poisonBlade && Math.random() < _pp._poisonBlade) {
+      e.poisonT = Math.max(e.poisonT || 0, 2000); e.poisonLv = Math.max(e.poisonLv || 0, 1);
+      g.dn.push({ x: e.x + rn(-8, 8), y: e.y - e.r - 12, d: "☠️", life: .8, color: "#A9E34B" });
+    }
+    const hitCol = _assCrit ? "#FFD43B" : "#BE4BDB";
+    burst(e.x, e.y, hitCol, _assCrit ? 8 : 5);
+    g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(fd), life: 1, color: hitCol, big: _assCrit });
+    sfxHit();
+    if (_pp.chain > 0 || fx.lightning) {
+      const cMul = (_pp.chainDmg || 1) * (fx.lightning ? .58 : .3);
+      const cd2 = fd * cMul;
+      g.ene.forEach(t => { if (t === e || t.hp <= 0) return; if (di(e, t) < 80) {
+        t.hp -= cd2; addLtn(e.x, e.y, t.x, t.y, .7); burst(t.x, t.y, "#FAB005", 3);
+        g.dn.push({ x: t.x, y: t.y - t.r, d: Math.floor(cd2), life: .7, color: "#FAB005" });
+      } });
+    }
+    // 擊殺加速被動
+    if (e.hp <= 0 && !e.deadHandled) {
+      _pp._killSpeedEnd = now + 2000;
+    }
+  });
+  // 寶箱破壞
+  g.crates.forEach(cr => { if (!crateActive(cr)) return; if (di(_pp, cr) < range) { cr.hits += 2; burst(cr.x, cr.y, "#FFD43B", 3);
+    if (cr.hits >= cr.needed && cr.hp > 0) { cr.hp = 0; burst(cr.x, cr.y, "#FFD43B", cr.bigChest ? 20 : 12); sfx("chest");
+      if (_isCoopMode) { _pp._inv = true; _pp._pickPending = true;
+        if (_isP2 && !_p2AI && _net && _net.conn && _net.conn.open) {
+          _sendP2Pick(cr);
+        } else {
+          var _pkCtx = _isP2 ? { player: _pp, inv: _pinv, charType: _pct } : null;
+          if (cr.bigChest) { var _bcp = _isElite() ? 4 : 5; g._bigChestTotal = _bcp; g._bigChestLeft = _bcp; showPick("bigchest", null, _pkCtx); }
+          else { showPick("crate", null, _pkCtx); }
+        }
+      }
+      else { g.run = false;
+        if (cr.bigChest) { var _bcp = _isElite() ? 4 : 5; g._bigChestTotal = _bcp; g._bigChestLeft = _bcp; showPick("bigchest"); }
+        else { showPick("crate"); }
+      }
+    }
+  } });
+  if (!g[_atkRef]) g[_atkRef] = { active: false, startT: 0 }; g[_atkRef].active = true; g[_atkRef].startT = performance.now();
+  // 匕首雙刃粒子
+  for (let i = 0; i < 5; i++) {
+    const a = atkAngle - arc * .3 + arc * .6 * i / 4;
+    par.push({ x: _pp.x + Math.cos(a) * 12, y: _pp.y + Math.sin(a) * 12, vx: Math.cos(a) * 3, vy: Math.sin(a) * 3, life: .3, color: i % 2 ? "#BE4BDB" : "#DA77F2", sz: rn(1.5, 3.5) });
+  }
+  // 音速投擲：攻擊時機率完全閃避
+  if (_pp._atkDodge > 0 && Math.random() < _pp._atkDodge) {
+    _pp._iFrameEnd = Math.max(_pp._iFrameEnd || 0, now + 300);
+    burst(_pp.x, _pp.y, "#74C0FC", 4);
+    g.dn.push({ x: _pp.x, y: _pp.y - 25, d: "閃!", life: .6, color: "#74C0FC" });
+  }
+}
+
 /* ═══ tapAtk: dispatch by character type ═══ */
 export function tapAtk() {
   if (!g || !g.run || g.heatCD > 0) return;
@@ -467,6 +570,7 @@ export function tapAtk() {
   // 新角色在此添加分支，或使用 atkType 配置擴展
   if (g.charType === "swordsman") { swordSwing(); }
   else if (g.charType === "tank") { shieldBash(); }
+  else if (g.charType === "assassin") { daggerStrike(); }
   else { const berserkMul = (g.p.berserk && g.p.hp / g.p.maxHp < g.p.berserk) ? 2 : 1; fire((3.5 + g.p.atk + bonus) * berserkMul, g.ad.x, g.ad.y, .03); }
   if (!g.heatCD) $("combo").textContent = aim.tn > 2 ? aim.tn + "x COMBO!" : "";
   if (aim.tn > 0 && !g.p.hasBH && !g.p.hasTS) {

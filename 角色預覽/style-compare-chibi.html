@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>風格預覽 B — Q版 Chibi</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px;min-height:100vh}
+h1{font-size:26px;color:#FFD43B;margin-bottom:4px;text-shadow:0 0 12px rgba(255,215,75,.4)}
+.sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:28px}
+.section-title{font-size:18px;color:#74C0FC;margin:24px 0 12px;letter-spacing:2px}
+.row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;width:200px;text-align:center}
+.card canvas{display:block;margin:0 auto 8px}
+.name{font-size:15px;font-weight:800}
+.role{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2px;margin-bottom:4px}
+.desc{font-size:10px;color:rgba(255,255,255,.4);line-height:1.5}
+.gunner .name{color:#74C0FC}
+.swordsman .name{color:#FF922B}
+.tank .name{color:#51CF66}
+.assassin .name{color:#BE4BDB}
+.monster .name{color:#FF6B6B}
+.note{margin-top:30px;font-size:11px;color:rgba(255,255,255,.3);max-width:700px;text-align:center;line-height:1.8;border-top:1px solid rgba(255,255,255,.06);padding-top:16px}
+</style>
+</head>
+<body>
+<h1>風格 B — Q版 Chibi</h1>
+<div class="sub">大頭小身可愛風格 — Canvas 向量繪製，有動畫</div>
+
+<div class="section-title">— 玩家角色 —</div>
+<div class="row">
+  <div class="card gunner"><canvas id="cg" width="180" height="200"></canvas><div class="name">槍手 Gunner</div><div class="role">遠程輸出</div><div class="desc">大眼 + 貝雷帽 + 迷你手槍<br>可愛但認真的射手</div></div>
+  <div class="card swordsman"><canvas id="cs" width="180" height="200"></canvas><div class="name">劍士 Swordsman</div><div class="role">近戰平衡</div><div class="desc">刺蝟頭 + 圍巾 + 大劍<br>熱血的小劍客</div></div>
+  <div class="card tank"><canvas id="ct" width="180" height="200"></canvas><div class="name">坦克 Tank</div><div class="role">肉盾防禦</div><div class="desc">大頭盔 + 圓胖身體 + 盾<br>憨厚的小守衛</div></div>
+  <div class="card assassin"><canvas id="ca" width="180" height="200"></canvas><div class="name">刺客 Assassin</div><div class="role">高爆發</div><div class="desc">尖帽兜帽 + 大圍巾 + 匕首<br>酷酷的小暗殺者</div></div>
+</div>
+
+<div class="section-title">— 怪獸 Tier 0~4 —</div>
+<div class="row">
+  <div class="card monster"><canvas id="m0" width="180" height="200"></canvas><div class="name">史萊姆</div><div class="role">TIER 0</div><div class="desc">軟Q水滴形<br>無害但數量多</div></div>
+  <div class="card monster"><canvas id="m1" width="180" height="200"></canvas><div class="name">蘑菇怪</div><div class="role">TIER 1</div><div class="desc">毒蘑菇頭<br>搖搖晃晃的小蘑菇</div></div>
+  <div class="card monster"><canvas id="m2" width="180" height="200"></canvas><div class="name">哥布林</div><div class="role">TIER 2</div><div class="desc">大耳尖鼻<br>狡猾的小綠皮</div></div>
+  <div class="card monster"><canvas id="m3" width="180" height="200"></canvas><div class="name">骷髏兵</div><div class="role">TIER 3</div><div class="desc">Q版骷髏<br>看起來嚇人但其實很蠢</div></div>
+  <div class="card monster"><canvas id="m4" width="180" height="200"></canvas><div class="name">小惡魔</div><div class="role">TIER 4</div><div class="desc">雙角翅膀<br>氣鼓鼓的高階怪</div></div>
+</div>
+
+<div class="note">
+  Q版特色：角色辨識度極高、表情豐富、符合 "Cute RPG" 主題、可做豐富的動態表情<br>
+  大頭身比例（頭:身 = 2:1）讓角色在小畫面也清楚可辨
+</div>
+
+<script>
+const PI = Math.PI, TAU = PI * 2;
+
+// ═══ CHIBI GUNNER ═══
+(function(){
+  const cv = document.getElementById('cg');
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let t = 0;
+
+  function frame(){
+    t += 0.016;
+    c.clearRect(0, 0, W, H);
+    const cx = W/2, bob = Math.sin(t*3)*2;
+    const headY = 68 + bob, bodyY = 120 + bob;
+
+    // BG glow
+    const bg = c.createRadialGradient(cx, 100, 0, cx, 100, 100);
+    bg.addColorStop(0, 'rgba(116,192,252,.06)'); bg.addColorStop(1, 'transparent');
+    c.fillStyle = bg; c.fillRect(0,0,W,H);
+
+    // Shadow
+    c.fillStyle = 'rgba(0,0,0,.15)';
+    c.beginPath(); c.ellipse(cx, 175+bob, 22, 4, 0, 0, TAU); c.fill();
+
+    // === BODY (small, coat) ===
+    // Legs
+    c.fillStyle = '#2a5f8e';
+    c.fillRect(cx-12, bodyY+28, 8, 16);
+    c.fillRect(cx+4, bodyY+28, 8, 16);
+    // Boots
+    c.fillStyle = '#222';
+    c.beginPath(); c.roundRect(cx-14, bodyY+42, 12, 6, 3); c.fill();
+    c.beginPath(); c.roundRect(cx+2, bodyY+42, 12, 6, 3); c.fill();
+
+    // Coat body
+    const coatGrad = c.createLinearGradient(cx, bodyY-8, cx, bodyY+30);
+    coatGrad.addColorStop(0, '#5aaef0');
+    coatGrad.addColorStop(1, '#3a7fc1');
+    c.fillStyle = coatGrad;
+    c.beginPath(); c.roundRect(cx-20, bodyY-8, 40, 38, 6); c.fill();
+    // Coat center line
+    c.strokeStyle = '#2a5f8e'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(cx, bodyY-4); c.lineTo(cx, bodyY+28); c.stroke();
+    // Belt
+    c.fillStyle = '#8B6914'; c.fillRect(cx-20, bodyY+16, 40, 4);
+    c.fillStyle = '#FFD43B';
+    c.beginPath(); c.arc(cx, bodyY+18, 3, 0, TAU); c.fill();
+    // Collar
+    c.fillStyle = '#fff';
+    c.beginPath(); c.moveTo(cx-8, bodyY-8); c.lineTo(cx, bodyY); c.lineTo(cx+8, bodyY-8);
+    c.strokeStyle = '#ddd'; c.lineWidth = 2; c.stroke();
+
+    // Arms (small)
+    c.fillStyle = '#4a8fd4';
+    // Left arm
+    c.beginPath(); c.ellipse(cx-22, bodyY+8, 7, 9, -0.2, 0, TAU); c.fill();
+    // Right arm (holding gun)
+    c.save();
+    c.translate(cx+22, bodyY+5);
+    c.rotate(Math.sin(t*4)*0.05);
+    c.beginPath(); c.ellipse(0, 0, 7, 9, 0.2, 0, TAU);
+    c.fillStyle = '#4a8fd4'; c.fill();
+    // Mini gun
+    c.fillStyle = '#444';
+    c.fillRect(5, -3, 18, 5);
+    c.fillStyle = '#333';
+    c.fillRect(5, 2, 8, 6);
+    c.fillStyle = '#555';
+    c.fillRect(22, -2, 3, 4);
+    // Muzzle flash
+    const flash = 0.3 + Math.sin(t*10)*0.2;
+    c.fillStyle = `rgba(116,192,252,${flash})`;
+    c.beginPath(); c.arc(26, 0, 3, 0, TAU); c.fill();
+    c.restore();
+
+    // Hand (left)
+    c.fillStyle = '#FFCBA0';
+    c.beginPath(); c.arc(cx-24, bodyY+16, 4, 0, TAU); c.fill();
+
+    // === HEAD (big, chibi proportions) ===
+    // Head base
+    const headGrad = c.createRadialGradient(cx-5, headY-8, 5, cx, headY, 32);
+    headGrad.addColorStop(0, '#FFF0E0');
+    headGrad.addColorStop(0.6, '#FFD5B0');
+    headGrad.addColorStop(1, '#FFCBA0');
+    c.fillStyle = headGrad;
+    c.beginPath(); c.arc(cx, headY, 32, 0, TAU); c.fill();
+    // Cheek blush
+    c.fillStyle = 'rgba(255,150,150,.2)';
+    c.beginPath(); c.ellipse(cx-20, headY+8, 8, 5, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+20, headY+8, 8, 5, 0, 0, TAU); c.fill();
+
+    // Beret (貝雷帽)
+    c.fillStyle = '#3a7fc1';
+    c.beginPath();
+    c.arc(cx, headY-18, 28, PI, 0);
+    c.quadraticCurveTo(cx+30, headY-10, cx+28, headY-5);
+    c.lineTo(cx-28, headY-5);
+    c.quadraticCurveTo(cx-30, headY-10, cx-28, headY-18);
+    c.fill();
+    c.fillStyle = '#4a8fd4';
+    c.beginPath(); c.arc(cx+5, headY-30, 12, 0, TAU); c.fill();
+    // Beret button
+    c.fillStyle = '#FFD43B';
+    c.beginPath(); c.arc(cx+5, headY-32, 3, 0, TAU); c.fill();
+    // Beret brim
+    c.fillStyle = '#2a5f8e';
+    c.fillRect(cx-30, headY-6, 60, 4);
+
+    // Eyes (big, round, expressive)
+    // Left eye
+    c.fillStyle = '#fff';
+    c.beginPath(); c.ellipse(cx-12, headY, 9, 10, 0, 0, TAU); c.fill();
+    c.fillStyle = '#2a6db5';
+    c.beginPath(); c.arc(cx-11, headY+1, 6, 0, TAU); c.fill();
+    c.fillStyle = '#1a4a80';
+    c.beginPath(); c.arc(cx-10, headY+2, 4, 0, TAU); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.arc(cx-13, headY-2, 2.5, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx-8, headY+3, 1.2, 0, TAU); c.fill();
+    // Right eye
+    c.fillStyle = '#fff';
+    c.beginPath(); c.ellipse(cx+12, headY, 9, 10, 0, 0, TAU); c.fill();
+    c.fillStyle = '#2a6db5';
+    c.beginPath(); c.arc(cx+13, headY+1, 6, 0, TAU); c.fill();
+    c.fillStyle = '#1a4a80';
+    c.beginPath(); c.arc(cx+14, headY+2, 4, 0, TAU); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.arc(cx+11, headY-2, 2.5, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+16, headY+3, 1.2, 0, TAU); c.fill();
+    // Eyebrows
+    c.strokeStyle = '#3a5a8e'; c.lineWidth = 2; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cx-18, headY-10); c.lineTo(cx-6, headY-12); c.stroke();
+    c.beginPath(); c.moveTo(cx+6, headY-12); c.lineTo(cx+18, headY-10); c.stroke();
+    // Mouth (small, confident smile)
+    c.strokeStyle = '#c08060'; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(cx, headY+14, 5, 0.1, PI-0.1); c.stroke();
+
+    // Floating particles
+    for(let i=0;i<4;i++){
+      const a = t*1.5+i*TAU/4, d = 50+Math.sin(t*2+i)*5;
+      c.save(); c.globalAlpha = .2+Math.sin(t*3+i)*.1;
+      c.fillStyle = '#74C0FC';
+      c.beginPath(); c.arc(cx+Math.cos(a)*d, (headY+bodyY)/2+Math.sin(a)*d*.6, 2, 0, TAU); c.fill();
+      c.restore();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ═══ CHIBI SWORDSMAN ═══
+(function(){
+  const cv = document.getElementById('cs');
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let t = 0;
+
+  function frame(){
+    t += 0.016;
+    c.clearRect(0, 0, W, H);
+    const cx = W/2, bob = Math.sin(t*3.2)*2;
+    const headY = 68 + bob, bodyY = 120 + bob;
+
+    const bg = c.createRadialGradient(cx, 100, 0, cx, 100, 100);
+    bg.addColorStop(0, 'rgba(255,146,43,.06)'); bg.addColorStop(1, 'transparent');
+    c.fillStyle = bg; c.fillRect(0,0,W,H);
+
+    c.fillStyle = 'rgba(0,0,0,.15)';
+    c.beginPath(); c.ellipse(cx, 175+bob, 22, 4, 0, 0, TAU); c.fill();
+
+    // === BODY ===
+    c.fillStyle = '#CC6600';
+    c.fillRect(cx-12, bodyY+28, 8, 14);
+    c.fillRect(cx+4, bodyY+28, 8, 14);
+    c.fillStyle = '#8B4513';
+    c.beginPath(); c.roundRect(cx-14, bodyY+40, 12, 6, 3); c.fill();
+    c.beginPath(); c.roundRect(cx+2, bodyY+40, 12, 6, 3); c.fill();
+
+    // Armor body
+    const armorGrad = c.createLinearGradient(cx, bodyY-8, cx, bodyY+30);
+    armorGrad.addColorStop(0, '#FFB060');
+    armorGrad.addColorStop(1, '#E8590C');
+    c.fillStyle = armorGrad;
+    c.beginPath(); c.roundRect(cx-18, bodyY-8, 36, 36, 5); c.fill();
+    // Chest emblem
+    c.fillStyle = '#FFD43B';
+    c.beginPath(); c.moveTo(cx, bodyY); c.lineTo(cx+6, bodyY+8); c.lineTo(cx, bodyY+16); c.lineTo(cx-6, bodyY+8); c.closePath(); c.fill();
+    // Belt
+    c.fillStyle = '#5C3A1E'; c.fillRect(cx-18, bodyY+20, 36, 4);
+    // Shoulder pads
+    c.fillStyle = '#CC6600';
+    c.beginPath(); c.ellipse(cx-20, bodyY-2, 8, 6, -0.3, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+20, bodyY-2, 8, 6, 0.3, 0, TAU); c.fill();
+    c.fillStyle = '#FFD43B';
+    c.beginPath(); c.arc(cx-20, bodyY-2, 2, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+20, bodyY-2, 2, 0, TAU); c.fill();
+
+    // Sword (right side, big!)
+    c.save();
+    c.translate(cx+30, bodyY-10);
+    c.rotate(-0.3 + Math.sin(t*4)*0.08);
+    // Blade
+    const bladeG = c.createLinearGradient(0, -50, 0, 0);
+    bladeG.addColorStop(0, '#fff');
+    bladeG.addColorStop(0.5, '#E0E0E0');
+    bladeG.addColorStop(1, '#B0B0B0');
+    c.fillStyle = bladeG;
+    c.beginPath(); c.moveTo(-3, 0); c.lineTo(-2.5, -45); c.lineTo(0, -52); c.lineTo(2.5, -45); c.lineTo(3, 0); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 0.5;
+    c.beginPath(); c.moveTo(0, -5); c.lineTo(0, -48); c.stroke();
+    // Guard
+    c.fillStyle = '#FFD43B';
+    c.fillRect(-8, -1, 16, 3);
+    c.fillStyle = '#FF6B6B';
+    c.beginPath(); c.arc(0, 1, 2, 0, TAU); c.fill();
+    // Handle
+    c.fillStyle = '#5C3A1E';
+    c.fillRect(-2, 2, 4, 14);
+    c.restore();
+
+    // Arms
+    c.fillStyle = '#E8590C';
+    c.beginPath(); c.ellipse(cx-22, bodyY+10, 6, 8, -0.2, 0, TAU); c.fill();
+    c.fillStyle = '#FFCBA0';
+    c.beginPath(); c.arc(cx-24, bodyY+18, 4, 0, TAU); c.fill();
+    c.fillStyle = '#FFCBA0';
+    c.beginPath(); c.arc(cx+28, bodyY+6, 4, 0, TAU); c.fill();
+
+    // === HEAD ===
+    const headGrad = c.createRadialGradient(cx-5, headY-8, 5, cx, headY, 32);
+    headGrad.addColorStop(0, '#FFF0E0');
+    headGrad.addColorStop(0.6, '#FFD5B0');
+    headGrad.addColorStop(1, '#FFCBA0');
+    c.fillStyle = headGrad;
+    c.beginPath(); c.arc(cx, headY, 32, 0, TAU); c.fill();
+
+    // Spiky hair
+    c.fillStyle = '#CC6600';
+    const spikes = [[-22,-18,-15,-40],[- 10,-22,0,-44],[5,-22,12,-40],[16,-16,24,-30],[22,-8,30,-18]];
+    spikes.forEach(([x1,y1,x2,y2])=>{
+      c.beginPath();
+      c.moveTo(cx+x1, headY+y1);
+      c.quadraticCurveTo(cx+(x1+x2)/2-3, headY+y2, cx+x2, headY+y2+8);
+      c.quadraticCurveTo(cx+(x1+x2)/2+5, headY+(y1+y2)/2, cx+x1+6, headY+y1+2);
+      c.fill();
+    });
+    // Hair base
+    c.fillStyle = '#CC6600';
+    c.beginPath(); c.arc(cx, headY-12, 26, PI, 0); c.fill();
+
+    // Headband
+    c.fillStyle = '#FF922B';
+    c.fillRect(cx-30, headY-6, 60, 5);
+    // Headband tails (flowing!)
+    c.strokeStyle = '#FF922B'; c.lineWidth = 4; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cx-30, headY-4);
+    c.quadraticCurveTo(cx-42, headY+5+Math.sin(t*4)*4, cx-48, headY+12+Math.sin(t*3)*6);
+    c.stroke();
+    c.lineWidth = 3;
+    c.beginPath(); c.moveTo(cx-30, headY-2);
+    c.quadraticCurveTo(cx-40, headY+8+Math.sin(t*3.5)*3, cx-44, headY+18+Math.sin(t*2.8)*5);
+    c.stroke();
+
+    // Cheek blush
+    c.fillStyle = 'rgba(255,150,100,.25)';
+    c.beginPath(); c.ellipse(cx-20, headY+8, 8, 5, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+20, headY+8, 8, 5, 0, 0, TAU); c.fill();
+
+    // Eyes (big, determined)
+    [[-12,0],[12,0]].forEach(([ox])=>{
+      c.fillStyle = '#fff';
+      c.beginPath(); c.ellipse(cx+ox, headY, 9, 10, 0, 0, TAU); c.fill();
+      c.fillStyle = '#cc5500';
+      c.beginPath(); c.arc(cx+ox+(ox>0?1:-1), headY+1, 6, 0, TAU); c.fill();
+      c.fillStyle = '#8B2500';
+      c.beginPath(); c.arc(cx+ox+(ox>0?2:0), headY+2, 3.5, 0, TAU); c.fill();
+      c.fillStyle = '#fff';
+      c.beginPath(); c.arc(cx+ox-1, headY-2, 2.5, 0, TAU); c.fill();
+      c.beginPath(); c.arc(cx+ox+2, headY+3, 1, 0, TAU); c.fill();
+    });
+    // Eyebrows (angled, fiery)
+    c.strokeStyle = '#8B2500'; c.lineWidth = 2.5; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cx-19, headY-8); c.lineTo(cx-5, headY-12); c.stroke();
+    c.beginPath(); c.moveTo(cx+5, headY-12); c.lineTo(cx+19, headY-8); c.stroke();
+    // Mouth (grin)
+    c.fillStyle = '#c08060';
+    c.beginPath(); c.arc(cx, headY+14, 6, 0, PI); c.fill();
+    c.fillStyle = '#FFB0A0';
+    c.beginPath(); c.arc(cx, headY+14, 4, 0.2, PI-0.2); c.fill();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ═══ CHIBI TANK ═══
+(function(){
+  const cv = document.getElementById('ct');
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let t = 0;
+
+  function frame(){
+    t += 0.016;
+    c.clearRect(0, 0, W, H);
+    const cx = W/2, bob = Math.sin(t*2.5)*1.5;
+    const headY = 65 + bob, bodyY = 118 + bob;
+
+    const bg = c.createRadialGradient(cx, 100, 0, cx, 100, 100);
+    bg.addColorStop(0, 'rgba(81,207,102,.06)'); bg.addColorStop(1, 'transparent');
+    c.fillStyle = bg; c.fillRect(0,0,W,H);
+
+    c.fillStyle = 'rgba(0,0,0,.18)';
+    c.beginPath(); c.ellipse(cx, 178+bob, 26, 5, 0, 0, TAU); c.fill();
+
+    // === BODY (round, chubby) ===
+    c.fillStyle = '#2E7D32';
+    c.fillRect(cx-14, bodyY+30, 10, 12);
+    c.fillRect(cx+4, bodyY+30, 10, 12);
+    c.fillStyle = '#3a7a3a';
+    c.beginPath(); c.roundRect(cx-16, bodyY+40, 14, 7, 4); c.fill();
+    c.beginPath(); c.roundRect(cx+2, bodyY+40, 14, 7, 4); c.fill();
+
+    // Chubby armor body
+    const armorG = c.createRadialGradient(cx-5, bodyY+8, 5, cx, bodyY+12, 28);
+    armorG.addColorStop(0, '#66BB6A');
+    armorG.addColorStop(0.6, '#43A047');
+    armorG.addColorStop(1, '#2E7D32');
+    c.fillStyle = armorG;
+    c.beginPath(); c.ellipse(cx, bodyY+12, 26, 24, 0, 0, TAU); c.fill();
+    // Armor plates
+    c.strokeStyle = '#1B5E20'; c.lineWidth = 1;
+    c.beginPath(); c.arc(cx, bodyY+12, 20, -0.5, 0.5); c.stroke();
+    c.beginPath(); c.arc(cx, bodyY+12, 20, PI-0.5, PI+0.5); c.stroke();
+    // Cross emblem
+    c.fillStyle = '#81C784';
+    c.fillRect(cx-1.5, bodyY+2, 3, 16);
+    c.fillRect(cx-7, bodyY+8, 14, 3);
+    // Belt
+    c.fillStyle = '#5C3A1E';
+    c.beginPath(); c.ellipse(cx, bodyY+26, 26, 3, 0, 0, TAU); c.fill();
+
+    // Shield (left side, big!)
+    c.save();
+    c.translate(cx-32, bodyY+6);
+    c.rotate(Math.sin(t*3)*0.05);
+    // Shield body
+    const shG = c.createLinearGradient(-12, -18, 12, 18);
+    shG.addColorStop(0, '#ADB5BD');
+    shG.addColorStop(0.5, '#868E96');
+    shG.addColorStop(1, '#495057');
+    c.fillStyle = shG;
+    c.beginPath();
+    c.moveTo(0, -20); c.lineTo(14, -12); c.lineTo(14, 8); c.lineTo(0, 20);
+    c.lineTo(-14, 8); c.lineTo(-14, -12); c.closePath(); c.fill();
+    c.strokeStyle = '#51CF66'; c.lineWidth = 2; c.stroke();
+    // Shield cross
+    c.strokeStyle = '#51CF66'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(0, -12); c.lineTo(0, 12); c.stroke();
+    c.beginPath(); c.moveTo(-8, 0); c.lineTo(8, 0); c.stroke();
+    c.fillStyle = '#51CF66';
+    c.beginPath(); c.arc(0, 0, 3, 0, TAU); c.fill();
+    // Rivets
+    [[0,-16],[10,-8],[-10,-8],[10,6],[-10,6],[0,16]].forEach(([rx,ry])=>{
+      c.fillStyle='#6c757d';c.beginPath();c.arc(rx,ry,1.5,0,TAU);c.fill();
+    });
+    c.restore();
+
+    // Right arm (fist)
+    c.fillStyle = '#43A047';
+    c.beginPath(); c.ellipse(cx+26, bodyY+10, 8, 10, 0.2, 0, TAU); c.fill();
+    c.fillStyle = '#FFCBA0';
+    c.beginPath(); c.arc(cx+30, bodyY+18, 5, 0, TAU); c.fill();
+
+    // === HEAD (big, with big helmet) ===
+    const headGrad = c.createRadialGradient(cx-5, headY-5, 5, cx, headY, 34);
+    headGrad.addColorStop(0, '#FFF0E0');
+    headGrad.addColorStop(0.6, '#FFD5B0');
+    headGrad.addColorStop(1, '#FFCBA0');
+    c.fillStyle = headGrad;
+    c.beginPath(); c.arc(cx, headY, 34, 0, TAU); c.fill();
+
+    // Big helmet
+    c.fillStyle = '#3a7a3a';
+    c.beginPath();
+    c.arc(cx, headY-6, 36, PI, 0);
+    c.lineTo(cx+38, headY+2);
+    c.lineTo(cx-38, headY+2);
+    c.fill();
+    // Helmet visor
+    c.fillStyle = '#2E7D32';
+    c.fillRect(cx-34, headY-2, 68, 6);
+    // Helmet crest
+    c.fillStyle = '#51CF66';
+    c.beginPath();
+    c.moveTo(cx, headY-44); c.lineTo(cx+4, headY-30); c.lineTo(cx-4, headY-30);
+    c.closePath(); c.fill();
+    c.fillRect(cx-2, headY-34, 4, 18);
+    // Helmet shine
+    c.fillStyle = 'rgba(255,255,255,.1)';
+    c.beginPath(); c.ellipse(cx-10, headY-20, 15, 8, -0.3, 0, TAU); c.fill();
+
+    // Cheeks (extra rosy for cute tank)
+    c.fillStyle = 'rgba(255,130,130,.25)';
+    c.beginPath(); c.ellipse(cx-22, headY+10, 9, 6, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+22, headY+10, 9, 6, 0, 0, TAU); c.fill();
+
+    // Eyes (round, friendly)
+    [[-13,2],[13,2]].forEach(([ox,oy])=>{
+      c.fillStyle = '#fff';
+      c.beginPath(); c.ellipse(cx+ox, headY+oy, 9, 10, 0, 0, TAU); c.fill();
+      c.fillStyle = '#2E7D32';
+      c.beginPath(); c.arc(cx+ox+(ox>0?1:-1), headY+oy+1, 6, 0, TAU); c.fill();
+      c.fillStyle = '#1B5E20';
+      c.beginPath(); c.arc(cx+ox+(ox>0?1:0), headY+oy+2, 3.5, 0, TAU); c.fill();
+      c.fillStyle = '#fff';
+      c.beginPath(); c.arc(cx+ox-1, headY+oy-2, 2.5, 0, TAU); c.fill();
+      c.beginPath(); c.arc(cx+ox+2, headY+oy+3, 1, 0, TAU); c.fill();
+    });
+    // Eyebrows (thick, gentle)
+    c.strokeStyle = '#2E7D32'; c.lineWidth = 3; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cx-20, headY-6); c.lineTo(cx-6, headY-8); c.stroke();
+    c.beginPath(); c.moveTo(cx+6, headY-8); c.lineTo(cx+20, headY-6); c.stroke();
+    // Mouth (simple happy)
+    c.strokeStyle = '#c08060'; c.lineWidth = 2;
+    c.beginPath(); c.arc(cx, headY+16, 6, 0.2, PI-0.2); c.stroke();
+
+    // Defense aura
+    c.save();
+    c.strokeStyle = '#51CF66'; c.lineWidth = 1.5;
+    c.globalAlpha = .08 + Math.sin(t*2)*.04;
+    c.beginPath(); c.arc(cx, (headY+bodyY)/2, 65, 0, TAU); c.stroke();
+    c.restore();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ═══ CHIBI ASSASSIN ═══
+(function(){
+  const cv = document.getElementById('ca');
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let t = 0;
+
+  function frame(){
+    t += 0.016;
+    c.clearRect(0, 0, W, H);
+    const cx = W/2, bob = Math.sin(t*3.5)*2;
+    const headY = 68 + bob, bodyY = 120 + bob;
+
+    const bg = c.createRadialGradient(cx, 100, 0, cx, 100, 100);
+    bg.addColorStop(0, 'rgba(190,75,219,.06)'); bg.addColorStop(1, 'transparent');
+    c.fillStyle = bg; c.fillRect(0,0,W,H);
+
+    c.fillStyle = 'rgba(0,0,0,.15)';
+    c.beginPath(); c.ellipse(cx, 175+bob, 20, 4, 0, 0, TAU); c.fill();
+
+    // === BODY (slim, cloak) ===
+    c.fillStyle = '#333';
+    c.fillRect(cx-10, bodyY+28, 7, 14);
+    c.fillRect(cx+3, bodyY+28, 7, 14);
+    c.fillStyle = '#444';
+    c.beginPath(); c.roundRect(cx-12, bodyY+40, 10, 5, 3); c.fill();
+    c.beginPath(); c.roundRect(cx+2, bodyY+40, 10, 5, 3); c.fill();
+
+    // Cloak body
+    const cloakG = c.createLinearGradient(cx, bodyY-10, cx, bodyY+35);
+    cloakG.addColorStop(0, '#7B2D8E');
+    cloakG.addColorStop(1, '#4a1060');
+    c.fillStyle = cloakG;
+    c.beginPath();
+    c.moveTo(cx-20, bodyY-8);
+    c.lineTo(cx+20, bodyY-8);
+    c.lineTo(cx+26, bodyY+35);
+    c.lineTo(cx+18, bodyY+38);
+    c.lineTo(cx+12, bodyY+33);
+    c.lineTo(cx, bodyY+36);
+    c.lineTo(cx-12, bodyY+33);
+    c.lineTo(cx-18, bodyY+38);
+    c.lineTo(cx-26, bodyY+35);
+    c.closePath(); c.fill();
+    // Inner shirt
+    c.fillStyle = '#333';
+    c.beginPath(); c.roundRect(cx-14, bodyY-4, 28, 20, 3); c.fill();
+    // Belt with pouches
+    c.fillStyle = '#5C3A1E'; c.fillRect(cx-16, bodyY+14, 32, 3);
+    c.fillStyle = '#8B6914';
+    c.beginPath(); c.roundRect(cx-12, bodyY+12, 6, 6, 1); c.fill();
+    c.beginPath(); c.roundRect(cx+6, bodyY+12, 6, 6, 1); c.fill();
+
+    // Daggers (both sides)
+    c.save();
+    c.translate(cx-28, bodyY+2);
+    c.rotate(-0.4 + Math.sin(t*5)*0.1);
+    c.fillStyle = '#D0D0D0';
+    c.beginPath(); c.moveTo(0, -18); c.lineTo(-2, 0); c.lineTo(2, 0); c.closePath(); c.fill();
+    c.fillStyle = '#BE4BDB'; c.fillRect(-3, 0, 6, 2);
+    c.fillStyle = '#5C3A1E'; c.fillRect(-1.5, 2, 3, 6);
+    c.restore();
+    c.save();
+    c.translate(cx+28, bodyY+2);
+    c.rotate(0.4 - Math.sin(t*5)*0.1);
+    c.fillStyle = '#D0D0D0';
+    c.beginPath(); c.moveTo(0, -18); c.lineTo(-2, 0); c.lineTo(2, 0); c.closePath(); c.fill();
+    c.fillStyle = '#BE4BDB'; c.fillRect(-3, 0, 6, 2);
+    c.fillStyle = '#5C3A1E'; c.fillRect(-1.5, 2, 3, 6);
+    c.restore();
+
+    // Hands
+    c.fillStyle = '#FFCBA0';
+    c.beginPath(); c.arc(cx-28, bodyY+10, 4, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+28, bodyY+10, 4, 0, TAU); c.fill();
+
+    // === HEAD ===
+    const headGrad = c.createRadialGradient(cx-5, headY-5, 5, cx, headY, 30);
+    headGrad.addColorStop(0, '#FFF0E0');
+    headGrad.addColorStop(0.6, '#FFD5B0');
+    headGrad.addColorStop(1, '#FFCBA0');
+    c.fillStyle = headGrad;
+    c.beginPath(); c.arc(cx, headY, 30, 0, TAU); c.fill();
+
+    // Hood (pointed, mysterious)
+    c.fillStyle = '#6B1D7E';
+    c.beginPath();
+    c.moveTo(cx, headY-55);
+    c.quadraticCurveTo(cx+10, headY-35, cx+34, headY-8);
+    c.lineTo(cx+36, headY+5);
+    c.lineTo(cx-36, headY+5);
+    c.lineTo(cx-34, headY-8);
+    c.quadraticCurveTo(cx-10, headY-35, cx, headY-55);
+    c.fill();
+    // Hood inner shadow
+    c.fillStyle = '#4a0a5a';
+    c.beginPath();
+    c.arc(cx, headY-5, 28, -PI*0.85, -PI*0.15);
+    c.lineTo(cx+10, headY-20);
+    c.lineTo(cx-10, headY-20);
+    c.fill();
+    // Hood edge highlight
+    c.strokeStyle = '#9C36B5'; c.lineWidth = 1.5;
+    c.beginPath();
+    c.moveTo(cx-34, headY+4);
+    c.quadraticCurveTo(cx-10, headY-33, cx, headY-53);
+    c.quadraticCurveTo(cx+10, headY-33, cx+34, headY+4);
+    c.stroke();
+
+    // Scarf / mask (covers lower face)
+    c.fillStyle = '#9C36B5';
+    c.beginPath();
+    c.moveTo(cx-26, headY+2);
+    c.quadraticCurveTo(cx-30, headY+20, cx-20, headY+30);
+    c.lineTo(cx+20, headY+30);
+    c.quadraticCurveTo(cx+30, headY+20, cx+26, headY+2);
+    c.closePath(); c.fill();
+    c.fillStyle = '#7B2D8E';
+    c.beginPath();
+    c.moveTo(cx-22, headY+8);
+    c.quadraticCurveTo(cx, headY+14, cx+22, headY+8);
+    c.stroke();
+
+    // Eyes (sharp, glowing yellow in shadow)
+    [[-11,-2],[11,-2]].forEach(([ox,oy])=>{
+      c.fillStyle = '#fff';
+      c.beginPath(); c.ellipse(cx+ox, headY+oy, 8, 7, 0, 0, TAU); c.fill();
+      c.fillStyle = '#FFD43B';
+      c.beginPath(); c.arc(cx+ox+(ox>0?1:-1), headY+oy+1, 5, 0, TAU); c.fill();
+      c.fillStyle = '#FF8C00';
+      c.beginPath(); c.arc(cx+ox+(ox>0?1:0), headY+oy+1, 3, 0, TAU); c.fill();
+      // Cat-like pupil
+      c.fillStyle = '#1a1a1a';
+      c.beginPath(); c.ellipse(cx+ox+(ox>0?1:0), headY+oy+1, 1.2, 3.5, 0, 0, TAU); c.fill();
+      c.fillStyle = '#fff';
+      c.beginPath(); c.arc(cx+ox-1, headY+oy-1, 2, 0, TAU); c.fill();
+    });
+    // Sharp eyebrows
+    c.strokeStyle = '#4a0a5a'; c.lineWidth = 2; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cx-17, headY-6); c.lineTo(cx-4, headY-11); c.stroke();
+    c.beginPath(); c.moveTo(cx+4, headY-11); c.lineTo(cx+17, headY-6); c.stroke();
+
+    // Shadow particles
+    for(let i=0;i<5;i++){
+      const a = t*2+i*TAU/5, d = 45+Math.sin(t*2.2+i)*5;
+      c.save(); c.globalAlpha = .15+Math.sin(t*3+i)*.08;
+      c.fillStyle = '#BE4BDB';
+      const px = cx+Math.cos(a)*d, py = (headY+bodyY)/2+Math.sin(a)*d*.5;
+      c.beginPath(); c.arc(px, py, 1.5+Math.sin(t*4+i)*.5, 0, TAU); c.fill();
+      c.restore();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ═══ CHIBI MONSTERS ═══
+
+// Tier 0: Slime
+(function(){
+  const cv = document.getElementById('m0');
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let t = 0;
+  function frame(){
+    t += 0.016;
+    c.clearRect(0,0,W,H);
+    const cx = W/2, cy = 110;
+    const squish = 1 + Math.sin(t*4)*0.08;
+    const squishY = 1 - Math.sin(t*4)*0.06;
+
+    c.fillStyle = 'rgba(0,0,0,.12)';
+    c.beginPath(); c.ellipse(cx, 155, 28*squish, 5, 0, 0, TAU); c.fill();
+
+    c.save();
+    c.translate(cx, cy);
+    c.scale(squish, squishY);
+
+    // Body (water drop shape)
+    const slimeG = c.createRadialGradient(-8, -12, 5, 0, 0, 35);
+    slimeG.addColorStop(0, '#8BFFC0');
+    slimeG.addColorStop(0.4, '#2ECC71');
+    slimeG.addColorStop(1, '#1a8a4a');
+    c.fillStyle = slimeG;
+    c.beginPath();
+    c.moveTo(0, -35);
+    c.quadraticCurveTo(30, -25, 35, 5);
+    c.quadraticCurveTo(35, 35, 0, 40);
+    c.quadraticCurveTo(-35, 35, -35, 5);
+    c.quadraticCurveTo(-30, -25, 0, -35);
+    c.fill();
+
+    // Shine
+    c.fillStyle = 'rgba(255,255,255,.25)';
+    c.beginPath(); c.ellipse(-10, -15, 8, 12, -0.3, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.15)';
+    c.beginPath(); c.ellipse(-5, -8, 4, 5, -0.3, 0, TAU); c.fill();
+
+    // Eyes
+    c.fillStyle = '#fff';
+    c.beginPath(); c.ellipse(-10, -5, 8, 9, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(10, -5, 8, 9, 0, 0, TAU); c.fill();
+    c.fillStyle = '#1a4a2e';
+    c.beginPath(); c.arc(-9, -3, 5, 0, TAU); c.fill();
+    c.beginPath(); c.arc(11, -3, 5, 0, TAU); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.arc(-11, -6, 2.5, 0, TAU); c.fill();
+    c.beginPath(); c.arc(9, -6, 2.5, 0, TAU); c.fill();
+
+    // Mouth (happy)
+    c.strokeStyle = '#1a6e3a'; c.lineWidth = 2;
+    c.beginPath(); c.arc(0, 8, 8, 0.2, PI-0.2); c.stroke();
+
+    c.restore();
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Tier 1: Mushroom (蘑菇怪)
+(function(){
+  const cv = document.getElementById('m1');
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let t = 0;
+  function frame(){
+    t += 0.016;
+    c.clearRect(0,0,W,H);
+    const cx = W/2, cy = 110;
+    const wobble = Math.sin(t*3)*0.06;
+
+    c.fillStyle = 'rgba(0,0,0,.12)';
+    c.beginPath(); c.ellipse(cx, 160, 18, 4, 0, 0, TAU); c.fill();
+
+    c.save();
+    c.translate(cx, cy);
+    c.rotate(wobble);
+
+    // Stem body
+    const stemG = c.createLinearGradient(-12, -5, 12, 30);
+    stemG.addColorStop(0, '#FFF8E1');
+    stemG.addColorStop(1, '#E8D5B0');
+    c.fillStyle = stemG;
+    c.beginPath(); c.roundRect(-12, -5, 24, 42, 8); c.fill();
+
+    // Little feet
+    c.fillStyle = '#E8D5B0';
+    c.beginPath(); c.ellipse(-8, 38, 6, 4, -0.2, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(8, 38, 6, 4, 0.2, 0, TAU); c.fill();
+
+    // Mushroom cap
+    const capG = c.createRadialGradient(-5, -25, 5, 0, -15, 35);
+    capG.addColorStop(0, '#FF6B6B');
+    capG.addColorStop(0.7, '#E74C3C');
+    capG.addColorStop(1, '#C0392B');
+    c.fillStyle = capG;
+    c.beginPath();
+    c.arc(0, -15, 32, PI, 0);
+    c.quadraticCurveTo(28, -5, 20, -2);
+    c.lineTo(-20, -2);
+    c.quadraticCurveTo(-28, -5, -32, -15);
+    c.fill();
+
+    // Spots on cap
+    c.fillStyle = '#fff';
+    c.beginPath(); c.ellipse(-14, -28, 6, 5, -0.3, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(10, -25, 5, 4, 0.2, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(-2, -35, 4, 3, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(18, -15, 3, 2.5, 0.4, 0, TAU); c.fill();
+
+    // Face on stem
+    c.fillStyle = '#1a1a2e';
+    c.beginPath(); c.ellipse(-6, 10, 4, 5, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(6, 10, 4, 5, 0, 0, TAU); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.arc(-7, 8, 1.5, 0, TAU); c.fill();
+    c.beginPath(); c.arc(5, 8, 1.5, 0, TAU); c.fill();
+    // Grumpy mouth
+    c.strokeStyle = '#c08060'; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(0, 20, 5, PI+0.3, -0.3); c.stroke();
+    // Blush
+    c.fillStyle = 'rgba(255,100,100,.2)';
+    c.beginPath(); c.ellipse(-12, 16, 5, 3, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(12, 16, 5, 3, 0, 0, TAU); c.fill();
+
+    c.restore();
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Tier 2: Goblin (哥布林)
+(function(){
+  const cv = document.getElementById('m2');
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let t = 0;
+  function frame(){
+    t += 0.016;
+    c.clearRect(0,0,W,H);
+    const cx = W/2, bob = Math.sin(t*3)*2;
+    const headY = 75 + bob, bodyY = 120 + bob;
+
+    c.fillStyle = 'rgba(0,0,0,.12)';
+    c.beginPath(); c.ellipse(cx, 165+bob, 18, 4, 0, 0, TAU); c.fill();
+
+    // Body
+    c.fillStyle = '#8B6914';
+    c.beginPath(); c.roundRect(cx-14, bodyY-4, 28, 28, 5); c.fill();
+    c.fillStyle = '#A07020';
+    c.fillRect(cx-14, bodyY+16, 28, 3);
+
+    // Legs
+    c.fillStyle = '#558B2F';
+    c.fillRect(cx-10, bodyY+22, 7, 12);
+    c.fillRect(cx+3, bodyY+22, 7, 12);
+    c.fillStyle = '#4a7a25';
+    c.beginPath(); c.roundRect(cx-12, bodyY+32, 10, 5, 3); c.fill();
+    c.beginPath(); c.roundRect(cx+2, bodyY+32, 10, 5, 3); c.fill();
+
+    // Club (right hand)
+    c.save();
+    c.translate(cx+22, bodyY);
+    c.rotate(0.3 + Math.sin(t*4)*0.15);
+    c.fillStyle = '#6D3A0A';
+    c.fillRect(-2, -22, 4, 22);
+    c.fillStyle = '#8B4513';
+    c.beginPath(); c.ellipse(0, -24, 7, 8, 0, 0, TAU); c.fill();
+    // Spikes
+    c.fillStyle = '#999';
+    [[-6,-26],[6,-26],[0,-32]].forEach(([sx,sy])=>{
+      c.beginPath(); c.arc(sx, sy, 2, 0, TAU); c.fill();
+    });
+    c.restore();
+
+    // Arms
+    c.fillStyle = '#689F38';
+    c.beginPath(); c.ellipse(cx-16, bodyY+6, 6, 8, -0.2, 0, TAU); c.fill();
+    c.fillStyle = '#AACC55';
+    c.beginPath(); c.arc(cx-18, bodyY+14, 4, 0, TAU); c.fill();
+    c.fillStyle = '#689F38';
+    c.beginPath(); c.ellipse(cx+16, bodyY+4, 6, 8, 0.2, 0, TAU); c.fill();
+
+    // Head (big, green)
+    const headG = c.createRadialGradient(cx-5, headY-5, 5, cx, headY, 28);
+    headG.addColorStop(0, '#8BC34A');
+    headG.addColorStop(0.6, '#689F38');
+    headG.addColorStop(1, '#558B2F');
+    c.fillStyle = headG;
+    c.beginPath(); c.arc(cx, headY, 28, 0, TAU); c.fill();
+
+    // Ears (big, pointy)
+    c.fillStyle = '#7CB342';
+    c.beginPath();
+    c.moveTo(cx-28, headY-5); c.lineTo(cx-44, headY-18); c.lineTo(cx-26, headY+4);
+    c.closePath(); c.fill();
+    c.beginPath();
+    c.moveTo(cx+28, headY-5); c.lineTo(cx+44, headY-18); c.lineTo(cx+26, headY+4);
+    c.closePath(); c.fill();
+    c.fillStyle = '#AED581';
+    c.beginPath();
+    c.moveTo(cx-28, headY-2); c.lineTo(cx-38, headY-14); c.lineTo(cx-27, headY+2);
+    c.closePath(); c.fill();
+    c.beginPath();
+    c.moveTo(cx+28, headY-2); c.lineTo(cx+38, headY-14); c.lineTo(cx+27, headY+2);
+    c.closePath(); c.fill();
+
+    // Eyes (big, mischievous)
+    c.fillStyle = '#FFD43B';
+    c.beginPath(); c.ellipse(cx-10, headY-2, 8, 9, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+10, headY-2, 8, 9, 0, 0, TAU); c.fill();
+    c.fillStyle = '#1a1a00';
+    c.beginPath(); c.arc(cx-9, headY, 4, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+11, headY, 4, 0, TAU); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.arc(cx-11, headY-3, 2, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+9, headY-3, 2, 0, TAU); c.fill();
+
+    // Nose (big, round)
+    c.fillStyle = '#558B2F';
+    c.beginPath(); c.arc(cx, headY+8, 5, 0, TAU); c.fill();
+    c.fillStyle = '#4a7a25';
+    c.beginPath(); c.arc(cx-2, headY+9, 1.5, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+2, headY+9, 1.5, 0, TAU); c.fill();
+
+    // Mouth (toothy grin)
+    c.fillStyle = '#3a5a1a';
+    c.beginPath(); c.arc(cx, headY+16, 8, 0, PI); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath();
+    c.moveTo(cx-5, headY+16); c.lineTo(cx-3, headY+20); c.lineTo(cx-1, headY+16);
+    c.fill();
+    c.beginPath();
+    c.moveTo(cx+1, headY+16); c.lineTo(cx+3, headY+20); c.lineTo(cx+5, headY+16);
+    c.fill();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Tier 3: Skeleton (骷髏兵)
+(function(){
+  const cv = document.getElementById('m3');
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let t = 0;
+  function frame(){
+    t += 0.016;
+    c.clearRect(0,0,W,H);
+    const cx = W/2, bob = Math.sin(t*2.8)*1.5;
+    const headY = 72 + bob, bodyY = 118 + bob;
+
+    c.fillStyle = 'rgba(0,0,0,.12)';
+    c.beginPath(); c.ellipse(cx, 168+bob, 18, 4, 0, 0, TAU); c.fill();
+
+    // Ribcage body
+    c.fillStyle = '#E8E0D4';
+    c.beginPath(); c.roundRect(cx-12, bodyY-5, 24, 28, 4); c.fill();
+    // Ribs
+    c.strokeStyle = '#C0B0A0'; c.lineWidth = 2;
+    for(let i=0; i<4; i++){
+      c.beginPath();
+      c.moveTo(cx-10, bodyY+2+i*6);
+      c.quadraticCurveTo(cx, bodyY+4+i*6, cx+10, bodyY+2+i*6);
+      c.stroke();
+    }
+
+    // Legs (bones)
+    c.fillStyle = '#E8E0D4';
+    c.fillRect(cx-9, bodyY+24, 6, 14);
+    c.fillRect(cx+3, bodyY+24, 6, 14);
+    // Knee joints
+    c.beginPath(); c.arc(cx-6, bodyY+30, 3, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+6, bodyY+30, 3, 0, TAU); c.fill();
+    // Feet
+    c.beginPath(); c.ellipse(cx-7, bodyY+38, 7, 3, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+7, bodyY+38, 7, 3, 0, 0, TAU); c.fill();
+
+    // Arms (bone)
+    c.fillStyle = '#E8E0D4';
+    c.save(); c.translate(cx-14, bodyY); c.rotate(-0.3+Math.sin(t*3)*0.1);
+    c.fillRect(-3, 0, 5, 18);
+    c.beginPath(); c.arc(0, 18, 3, 0, TAU); c.fill();
+    c.restore();
+    c.save(); c.translate(cx+14, bodyY-2); c.rotate(0.3-Math.sin(t*3)*0.1);
+    c.fillRect(-2, 0, 5, 18);
+    // Sword in right hand
+    c.fillStyle = '#ADB5BD';
+    c.fillRect(0, -20, 3, 20);
+    c.fillStyle = '#fff'; c.fillRect(0, -22, 3, 3);
+    c.fillStyle = '#868E96'; c.fillRect(-3, 0, 9, 2);
+    c.restore();
+
+    // Head (skull, big!)
+    c.fillStyle = '#F5F0E8';
+    c.beginPath(); c.arc(cx, headY, 30, 0, TAU); c.fill();
+    // Skull shading
+    c.fillStyle = '#E8E0D4';
+    c.beginPath(); c.arc(cx, headY+5, 26, 0.3, PI-0.3); c.fill();
+    // Forehead ridge
+    c.strokeStyle = '#D4C8BC'; c.lineWidth = 1;
+    c.beginPath(); c.arc(cx, headY-5, 22, PI+0.5, -0.5); c.stroke();
+
+    // Eye sockets (big, cute despite being skull)
+    c.fillStyle = '#2a2a2e';
+    c.beginPath(); c.ellipse(cx-11, headY-3, 9, 10, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+11, headY-3, 9, 10, 0, 0, TAU); c.fill();
+    // Ghost fire eyes
+    const eyeGlow = 0.6 + Math.sin(t*4)*0.2;
+    c.fillStyle = `rgba(255,68,68,${eyeGlow})`;
+    c.beginPath(); c.arc(cx-11, headY-2, 5, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+11, headY-2, 5, 0, TAU); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.arc(cx-12, headY-4, 2, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+10, headY-4, 2, 0, TAU); c.fill();
+
+    // Nose hole
+    c.fillStyle = '#C0B0A0';
+    c.beginPath(); c.moveTo(cx-2, headY+8); c.lineTo(cx+2, headY+8); c.lineTo(cx, headY+12); c.closePath(); c.fill();
+
+    // Teeth (grinning)
+    c.fillStyle = '#fff';
+    c.fillRect(cx-12, headY+14, 24, 6);
+    c.strokeStyle = '#D4C8BC'; c.lineWidth = 1;
+    for(let i=0;i<6;i++){
+      c.beginPath(); c.moveTo(cx-10+i*4, headY+14); c.lineTo(cx-10+i*4, headY+20); c.stroke();
+    }
+    // Jaw line
+    c.strokeStyle = '#C0B0A0'; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(cx, headY+14, 14, 0.1, PI-0.1); c.stroke();
+
+    // Cracked detail
+    c.strokeStyle = '#C0B0A0'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(cx+5, headY-20); c.lineTo(cx+8, headY-12); c.lineTo(cx+5, headY-8); c.stroke();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Tier 4: Demon (小惡魔)
+(function(){
+  const cv = document.getElementById('m4');
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let t = 0;
+  function frame(){
+    t += 0.016;
+    c.clearRect(0,0,W,H);
+    const cx = W/2, bob = Math.sin(t*3)*2;
+    const headY = 70 + bob, bodyY = 118 + bob;
+
+    c.fillStyle = 'rgba(0,0,0,.15)';
+    c.beginPath(); c.ellipse(cx, 170+bob, 22, 4, 0, 0, TAU); c.fill();
+
+    // Wings (behind body)
+    c.save();
+    c.translate(cx, bodyY-5);
+    // Left wing
+    const wingFlap = Math.sin(t*5)*0.15;
+    c.save(); c.rotate(-0.4+wingFlap);
+    c.fillStyle = '#8B0000';
+    c.beginPath();
+    c.moveTo(-5, -5);
+    c.quadraticCurveTo(-35, -30, -40, -10);
+    c.quadraticCurveTo(-38, 5, -30, 10);
+    c.quadraticCurveTo(-32, -5, -25, -15);
+    c.quadraticCurveTo(-20, 0, -15, 8);
+    c.quadraticCurveTo(-18, -8, -10, -10);
+    c.lineTo(-5, 5);
+    c.closePath(); c.fill();
+    c.fillStyle = '#A00000';
+    c.beginPath(); c.moveTo(-5,-3); c.quadraticCurveTo(-20,-20,-30,-5); c.quadraticCurveTo(-18,0,-5,3); c.fill();
+    c.restore();
+    // Right wing
+    c.save(); c.rotate(0.4-wingFlap);
+    c.fillStyle = '#8B0000';
+    c.beginPath();
+    c.moveTo(5, -5);
+    c.quadraticCurveTo(35, -30, 40, -10);
+    c.quadraticCurveTo(38, 5, 30, 10);
+    c.quadraticCurveTo(32, -5, 25, -15);
+    c.quadraticCurveTo(20, 0, 15, 8);
+    c.quadraticCurveTo(18, -8, 10, -10);
+    c.lineTo(5, 5);
+    c.closePath(); c.fill();
+    c.fillStyle = '#A00000';
+    c.beginPath(); c.moveTo(5,-3); c.quadraticCurveTo(20,-20,30,-5); c.quadraticCurveTo(18,0,5,3); c.fill();
+    c.restore();
+    c.restore();
+
+    // Body
+    const bodyG = c.createRadialGradient(cx-3, bodyY+5, 5, cx, bodyY+8, 22);
+    bodyG.addColorStop(0, '#FF6B6B');
+    bodyG.addColorStop(0.7, '#E74C3C');
+    bodyG.addColorStop(1, '#C0392B');
+    c.fillStyle = bodyG;
+    c.beginPath(); c.roundRect(cx-18, bodyY-6, 36, 30, 6); c.fill();
+    // Tummy
+    c.fillStyle = '#FF8A80';
+    c.beginPath(); c.ellipse(cx, bodyY+8, 10, 12, 0, 0, TAU); c.fill();
+
+    // Tail
+    c.strokeStyle = '#C0392B'; c.lineWidth = 3; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cx+16, bodyY+20);
+    c.quadraticCurveTo(cx+30, bodyY+25+Math.sin(t*3)*5, cx+35, bodyY+15);
+    c.stroke();
+    // Tail tip (spade)
+    c.fillStyle = '#C0392B';
+    c.save(); c.translate(cx+35, bodyY+14);
+    c.beginPath(); c.moveTo(0, -5); c.lineTo(4, 0); c.lineTo(0, 5); c.lineTo(-4, 0); c.closePath(); c.fill();
+    c.restore();
+
+    // Legs
+    c.fillStyle = '#C0392B';
+    c.fillRect(cx-12, bodyY+22, 8, 12);
+    c.fillRect(cx+4, bodyY+22, 8, 12);
+    c.fillStyle = '#8B0000';
+    c.beginPath(); c.roundRect(cx-14, bodyY+32, 10, 5, 3); c.fill();
+    c.beginPath(); c.roundRect(cx+2, bodyY+32, 10, 5, 3); c.fill();
+
+    // Arms
+    c.fillStyle = '#E74C3C';
+    c.beginPath(); c.ellipse(cx-20, bodyY+6, 6, 8, -0.2, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+20, bodyY+6, 6, 8, 0.2, 0, TAU); c.fill();
+    // Claws
+    c.fillStyle = '#FFD43B';
+    for(let i=-1;i<=1;i++){
+      c.beginPath(); c.arc(cx-22+i*2, bodyY+14, 1.5, 0, TAU); c.fill();
+      c.beginPath(); c.arc(cx+22+i*2, bodyY+14, 1.5, 0, TAU); c.fill();
+    }
+
+    // Head
+    const headG = c.createRadialGradient(cx-5, headY-5, 5, cx, headY, 30);
+    headG.addColorStop(0, '#FF8A80');
+    headG.addColorStop(0.6, '#E74C3C');
+    headG.addColorStop(1, '#C0392B');
+    c.fillStyle = headG;
+    c.beginPath(); c.arc(cx, headY, 30, 0, TAU); c.fill();
+
+    // Horns
+    c.fillStyle = '#4a0000';
+    c.beginPath(); c.moveTo(cx-18, headY-24); c.quadraticCurveTo(cx-22, headY-48, cx-12, headY-42);
+    c.quadraticCurveTo(cx-14, headY-30, cx-16, headY-22); c.fill();
+    c.beginPath(); c.moveTo(cx+18, headY-24); c.quadraticCurveTo(cx+22, headY-48, cx+12, headY-42);
+    c.quadraticCurveTo(cx+14, headY-30, cx+16, headY-22); c.fill();
+    // Horn highlight
+    c.fillStyle = '#6a1010';
+    c.beginPath(); c.moveTo(cx-17, headY-26); c.quadraticCurveTo(cx-20, headY-40, cx-14, headY-38); c.quadraticCurveTo(cx-15, headY-30, cx-16, headY-24); c.fill();
+    c.beginPath(); c.moveTo(cx+17, headY-26); c.quadraticCurveTo(cx+20, headY-40, cx+14, headY-38); c.quadraticCurveTo(cx+15, headY-30, cx+16, headY-24); c.fill();
+
+    // Eyes (angry but cute)
+    c.fillStyle = '#fff';
+    c.beginPath(); c.ellipse(cx-11, headY-2, 9, 8, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+11, headY-2, 9, 8, 0, 0, TAU); c.fill();
+    c.fillStyle = '#FFD43B';
+    c.beginPath(); c.arc(cx-10, headY-1, 5, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+12, headY-1, 5, 0, TAU); c.fill();
+    c.fillStyle = '#FF0000';
+    c.beginPath(); c.arc(cx-10, headY, 3, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+12, headY, 3, 0, TAU); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.arc(cx-12, headY-3, 2, 0, TAU); c.fill();
+    c.beginPath(); c.arc(cx+10, headY-3, 2, 0, TAU); c.fill();
+    // Angry eyebrows
+    c.strokeStyle = '#4a0000'; c.lineWidth = 3; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(cx-18, headY-12); c.lineTo(cx-4, headY-8); c.stroke();
+    c.beginPath(); c.moveTo(cx+4, headY-8); c.lineTo(cx+18, headY-12); c.stroke();
+
+    // Mouth (fangs!)
+    c.fillStyle = '#8B0000';
+    c.beginPath(); c.arc(cx, headY+12, 10, 0, PI); c.fill();
+    c.fillStyle = '#FF8A80';
+    c.beginPath(); c.arc(cx, headY+12, 7, 0.2, PI-0.2); c.fill();
+    // Fangs
+    c.fillStyle = '#fff';
+    c.beginPath(); c.moveTo(cx-7, headY+12); c.lineTo(cx-5, headY+18); c.lineTo(cx-3, headY+12); c.fill();
+    c.beginPath(); c.moveTo(cx+3, headY+12); c.lineTo(cx+5, headY+18); c.lineTo(cx+7, headY+12); c.fill();
+
+    // Cheeks (puffed up!)
+    c.fillStyle = 'rgba(255,100,100,.3)';
+    c.beginPath(); c.ellipse(cx-22, headY+5, 7, 5, 0, 0, TAU); c.fill();
+    c.beginPath(); c.ellipse(cx+22, headY+5, 7, 5, 0, 0, TAU); c.fill();
+
+    // Fire aura
+    c.save();
+    c.globalAlpha = 0.1 + Math.sin(t*2)*0.05;
+    c.strokeStyle = '#FF4444'; c.lineWidth = 2;
+    c.beginPath(); c.arc(cx, (headY+bodyY)/2, 55, 0, TAU); c.stroke();
+    c.restore();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
+</body>
+</html>

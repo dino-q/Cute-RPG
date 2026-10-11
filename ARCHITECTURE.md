@@ -6,7 +6,7 @@
 |--------|---------|
 | `src/main.js` | Entry point and glue code (~350 lines). Owns top-level state (g, _mode, _charType, _net, inv, etc.), wires all modules together via initXxx(deps), implements startGame(), overGoHome(), showCharSelect(), pickChar(), and the data-action event delegation listener. |
 | `src/state.js` | Legacy shared state object S — originally intended as a central store; most modules now use their own module-level vars via dependency injection. Still holds dragon-pet sprite references. |
-| `src/config.js` | Pure constants: map dimensions, player/enemy radii, cooldown timings, CHAR definitions (gunner/swordsman/tank — each with atkType/atkCD/animDur/skillIcon/skillCD for extensibility), MODE definitions (classic/elite/coop/practice), rarity weights/colors, charCfg() helper, and the pickRole() function. |
+| `src/config.js` | Pure constants: map dimensions, player/enemy radii, cooldown timings, CHAR definitions (gunner/swordsman/tank), MODE definitions (classic/elite/coop/practice), rarity weights/colors, and the pickRole() function. |
 | `src/cards.js` | Defines the C array of 52 card objects (each with id, name, emoji, rarity, description, and ap[] level-up functions). Also exports rndBuff() for random stat bonuses. |
 | `src/utils.js` | Four pure utility functions: di (distance), cl (clamp), rn (random in range), $ (getElementById). |
 | `src/audio.js` | Web Audio API synthesizer for all BGM and SFX. Manages a single AudioContext, plays looping BGM via OscillatorNode chains, and synthesizes game sounds (shoot, hit) procedurally. |
@@ -15,7 +15,7 @@
 | `src/input.js` | Joystick touch tracking, keyboard input (ks object), mouse input, and the skill/ult button. Exports joy/aim state objects, setupInputListeners(), and request flags for coop (getClientUltReq, getClientDodgeReq). |
 | `src/enemies.js` | Enemy spawning (spawn()), wave parameters (spawnTargetForWave, spikeConfigForWave), enemy growth curves (enemyGrowth, tierHpFor), crate generation (genCrates, spawnBonusCrates), spike wave and hunt pressure triggers. |
 | `src/combat.js` | Bullet firing (fire()), sword swing (swordSwing()), shield bash (shieldBash()), auto-attack dispatch (tapAtk()), nearest-target query (nearestTargets()), kill award (awardEnemyKill()), and death settlement (settleEnemyDeaths()). |
-| `src/skills.js` | Character special skills (useCharSkill, skillSnipe, skillGhostSlash, skillTaunt), dash (_startDash), and ultimate (doUlt). Manages skill/ult cooldown state and dash ghost trail. Skill dispatch uses SKILL_FN registry — new characters register via registerSkill(). |
+| `src/skills.js` | Character special skills (useCharSkill, skillSnipe, skillGhostSlash, skillTaunt), dash (_startDash), and ultimate (doUlt). Manages skill/ult cooldown state and dash ghost trail. |
 | `src/cards-ui.js` | Card pick UI (showPick()), angel card (showAngelCard()), big chest (triggerBigChest()), card inventory helpers (addCard, getCardLv, pks). |
 | `src/boss.js` | Stage boss system for Lv20 (poo boss) and Lv30 (devil boss): triggerStageBoss(), updateStageBoss(), drawStageBoss(), checkStageBossDeath(), boss BGM management, boss SFX. |
 | `src/coop.js` | PeerJS multiplayer: room creation/joining UI (coopShowCreate, coopJoinRoom, coopStart), host/client sync (serializeCoopState, applyCoopState), client render loop (clientRenderLoop), P2 card pick overlay, coop practice helpers. |
@@ -76,8 +76,6 @@ main.js         → all modules (entry point / glue)
 - `$(id)` — document.getElementById shorthand
 
 ### config.js — 常數、角色、模式定義
-- `CHAR` — character definitions, each with: startHp/Atk/Speed, fr, crit, dodge, armor, col/colMid/colDark, passive/passiveKey, atkType, atkCD, animDur, skillIcon, skillCD
-- `charCfg(ct)` — get CHAR config for type ct with fallback to gunner
 - `pickRole()` — randomly pick an enemy role constant
 
 ### cards.js — 卡片定義
@@ -176,8 +174,7 @@ main.js         → all modules (entry point / glue)
 - `setSkillsCoopState(isCoop, net)` — coop state
 - `setSkillsClientSkillReq(v)` / `getSkillsClientSkillReq()` — coop skill request
 - `getDashGhosts()` / `setDashGhosts(v)` / `resetDashGhosts()` — dash ghost trail
-- `SKILL_CDS` — cooldown durations per character type (Proxy, reads from CHAR config via charCfg)
-- `registerSkill(charType, fn)` — register a skill function for a new character type
+- `SKILL_CDS` — cooldown durations per character type
 - `getSkillCdEnd()` / `setSkillCdEnd(v)` — P1 skill cooldown end
 - `getP2SkillCdEnd()` / `setP2SkillCdEnd(v)` — P2 skill cooldown end
 - `p2UseSkill()` — trigger P2 skill (AI or coop client)
@@ -365,31 +362,6 @@ Title Screen
     showOver() → overGoHome() → Title
 ```
 
-- **想改 Boss DPS 估算（天使卡觸發條件）？** → 改 `src/boss.js` 的 `estimateBossDPS()` 函式和 `bossDR` 值。`estTime > 120` 觸發天使卡。
-- **想改經驗追趕機制？** → 改 `src/loop.js` 搜尋 `_xpCatchUp`（經驗倍率）和 `_gapWarn`（提示觸發）
-- **想改 Coop ICE/TURN 伺服器？** → 改 `src/coop.js` 的 `_ICE_CFG` 物件
-
----
-
-## Media Assets
-
-遊戲使用的外部媒體檔案（非程式碼產生的資源）。
-
-| 檔案 | 位置 | 引用處 | 用途 |
-|------|------|--------|------|
-| `One_More_Credit.mp3` | 根目錄 + `assets/` | `src/audio.js:14` (`"./One_More_Credit.mp3"`) | BGM 背景音樂 |
-| `END_clip_clean.mp4` | 根目錄 + `assets/` | `src/ui.js:183` (`"./assets/END_clip_clean.mp4"`) | 通關影片（勝利後播放） |
-
-### Vite 靜態資源機制
-
-- `vite.config.js` 設定 `publicDir: 'assets'`，build 時 `assets/` 內的檔案會自動複製到 `dist/`
-- 根目錄的 `.mp3`/`.mp4` 也透過 HTML 相對路徑引用，Vite build 時一併複製
-- **注意**：根目錄和 `assets/` 各有一份相同檔案（歷史因素），程式碼引用的是根目錄路徑
-
-### 龍寵精靈圖
-
-龍寵的翅膀和身體圖片以 base64 PNG 內嵌在 `src/state.js` 中（`S._dpWingImg` / `S._dpBodyImg`），不依賴外部檔案。
-
 ---
 
 ## Common Modification Guide
@@ -402,29 +374,10 @@ Title Screen
   - ⚔️ swordsman: 鐵壁金身、天使之翼、毀滅之手、劍氣強化、拔刀術、萬物吞噬、創世神力、達摩的光劍
 - **想改敵人行為？** → 改 `src/enemies.js`（生成/波次）和 `src/loop.js`（AI 移動邏輯）
 - **想改 Boss 模式？** → 改 `src/boss.js` 的 `updateStageBoss()` 函式
-- **想加新角色？** → 見下方「新增角色步驟」
+- **想加新角色？** → 改 `src/config.js` 的 `CHAR` 物件 + `src/skills.js`（技能邏輯）+ `src/render.js`（繪圖）
 - **想改音效？** → 改 `src/audio.js` 的 `sfx()` 函式或 BGM 合成器
 - **想改 HUD 顯示？** → 改 `src/hud.js` 的 `hud()` 函式
 - **想改設定畫面？** → 改 `src/ui.js` 的 `openSettings()`
 - **想改多人連線邏輯？** → 改 `src/coop.js`
 - **想改練習模式？** → 改 `src/practice.js`
 - **想改遊戲主迴圈節奏？** → 改 `src/loop.js` 的 `loop()` 函式
-
-### 新增角色步驟
-
-以下列出新增一個角色（如「刺客 assassin」）時需要修改的所有檔案：
-
-1. **`src/config.js`** — 在 `CHAR` 物件加一筆，必須包含：
-   - 基礎數值：`startHp`, `startAtk`, `startSpeed`, `fr`, `crit`, `dodge`, `armor`
-   - 顏色：`col`, `colMid`, `colDark`
-   - 被動說明：`passive`, `passiveKey`
-   - **擴展欄位**：`atkType`("ranged"|"melee"), `atkCD`(毫秒,null=用HOLD_CD), `animDur`(毫秒), `skillIcon`(emoji), `skillCD`(毫秒)
-   - 在 `RECOMMENDED` 加推薦卡片 Set
-2. **`src/skills.js`** — 在 `SKILL_FN` 物件加技能函式，或呼叫 `registerSkill(charType, fn)`
-3. **`src/loop.js`** — P1/P2 攻擊分支（搜尋 `swordSwing`/`shieldBash`）加 `else if`
-4. **`src/combat.js`** — `tapAtk()` 加攻擊分支
-5. **`src/render.js`** — `drawPlayer()` 加角色外觀繪製（目前未知角色 fallback 為坦克造型）
-6. **`src/cards.js`** — （選配）加專屬卡片，用 `charReq: "assassin"` 限定
-7. **`index.html`** — 角色選擇 UI（`#charSelectOv`）加第四張角色卡片
-
-攻擊間隔、動畫時長、技能CD、技能按鈕圖示皆從 `CHAR` config 自動讀取（`charCfg()`），不需額外硬編碼。

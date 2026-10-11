@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>刺客外觀調整方案 — 預覽</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px;min-height:100vh}
+h1{font-size:24px;color:#BE4BDB;margin-bottom:4px;text-shadow:0 0 12px rgba(190,75,219,.4)}
+.sub{font-size:12px;color:rgba(255,255,255,.35);margin-bottom:8px}
+.current-label{font-size:13px;color:#FFD43B;margin:16px 0 8px;letter-spacing:2px}
+.row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;width:220px;text-align:center;position:relative;transition:border-color .2s}
+.card:hover{border-color:rgba(190,75,219,.3)}
+.card canvas{display:block;margin:0 auto 8px}
+.name{font-size:16px;font-weight:800;color:#BE4BDB}
+.tag{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:1px;margin:2px 0 6px}
+.desc{font-size:11px;color:rgba(255,255,255,.45);line-height:1.6}
+.badge{position:absolute;top:10px;right:10px;font-size:9px;padding:2px 8px;border-radius:8px;font-weight:700}
+.badge-current{background:rgba(255,255,255,.1);color:rgba(255,255,255,.4)}
+.badge-new{background:rgba(190,75,219,.2);color:#DA77F2}
+.divider{width:100%;max-width:900px;height:1px;background:rgba(255,255,255,.06);margin:8px 0 20px}
+.section-title{font-size:16px;color:#FFD43B;margin-bottom:10px;letter-spacing:2px}
+.note{margin-top:24px;font-size:11px;color:rgba(255,255,255,.25);max-width:700px;text-align:center;line-height:1.8;border-top:1px solid rgba(255,255,255,.06);padding-top:14px}
+</style>
+</head>
+<body>
+<h1>刺客外觀調整方案</h1>
+<div class="sub">保持圓形身體風格，調整識別度和特色元素</div>
+
+<div class="current-label">▼ 目前版本（參考對照）</div>
+<div class="row">
+  <div class="card">
+    <span class="badge badge-current">CURRENT</span>
+    <canvas id="c0" width="200" height="200"></canvas>
+    <div class="name">現行刺客</div>
+    <div class="tag">紫色圓球 + 面罩弧線 + 黃色單眼 + 雙匕</div>
+    <div class="desc">
+      辨識度問題：面罩只是一條弧線，<br>
+      眼睛只有一隻可見，跟其他角色差異不夠大
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+<div class="section-title">▼ 方案 A~D — 選一個你喜歡的方向</div>
+
+<div class="row">
+  <div class="card">
+    <span class="badge badge-new">A</span>
+    <canvas id="cA" width="200" height="200"></canvas>
+    <div class="name">暗影兜帽型</div>
+    <div class="tag">深色兜帽 + 雙銳眼 + 暗影殘影</div>
+    <div class="desc">
+      頭頂尖角兜帽覆蓋球體上半部<br>
+      兩隻貓瞳銳利黃眼從陰影中發光<br>
+      身後有暗影殘像拖尾效果<br>
+      <b>風格：神秘、冷酷</b>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="badge badge-new">B</span>
+    <canvas id="cB" width="200" height="200"></canvas>
+    <div class="name">忍者圍巾型</div>
+    <div class="tag">長圍巾飄帶 + 額上護額 + X 形疤痕眼</div>
+    <div class="desc">
+      紫色長圍巾從脖子飄向後方（動態飄動）<br>
+      額上有忍者護額金屬片<br>
+      一隻眼有 X 形疤痕（閉眼），另一隻銳利<br>
+      <b>風格：敏捷、日式忍者</b>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="badge badge-new">C</span>
+    <canvas id="cC" width="200" height="200"></canvas>
+    <div class="name">幽靈盜賊型</div>
+    <div class="tag">半月面罩 + 紫焰殘影 + 煙霧粒子</div>
+    <div class="desc">
+      覆蓋下半臉的半月形面罩（有花紋）<br>
+      身體帶紫色火焰邊緣效果<br>
+      周圍飄散煙霧粒子<br>
+      <b>風格：幽靈般飄忽、歌劇魅影</b>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="badge badge-new">D</span>
+    <canvas id="cD" width="200" height="200"></canvas>
+    <div class="name">暗月雙刃型</div>
+    <div class="tag">月牙眼罩 + 毒綠瞳 + 旋轉暗刃光環</div>
+    <div class="desc">
+      單側月牙形眼罩（金屬質感）<br>
+      露出的眼睛是毒綠色（代表毒系背刺）<br>
+      身體周圍有旋轉的暗紫色刀刃光環<br>
+      <b>風格：狠辣、致命殺手</b>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  所有方案都保持：圓形身體 + 紫色系配色 + 雙匕首武器 + PR=18 的半徑<br>
+  差異在於：頭飾/面部特徵/特效，讓刺客一眼就能和其他三個職業區分開
+</div>
+
+<script>
+const PI=Math.PI, TAU=PI*2;
+
+// ═══ 現行刺客（忠實還原 render.js 的 assassin 分支）═══
+(function(){
+  const cv=document.getElementById('c0'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  let t=0;
+  function frame(){
+    t+=0.016; c.clearRect(0,0,W,H);
+    const cx=W/2, baseY=H/2+10, r=22, bob=Math.sin(t*3)*1.5, cy=baseY+bob, f=1;
+
+    // BG
+    const bg0=c.createRadialGradient(cx,baseY,0,cx,baseY,90);
+    bg0.addColorStop(0,'rgba(190,75,219,.06)');bg0.addColorStop(1,'transparent');
+    c.fillStyle=bg0;c.fillRect(0,0,W,H);
+
+    // Shadow
+    c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(cx,baseY+r+3,r*.6,2.5,0,0,TAU);c.fill();
+
+    // Daggers
+    const aAng=Math.atan2(0,f);
+    // Right
+    c.save();c.translate(cx+Math.cos(aAng)*(r*.6),cy+Math.sin(aAng)*(r*.4)-3);
+    c.rotate(aAng+Math.sin(t*6)*.04);
+    c.fillStyle='#CED4DA';c.strokeStyle='#9C36B5';c.lineWidth=1;
+    c.beginPath();c.moveTo(0,-1.5);c.lineTo(14,0);c.lineTo(0,1.5);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3,3,6);c.restore();
+    // Left
+    c.save();c.translate(cx+Math.cos(aAng+.3*f)*(r*.5),cy+Math.sin(aAng+.3*f)*(r*.3)+3);
+    c.rotate(aAng+Math.sin(t*6+1)*.04);
+    c.fillStyle='#CED4DA';c.strokeStyle='#9C36B5';c.lineWidth=1;
+    c.beginPath();c.moveTo(0,-1.5);c.lineTo(12,0);c.lineTo(0,1.5);c.closePath();c.fill();c.stroke();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3,3,6);c.restore();
+
+    // Body
+    const bg=c.createRadialGradient(cx-f*r*.1,cy-r*.3,r*.1,cx,cy,r);
+    bg.addColorStop(0,'#fff');bg.addColorStop(.3,'#e5c8f5');bg.addColorStop(1,'#BE4BDB');
+    c.beginPath();c.arc(cx,cy,r,0,TAU);c.fillStyle=bg;c.fill();
+    c.strokeStyle='rgba(0,0,0,.06)';c.lineWidth=1;c.stroke();
+
+    // Mask (arc line)
+    c.save();c.globalAlpha=.75;c.strokeStyle='#9C36B5';c.lineWidth=2.5;
+    c.shadowColor='#9C36B5';c.shadowBlur=4;
+    c.beginPath();c.arc(cx,cy+2,r-2,-PI*.15,PI*.15);c.stroke();c.shadowBlur=0;
+    // Eye (single visible)
+    c.fillStyle='#FFD43B';c.globalAlpha=.9;
+    c.beginPath();c.ellipse(cx+f*4,cy-3,2,1.5,f*.2,0,TAU);c.fill();
+    c.beginPath();c.ellipse(cx+f*4,cy-3,1,1,0,0,TAU);c.fillStyle='#1a1a2e';c.fill();
+    c.restore();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ═══ 方案 A：暗影兜帽型 ═══
+(function(){
+  const cv=document.getElementById('cA'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  let t=0;
+  function frame(){
+    t+=0.016; c.clearRect(0,0,W,H);
+    const cx=W/2, baseY=H/2+10, r=22, bob=Math.sin(t*3)*1.5, cy=baseY+bob, f=1;
+
+    const bg0=c.createRadialGradient(cx,baseY,0,cx,baseY,90);
+    bg0.addColorStop(0,'rgba(190,75,219,.06)');bg0.addColorStop(1,'transparent');
+    c.fillStyle=bg0;c.fillRect(0,0,W,H);
+
+    c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(cx,baseY+r+3,r*.6,2.5,0,0,TAU);c.fill();
+
+    // Shadow afterimage (暗影殘像)
+    for(let i=3;i>=1;i--){
+      c.save(); c.globalAlpha=.06*i;
+      c.fillStyle='#9C36B5';
+      c.beginPath();c.arc(cx-i*8,cy+i*2,r-i,0,TAU);c.fill();
+      c.restore();
+    }
+
+    // Daggers (same style but with purple glow)
+    const aAng=0;
+    c.save();c.translate(cx+r*.6,cy-3);c.rotate(Math.sin(t*6)*.04);
+    c.shadowColor='#BE4BDB';c.shadowBlur=6;
+    c.fillStyle='#CED4DA';c.beginPath();c.moveTo(0,-2);c.lineTo(16,0);c.lineTo(0,2);c.closePath();c.fill();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3.5,3,7);c.shadowBlur=0;c.restore();
+    c.save();c.translate(cx+r*.5,cy+3);c.rotate(Math.sin(t*6+1)*.04);
+    c.shadowColor='#BE4BDB';c.shadowBlur=6;
+    c.fillStyle='#CED4DA';c.beginPath();c.moveTo(0,-2);c.lineTo(14,0);c.lineTo(0,2);c.closePath();c.fill();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3.5,3,7);c.shadowBlur=0;c.restore();
+
+    // Body
+    const bg=c.createRadialGradient(cx-r*.1,cy-r*.3,r*.1,cx,cy,r);
+    bg.addColorStop(0,'#fff');bg.addColorStop(.3,'#e5c8f5');bg.addColorStop(1,'#BE4BDB');
+    c.beginPath();c.arc(cx,cy,r,0,TAU);c.fillStyle=bg;c.fill();
+    c.strokeStyle='rgba(0,0,0,.06)';c.lineWidth=1;c.stroke();
+
+    // Hood (尖角兜帽)
+    c.fillStyle='#4a1060';
+    c.beginPath();
+    c.moveTo(cx,cy-r-18); // 尖角頂點
+    c.quadraticCurveTo(cx+8,cy-r-6, cx+r+4,cy-4);
+    c.arc(cx,cy,r+1,-.1,PI+.1,true);
+    c.quadraticCurveTo(cx-8,cy-r-6, cx,cy-r-18);
+    c.fill();
+
+    // Hood inner shadow
+    c.fillStyle='#2a0830';
+    c.beginPath();
+    c.arc(cx,cy-2,r-1,PI+.4,-0.4);
+    c.lineTo(cx+r*.6,cy-r*.2);
+    c.quadraticCurveTo(cx,cy-r*.8,cx-r*.6,cy-r*.2);
+    c.closePath();c.fill();
+
+    // Hood edge highlight
+    c.strokeStyle='#7B2D8E';c.lineWidth=1.5;
+    c.beginPath();
+    c.moveTo(cx-r-3,cy);
+    c.quadraticCurveTo(cx-8,cy-r-4, cx,cy-r-16);
+    c.quadraticCurveTo(cx+8,cy-r-4, cx+r+3,cy);
+    c.stroke();
+
+    // Eyes (雙銳眼 from shadow - cat pupil)
+    const eyeGlow=.7+Math.sin(t*4)*.15;
+    [[-8,-4],[8,-4]].forEach(([ox,oy])=>{
+      c.save();
+      c.shadowColor='#FFD43B';c.shadowBlur=8;
+      // Eye shape (almond/sharp)
+      c.fillStyle=`rgba(255,212,59,${eyeGlow})`;
+      c.beginPath();
+      c.moveTo(cx+ox-5,cy+oy);
+      c.quadraticCurveTo(cx+ox,cy+oy-4,cx+ox+5,cy+oy);
+      c.quadraticCurveTo(cx+ox,cy+oy+3,cx+ox-5,cy+oy);
+      c.fill();
+      c.shadowBlur=0;
+      // Cat pupil (vertical slit)
+      c.fillStyle='#1a1a2e';
+      c.beginPath();c.ellipse(cx+ox,cy+oy,.8,2.5,0,0,TAU);c.fill();
+      // Highlight
+      c.fillStyle='#fff';
+      c.beginPath();c.arc(cx+ox-2,cy+oy-1,1.2,0,TAU);c.fill();
+      c.restore();
+    });
+
+    // Smoke particles
+    for(let i=0;i<5;i++){
+      const a=t*1.5+i*TAU/5, d=r+12+Math.sin(t*2+i*1.7)*5;
+      c.save();c.globalAlpha=.1+Math.sin(t*2.5+i)*.06;
+      c.fillStyle='#9C36B5';
+      c.beginPath();c.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d*.7,1.5+Math.sin(t*3+i)*.5,0,TAU);c.fill();
+      c.restore();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ═══ 方案 B：忍者圍巾型 ═══
+(function(){
+  const cv=document.getElementById('cB'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  let t=0;
+  function frame(){
+    t+=0.016; c.clearRect(0,0,W,H);
+    const cx=W/2, baseY=H/2+10, r=22, bob=Math.sin(t*3)*1.5, cy=baseY+bob, f=1;
+
+    const bg0=c.createRadialGradient(cx,baseY,0,cx,baseY,90);
+    bg0.addColorStop(0,'rgba(190,75,219,.06)');bg0.addColorStop(1,'transparent');
+    c.fillStyle=bg0;c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(cx,baseY+r+3,r*.6,2.5,0,0,TAU);c.fill();
+
+    // Scarf tails (behind body, animated)
+    c.save();
+    c.strokeStyle='#9C36B5';c.lineWidth=5;c.lineCap='round';
+    c.beginPath();c.moveTo(cx-r*.6,cy+r*.3);
+    c.quadraticCurveTo(cx-r*1.5,cy+r*.5+Math.sin(t*4)*5, cx-r*2.2,cy+r*.2+Math.sin(t*3)*8);
+    c.stroke();
+    c.lineWidth=3.5;c.strokeStyle='#7B2D8E';
+    c.beginPath();c.moveTo(cx-r*.5,cy+r*.4);
+    c.quadraticCurveTo(cx-r*1.3,cy+r*.7+Math.sin(t*3.5)*4, cx-r*1.9,cy+r*.5+Math.sin(t*2.8)*6);
+    c.stroke();
+    c.restore();
+
+    // Daggers
+    c.save();c.translate(cx+r*.65,cy-3);c.rotate(Math.sin(t*6)*.05);
+    c.fillStyle='#CED4DA';c.beginPath();c.moveTo(0,-2);c.lineTo(15,0);c.lineTo(0,2);c.closePath();c.fill();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3.5,3,7);c.restore();
+    c.save();c.translate(cx+r*.5,cy+4);c.rotate(Math.sin(t*6+1)*.05);
+    c.fillStyle='#CED4DA';c.beginPath();c.moveTo(0,-2);c.lineTo(13,0);c.lineTo(0,2);c.closePath();c.fill();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3.5,3,7);c.restore();
+
+    // Body
+    const bg=c.createRadialGradient(cx-r*.1,cy-r*.3,r*.1,cx,cy,r);
+    bg.addColorStop(0,'#fff');bg.addColorStop(.3,'#e5c8f5');bg.addColorStop(1,'#BE4BDB');
+    c.beginPath();c.arc(cx,cy,r,0,TAU);c.fillStyle=bg;c.fill();
+    c.strokeStyle='rgba(0,0,0,.06)';c.lineWidth=1;c.stroke();
+
+    // Scarf wrap (around neck/lower face)
+    c.fillStyle='#9C36B5';
+    c.beginPath();
+    c.arc(cx,cy+3,r-1,.15,PI-.15);
+    c.lineTo(cx-r+3,cy+3);
+    c.closePath();c.fill();
+    // Scarf folds
+    c.strokeStyle='#7B2D8E';c.lineWidth=1;
+    c.beginPath();c.arc(cx-3,cy+6,8,.2,PI-.2);c.stroke();
+    c.beginPath();c.arc(cx+2,cy+8,6,.3,PI-.3);c.stroke();
+
+    // Forehead protector (護額)
+    c.fillStyle='#868E96';
+    c.beginPath();
+    c.arc(cx,cy-3,r+1,-PI*.72,-PI*.28);
+    c.arc(cx,cy-3,r-3,-PI*.3,-PI*.7,true);
+    c.closePath();c.fill();
+    c.strokeStyle='#ADB5BD';c.lineWidth=.8;c.stroke();
+    // Metal plate
+    c.fillStyle='#ADB5BD';
+    const pAngle=-PI*.5;
+    c.save();c.translate(cx+Math.cos(pAngle)*(r-1), cy-3+Math.sin(pAngle)*(r-1));
+    c.fillRect(-7,-4,14,8);
+    c.strokeStyle='#6c757d';c.lineWidth=1;c.strokeRect(-7,-4,14,8);
+    // Emblem on plate
+    c.strokeStyle='#BE4BDB';c.lineWidth=1.5;
+    c.beginPath();c.moveTo(-2,-2);c.lineTo(2,2);c.stroke();
+    c.beginPath();c.moveTo(2,-2);c.lineTo(-2,2);c.stroke();
+    c.restore();
+
+    // Eyes
+    // Right eye (open, sharp)
+    c.save();
+    c.fillStyle='#FFD43B';
+    c.beginPath();
+    c.moveTo(cx+3,cy-5);c.quadraticCurveTo(cx+8,cy-9,cx+13,cy-5);
+    c.quadraticCurveTo(cx+8,cy-2,cx+3,cy-5);c.fill();
+    c.fillStyle='#1a1a2e';c.beginPath();c.arc(cx+8,cy-5,1.5,0,TAU);c.fill();
+    c.fillStyle='#fff';c.beginPath();c.arc(cx+6,cy-6.5,1,0,TAU);c.fill();
+
+    // Left eye (scarred X, closed)
+    c.strokeStyle='#8a4a9a';c.lineWidth=2;c.lineCap='round';
+    c.beginPath();c.moveTo(cx-11,cy-8);c.lineTo(cx-5,cy-3);c.stroke();
+    c.beginPath();c.moveTo(cx-5,cy-8);c.lineTo(cx-11,cy-3);c.stroke();
+    // Scar line through X
+    c.strokeStyle='#6a2a7a';c.lineWidth=1;
+    c.beginPath();c.moveTo(cx-13,cy-5);c.lineTo(cx-3,cy-6);c.stroke();
+    c.restore();
+
+    // Speed lines
+    c.save();c.globalAlpha=.1+Math.sin(t*5)*.05;
+    for(let i=0;i<3;i++){
+      c.strokeStyle=i%2?'#DA77F2':'#BE4BDB';c.lineWidth=1;c.lineCap='round';
+      c.beginPath();c.moveTo(cx-r-8,cy-8+i*8);c.lineTo(cx-r-18-Math.sin(t*4+i)*5,cy-8+i*8);c.stroke();
+    }
+    c.restore();
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ═══ 方案 C：幽靈盜賊型 ═══
+(function(){
+  const cv=document.getElementById('cC'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  let t=0;
+  function frame(){
+    t+=0.016; c.clearRect(0,0,W,H);
+    const cx=W/2, baseY=H/2+10, r=22, bob=Math.sin(t*3)*1.5, cy=baseY+bob, f=1;
+
+    const bg0=c.createRadialGradient(cx,baseY,0,cx,baseY,90);
+    bg0.addColorStop(0,'rgba(190,75,219,.06)');bg0.addColorStop(1,'transparent');
+    c.fillStyle=bg0;c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(cx,baseY+r+3,r*.6,2.5,0,0,TAU);c.fill();
+
+    // Purple flame edge effect (behind body)
+    c.save();
+    for(let i=0;i<12;i++){
+      const a=i*TAU/12+t*2;
+      const flameH=5+Math.sin(t*6+i*1.5)*4;
+      const fx=cx+Math.cos(a)*r, fy=cy+Math.sin(a)*r;
+      c.fillStyle=`rgba(156,54,181,${.15+Math.sin(t*4+i)*.08})`;
+      c.beginPath();
+      c.moveTo(fx,fy);
+      c.lineTo(fx+Math.cos(a)*flameH-Math.sin(a)*2, fy+Math.sin(a)*flameH+Math.cos(a)*2);
+      c.lineTo(fx+Math.cos(a)*flameH+Math.sin(a)*2, fy+Math.sin(a)*flameH-Math.cos(a)*2);
+      c.closePath();c.fill();
+    }
+    c.restore();
+
+    // Daggers
+    c.save();c.translate(cx+r*.6,cy-3);c.rotate(Math.sin(t*6)*.04);
+    c.shadowColor='#9C36B5';c.shadowBlur=4;
+    c.fillStyle='#CED4DA';c.beginPath();c.moveTo(0,-2);c.lineTo(16,0);c.lineTo(0,2);c.closePath();c.fill();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3.5,3,7);c.shadowBlur=0;c.restore();
+    c.save();c.translate(cx+r*.5,cy+3);c.rotate(Math.sin(t*6+1)*.04);
+    c.shadowColor='#9C36B5';c.shadowBlur=4;
+    c.fillStyle='#CED4DA';c.beginPath();c.moveTo(0,-2);c.lineTo(14,0);c.lineTo(0,2);c.closePath();c.fill();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3.5,3,7);c.shadowBlur=0;c.restore();
+
+    // Body
+    const bg=c.createRadialGradient(cx-r*.1,cy-r*.3,r*.1,cx,cy,r);
+    bg.addColorStop(0,'#fff');bg.addColorStop(.3,'#e5c8f5');bg.addColorStop(1,'#BE4BDB');
+    c.beginPath();c.arc(cx,cy,r,0,TAU);c.fillStyle=bg;c.fill();
+    c.strokeStyle='rgba(0,0,0,.06)';c.lineWidth=1;c.stroke();
+
+    // Half-moon mask (半月面罩 - covers bottom half)
+    const maskG=c.createLinearGradient(cx-r,cy,cx+r,cy+r);
+    maskG.addColorStop(0,'#3a3a4a');maskG.addColorStop(.5,'#4a4a5a');maskG.addColorStop(1,'#2a2a3a');
+    c.fillStyle=maskG;
+    c.beginPath();c.arc(cx,cy,r-1,.05,PI-.05);c.closePath();c.fill();
+    // Mask edge
+    c.strokeStyle='#6a6a8a';c.lineWidth=1.5;
+    c.beginPath();c.arc(cx,cy,r-1,.05,PI-.05);c.stroke();
+    // Mask pattern (swirl)
+    c.strokeStyle='rgba(190,75,219,.3)';c.lineWidth=1;
+    c.beginPath();c.arc(cx-6,cy+6,5,0,PI*.8);c.stroke();
+    c.beginPath();c.arc(cx+5,cy+8,4,.5,PI+.5);c.stroke();
+    // Mask metal rivets
+    c.fillStyle='#868E96';
+    c.beginPath();c.arc(cx-r+6,cy+2,1.5,0,TAU);c.fill();
+    c.beginPath();c.arc(cx+r-6,cy+2,1.5,0,TAU);c.fill();
+
+    // Eyes (both visible, above mask line)
+    const eyeGlow=.8+Math.sin(t*3)*.1;
+    [[-8,-6],[8,-6]].forEach(([ox,oy])=>{
+      c.save();
+      c.shadowColor='#FFD43B';c.shadowBlur=6;
+      c.fillStyle=`rgba(255,212,59,${eyeGlow})`;
+      c.beginPath();c.ellipse(cx+ox,cy+oy,4,3,ox>0?.1:-.1,0,TAU);c.fill();
+      c.shadowBlur=0;
+      c.fillStyle='#1a1a2e';c.beginPath();c.arc(cx+ox,cy+oy,1.5,0,TAU);c.fill();
+      c.fillStyle='#fff';c.beginPath();c.arc(cx+ox-1,cy+oy-1,1,0,TAU);c.fill();
+      c.restore();
+    });
+    // Eyebrows (sharp)
+    c.strokeStyle='#4a1060';c.lineWidth=1.5;c.lineCap='round';
+    c.beginPath();c.moveTo(cx-13,cy-7);c.lineTo(cx-4,cy-10);c.stroke();
+    c.beginPath();c.moveTo(cx+4,cy-10);c.lineTo(cx+13,cy-7);c.stroke();
+
+    // Smoke particles (floating around)
+    for(let i=0;i<8;i++){
+      const a=t*.8+i*TAU/8;
+      const d=r+8+Math.sin(t*1.5+i*2)*8;
+      const sz=2+Math.sin(t*2+i)*1;
+      c.save();c.globalAlpha=.08+Math.sin(t*2+i)*.04;
+      c.fillStyle='#BE4BDB';
+      c.beginPath();c.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d*.6,sz,0,TAU);c.fill();
+      c.restore();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ═══ 方案 D：暗月雙刃型 ═══
+(function(){
+  const cv=document.getElementById('cD'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  let t=0;
+  function frame(){
+    t+=0.016; c.clearRect(0,0,W,H);
+    const cx=W/2, baseY=H/2+10, r=22, bob=Math.sin(t*3)*1.5, cy=baseY+bob, f=1;
+
+    const bg0=c.createRadialGradient(cx,baseY,0,cx,baseY,90);
+    bg0.addColorStop(0,'rgba(190,75,219,.06)');bg0.addColorStop(1,'transparent');
+    c.fillStyle=bg0;c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(cx,baseY+r+3,r*.6,2.5,0,0,TAU);c.fill();
+
+    // Rotating blade ring (旋轉暗刃光環)
+    c.save();
+    const bladeCount=6, bladeAng=t*2.5;
+    for(let i=0;i<bladeCount;i++){
+      const a=bladeAng+i*TAU/bladeCount;
+      const d=r+10;
+      const bx=cx+Math.cos(a)*d, by=cy+Math.sin(a)*d*.7;
+      c.save();c.translate(bx,by);c.rotate(a+PI/2);
+      c.globalAlpha=.25+Math.sin(t*3+i)*.1;
+      c.fillStyle='#9C36B5';
+      // Small blade shape
+      c.beginPath();c.moveTo(0,-5);c.lineTo(2,0);c.lineTo(0,5);c.lineTo(-2,0);c.closePath();c.fill();
+      c.fillStyle='#DA77F2';
+      c.beginPath();c.moveTo(0,-3);c.lineTo(1,0);c.lineTo(0,3);c.lineTo(-1,0);c.closePath();c.fill();
+      c.restore();
+    }
+    // Ring trail
+    c.globalAlpha=.06;c.strokeStyle='#BE4BDB';c.lineWidth=1;
+    c.beginPath();c.ellipse(cx,cy,r+10,(r+10)*.7,0,0,TAU);c.stroke();
+    c.restore();
+
+    // Daggers (with poison drip)
+    c.save();c.translate(cx+r*.65,cy-3);c.rotate(Math.sin(t*6)*.04);
+    c.fillStyle='#CED4DA';c.beginPath();c.moveTo(0,-2);c.lineTo(16,0);c.lineTo(0,2);c.closePath();c.fill();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3.5,3,7);
+    // Poison drip
+    c.fillStyle=`rgba(46,204,113,${.4+Math.sin(t*5)*.2})`;
+    c.beginPath();c.arc(14,2+Math.sin(t*4)*1,1.5,0,TAU);c.fill();
+    c.restore();
+    c.save();c.translate(cx+r*.5,cy+4);c.rotate(Math.sin(t*6+1)*.04);
+    c.fillStyle='#CED4DA';c.beginPath();c.moveTo(0,-2);c.lineTo(14,0);c.lineTo(0,2);c.closePath();c.fill();
+    c.fillStyle='#BE4BDB';c.fillRect(-2,-3.5,3,7);
+    c.fillStyle=`rgba(46,204,113,${.3+Math.sin(t*5+1)*.2})`;
+    c.beginPath();c.arc(12,2+Math.sin(t*4+1)*1,1.2,0,TAU);c.fill();
+    c.restore();
+
+    // Body
+    const bg=c.createRadialGradient(cx-r*.1,cy-r*.3,r*.1,cx,cy,r);
+    bg.addColorStop(0,'#fff');bg.addColorStop(.3,'#e5c8f5');bg.addColorStop(1,'#BE4BDB');
+    c.beginPath();c.arc(cx,cy,r,0,TAU);c.fillStyle=bg;c.fill();
+    c.strokeStyle='rgba(0,0,0,.06)';c.lineWidth=1;c.stroke();
+
+    // Crescent eye-patch (月牙眼罩 - left side)
+    const patchG=c.createLinearGradient(cx-16,cy-8,cx-2,cy+2);
+    patchG.addColorStop(0,'#6c757d');patchG.addColorStop(.5,'#868E96');patchG.addColorStop(1,'#495057');
+    c.fillStyle=patchG;
+    c.beginPath();
+    c.arc(cx-7,cy-3,9,PI*.6,PI*1.9);
+    c.arc(cx-7,cy-3,5,PI*1.9,PI*.6,true);
+    c.closePath();c.fill();
+    c.strokeStyle='#ADB5BD';c.lineWidth=.8;c.stroke();
+    // Patch strap
+    c.strokeStyle='#495057';c.lineWidth=1.5;
+    c.beginPath();
+    c.arc(cx,cy-2,r-2,-PI*.8,-PI*.55);c.stroke();
+    c.beginPath();
+    c.arc(cx,cy-2,r-2,PI*.55,PI*.8);c.stroke();
+    // Metal detail on patch
+    c.fillStyle='#BE4BDB';
+    c.beginPath();c.arc(cx-7,cy-5,1.5,0,TAU);c.fill();
+
+    // Right eye (毒綠瞳 - visible, intense)
+    c.save();
+    c.shadowColor='#2ECC71';c.shadowBlur=8;
+    c.fillStyle='#fff';
+    c.beginPath();c.ellipse(cx+8,cy-4,5,4.5,0.1,0,TAU);c.fill();
+    c.shadowBlur=0;
+    // Green iris
+    const irisG=c.createRadialGradient(cx+8,cy-4,0,cx+8,cy-4,4);
+    irisG.addColorStop(0,'#2ECC71');irisG.addColorStop(.6,'#27AE60');irisG.addColorStop(1,'#1a8a4a');
+    c.fillStyle=irisG;
+    c.beginPath();c.arc(cx+9,cy-3,3.5,0,TAU);c.fill();
+    // Pupil (vertical slit)
+    c.fillStyle='#0a2a10';
+    c.beginPath();c.ellipse(cx+9,cy-3,.8,2.5,0,0,TAU);c.fill();
+    // Highlight
+    c.fillStyle='#fff';c.beginPath();c.arc(cx+7,cy-5,1.5,0,TAU);c.fill();
+    c.beginPath();c.arc(cx+11,cy-2,.8,0,TAU);c.fill();
+    c.restore();
+
+    // Sharp eyebrow (right only)
+    c.strokeStyle='#4a1060';c.lineWidth=2;c.lineCap='round';
+    c.beginPath();c.moveTo(cx+4,cy-10);c.lineTo(cx+15,cy-7);c.stroke();
+
+    // Poison aura particles
+    for(let i=0;i<4;i++){
+      const a=t*1.2+i*TAU/4;
+      const d=r+15+Math.sin(t*2+i)*4;
+      c.save();c.globalAlpha=.12+Math.sin(t*3+i)*.06;
+      c.fillStyle='#2ECC71';
+      c.beginPath();c.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d*.6,1.2,0,TAU);c.fill();
+      c.restore();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
+</body>
+</html>

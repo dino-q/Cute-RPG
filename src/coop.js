@@ -66,18 +66,6 @@ export function initCoop(deps) {
 export function setCoopVW(w) { _VW = w; }
 export function setCoopVH(h) { _VH = h; }
 
-/* ═══ PeerJS ICE config — STUN + TURN 確保 NAT 穿透 ═══ */
-const _ICE_CFG = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
-    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
-    { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
-  ]
-};
-const _PEER_OPTS = { debug: 0, config: _ICE_CFG };
-
 /* ═══ Co-op Lobby ═══ */
 export function _coopGenCode() {
   const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -141,7 +129,7 @@ export function _coopDoCreate(code) {
   $("coopRoomDisplay").textContent = code;
   $("coopStatusText").textContent = "等待對方加入...";
   $("coopConnected").style.display = "none";
-  const peer = new Peer(code, _PEER_OPTS);
+  const peer = new Peer(code, { debug: 0 });
   const netObj = { role: "host", peer, conn: null, roomCode: code, connected: false };
   _setNet(netObj);
   peer.on("open", () => { $("coopStatusText").textContent = "房間已建立，等待對方加入..."; });
@@ -151,7 +139,6 @@ export function _coopDoCreate(code) {
       netObj.connected = true;
       $("coopStatusText").textContent = "對方已連線！";
       $("coopConnected").style.display = "block";
-      $("coopStartBtn").style.display = "block"; // HOST 顯示開始按鈕
       conn.on("data", data => {
         if (!data) return;
         const p2i = _getP2Input();
@@ -188,7 +175,7 @@ export function coopJoinRoom() {
   $("coopRoomDisplay").textContent = code;
   $("coopStatusText").textContent = "連線中...";
   $("coopConnected").style.display = "none";
-  const peer = new Peer(undefined, _PEER_OPTS);
+  const peer = new Peer(undefined, { debug: 0 });
   const netObj = { role: "client", peer, conn: null, roomCode: code, connected: false };
   _setNet(netObj);
   peer.on("open", () => {
@@ -642,7 +629,7 @@ export function pracCoopRoom(opts) {
   if (!isCoopMode()) return;
   const code = prompt("輸入房間密碼（留空隨機）：") || "";
   const roomCode = code.trim().length >= 2 ? code.trim() : _coopGenCode();
-  const peer = new Peer(roomCode, _PEER_OPTS);
+  const peer = new Peer(roomCode, { debug: 0 });
   const netObj = { role: "host", peer, conn: null, roomCode, connected: false };
   setNet(netObj);
   setP2AI(true); // 先用 AI，等對方加入後切換
@@ -690,7 +677,7 @@ export function pracCoopJoin(opts) {
   const roomCode = code.trim();
   const net = getNet();
   if (net && net.peer) { net.peer.destroy(); }
-  const peer = new Peer(undefined, _PEER_OPTS);
+  const peer = new Peer(undefined, { debug: 0 });
   const netObj = { role: "client", peer, conn: null, roomCode, connected: false };
   setNet(netObj);
   peer.on("open", () => {

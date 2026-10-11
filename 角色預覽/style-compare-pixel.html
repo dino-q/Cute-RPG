@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>風格預覽 A — 像素風 Pixel Art</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px;min-height:100vh}
+h1{font-size:26px;color:#FFD43B;margin-bottom:4px;text-shadow:0 0 12px rgba(255,215,75,.4)}
+.sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:28px}
+.section-title{font-size:18px;color:#74C0FC;margin:24px 0 12px;letter-spacing:2px}
+.row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;width:200px;text-align:center}
+.card canvas{display:block;margin:0 auto 8px;image-rendering:pixelated}
+.name{font-size:15px;font-weight:800}
+.role{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2px;margin-bottom:4px}
+.desc{font-size:10px;color:rgba(255,255,255,.4);line-height:1.5}
+.gunner .name{color:#74C0FC}
+.swordsman .name{color:#FF922B}
+.tank .name{color:#51CF66}
+.assassin .name{color:#BE4BDB}
+.monster .name{color:#FF6B6B}
+.note{margin-top:30px;font-size:11px;color:rgba(255,255,255,.3);max-width:700px;text-align:center;line-height:1.8;border-top:1px solid rgba(255,255,255,.06);padding-top:16px}
+</style>
+</head>
+<body>
+<h1>風格 A — 像素風 Pixel Art</h1>
+<div class="sub">32x32 像素角色，放大顯示 — 經典 RPG 復古風格</div>
+
+<div class="section-title">— 玩家角色 —</div>
+<div class="row">
+  <div class="card gunner"><canvas id="pg" width="160" height="160"></canvas><div class="name">槍手 Gunner</div><div class="role">遠程輸出</div><div class="desc">貝雷帽 + 風衣 + 手槍<br>冷靜的藍色系射手</div></div>
+  <div class="card swordsman"><canvas id="ps" width="160" height="160"></canvas><div class="name">劍士 Swordsman</div><div class="role">近戰平衡</div><div class="desc">頭巾 + 輕甲 + 長劍<br>熱血的橙色系劍客</div></div>
+  <div class="card tank"><canvas id="pt" width="160" height="160"></canvas><div class="name">坦克 Tank</div><div class="role">肉盾防禦</div><div class="desc">重盔 + 厚甲 + 盾牌<br>堅毅的綠色系戰士</div></div>
+  <div class="card assassin"><canvas id="pa" width="160" height="160"></canvas><div class="name">刺客 Assassin</div><div class="role">高爆發</div><div class="desc">兜帽 + 斗篷 + 雙匕<br>神秘的紫色系殺手</div></div>
+</div>
+
+<div class="section-title">— 怪獸 Tier 0~4 —</div>
+<div class="row">
+  <div class="card monster"><canvas id="m0" width="160" height="160"></canvas><div class="name">史萊姆</div><div class="role">TIER 0</div><div class="desc">最基礎的敵人<br>軟Q彈跳的果凍生物</div></div>
+  <div class="card monster"><canvas id="m1" width="160" height="160"></canvas><div class="name">蝙蝠</div><div class="role">TIER 1</div><div class="desc">飛行怪物<br>快速但脆弱</div></div>
+  <div class="card monster"><canvas id="m2" width="160" height="160"></canvas><div class="name">哥布林</div><div class="role">TIER 2</div><div class="desc">小型人形怪<br>狡猾的綠皮生物</div></div>
+  <div class="card monster"><canvas id="m3" width="160" height="160"></canvas><div class="name">骷髏騎士</div><div class="role">TIER 3</div><div class="desc">亡靈戰士<br>持劍的骨骼兵</div></div>
+  <div class="card monster"><canvas id="m4" width="160" height="160"></canvas><div class="name">惡魔</div><div class="role">TIER 4</div><div class="desc">高階惡魔<br>雙角 + 翅膀</div></div>
+</div>
+
+<div class="note">
+  像素風特色：復古懷舊感、辨識度高、製作成本低、容易統一風格<br>
+  32x32 原始尺寸在遊戲中約 36px 顯示（配合 PR=18 半徑），可用 image-rendering: pixelated 保持銳利
+</div>
+
+<script>
+// ═══ Pixel Art Drawing Utilities ═══
+function px(cx, x, y, w, h, color) {
+  cx.fillStyle = color;
+  cx.fillRect(x, y, w || 1, h || 1);
+}
+
+// Draw a pixel art sprite on a 32x32 grid, scaled to fill canvas
+function drawPixelSprite(canvasId, drawFn) {
+  const cv = document.getElementById(canvasId);
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+
+  // Create offscreen 32x32 canvas
+  const off = document.createElement('canvas');
+  off.width = 32; off.height = 32;
+  const oc = off.getContext('2d');
+
+  drawFn(oc);
+
+  // Scale up with pixelated rendering
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(off, 0, 0, 32, 32, 16, 16, W - 32, H - 32);
+}
+
+// ═══ GUNNER (像素風槍手) ═══
+function drawPixelGunner(c) {
+  // -- Beret (貝雷帽) --
+  px(c, 13, 5, 7, 1, '#3a7fc1'); // top
+  px(c, 12, 6, 9, 1, '#4a8fd4'); // mid
+  px(c, 12, 7, 9, 1, '#3a7fc1'); // brim
+  px(c, 11, 7, 1, 1, '#2a5f8e'); // brim edge
+  px(c, 21, 7, 1, 1, '#2a5f8e');
+  // beret highlight
+  px(c, 14, 5, 2, 1, '#5aaef0');
+
+  // -- Head --
+  px(c, 13, 8, 7, 1, '#FFD5B0'); // top
+  px(c, 12, 9, 9, 5, '#FFCBA0'); // face
+  px(c, 13, 14, 7, 1, '#FFCBA0'); // chin
+  // Eyes
+  px(c, 14, 10, 1, 2, '#2a2a40');
+  px(c, 18, 10, 1, 2, '#2a2a40');
+  // Eye whites/highlight
+  px(c, 14, 10, 1, 1, '#fff');
+  px(c, 18, 10, 1, 1, '#fff');
+  // Mouth
+  px(c, 15, 13, 3, 1, '#e8a080');
+
+  // -- Coat/Body (風衣) --
+  px(c, 11, 15, 11, 1, '#4a8fd4'); // shoulders
+  px(c, 10, 16, 13, 1, '#4a8fd4');
+  px(c, 10, 17, 13, 6, '#3a7fc1'); // main coat
+  px(c, 10, 23, 5, 2, '#3a7fc1'); // left coat tail
+  px(c, 18, 23, 5, 2, '#3a7fc1'); // right coat tail
+  // Coat center line
+  px(c, 16, 16, 1, 7, '#2a5f8e');
+  // Coat highlights
+  px(c, 11, 17, 1, 5, '#5aaef0');
+  // Belt
+  px(c, 10, 20, 13, 1, '#8B6914');
+  px(c, 15, 20, 3, 1, '#FFD43B'); // belt buckle
+
+  // -- Gun (手槍，右手持) --
+  px(c, 22, 17, 5, 1, '#555'); // barrel top
+  px(c, 22, 18, 6, 2, '#444'); // barrel
+  px(c, 27, 17, 2, 3, '#333'); // muzzle
+  px(c, 22, 20, 3, 3, '#333'); // grip
+  px(c, 28, 18, 1, 1, '#FF6'); // muzzle flash
+  // Hand
+  px(c, 21, 17, 1, 3, '#FFCBA0');
+
+  // -- Legs --
+  px(c, 12, 25, 3, 3, '#2a5080'); // left leg
+  px(c, 18, 25, 3, 3, '#2a5080'); // right leg
+  // Boots
+  px(c, 11, 27, 4, 2, '#222');
+  px(c, 17, 27, 4, 2, '#222');
+  px(c, 11, 28, 5, 1, '#333');
+  px(c, 17, 28, 5, 1, '#333');
+}
+
+// ═══ SWORDSMAN (像素風劍士) ═══
+function drawPixelSwordsman(c) {
+  // -- Headband (頭巾) --
+  px(c, 13, 7, 7, 1, '#FF922B');
+  px(c, 12, 8, 2, 1, '#FF922B');
+  // Headband tails (飄帶)
+  px(c, 10, 8, 2, 1, '#FF922B');
+  px(c, 9, 9, 2, 1, '#E8590C');
+  px(c, 8, 10, 2, 1, '#FF922B');
+
+  // -- Hair (spiky orange) --
+  px(c, 14, 5, 2, 1, '#CC6600');
+  px(c, 13, 6, 7, 1, '#CC6600');
+  px(c, 17, 4, 2, 1, '#CC6600'); // spike
+  px(c, 19, 5, 1, 1, '#CC6600'); // spike
+
+  // -- Head --
+  px(c, 13, 7, 7, 1, '#FFD5B0');
+  px(c, 12, 8, 9, 5, '#FFCBA0');
+  px(c, 13, 13, 7, 1, '#FFCBA0');
+  // Eyes (determined)
+  px(c, 14, 9, 1, 2, '#2a2a40');
+  px(c, 18, 9, 1, 2, '#2a2a40');
+  px(c, 14, 9, 1, 1, '#fff');
+  px(c, 18, 9, 1, 1, '#fff');
+  // Mouth (grin)
+  px(c, 15, 12, 3, 1, '#e8a080');
+  px(c, 15, 11, 1, 1, '#e8a080');
+  px(c, 17, 11, 1, 1, '#e8a080');
+
+  // -- Light Armor (輕甲) --
+  px(c, 11, 14, 11, 1, '#E8590C'); // shoulders
+  px(c, 10, 15, 13, 1, '#FF922B');
+  // Shoulder pads
+  px(c, 9, 14, 2, 2, '#CC6600');
+  px(c, 22, 14, 2, 2, '#CC6600');
+  // Body
+  px(c, 11, 16, 11, 5, '#FF922B');
+  // Chest plate
+  px(c, 13, 15, 7, 4, '#FFB060');
+  px(c, 14, 16, 5, 2, '#FFD43B'); // emblem
+  // Belt
+  px(c, 11, 21, 11, 1, '#8B6914');
+  px(c, 15, 21, 3, 1, '#FFD43B');
+
+  // -- Sword (長劍，右手) --
+  px(c, 23, 6, 1, 4, '#E8E8E8'); // blade tip
+  px(c, 23, 10, 1, 6, '#CED4DA'); // blade
+  px(c, 22, 8, 1, 8, '#fff');    // blade highlight
+  px(c, 22, 16, 3, 1, '#FFD43B'); // guard
+  px(c, 23, 17, 1, 3, '#5C3A1E'); // handle
+  // Hand
+  px(c, 22, 16, 1, 3, '#FFCBA0');
+
+  // -- Legs --
+  px(c, 12, 22, 3, 3, '#CC6600');
+  px(c, 18, 22, 3, 3, '#CC6600');
+  // Boots
+  px(c, 11, 25, 4, 2, '#8B4513');
+  px(c, 17, 25, 4, 2, '#8B4513');
+  px(c, 11, 26, 5, 1, '#A0522D');
+  px(c, 17, 26, 5, 1, '#A0522D');
+}
+
+// ═══ TANK (像素風坦克) ═══
+function drawPixelTank(c) {
+  // -- Heavy Helmet (重盔) --
+  px(c, 12, 4, 9, 1, '#4a8a4a');
+  px(c, 11, 5, 11, 3, '#3a7a3a');
+  // Visor slit
+  px(c, 13, 7, 7, 1, '#1a1a2e');
+  px(c, 14, 6, 5, 1, '#2E7D32');
+  // Helmet crest
+  px(c, 16, 2, 1, 3, '#51CF66');
+  px(c, 15, 3, 3, 1, '#51CF66');
+  // Eyes through visor
+  px(c, 14, 7, 1, 1, '#51CF66');
+  px(c, 18, 7, 1, 1, '#51CF66');
+
+  // -- Face under helmet --
+  px(c, 12, 8, 9, 3, '#FFCBA0');
+  px(c, 13, 11, 7, 1, '#FFCBA0');
+  // Jaw
+  px(c, 14, 11, 5, 1, '#FFD5B0');
+
+  // -- Heavy Armor (厚甲) --
+  px(c, 9, 12, 15, 1, '#3a7a3a'); // broad shoulders
+  px(c, 8, 13, 17, 1, '#2E7D32');
+  // Shoulder plates
+  px(c, 7, 12, 3, 3, '#4a8a4a');
+  px(c, 23, 12, 3, 3, '#4a8a4a');
+  px(c, 7, 12, 3, 1, '#51CF66'); // highlight
+  px(c, 23, 12, 3, 1, '#51CF66');
+  // Body (wide)
+  px(c, 9, 14, 15, 7, '#2E7D32');
+  // Chest plate
+  px(c, 11, 14, 11, 5, '#3a7a3a');
+  // Cross emblem
+  px(c, 15, 15, 3, 1, '#51CF66');
+  px(c, 16, 14, 1, 3, '#51CF66');
+  // Belt
+  px(c, 9, 21, 15, 1, '#5C3A1E');
+  px(c, 14, 21, 5, 1, '#8B6914');
+
+  // -- Shield (盾牌，左手) --
+  px(c, 3, 13, 5, 1, '#868E96');
+  px(c, 2, 14, 7, 8, '#ADB5BD');
+  px(c, 3, 22, 5, 1, '#868E96');
+  // Shield emblem (cross)
+  px(c, 5, 16, 1, 4, '#51CF66');
+  px(c, 3, 18, 5, 1, '#51CF66');
+  // Shield border
+  px(c, 2, 14, 1, 8, '#6c757d');
+  px(c, 8, 14, 1, 8, '#6c757d');
+  // Shield rivets
+  px(c, 3, 15, 1, 1, '#FFD43B');
+  px(c, 7, 15, 1, 1, '#FFD43B');
+  px(c, 3, 21, 1, 1, '#FFD43B');
+  px(c, 7, 21, 1, 1, '#FFD43B');
+
+  // -- Right arm / Fist --
+  px(c, 24, 14, 2, 5, '#2E7D32');
+  px(c, 25, 18, 2, 2, '#FFCBA0'); // fist
+
+  // -- Legs (armored) --
+  px(c, 11, 22, 4, 4, '#2E7D32');
+  px(c, 18, 22, 4, 4, '#2E7D32');
+  // Armored boots
+  px(c, 10, 26, 5, 2, '#3a7a3a');
+  px(c, 17, 26, 5, 2, '#3a7a3a');
+  px(c, 10, 27, 6, 1, '#4a8a4a');
+  px(c, 17, 27, 6, 1, '#4a8a4a');
+}
+
+// ═══ ASSASSIN (像素風刺客) ═══
+function drawPixelAssassin(c) {
+  // -- Hood (兜帽) --
+  px(c, 12, 4, 9, 1, '#7B2D8E');
+  px(c, 11, 5, 11, 3, '#6B1D7E');
+  px(c, 10, 6, 2, 3, '#5a1070'); // hood side
+  px(c, 21, 6, 2, 3, '#5a1070');
+  // Hood shadow
+  px(c, 12, 7, 9, 1, '#3a0a40');
+  // Hood tip
+  px(c, 16, 3, 1, 1, '#9C36B5');
+
+  // -- Eyes (glowing in shadow) --
+  px(c, 14, 8, 2, 1, '#FFD43B');
+  px(c, 18, 8, 2, 1, '#FFD43B');
+  px(c, 14, 8, 1, 1, '#fff'); // highlight
+  px(c, 18, 8, 1, 1, '#fff');
+
+  // -- Mask (面罩) --
+  px(c, 13, 9, 7, 1, '#2a2a2a');
+  px(c, 12, 10, 9, 2, '#333');
+
+  // -- Cloak (斗篷) --
+  px(c, 10, 12, 13, 1, '#6B1D7E');
+  px(c, 9, 13, 15, 10, '#5a1070');
+  // Cloak inner
+  px(c, 12, 14, 9, 7, '#3a0a40');
+  // Cloak edges
+  px(c, 9, 13, 1, 10, '#7B2D8E');
+  px(c, 23, 13, 1, 10, '#7B2D8E');
+  // Cloak bottom (jagged)
+  px(c, 9, 23, 3, 1, '#5a1070');
+  px(c, 13, 23, 2, 2, '#5a1070');
+  px(c, 18, 23, 2, 2, '#5a1070');
+  px(c, 21, 23, 3, 1, '#5a1070');
+
+  // -- Body (under cloak, slim) --
+  px(c, 13, 14, 7, 5, '#444');
+  // Belt with pouches
+  px(c, 13, 19, 7, 1, '#333');
+  px(c, 14, 19, 2, 1, '#8B6914');
+  px(c, 17, 19, 2, 1, '#8B6914');
+
+  // -- Twin Daggers (雙匕首) --
+  // Left dagger
+  px(c, 7, 14, 1, 4, '#CED4DA'); // blade
+  px(c, 7, 13, 1, 1, '#fff');   // tip
+  px(c, 6, 18, 3, 1, '#BE4BDB'); // guard
+  px(c, 7, 19, 1, 2, '#5C3A1E'); // handle
+  // Right dagger
+  px(c, 25, 14, 1, 4, '#CED4DA');
+  px(c, 25, 13, 1, 1, '#fff');
+  px(c, 24, 18, 3, 1, '#BE4BDB');
+  px(c, 25, 19, 1, 2, '#5C3A1E');
+  // Hands
+  px(c, 8, 17, 1, 2, '#FFCBA0');
+  px(c, 24, 17, 1, 2, '#FFCBA0');
+
+  // -- Legs (slim, dark) --
+  px(c, 13, 21, 3, 3, '#333');
+  px(c, 17, 21, 3, 3, '#333');
+  // Boots (light, agile)
+  px(c, 12, 24, 4, 2, '#444');
+  px(c, 17, 24, 4, 2, '#444');
+  px(c, 12, 25, 4, 1, '#555');
+  px(c, 17, 25, 4, 1, '#555');
+}
+
+// ═══ MONSTERS ═══
+
+// Tier 0: Slime (史萊姆)
+function drawPixelSlime(c) {
+  // Body (blob shape)
+  px(c, 12, 18, 9, 1, '#2ECC71');
+  px(c, 10, 17, 13, 1, '#2ECC71');
+  px(c, 9, 14, 15, 3, '#27AE60');
+  px(c, 10, 12, 13, 2, '#2ECC71');
+  px(c, 11, 11, 11, 1, '#2ECC71');
+  px(c, 12, 10, 9, 1, '#2ECC71');
+  px(c, 13, 9, 7, 1, '#3BDE80');
+  // Highlight
+  px(c, 12, 10, 3, 2, '#5BEE9A');
+  px(c, 13, 9, 2, 1, '#8BFFC0');
+  // Eyes
+  px(c, 13, 13, 2, 2, '#fff');
+  px(c, 18, 13, 2, 2, '#fff');
+  px(c, 14, 14, 1, 1, '#1a1a2e');
+  px(c, 19, 14, 1, 1, '#1a1a2e');
+  // Mouth
+  px(c, 15, 16, 3, 1, '#1a6e3a');
+  // Drip
+  px(c, 22, 17, 2, 3, '#27AE60');
+  px(c, 23, 20, 1, 1, '#2ECC71');
+  // Shadow
+  px(c, 10, 19, 13, 1, '#1a6e3a');
+}
+
+// Tier 1: Bat (蝙蝠)
+function drawPixelBat(c) {
+  // Body (small, dark)
+  px(c, 14, 13, 5, 4, '#6a4a7a');
+  px(c, 15, 12, 3, 1, '#7a5a8a');
+  px(c, 15, 17, 3, 1, '#5a3a6a');
+  // Head
+  px(c, 15, 10, 3, 2, '#7a5a8a');
+  // Ears
+  px(c, 14, 8, 1, 2, '#6a4a7a');
+  px(c, 18, 8, 1, 2, '#6a4a7a');
+  px(c, 14, 8, 1, 1, '#8a6a9a');
+  px(c, 18, 8, 1, 1, '#8a6a9a');
+  // Eyes (red, glowing)
+  px(c, 15, 10, 1, 1, '#FF4444');
+  px(c, 17, 10, 1, 1, '#FF4444');
+  // Fangs
+  px(c, 15, 12, 1, 1, '#fff');
+  px(c, 17, 12, 1, 1, '#fff');
+  // Left wing
+  px(c, 6, 11, 8, 1, '#5a3a6a');
+  px(c, 4, 12, 10, 1, '#6a4a7a');
+  px(c, 3, 13, 11, 1, '#5a3a6a');
+  px(c, 4, 14, 4, 1, '#6a4a7a');
+  px(c, 10, 14, 4, 1, '#6a4a7a');
+  px(c, 5, 15, 2, 1, '#5a3a6a');
+  px(c, 11, 15, 2, 1, '#5a3a6a');
+  // Right wing
+  px(c, 19, 11, 8, 1, '#5a3a6a');
+  px(c, 19, 12, 10, 1, '#6a4a7a');
+  px(c, 19, 13, 11, 1, '#5a3a6a');
+  px(c, 19, 14, 4, 1, '#6a4a7a');
+  px(c, 25, 14, 4, 1, '#6a4a7a');
+  px(c, 20, 15, 2, 1, '#5a3a6a');
+  px(c, 26, 15, 2, 1, '#5a3a6a');
+  // Wing membrane highlights
+  px(c, 6, 12, 2, 1, '#7a5a8a');
+  px(c, 25, 12, 2, 1, '#7a5a8a');
+}
+
+// Tier 2: Goblin (哥布林)
+function drawPixelGoblin(c) {
+  // Ears (pointy)
+  px(c, 10, 8, 2, 1, '#558B2F');
+  px(c, 21, 8, 2, 1, '#558B2F');
+  px(c, 11, 7, 1, 1, '#66AA33');
+  px(c, 21, 7, 1, 1, '#66AA33');
+  // Head
+  px(c, 13, 6, 7, 1, '#7CB342');
+  px(c, 12, 7, 9, 5, '#689F38');
+  px(c, 13, 12, 7, 1, '#689F38');
+  // Eyes (big, yellow, menacing)
+  px(c, 13, 8, 3, 2, '#FFD43B');
+  px(c, 17, 8, 3, 2, '#FFD43B');
+  px(c, 14, 9, 1, 1, '#1a1a00');
+  px(c, 18, 9, 1, 1, '#1a1a00');
+  // Nose
+  px(c, 16, 10, 1, 1, '#558B2F');
+  // Mouth (toothy grin)
+  px(c, 13, 11, 7, 1, '#3a5a1a');
+  px(c, 14, 11, 1, 1, '#fff');
+  px(c, 16, 11, 1, 1, '#fff');
+  px(c, 18, 11, 1, 1, '#fff');
+  // Body (small, hunched)
+  px(c, 12, 13, 9, 1, '#8B6914');
+  px(c, 11, 14, 11, 5, '#A0522D');
+  // Loincloth
+  px(c, 13, 17, 7, 2, '#8B6914');
+  // Arms
+  px(c, 9, 14, 2, 4, '#689F38');
+  px(c, 22, 14, 2, 4, '#689F38');
+  // Club (right hand)
+  px(c, 24, 10, 2, 3, '#8B4513');
+  px(c, 23, 8, 4, 2, '#6D3A0A');
+  px(c, 24, 18, 1, 2, '#8B4513');
+  // Legs
+  px(c, 12, 19, 3, 3, '#689F38');
+  px(c, 18, 19, 3, 3, '#689F38');
+  // Feet
+  px(c, 11, 22, 4, 1, '#558B2F');
+  px(c, 18, 22, 4, 1, '#558B2F');
+}
+
+// Tier 3: Skeleton Knight (骷髏騎士)
+function drawPixelSkeleton(c) {
+  // Helmet
+  px(c, 12, 4, 9, 1, '#868E96');
+  px(c, 11, 5, 11, 2, '#6c757d');
+  px(c, 12, 7, 9, 1, '#495057');
+  // Skull face
+  px(c, 12, 7, 9, 4, '#E8E0D4');
+  px(c, 13, 11, 7, 1, '#E8E0D4');
+  px(c, 14, 12, 5, 1, '#D4C8BC');
+  // Eye sockets
+  px(c, 13, 8, 2, 2, '#1a1a2e');
+  px(c, 18, 8, 2, 2, '#1a1a2e');
+  // Eye glow
+  px(c, 13, 8, 1, 1, '#FF4444');
+  px(c, 18, 8, 1, 1, '#FF4444');
+  // Nose
+  px(c, 16, 10, 1, 1, '#B0A090');
+  // Teeth
+  px(c, 14, 11, 1, 1, '#fff');
+  px(c, 15, 12, 1, 1, '#fff');
+  px(c, 16, 11, 1, 1, '#fff');
+  px(c, 17, 12, 1, 1, '#fff');
+  px(c, 18, 11, 1, 1, '#fff');
+  // Armor body
+  px(c, 10, 13, 13, 1, '#6c757d');
+  px(c, 9, 14, 15, 7, '#495057');
+  // Armor plates
+  px(c, 11, 14, 11, 3, '#6c757d');
+  // Ribs visible through armor gap
+  px(c, 13, 17, 7, 2, '#D4C8BC');
+  px(c, 13, 17, 1, 1, '#B0A090');
+  px(c, 15, 17, 1, 1, '#B0A090');
+  px(c, 17, 17, 1, 1, '#B0A090');
+  px(c, 19, 17, 1, 1, '#B0A090');
+  // Shoulder guards
+  px(c, 7, 13, 3, 3, '#868E96');
+  px(c, 23, 13, 3, 3, '#868E96');
+  // Sword (left hand)
+  px(c, 6, 6, 1, 6, '#CED4DA');
+  px(c, 6, 5, 1, 1, '#fff');
+  px(c, 5, 12, 3, 1, '#868E96'); // guard
+  px(c, 6, 13, 1, 3, '#5C3A1E'); // handle
+  // Shield (right hand — smaller)
+  px(c, 25, 14, 4, 6, '#6c757d');
+  px(c, 26, 15, 2, 4, '#868E96');
+  px(c, 26, 17, 2, 1, '#FF4444'); // emblem
+  // Legs (bone + armor)
+  px(c, 12, 21, 3, 4, '#D4C8BC');
+  px(c, 18, 21, 3, 4, '#D4C8BC');
+  px(c, 12, 21, 3, 1, '#495057');
+  px(c, 18, 21, 3, 1, '#495057');
+  // Boots
+  px(c, 11, 25, 4, 2, '#495057');
+  px(c, 17, 25, 4, 2, '#495057');
+}
+
+// Tier 4: Demon (惡魔)
+function drawPixelDemon(c) {
+  // Horns
+  px(c, 11, 3, 2, 1, '#8B0000');
+  px(c, 10, 4, 2, 2, '#A00000');
+  px(c, 20, 3, 2, 1, '#8B0000');
+  px(c, 21, 4, 2, 2, '#A00000');
+  // Head
+  px(c, 13, 5, 7, 1, '#C0392B');
+  px(c, 12, 6, 9, 5, '#E74C3C');
+  px(c, 13, 11, 7, 1, '#C0392B');
+  // Eyes (fiery)
+  px(c, 13, 7, 2, 2, '#FFD43B');
+  px(c, 18, 7, 2, 2, '#FFD43B');
+  px(c, 14, 8, 1, 1, '#FF0');
+  px(c, 19, 8, 1, 1, '#FF0');
+  // Mouth
+  px(c, 14, 10, 5, 1, '#8B0000');
+  px(c, 15, 10, 1, 1, '#fff'); // fang
+  px(c, 17, 10, 1, 1, '#fff');
+  // Wings (left)
+  px(c, 3, 10, 2, 1, '#8B0000');
+  px(c, 2, 11, 4, 1, '#A00000');
+  px(c, 1, 12, 6, 1, '#8B0000');
+  px(c, 2, 13, 5, 1, '#C0392B');
+  px(c, 3, 14, 5, 1, '#A00000');
+  px(c, 5, 15, 4, 1, '#8B0000');
+  px(c, 7, 16, 3, 1, '#A00000');
+  // Wings (right)
+  px(c, 28, 10, 2, 1, '#8B0000');
+  px(c, 27, 11, 4, 1, '#A00000');
+  px(c, 26, 12, 6, 1, '#8B0000');
+  px(c, 26, 13, 5, 1, '#C0392B');
+  px(c, 24, 14, 5, 1, '#A00000');
+  px(c, 23, 15, 4, 1, '#8B0000');
+  px(c, 23, 16, 3, 1, '#A00000');
+  // Body (muscular)
+  px(c, 10, 12, 13, 1, '#C0392B');
+  px(c, 10, 13, 13, 8, '#E74C3C');
+  // Chest plate / markings
+  px(c, 13, 14, 7, 3, '#C0392B');
+  px(c, 15, 15, 3, 1, '#FFD43B'); // power symbol
+  px(c, 16, 14, 1, 3, '#FFD43B');
+  // Arms
+  px(c, 8, 13, 2, 5, '#E74C3C');
+  px(c, 23, 13, 2, 5, '#E74C3C');
+  // Claws
+  px(c, 7, 18, 2, 1, '#FFD43B');
+  px(c, 24, 18, 2, 1, '#FFD43B');
+  // Belt
+  px(c, 10, 21, 13, 1, '#8B0000');
+  px(c, 14, 21, 5, 1, '#FFD43B');
+  // Legs
+  px(c, 11, 22, 4, 4, '#C0392B');
+  px(c, 18, 22, 4, 4, '#C0392B');
+  // Hooves
+  px(c, 10, 26, 5, 2, '#4a0000');
+  px(c, 18, 26, 5, 2, '#4a0000');
+  // Tail
+  px(c, 15, 22, 1, 1, '#C0392B');
+  px(c, 14, 23, 1, 1, '#A00000');
+  px(c, 13, 24, 1, 1, '#C0392B');
+  px(c, 12, 25, 1, 1, '#A00000');
+  px(c, 11, 25, 2, 1, '#E74C3C'); // tail tip (diamond)
+}
+
+// ═══ Render all ═══
+drawPixelSprite('pg', drawPixelGunner);
+drawPixelSprite('ps', drawPixelSwordsman);
+drawPixelSprite('pt', drawPixelTank);
+drawPixelSprite('pa', drawPixelAssassin);
+drawPixelSprite('m0', drawPixelSlime);
+drawPixelSprite('m1', drawPixelBat);
+drawPixelSprite('m2', drawPixelGoblin);
+drawPixelSprite('m3', drawPixelSkeleton);
+drawPixelSprite('m4', drawPixelDemon);
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 import { EXP_BASE, EXP_SCALE, MAX_PARTICLES, SPAWN_R } from "./config.js";
 import { $ } from "./utils.js";
 import { C } from "./cards.js";
-import { RC, LVC } from "./config.js";
+import { RC, LVC, charCfg, PR } from "./config.js";
 import { sfx, bgmStop, getActx, getMuted } from "./audio.js";
 import { setHudVW, setHudVH } from "./hud.js";
 import { par, filterPar, burst } from "./render.js";
@@ -96,6 +96,14 @@ export function resize() {
   if (ctl && isLand) { ctl.style.paddingLeft = (safeL + 12) + "px"; ctl.style.paddingRight = (safeR + 12) + "px"; }
   else if (ctl) { ctl.style.paddingLeft = "12px"; ctl.style.paddingRight = "12px"; }
   $("minimap").style.display = g ? "block" : "none";
+  // iOS: 按鈕收緊到攻擊搖桿旁（螢幕小、無全螢幕）
+  const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (_isIOS) {
+    const uw = $("ultW"), sb = $("skillBtn"), db = $("dodgeBtn");
+    if (uw) { uw.style.bottom = "120px"; uw.style.right = "4px"; }
+    if (sb) { sb.style.bottom = "108px"; sb.style.right = "70px"; sb.style.width = "min(44px,11vw)"; sb.style.height = "min(44px,11vw)"; }
+    if (db) { db.style.bottom = "58px"; db.style.right = "110px"; db.style.width = "min(44px,11vw)"; db.style.height = "min(44px,11vw)"; }
+  }
 }
 
 // ── show ──────────────────────────────────────────────────────────────────────
@@ -242,11 +250,13 @@ export function playEndCutscene(onComplete) {
   ov.onclick = () => { clearTimeout(_cutsceneTimeout); finish(); };
 
   vid.play().catch(() => {
-    // 無法播放時直接完成
-    clearTimeout(_cutsceneTimeout);
-    if (_fxRaf) cancelAnimationFrame(_fxRaf);
-    ov.style.display = "none";
-    if (onComplete) onComplete();
+    // iOS：有聲播放失敗 → 嘗試靜音播放
+    vid.muted = true;
+    vid.play().catch(() => {
+      // 完全無法播放 → 顯示靜態勝利畫面 3 秒
+      vid.style.display = "none";
+      setTimeout(() => { clearTimeout(_cutsceneTimeout); finish(); }, 3000);
+    });
   });
 }
 
@@ -396,12 +406,22 @@ export function toggleStatsPanel() {
     const p = g.p;
     let h = '<div style="color:#74C0FC;font-weight:900;font-size:12px;margin-bottom:6px">🧙 主角能力值</div>';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-bottom:8px">';
+    const _cc = charCfg(g.charType);
+    const _atkSpd = _cc.atkType === "melee" && _cc.atkCD > 0
+      ? (1000 / (_cc.atkCD * (p.fr || 1))).toFixed(1) + "次/秒"
+      : Math.round(1000 / (115 * (p.fr || 1))) + "發/秒";
     const ps = [
-      ["攻擊力", Math.round(p.atk)], ["護甲", Math.round((p.armor || 0) * 100) + "%"],
-      ["移速", p.speed?.toFixed(1)], ["暴擊率", Math.round((p.crit || 0.05) * 100) + "%"],
-      ["閃避", Math.round((p.dodge || 0) * 100) + "%"], ["穿透", p.pierce || 0],
-      ["吸血", p.ls || 0], ["回復", p.regen?.toFixed(1) || 0],
-      ["復活", p.revive || 0], ["等級", g.level],
+      ["等級", g.level], ["攻擊力", Math.round(p.atk)],
+      ["攻速", _atkSpd], ["攻擊距離", _cc.atkType === "ranged" ? "遠程" : Math.round(PR * 5)],
+      ["移速", p.speed?.toFixed(1)],
+      ["暴擊率", Math.round((p.crit || .05) * 100) + "%"], ["護甲", Math.round((p.armor || 0) * 100) + "%"],
+      ["閃避", Math.round((p.dodge || 0) * 100) + "%"], ["分裂", p.split || 1],
+      ["穿透", p.pierce || 0], ["吸血", p.ls || 0],
+      ["回復", p.regen?.toFixed(1) || 0], ["復活", p.revive || 0],
+      ["緩速", p.slow < 1 ? Math.round((1 - p.slow) * 100) + "%" : "無"], ["反刺", p.thorns ? Math.round(p.thorns * 100) + "%" : "無"],
+      ["元素倍率", p.elemBoost?.toFixed(1) || 1], ["Boss傷", p.bossDmg?.toFixed(1) || 1],
+      ["等級傷害", ((p.levelDmgMul || 1) * 100 - 100).toFixed(0) + "%"], ["風刃", p.windBlades || 0],
+      ["召喚球", p.orbiters || 0], ["迴力鏢", p.boomerang || 0],
     ];
     ps.forEach(([k, v]) => { h += `<div style="display:flex;justify-content:space-between;padding:1px 0"><span style="color:rgba(255,255,255,.5)">${k}</span><span style="color:#fff;font-weight:700">${v}</span></div>`; });
     h += '</div>';
