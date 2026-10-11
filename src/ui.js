@@ -1,3 +1,4 @@
+import { drawPixelPhoenix, drawCardWorld } from './card-vfx.js';
 import { getLayoutViewport, applyControlLayout } from './control-layout.js';
 import { cardEmblem, pixelEmblem } from "./button-art.js";
 /**
@@ -447,53 +448,7 @@ export function toggleStatsPanel() {
 }
 
 // ── Phoenix revival animation ─────────────────────────────────────────────────
-export function drawPhoenixSprite(ctx, cx2, cy2, size, time, flapPhase) {
-  const s = size / 128, t = time || 0, flap2 = flapPhase || 0;
-  ctx.save(); ctx.translate(cx2, cy2);
-  const og = ctx.createRadialGradient(0, 0, 0, 0, 0, 90 * s);
-  og.addColorStop(0, "rgba(255,160,50,.2)"); og.addColorStop(0.5, "rgba(255,120,30,.05)"); og.addColorStop(1, "rgba(255,100,30,0)");
-  ctx.fillStyle = og; ctx.beginPath(); ctx.arc(0, 0, 90 * s, 0, Math.PI * 2); ctx.fill();
-  function dwing(side) {
-    const flapAngle = flap2 * 30;
-    [{ a: -75, len: 75, w: 20, curve: 18 }, { a: -55, len: 68, w: 18, curve: 14 }, { a: -35, len: 58, w: 17, curve: 11 }, { a: -18, len: 45, w: 15, curve: 8 }].forEach((f, i) => {
-      const fe = flapAngle * (1 - i * 0.15), angle = (f.a + fe) * Math.PI / 180, len = f.len * s, ox = side * 20 * s, oy = -5 * s;
-      const tipX = ox + Math.cos(angle) * len * side, tipY = oy + Math.sin(angle) * len;
-      const curv = f.curve * s, midX = (ox + tipX) / 2, midY = (oy + tipY) / 2;
-      const perpX = -Math.sin(angle) * curv * side, perpY = Math.cos(angle) * curv;
-      ctx.save();
-      const fg = ctx.createLinearGradient(ox, oy, tipX, tipY);
-      fg.addColorStop(0, "#FF922B"); fg.addColorStop(0.35, "#FFC040"); fg.addColorStop(0.7, "#FFD43B"); fg.addColorStop(1, "#FFE880");
-      ctx.shadowColor = "#FFD43B"; ctx.shadowBlur = 14 * s; ctx.fillStyle = fg; ctx.globalAlpha = 0.85;
-      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.quadraticCurveTo(midX + perpX, midY + perpY, tipX, tipY);
-      ctx.quadraticCurveTo(midX - perpX * 0.5, midY - perpY * 0.5, ox, oy); ctx.closePath(); ctx.fill();
-      ctx.shadowBlur = 5 * s; ctx.strokeStyle = "#FFE873"; ctx.lineWidth = 2 * s; ctx.globalAlpha = 0.65; ctx.stroke();
-      ctx.shadowBlur = 0; ctx.strokeStyle = "rgba(255,255,220,.35)"; ctx.lineWidth = 1 * s; ctx.globalAlpha = 0.5;
-      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.quadraticCurveTo(midX + perpX * 0.3, midY + perpY * 0.3, tipX, tipY); ctx.stroke();
-      ctx.restore();
-    });
-  }
-  dwing(1); dwing(-1); ctx.globalAlpha = 1; ctx.shadowBlur = 0;
-  const bodyR = 26 * s; ctx.save(); ctx.shadowColor = "#FF922B"; ctx.shadowBlur = 20 * s;
-  const bg = ctx.createRadialGradient(-3 * s, -6 * s, 2 * s, 0, 2 * s, bodyR * 1.1);
-  bg.addColorStop(0, "#FFFFFF"); bg.addColorStop(0.15, "#FFF0D6"); bg.addColorStop(0.35, "#FFB74D");
-  bg.addColorStop(0.6, "#FF922B"); bg.addColorStop(0.85, "#E8590C"); bg.addColorStop(1, "#D9480F");
-  ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(0, 0, bodyR, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-  ctx.save(); ctx.shadowColor = "#FFD43B"; ctx.shadowBlur = 6 * s; ctx.strokeStyle = "rgba(255,220,80,.3)"; ctx.lineWidth = 1.5 * s;
-  ctx.beginPath(); ctx.arc(0, 0, bodyR, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-  const hl = ctx.createRadialGradient(-2 * s, -4 * s, 0, 0, 0, bodyR * 0.65);
-  hl.addColorStop(0, "rgba(255,255,255,.85)"); hl.addColorStop(0.25, "rgba(255,255,255,.35)");
-  hl.addColorStop(0.55, "rgba(255,240,200,.1)"); hl.addColorStop(1, "rgba(255,200,100,0)");
-  ctx.fillStyle = hl; ctx.beginPath(); ctx.arc(-2 * s, -4 * s, bodyR * 0.65, 0, Math.PI * 2); ctx.fill();
-  [{ x: 0, h: 20, w: 5, c: "#FFD43B", p: 0 }, { x: -5, h: 15, w: 4, c: "#FF922B", p: 1.3 }, { x: 5, h: 14, w: 4, c: "#FF922B", p: 2.1 }].forEach(f => {
-    const sway = Math.sin(t / 140 + f.p) * 3 * s, h = f.h * s + Math.sin(t / 170 + f.p) * 2 * s, bx = f.x * s, by = -bodyR * 0.95;
-    ctx.save(); ctx.shadowColor = f.c; ctx.shadowBlur = 6 * s; ctx.globalAlpha = 0.8;
-    const fg2 = ctx.createLinearGradient(bx, by, bx + sway, by - h);
-    fg2.addColorStop(0, f.c); fg2.addColorStop(1, "rgba(255,255,200,0)"); ctx.fillStyle = fg2;
-    ctx.beginPath(); ctx.moveTo(bx - f.w * s * 0.5, by); ctx.quadraticCurveTo(bx + sway, by - h, bx + sway * 0.5, by - h);
-    ctx.quadraticCurveTo(bx + sway, by - h * 0.5, bx + f.w * s * 0.5, by); ctx.closePath(); ctx.fill(); ctx.restore();
-  });
-  ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.restore();
-}
+export function drawPhoenixSprite(ctx,cx2,cy2,size,time,flapPhase){drawPixelPhoenix(ctx,cx2,cy2,size,time,flapPhase);}
 
 export function triggerPhoenixRevive() {
   const g = _getG();
@@ -544,12 +499,8 @@ export function phoenixAnimLoop() {
     const bt = Math.min((now - a.startTime) / a.burstDur, 1), px = a.targetX, py = a.targetY;
     cx.save(); cx.globalAlpha = bt < 0.5 ? 1 : (1 - (bt - 0.5) / 0.5);
     drawPhoenixSprite(cx, px, py - 10, 60 * (1 - bt * 0.3), now, Math.sin(now / 250) * 0.4); cx.restore();
-    ["#FF922B", "#FFD43B", "#FF6B6B"].forEach((col, i) => {
-      const rr = bt * (50 + i * 25); cx.globalAlpha = (1 - bt) * (0.45 - i * 0.08);
-      cx.shadowColor = col; cx.shadowBlur = 10; cx.strokeStyle = col; cx.lineWidth = 2.5 - i * 0.5;
-      cx.beginPath(); cx.arc(px, py, rr, 0, Math.PI * 2); cx.stroke();
-    });
-    cx.globalAlpha = 1; cx.shadowBlur = 0;
+    cx.globalAlpha=1;cx.shadowBlur=0;
+    drawCardWorld(cx,{p:{x:px,y:py}},now,18,1.2*(1-bt));
     if (par.length < MAX_PARTICLES && bt < 0.8) {
       const fc = ["#FF922B", "#FFD43B", "#FF6B6B"];
       for (let i = 0; i < 2; i++) {

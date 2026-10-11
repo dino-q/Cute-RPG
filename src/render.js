@@ -1,3 +1,4 @@
+import { drawCardPlayerLayer, drawCardStatus } from './card-vfx.js';
 import { drawPixelMelee } from "./melee-sprite.js";
 // Render module — drawing functions for player, enemy, particles, title hero
 import S from "./state.js";
@@ -260,6 +261,8 @@ export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
   const fx = player ? player.fx || {} : {};
   const ct = player?.charType || (g ? g.charType : "gunner");
   const cc = CHAR[ct] || CHAR.gunner;
+  cx.shadowBlur=0;
+  if(renderOptions?.effects!==false)drawCardPlayerLayer(cx,player,x,cy,r,performance.now(),false);
   // shadow
   cx.fillStyle = "rgba(0,0,0,.2)"; cx.beginPath(); cx.ellipse(x, y + r + 2, r * (ct === "tank" ? .75 : .6), 2.5, 0, 0, Math.PI * 2); cx.fill();
 
@@ -275,7 +278,7 @@ export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
   } else if (ct === "gunner") {
     const attacking = renderOptions?.aiming || (Number.isFinite(player?._pixelShotAt) && performance.now() - player._pixelShotAt < 550);
     const direction = attacking ? (player?._ad || (g && g.ad) || { x: f, y: 0 }) : { x: 0, y: 1 };
-    if (!drawPixelGunner(cx, x, cy, r, direction, player?._pixelShotAt)) {
+    if (!drawPixelGunner(cx, x, cy, r, direction, player?._pixelShotAt, player)) {
     // ─── 槍手：身體 + 槍（含後座力動畫）───
     const bg = cx.createRadialGradient(x - f * r * .1, cy - r * .3, r * .1, x, cy, r);
     bg.addColorStop(0, "#fff"); bg.addColorStop(.3, cc.colMid); bg.addColorStop(1, cc.col);
@@ -562,24 +565,13 @@ export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
     }
   }
 
-  // 守護星盾牌（卡牌效果，所有角色通用）
-  if (g && g.p._sh && ct !== "tank") {
-    cx.save(); cx.translate(x + f * r * .55, cy + r * .15); cx.rotate(f > 0 ? -.15 : .15);
-    cx.globalAlpha = .9;
-    cx.fillStyle = "#868E96"; cx.beginPath();
-    cx.moveTo(0, -8); cx.lineTo(7, -4); cx.lineTo(6, 4); cx.lineTo(0, 9); cx.lineTo(-6, 4); cx.lineTo(-7, -4); cx.closePath(); cx.fill();
-    cx.strokeStyle = "#ADB5BD"; cx.lineWidth = 1.2; cx.stroke();
-    cx.strokeStyle = "#CED4DA"; cx.lineWidth = .8;
-    cx.beginPath(); cx.moveTo(0, -5); cx.lineTo(0, 6); cx.stroke();
-    cx.beginPath(); cx.moveTo(-4, 0); cx.lineTo(4, 0); cx.stroke();
-    cx.fillStyle = "#fff"; cx.globalAlpha = .3; cx.beginPath(); cx.arc(-1.5, -2, 2, 0, Math.PI * 2); cx.fill();
-    cx.restore();
-  }
+  if(renderOptions?.effects!==false)drawCardPlayerLayer(cx,player,x,cy,r,performance.now(),true);
   cx.restore();
 }
 
 /* ═══ draw enemy ═══ */
 export function drawEnemy(e) {
+  drawCardStatus(cx,e,performance.now());
   const x = e.x, y = e.y, r = e.r, tier = e.tier || 0, f = e.face || 1;
   const bob = Math.sin(e.t * 3) * 2, cy = y + bob;
   const bhLeft = (e.bhExeAt || 0) - (g ? g.time : 0);

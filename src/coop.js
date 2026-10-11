@@ -1,3 +1,4 @@
+import { drawCardBullet, drawCardLightning, drawCardWorld, drawCardStrike, revealCard } from './card-vfx.js';
 import { cardEmblem } from "./button-art.js";
 /* ═══ coop.js — PeerJS 連線、狀態同步 ═══ */
 import { Peer } from "peerjs";
@@ -309,7 +310,7 @@ export function _applyP2Card(cardId) {
   let lv = 0;
   if (ex) { if (ex.lv < 2) { ex.lv++; lv = ex.lv; } else return; }
   else { inv2.push({ id: cd.id, lv: 0 }); }
-  cd.ap[lv](g.p2);
+  cd.ap[lv](g.p2); revealCard(g.p2,cd);
   g.p2.hp = Math.min(g.p2.hp + 15, g.p2.maxHp);
   if (_burst) _burst(g.p2.x, g.p2.y, "#DA77F2", 12);
   g.dn.push({ x: g.p2.x, y: g.p2.y - 30, d: cd.e + cd.n + " Lv" + (lv + 1), life: 2, color: "#DA77F2", big: 1 });
@@ -336,7 +337,7 @@ export function showCoopPick(data) {
   cards.forEach((c, ci) => {
     const rc = { R: "#74C0FC", SR: "#DA77F2", SSR: "#FFD43B" }[c.r] || "#fff";
     h += `<div id="_p2c${ci}" style="width:100px;background:rgba(255,255,255,.04);border:2px solid ${rc}40;border-radius:12px;padding:10px 6px;text-align:center">`;
-    h += `${cardEmblem(c)}`;
+    h += `${cardEmblem(C.find(cd=>cd.id===c.id)||c)}`;
     h += `<div style="color:${rc};font-weight:700;font-size:12px;margin:4px 0">${c.n}</div>`;
     h += `<div style="color:${rc};font-size:9px">${c.r}</div>`;
     h += `<div style="color:rgba(255,255,255,.4);font-size:8px;margin-top:4px;line-height:1.3">${c.d[0]}</div>`;
@@ -353,15 +354,23 @@ export function showCoopPick(data) {
 }
 
 /* ═══ Co-op Network Sync ═══ */
+// Visual state uses ages/remaining time so two browser clocks never need to match.
+function packCardPlayer(p){const now=performance.now(),v={};for(const k of ['fx','_lightSaber','_poisonBlade','_minigun','invCD','_inv','_sh','projImmune','_iwActive','thorns','_guardAura','revive','orbiters','berserk','regen'])v[k]=p[k];for(const k of ['_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd'])v[k]=Math.max(0,(p[k]||0)-now);if(p._healFlash)v.healAge=now-p._healFlash;if(p._cardReveal)v.reveal={...p._cardReveal,at:now-p._cardReveal.at};return v;}
+function unpackCardPlayer(p,v){if(!v)return;const now=performance.now();Object.assign(p,v);for(const k of ['_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd'])p[k]=v[k]?now+v[k]:0;p._healFlash=v.healAge===undefined?0:now-v.healAge;p._cardReveal=v.reveal?{...v.reveal,at:now-v.reveal.at}:null;}
+function packCardScene(g){const now=performance.now();return {impacts:(g._cardImpacts||[]).map(h=>({...h,at:now-h.at})),dragon:g._dragonPet?{x:g._dragonPet.x,y:g._dragonPet.y,face:g._dragonPet.face}:null,wb:(g._wb||[]).map(w=>({x:w.x,y:w.y,life:w.life})),booms:(g._booms||[]).map(b=>({x:b.x,y:b.y,rot:b.rot,phase:b.phase})),bh:Math.max(0,(g.bhEnd||0)-now),mf:Math.max(0,(g.mfEnd||0)-now),ts:Math.max(0,(g._cardTsEnd||0)-now),mfPx:g.mfPx,mfPy:g.mfPy,mfR:g.mfR,mfDur:g.p.mfDur,quake:g._quakeRingT?now-g._quakeRingT:1000,small:g._quakeRingSmall,thorn:g._thornFlash?now-g._thornFlash:1000};}
+function unpackCardScene(g,v){if(!v)return;const now=performance.now();g._cardImpacts=(v.impacts||[]).map(h=>({...h,at:now-h.at}));g._dragonPet=v.dragon;g._wb=v.wb;g._booms=v.booms;g.bhEnd=v.bh?now+v.bh:0;g.mfEnd=v.mf?now+v.mf:0;g._cardTsEnd=v.ts?now+v.ts:0;g.mfPx=v.mfPx;g.mfPy=v.mfPy;g.mfR=v.mfR;g.p.mfDur=v.mfDur;g._quakeRingT=now-v.quake;g._quakeRingSmall=v.small;g._thornFlash=now-v.thorn;}
+
+
 export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, aim, ULT_CHARGE_NEED) {
   if (!g || !g.p2) return null;
   const cm = cam();
   return {
     t: "state",
+    cardP1:packCardPlayer(g.p),cardP2:packCardPlayer(g.p2),cardScene:packCardScene(g),
     p1: { x: g.p.x, y: g.p.y, hp: g.p.hp, mhp: g.p.maxHp, face: g.p.face, _downed: g.p._downed, _iFrameEnd: g.p._iFrameEnd, _rescueTimer: g.p._rescueTimer || 0, _pickPending: g.p._pickPending || false, charType: g.charType, _ad: g.ad, pixelShotAge: g.p._pixelShotAt ? Math.min(1000, performance.now() - g.p._pixelShotAt) : 1000 },
     p2: { x: g.p2.x, y: g.p2.y, hp: g.p2.hp, mhp: g.p2.maxHp, face: g.p2.face, _downed: g.p2._downed, _iFrameEnd: g.p2._iFrameEnd, _rescueTimer: g.p2._rescueTimer || 0, _pickPending: g.p2._pickPending || false, charType: g.p2.charType, _ad: g.p2._ad, pixelShotAge: g.p2._pixelShotAt ? Math.min(1000, performance.now() - g.p2._pixelShotAt) : 1000 },
-    ene: g.ene.map(e => ({ x: e.x, y: e.y, hp: e.hp, mhp: e.mhp, r: e.r, color: e.color, boss: e.boss, mega: e.mega, tier: e.tier, role: e.role, face: e.face, t: e.t, st: e.st, frozen: e.frozen, stageBoss: e.stageBoss, sbPhase: e.sbPhase, _coopShield: e._coopShield, _coopCircles: e._coopCircles, _coopShieldBrokenEnd: e._coopShieldBrokenEnd, _coopCircleTimer: e._coopCircleTimer, _rage: e._rage, _rageState: e._rageState, _rageDx: e._rageDx, _rageDy: e._rageDy, eliteEnemy: e.eliteEnemy, _eDashing: e._eDashing, _eShieldEnd: e._eShieldEnd, dashState: e.dashState, dashDx: e.dashDx, dashDy: e.dashDy, shieldAng: e.shieldAng, flankA: e.flankA, bhExeAt: e.bhExeAt, bossType: e.bossType, poisonT: e.poisonT, burnT: e.burnT, _tauntEnd: e._tauntEnd, _tauntTarget: e._tauntTarget })),
-    bul: g.bul.filter(b => b.life > 0).map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, crit: b.crit, life: b.life })),
+    ene: g.ene.map(e => ({ x: e.x, y: e.y, hp: e.hp, mhp: e.mhp, r: e.r, color: e.color, boss: e.boss, mega: e.mega, tier: e.tier, role: e.role, face: e.face, t: e.t, st: e.st, frozen: e.frozen, stageBoss: e.stageBoss, sbPhase: e.sbPhase, _coopShield: e._coopShield, _coopCircles: e._coopCircles, _coopShieldBrokenEnd: e._coopShieldBrokenEnd, _coopCircleTimer: e._coopCircleTimer, _rage: e._rage, _rageState: e._rageState, _rageDx: e._rageDx, _rageDy: e._rageDy, eliteEnemy: e.eliteEnemy, _eDashing: e._eDashing, _eShieldEnd: e._eShieldEnd, dashState: e.dashState, dashDx: e.dashDx, dashDy: e.dashDy, shieldAng: e.shieldAng, flankA: e.flankA, bhExeAt: e.bhExeAt, bossType: e.bossType, poisonT: e.poisonT, burnT: e.burnT, _bleedEnd:e._bleedEnd, _tauntEnd: e._tauntEnd, _tauntTarget: e._tauntTarget })),
+    bul: g.bul.filter(b => b.life > 0).map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, crit: b.crit, life: b.life,cardFx:b.cardFx,_isP2:b._isP2,_minigun:b._minigun,_armorPen:b._armorPen,hm:b.hm,trail:(b.trail||[]).slice(-3) })),
     ebul: g.ebul.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, color: b.color, life: b.life })),
     dn: g.dn.map(d => ({ x: d.x, y: d.y, d: d.d, life: d.life, color: d.color, big: d.big })),
     orbs: g.orbs.map(o => ({ x: o.x, y: o.y })),
@@ -376,10 +385,10 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
     // 特效數據
     heat: g.heat || 0, heatCD: g.heatCD || 0, _heatWarn: g._heatWarn || false,
     coopLink: g._coopLink || false,
-    lightBeams: (g._lightBeams || []).slice(-3).map(b => ({ x: b.x, y: b.y, ang: b.ang, len: b.len, t: b.t })),
+    lightBeams: (g._lightBeams || []).slice(-3).map(b => ({ x: b.x, y: b.y, ang: b.ang, len: b.len, t: performance.now()-b.t })),
     dragonFx: g._dragonBreathFx ? { ang: g._dragonBreathFx.ang, range: g._dragonBreathFx.range, on: g._dragonBreathFx.on } : null,
     ghostShadow: g._ghostShadow && g._ghostShadow.life > 0 ? { x: g._ghostShadow.x, y: g._ghostShadow.y, face: g._ghostShadow.face, life: g._ghostShadow.life } : null,
-    ghostArc: g._ghostArc ? { x: g._ghostArc.x, y: g._ghostArc.y, ang: g._ghostArc.ang, t: g._ghostArc.t } : null,
+    ghostArc: g._ghostArc ? { x: g._ghostArc.x, y: g._ghostArc.y, ang: g._ghostArc.ang, t: performance.now()-g._ghostArc.t } : null,
     ultFlash: g.ultFlash || 0,
     p1Atk: g._atkAnim ? { active: g._atkAnim.active, elapsed: performance.now() - g._atkAnim.startT, _qiSpin: g._atkAnim._qiSpin, angle: g._atkAnim.angle } : null,
     p1Wb: g._wbSwing || 0,
@@ -401,6 +410,7 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   if (data.p2 && g.p2) { if (data.p2.charType) g.p2.charType = data.p2.charType; Object.assign(g.p2, data.p2); g.p2.maxHp = data.p2.mhp; }
   if (data.p1 && Number.isFinite(data.p1.pixelShotAge)) g.p._pixelShotAt = performance.now() - data.p1.pixelShotAge;
   if (data.p2 && g.p2 && Number.isFinite(data.p2.pixelShotAge)) g.p2._pixelShotAt = performance.now() - data.p2.pixelShotAge;
+  unpackCardPlayer(g.p,data.cardP1); if(g.p2)unpackCardPlayer(g.p2,data.cardP2); unpackCardScene(g,data.cardScene);
   // 更新敵人
   if (data.ene) g.ene = data.ene;
   // 更新子彈
@@ -419,10 +429,10 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   if (data.heatCD !== undefined) g.heatCD = data.heatCD;
   if (data._heatWarn !== undefined) g._heatWarn = data._heatWarn;
   if (data.coopLink !== undefined) g._coopLink = data.coopLink;
-  if (data.lightBeams) g._lightBeams = data.lightBeams;
+  if (data.lightBeams) g._lightBeams = data.lightBeams.map(b=>({...b,t:performance.now()-b.t}));
   if (data.dragonFx !== undefined) g._dragonBreathFx = data.dragonFx;
   if (data.ghostShadow !== undefined) g._ghostShadow = data.ghostShadow;
-  if (data.ghostArc !== undefined) g._ghostArc = data.ghostArc;
+  if (data.ghostArc !== undefined) g._ghostArc = data.ghostArc?{...data.ghostArc,t:performance.now()-data.ghostArc.t}:null;
   if (data.ultFlash !== undefined) g.ultFlash = data.ultFlash;
   // 動畫同步：elapsed → 本地 startT
   var _syncNow = performance.now();
@@ -477,7 +487,7 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   // enemies
   g.ene.forEach(e => { if (e.hp > 0) drawEnemy(e); });
   // bullets
-  g.bul.forEach(b => { if (b.life > 0) { cx.fillStyle = b.crit ? "#FFD43B" : "#FFE066"; cx.beginPath(); cx.arc(b.x, b.y, BR, 0, Math.PI * 2); cx.fill(); } });
+  g.bul.forEach(b=>{if(b.life>0)drawCardBullet(cx,b,b._isP2?g.p2:g.p,performance.now(),BR);});
   // enemy bullets
   g.ebul.forEach(b => { cx.fillStyle = b.color || "#FF6B6B"; cx.beginPath(); cx.arc(b.x, b.y, 4, 0, Math.PI * 2); cx.fill(); });
   // orbs
@@ -498,18 +508,18 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   }
   // 粒子
   filterPar(p => { p.x += p.vx || 0; p.y += p.vy || 0; p.life -= .03; return p.life > 0; });
-  par.forEach(p => { cx.save(); cx.globalAlpha = Math.min(1, p.life); cx.fillStyle = p.color || "#fff"; cx.beginPath(); cx.arc(p.x, p.y, p.sz || 2, 0, Math.PI * 2); cx.fill(); cx.restore(); });
+  par.forEach(p => { cx.save(); cx.globalAlpha = Math.min(1, p.life); cx.fillStyle = p.color || "#fff"; cx.fillRect(Math.round(p.x),Math.round(p.y),Math.max(1,Math.round(p.sz||2)),Math.max(1,Math.round(p.sz||2))); cx.restore(); });
   // 閃電
   if (g.ltn) g.ltn = g.ltn.filter(l => { l.life -= .05; return l.life > 0; });
-  if (g.ltn) g.ltn.forEach(l => { cx.save(); cx.globalAlpha = l.life; cx.strokeStyle = l.c || "#FAB005"; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(l.x1, l.y1); cx.lineTo(l.x2, l.y2); cx.stroke(); cx.restore(); });
+  if(g.ltn)g.ltn.forEach(l=>drawCardLightning(cx,l));
   // 殘影
   setDashGhosts(getDashGhosts().filter(gh => { gh.life -= .04; return gh.life > 0; }));
-  getDashGhosts().forEach(gh => { cx.save(); cx.globalAlpha = gh.life * .4; drawPlayer(gh.x, gh.y, PR, now / 1000, "#FFE066", gh.face); cx.restore(); });
+  getDashGhosts().forEach(gh => { cx.save(); cx.globalAlpha = gh.life * .4; drawPlayer(gh.x, gh.y, PR, now / 1000, "#FFE066", gh.face,undefined,{effects:false}); cx.restore(); });
   // 殘影斬剪影
   if (g._ghostShadow && g._ghostShadow.life > 0) {
     g._ghostShadow.life -= .04;
     cx.save(); cx.globalAlpha = g._ghostShadow.life * .35; cx.shadowColor = "#DA77F2"; cx.shadowBlur = 12;
-    drawPlayer(g._ghostShadow.x, g._ghostShadow.y, PR, now / 1000, "#DA77F2", g._ghostShadow.face);
+    drawPlayer(g._ghostShadow.x, g._ghostShadow.y, PR, now / 1000, "#DA77F2", g._ghostShadow.face,undefined,{effects:false});
     cx.restore();
   }
   // 過熱條（CLIENT 端 P2 用 — 顯示在自己角色下方）
@@ -541,45 +551,10 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
     cx.beginPath(); cx.moveTo(g.p.x, g.p.y); cx.lineTo(g.p2.x, g.p2.y); cx.stroke(); cx.setLineDash([]);
     cx.restore();
   }
-  // 光劍光束
-  if (g._lightBeams) {
-    g._lightBeams = g._lightBeams.filter(b => {
-      const el = now - b.t; if (el > 300) return false;
-      const bp = el / 300;
-      cx.save(); cx.lineCap = "round";
-      cx.globalAlpha = (1 - bp) * .4; cx.strokeStyle = "#FFD43B"; cx.lineWidth = 6 * (1 - bp);
-      cx.shadowColor = "#FFD43B"; cx.shadowBlur = 12;
-      cx.beginPath(); cx.moveTo(b.x, b.y); cx.lineTo(b.x + Math.cos(b.ang) * b.len, b.y + Math.sin(b.ang) * b.len); cx.stroke();
-      cx.globalAlpha = (1 - bp) * .8; cx.strokeStyle = "#fff"; cx.lineWidth = 2 * (1 - bp); cx.shadowBlur = 0;
-      cx.beginPath(); cx.moveTo(b.x, b.y); cx.lineTo(b.x + Math.cos(b.ang) * b.len, b.y + Math.sin(b.ang) * b.len); cx.stroke();
-      cx.restore(); return true;
-    });
-  }
-  // 龍息錐形
-  if (g._dragonBreathFx && g._dragonBreathFx.on && g.p) {
-    const _dbf = g._dragonBreathFx, _dbA2 = _dbf.ang, _dbR2 = _dbf.range;
-    const _dbX = g.p.x, _dbY = g.p.y;
-    cx.save();
-    for (let i = 0; i < 20; i++) {
-      const t2 = i / 20, d2 = _dbR2 * t2;
-      const w2 = t2 * 8 + 1;
-      const col2 = t2 < .2 ? "#FFF8E0" : t2 < .4 ? "#FFD43B" : t2 < .6 ? "#FF922B" : "#FF4500";
-      cx.globalAlpha = (1 - t2 * .4) * .25; cx.fillStyle = col2;
-      cx.beginPath(); cx.arc(_dbX + Math.cos(_dbA2) * d2, _dbY + Math.sin(_dbA2) * d2, w2, 0, Math.PI * 2); cx.fill();
-    }
-    cx.restore();
-  }
-  // 殘影斬紫弧
-  if (g._ghostArc) {
-    const _ga = g._ghostArc, _gaEl = now - _ga.t;
-    if (_gaEl < 400) {
-      const _gap = _gaEl / 400;
-      cx.save(); cx.globalAlpha = (1 - _gap) * .5; cx.strokeStyle = "#DA77F2"; cx.lineWidth = 3 * (1 - _gap);
-      cx.shadowColor = "#DA77F2"; cx.shadowBlur = 10;
-      cx.beginPath(); cx.arc(_ga.x, _ga.y, PR * 2 + _gap * 20, _ga.ang - Math.PI * .5, _ga.ang + Math.PI * .5); cx.stroke();
-      cx.restore();
-    } else { g._ghostArc = null; }
-  }
+  g._lightBeams=(g._lightBeams||[]).filter(b=>performance.now()-b.t<300);
+  drawCardWorld(cx,g,performance.now(),PR);
+  drawCardStrike(cx,{...g.p,charType:g.charType},g._atkAnim,performance.now(),PR);
+  if(g.p2)drawCardStrike(cx,g.p2,g._p2AtkAnim,performance.now(),PR);
   // 大招閃光
   if (g.ultFlash > 0) {
     cx.save(); cx.globalAlpha = g.ultFlash * .5; cx.fillStyle = "#fff"; cx.fillRect(0, 0, VW * 2, VH * 2); cx.restore();

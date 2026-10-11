@@ -244,6 +244,7 @@ export function doUlt() {
   }
   if (isTS) {
     const frzDur = g.p.tsFrzDur || 2e3;
+    g._cardTsEnd=now+frzDur; // visual timer only
     const tsDmg = baseDmg * .5;
     g.ene.forEach(e => { e.frozen = Math.max(e.frozen || 0, frzDur); const td = (_isElite() && e.stageBoss) ? Math.min(tsDmg, e.mhp * .05) : tsDmg; e.hp -= td; g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(td), life: 1.3, color: "#74C0FC" }); if (e.hp <= 0) burst(e.x, e.y, e.color, 10); });
     settleEnemyDeaths();

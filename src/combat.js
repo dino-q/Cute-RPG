@@ -1,3 +1,4 @@
+import { addCardImpact } from './card-vfx.js';
 import { getGunnerMuzzle } from "./gunner-sprite.js";
 // Combat: shooting, melee, collision, kill settlement
 import {
@@ -91,6 +92,7 @@ export function awardEnemyKill(e) {
   }
   if (g.p.ls > 0) {
     g.p.hp = Math.min(g.p.hp + g.p.ls, g.p.maxHp);
+    g.p._healFlash=performance.now();
     const dx = g.p.x - e.x, dy = g.p.y - e.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
     for (let i = 0; i < 3 && par.length < MAX_PARTICLES; i++) {
       const spread = rn(-.6, .6);
@@ -111,7 +113,7 @@ export function settleEnemyDeaths(protectBoss) {
     if (_wb && _isElite() && e.boss && !e.miniPoo && !e.miniDemon) return;
     burst(e.x, e.y, e.color, 10);
     if (g.p.deathBoom > 0) {
-      burst(e.x, e.y, "#FF922B", 8);
+      burst(e.x, e.y, "#FF922B", 8); addCardImpact(g,e.x,e.y,'explosion');
       const _boomD = g.p.deathBoom + (g.p.atk || 0) * 1.5;
       g.ene.forEach(oe => { if (oe !== e && oe.hp > 0 && di(e, oe) < 50) { const bd = (oe.boss || oe.stageBoss) ? Math.min(_boomD, oe.mhp * .03) : _boomD; oe.hp -= bd; burst(oe.x, oe.y, "#FF922B", 3); g.dn.push({ x: oe.x, y: oe.y - oe.r, d: Math.floor(bd), life: .8, color: "#FF922B" }); } });
     }
@@ -168,7 +170,7 @@ export function fire(dmg, dx, dy, sp, p) {
         var _cyc = (_nt - pp._hmCycleT) % 3500;
         _hmOn = _cyc < 500;
       }
-      g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
+      g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, cardFx:{fx:{...pp.fx},_lightSaber:pp._lightSaber,_poisonBlade:pp._poisonBlade}, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
     }
   });
 }
@@ -219,7 +221,7 @@ export function swordSwing(_pp, _isP2) {
     if (_pp.iceFrag && (e.st > 0 || e.frozen > 0)) fd *= (1 + _pp.iceFrag);
     if (e.eliteEnemy) { const hasEl = !!(_pp.fx.fire || _pp.fx.ice || _pp.fx.lightning || _pp.fx.poison || _pp.fx.dragon); if (hasEl) fd *= 1.2; else { fd *= .5; fd = Math.max(fd, 1); } }
     if (e._coopShield) { fd = 0; }
-    e.hp -= fd;
+    e.hp -= fd; addCardImpact(g,e.x,e.y,_pp);
     e.st = Math.max(e.st || 0, 800);
     if (_pp.bulletHeal > 0) { const mheal = Math.max(5, _pp.bulletHeal); _pp.hp = Math.min(_pp.hp + mheal, _pp.maxHp); _pp._healFlash = now; }
     const fx = _pp.fx;
@@ -384,7 +386,7 @@ export function shieldBash(_pp, _isP2) {
     if (_pp.iceFrag && (e.st > 0 || e.frozen > 0)) fd *= (1 + _pp.iceFrag);
     if (e.eliteEnemy) { const hasEl = !!(_pp.fx.fire || _pp.fx.ice || _pp.fx.lightning || _pp.fx.poison || _pp.fx.dragon); if (hasEl) fd *= 1.2; else { fd *= .5; fd = Math.max(fd, 1); } }
     if (e._coopShield) { fd = 0; }
-    e.hp -= fd;
+    e.hp -= fd; addCardImpact(g,e.x,e.y,_pp);
     if (_pp.bulletHeal > 0) { const mheal2 = Math.max(5, _pp.bulletHeal); _pp.hp = Math.min(_pp.hp + mheal2, _pp.maxHp); _pp._healFlash = now; }
     if (!e.stageBoss) {
       const pushF = e.boss ? 15 : 35;
@@ -501,7 +503,7 @@ export function daggerStrike(_pp, _isP2) {
     if (_pp.iceFrag && (e.st > 0 || e.frozen > 0)) fd *= (1 + _pp.iceFrag);
     if (e.eliteEnemy) { const hasEl = !!(_pp.fx.fire || _pp.fx.ice || _pp.fx.lightning || _pp.fx.poison || _pp.fx.dragon); if (hasEl) fd *= 1.2; else { fd *= .5; fd = Math.max(fd, 1); } }
     if (e._coopShield) { fd = 0; }
-    e.hp -= fd;
+    e.hp -= fd; addCardImpact(g,e.x,e.y,_pp);
     e.st = Math.max(e.st || 0, 600);
     if (_pp.bulletHeal > 0) { const mheal = Math.max(5, _pp.bulletHeal); _pp.hp = Math.min(_pp.hp + mheal, _pp.maxHp); _pp._healFlash = now; }
     // 近戰回血（比劍士少一些）

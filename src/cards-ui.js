@@ -1,3 +1,4 @@
+import { revealCard } from './card-vfx.js';
 import { cardEmblem } from "./button-art.js";
 // Card selection UI, angel card, big chest
 import { CRATE_HP, RW, RC, LVC, RECOMMENDED } from "./config.js";
@@ -96,7 +97,7 @@ function buildCard(cd, w, i, wrap) {
 function pickCard(cd, _bAddCard, _bpp, _binv) {
   const lv = _bAddCard(cd.id);
   if (lv < 0) return;
-  cd.ap[lv](_bpp); // 套用卡片效果到玩家
+  cd.ap[lv](_bpp); revealCard(_bpp,cd); // 套用卡片效果到玩家
   if (_bpp._resetUlt) { _bpp._resetUlt = false; g.ultCharge = 0; g.ultCdEnd = 0; }
   sfx("levelup");
   // 命運轉輪：清空背包，重抽等同已有卡片數量的輪數

@@ -4,6 +4,7 @@
 
 | Module | Purpose |
 |--------|---------|
+| src/card-vfx.js | Formal pixel card art, cached weapon materials, player attachment layers, projectiles, impacts and world effects. Shared by host/client and practice. |
 | `src/main.js` | Entry point and glue code (~350 lines). Owns top-level state (g, _mode, _charType, _net, inv, etc.), wires all modules together via initXxx(deps), implements startGame(), overGoHome(), showCharSelect(), pickChar(), and the data-action event delegation listener. |
 | `src/state.js` | Legacy shared state object S — originally intended as a central store; most modules now use their own module-level vars via dependency injection. Still holds dragon-pet sprite references. |
 | `src/config.js` | Pure constants: map dimensions, player/enemy radii, cooldown timings, CHAR definitions (gunner/swordsman/tank), MODE definitions (classic/elite/coop/practice), rarity weights/colors, and the pickRole() function. |
@@ -429,3 +430,24 @@ Title Screen
 - 可調項目：遊戲畫面（寬、高、位置）、搖桿、攻擊、技能、閃避、大招、小地圖、各狀態列、設定鍵、提示與各練習工具按鈕／面板。
 - input 以顯示後的搖桿半徑計算力度，搖桿內球仍用原生尺寸計算位移；重綁觸控依真正按鍵位置判定。編輯時清除控制與鍵盤狀態。
 - ui.resize 同步本機、HUD、連線及 loop 的畫面尺寸。縮小畫面空出的部分為黑邊，可放虛擬控制。
+
+## 卡片特效模組依賴與函式索引（2026-10-12）
+
+```mermaid
+graph LR
+ render --> card_vfx[card-vfx.js]
+ melee_sprite --> card_vfx
+ gunner_sprite --> card_vfx
+ loop --> card_vfx
+ coop --> card_vfx
+ combat --> card_vfx
+ ui --> card_vfx
+ skills --> card_vfx
+ practice --> card_vfx
+ cards_ui --> card_vfx
+ button_art --> card_vfx
+```
+
+skills 只記錄時停的視覺期限，未改傷害或凍結機制。card-vfx 不匯入遊戲狀態；透過參數取得資料。
+
+函式索引：CARD_PALETTES、drawPixelPhoenix、drawCardPlayerLayer、cardWeaponAtlas、drawCardGun、drawCardBullet、drawCardStatus、drawCardLightning、drawCardWorld、revealCard、drawCardStrike、cardIllustration、addCardImpact，均在 src/card-vfx.js。逐卡呈現方式見 docs/卡片特效改版清單.md。

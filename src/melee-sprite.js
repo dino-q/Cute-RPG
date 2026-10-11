@@ -1,3 +1,4 @@
+import { cardWeaponAtlas } from './card-vfx.js';
 import { drawSpriteWithEyes } from './sprite-eyes.js';
 // Directional bodies with continuous, hand-anchored weapon motion.
 let atlas,contract,swordAtlas,swordContract,assassinAtlas,assassinContract,shieldAtlas;
@@ -40,7 +41,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
   const stride=active?Math.sin(progress*Math.PI)*2.5*scale:0;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;
   if(role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now))ctx.globalAlpha*=.4;
-  drawSpriteWithEyes(ctx,actionAtlas,role==='swordsman'?'swordsman-action':'assassin-action',frame.x,frame.y,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale);
+  drawSpriteWithEyes(ctx,cardWeaponAtlas(actionAtlas,role+'-action',player),role==='swordsman'?'swordsman-action':'assassin-action',frame.x,frame.y,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale);
   ctx.restore();return true;
  }
  const frame=contract.roles[role][index];
@@ -69,7 +70,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
   else if(role==='tank'){
    ctx.rotate(-weaponAngle);
    const shieldScale=.75*scale;
-   if(shieldAtlas){const [sx,sy,sw,sh]=shieldBounds[index];ctx.drawImage(shieldAtlas,index*64+sx,sy,sw,sh,-sw*shieldScale/2,-sh*shieldScale/2,sw*shieldScale,sh*shieldScale);}
+   if(shieldAtlas){const [sx,sy,sw,sh]=shieldBounds[index];ctx.drawImage(cardWeaponAtlas(shieldAtlas,'tank-shield',player),index*64+sx,sy,sw,sh,-sw*shieldScale/2,-sh*shieldScale/2,sw*shieldScale,sh*shieldScale);}
    else{ctx.scale(.4125*scale,.4125*scale);weapons.shield(ctx);}
   }
   else {ctx.scale(scale,scale);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-17,3,15);ctx.fillStyle='#9586ae';ctx.fillRect(2,-14,1,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,5);ctx.translate(-9,5);ctx.rotate(.55);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-14,3,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,4);}

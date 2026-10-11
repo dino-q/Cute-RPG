@@ -1,3 +1,4 @@
+import { revealCard } from './card-vfx.js';
 import { cardEmblem } from "./button-art.js";
 /* ═══════════ PRACTICE MODE ═══════════ */
 import { RC, CHAR, MODE, charCfg } from "./config.js";
@@ -242,7 +243,7 @@ export function pracRebuildCards() {
     const cd = C.find(c => c.id === +cid); if (!cd) return;
     for (let l = 0; l <= targetLv; l++) {
       addCard(+cid);
-      cd.ap[Math.min(l, 2)](g.p);
+      cd.ap[Math.min(l, 2)](g.p); revealCard(g.p,cd);
     }
   });
   if (_pracFiniteHp) { g.p.hp = 200; g.p.maxHp = 200; } else { g.p.hp = 99999; g.p.maxHp = 99999; }

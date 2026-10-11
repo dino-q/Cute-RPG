@@ -1,3 +1,4 @@
+import { cardWeaponAtlas, drawCardGun } from './card-vfx.js';
 import { drawSpriteWithEyes } from './sprite-eyes.js';
 // Approved generated art; direction changes swap frames without rotating the body.
 let atlas, contract;
@@ -42,11 +43,12 @@ export function getGunnerMuzzle(x, y, radius, direction, shotAt) {
   return { x: pose.left + pose.frame.muzzle[0] * pose.scale, y: pose.top + pose.frame.muzzle[1] * pose.scale };
 }
 
-export function drawPixelGunner(context, x, y, radius, direction, shotAt) {
+export function drawPixelGunner(context, x, y, radius, direction, shotAt, player) {
   if (!atlas || !contract) return false;
   const pose = spritePlacement(x, y, radius, direction, shotAt);
   context.save(); context.imageSmoothingEnabled = false; context.shadowBlur = 0;
-  drawSpriteWithEyes(context, atlas, 'gunner-pixel', pose.frame.x, pose.frame.y, 64, Math.round(pose.left), Math.round(pose.top), 64 * pose.scale);
+  drawSpriteWithEyes(context, cardWeaponAtlas(atlas,'gunner-pixel',player), 'gunner-pixel', pose.frame.x, pose.frame.y, 64, Math.round(pose.left), Math.round(pose.top), 64 * pose.scale);
+  drawCardGun(context,player,getGunnerMuzzle(x,y,radius,direction,shotAt),{x:Math.cos(pose.index*Math.PI/4),y:Math.sin(pose.index*Math.PI/4)},pose.scale,performance.now());
   if (pose.elapsed >= 0 && pose.elapsed < 60) {
     const muzzle = getGunnerMuzzle(x, y, radius, direction, shotAt);
     context.fillStyle = '#ffe066';

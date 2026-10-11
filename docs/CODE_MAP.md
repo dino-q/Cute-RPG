@@ -50,3 +50,12 @@
 
 ♻️ 沿用 resize、openSettings、resetControls、setStick、drawPixelMelee。
 🆕 新寫 control-layout 模組（既有設定無版面資料、手勢編輯及方向別儲存）。坦克手臂位移縮至 2 原生單位、身體推出 3 單位，先畫前臂再畫盾牌。
+
+| CARD_PALETTES / cardWeaponAtlas | src/card-vfx.js | 元素金屬材質與升級刻紋快取；排除臉部，沿用全身動作。 |
+| drawCardPlayerLayer / drawCardGun / drawCardStrike | src/card-vfx.js | 背後羽翼、身前護甲、槍口套件、像素揮砍。 |
+| drawCardBullet / drawCardStatus / drawCardLightning | src/card-vfx.js | 共用元素彈體、敵人狀態及連鎖電擊。 |
+| drawCardWorld / drawPixelPhoenix | src/card-vfx.js | 龍與龍息、飛行武器、護符、黑洞、磁力、時停、地裂、爆破與復活。 |
+| cardIllustration / revealCard / addCardImpact | src/card-vfx.js | 抽卡插畫、取得提示、限制數量的命中視覺。 |
+
+♻️ 沿用 drawPlayer、drawSpriteWithEyes、fire、swordSwing、shieldBash、daggerStrike、cardEmblem、serializeCoopState、applyCoopState。
+🆕 新寫 card-vfx（舊幾何武器與重複模糊光圈無法接到人物全身動作）。

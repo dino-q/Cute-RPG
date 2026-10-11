@@ -1,3 +1,4 @@
+import { drawCardBullet, drawCardLightning, drawCardWorld, drawCardStrike, addCardImpact, drawCardStatus } from './card-vfx.js';
 // Main game loop — extracted from main.js (Stage 3-14)
 import {
   PI, TAU, PR, ER, BR, PS,
@@ -187,7 +188,7 @@ export function loop(){
     cx.save();cx.shadowColor="#74C0FC";cx.shadowBlur=20;
     drawPlayer(g.p.x,g.p.y,PR,g.time/1000,"#74C0FC",g.p.face);cx.restore();
     phoenixAnimLoop();
-    par.forEach(p=>{cx.globalAlpha=p.life;cx.fillStyle=p.color;cx.beginPath();cx.arc(p.x,p.y,p.sz,0,Math.PI*2);cx.fill();});
+    par.forEach(p=>{cx.globalAlpha=Math.min(1,p.life);cx.fillStyle=p.color;const sz=Math.max(1,Math.round(p.sz));cx.fillRect(Math.round(p.x),Math.round(p.y),sz,sz);});
     cx.globalAlpha=1;
     g.dn.forEach(d=>{cx.save();cx.globalAlpha=d.life;cx.font=(d.big?"bold 15px":"11px")+" Nunito,sans-serif";
       cx.fillStyle=d.color;cx.textAlign="center";cx.fillText(d.d,d.x,d.y);cx.restore();});
@@ -1102,7 +1103,7 @@ export function loop(){
     if(e.role===ROLE_SHIELD){var ba=Math.atan2(b.vy,b.vx),fa=e.shieldAng+Math.PI,ad=Math.abs(((ba-fa)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);if(ad<Math.PI*.55)dmg*=.25;}
     if(e._p3armor)dmg*=(1-e._p3armor); // 惡魔最終階段護甲減傷
     if(e._coopShield){dmg=0;} // co-op 護盾：攻擊無效
-    e.hp-=dmg;sfxHit();
+    e.hp-=dmg;sfxHit();addCardImpact(g,e.x,e.y,b.cardFx||g.p);
     if(g.p.slow<1&&bType!=="tough")e.st=1800;
     // 元素效果：韌性型免疫燃燒/凍結（但毒可以），防禦型全部正常
     var toughImmune=bType==="tough";
@@ -1766,55 +1767,7 @@ export function loop(){
   g.orbs.forEach(o=>{cx.save();cx.globalAlpha=o.life;cx.shadowColor="#51CF66";cx.shadowBlur=6;cx.fillStyle="#51CF66";cx.beginPath();cx.arc(o.x,o.y,3.5,0,Math.PI*2);cx.fill();cx.restore();});
 
   // bullets — enhanced per element (no shadowBlur)
-  const bc=bCol(),fx_=g.p.fx,fxLv_=Math.max(fx_.fire||0,fx_.ice||0,fx_.dragon||0,fx_.star||0,fx_.poison||0,fx_.lightning||0,0);
-  g.bul.forEach(b=>{
-    const sz=BR*(1+fxLv_*.12);
-    // trail doubles as glow — slightly larger, softer
-    for(let ti=0;ti<b.trail.length;ti++){const t=b.trail[ti];if(t.life<=0)continue;cx.globalAlpha=t.life*(.25+fxLv_*.06);cx.fillStyle=b.bc.t;cx.beginPath();cx.arc(t.x,t.y,sz*(t.life*.7+.4),0,Math.PI*2);cx.fill();}
-    cx.save();cx.globalAlpha=1;
-    cx.fillStyle=b.crit?"#FFD43B":b.bc.f;
-    // outer glow circle (replaces shadowBlur — one extra arc, much cheaper)
-    if(b.crit||fxLv_>=2){cx.globalAlpha=.25;cx.beginPath();cx.arc(b.x,b.y,sz*2,0,Math.PI*2);cx.fill();cx.globalAlpha=1;}
-    // element-specific bullet shape
-    if(fx_.fire||fx_.dragon){
-      const a=Math.atan2(b.vy,b.vx);cx.translate(b.x,b.y);cx.rotate(a);
-      cx.beginPath();cx.ellipse(0,0,sz*1.4,sz*.7,0,0,Math.PI*2);cx.fill();
-      cx.fillStyle="#FFD43B";cx.beginPath();cx.ellipse(-sz*.3,0,sz*.5,sz*.3,0,0,Math.PI*2);cx.fill();
-    }else if(fx_.ice){
-      cx.translate(b.x,b.y);cx.rotate(g.time/200);
-      cx.beginPath();cx.moveTo(0,-sz*1.2);cx.lineTo(sz*.6,0);cx.lineTo(0,sz*1.2);cx.lineTo(-sz*.6,0);cx.closePath();cx.fill();
-    }else if(fx_.lightning){
-      const a=Math.atan2(b.vy,b.vx);cx.translate(b.x,b.y);cx.rotate(a);
-      cx.beginPath();cx.moveTo(sz*1.2,0);cx.lineTo(sz*.2,sz*.5);cx.lineTo(sz*.5,0);cx.lineTo(-sz*.2,-sz*.5);cx.lineTo(sz*.2,0);cx.closePath();cx.fill();
-    }else if(fx_.poison){
-      cx.translate(b.x,b.y);
-      cx.beginPath();cx.arc(0,0,sz,0,Math.PI*2);cx.fill();
-      cx.strokeStyle="#69DB7C";cx.lineWidth=1;cx.stroke();
-    }else if(fx_.star){
-      cx.translate(b.x,b.y);cx.rotate(g.time/150);
-      cx.beginPath();for(let i=0;i<10;i++){const a2=Math.PI*i/5,rr=i%2===0?sz*1.1:sz*.5;cx.lineTo(Math.cos(a2)*rr,Math.sin(a2)*rr);}cx.closePath();cx.fill();
-    }else if(b._minigun){
-      // 機關槍：小型 tracer 線段
-      const a=Math.atan2(b.vy,b.vx);cx.translate(b.x,b.y);cx.rotate(a);
-      const mgBerserk=g.p._mgBerserkEnd&&now<g.p._mgBerserkEnd;
-      cx.fillStyle=mgBerserk?"#FF4500":"#FFA94D";
-      cx.fillRect(-sz*1.5,-sz*.25,sz*3,sz*.5);
-      if(mgBerserk){cx.globalAlpha=.3;cx.fillStyle="#FF0000";cx.fillRect(-sz*2,-sz*.4,sz*4,sz*.8);}
-    }else if(b._armorPen>0){
-      // 破甲箭：金色尖銳箭型
-      const a=Math.atan2(b.vy,b.vx);cx.translate(b.x,b.y);cx.rotate(a);
-      cx.fillStyle="#D4A017";
-      cx.beginPath();cx.moveTo(sz*1.8,0);cx.lineTo(-sz*.8,-sz*.55);cx.lineTo(-sz*.4,0);cx.lineTo(-sz*.8,sz*.55);cx.closePath();cx.fill();
-      cx.fillStyle="#FFD43B";cx.globalAlpha=.5;
-      cx.beginPath();cx.moveTo(sz*1.8,0);cx.lineTo(sz*.5,-sz*.2);cx.lineTo(sz*.5,sz*.2);cx.closePath();cx.fill();
-    }else{
-      cx.translate(b.x,b.y);
-      cx.beginPath();cx.arc(0,0,sz,0,Math.PI*2);cx.fill();
-    }
-    // white center highlight (always at local origin since all branches translate)
-    cx.fillStyle="#fff";cx.beginPath();cx.arc(0,0,sz*.25,0,Math.PI*2);cx.fill();
-    cx.restore();
-  });
+  g.bul.forEach(b=>drawCardBullet(cx,b,b._isP2?g.p2:g.p,now,BR));
   cx.globalAlpha=1; // reset after bullet trail rendering
 
   // enemy bullets
@@ -1830,62 +1783,14 @@ export function loop(){
   const ltStep=ltCnt>80?3:ltCnt>44?2:(getFxQ()<.6?2:1);
   for(let li=0;li<g.ltn.length;li+=ltStep){
     const l=g.ltn[li];if(l.life<=0)continue;
-    const jit=(ltCnt>60?7:10)*getFxQ();
-    const mx1=(l.x1*2+l.x2)/3+rn(-jit,jit),my1=(l.y1*2+l.y2)/3+rn(-jit,jit);
-    const mx2=(l.x1+l.x2*2)/3+rn(-jit,jit),my2=(l.y1+l.y2*2)/3+rn(-jit,jit);
-    // outer glow layer — wide, transparent
-    cx.save();cx.globalAlpha=l.life*.35;cx.strokeStyle="#FFD43B";cx.lineWidth=6;
-    cx.beginPath();cx.moveTo(l.x1,l.y1);cx.lineTo(mx1,my1);cx.lineTo(mx2,my2);cx.lineTo(l.x2,l.y2);cx.stroke();
-    // inner core — bright, thin
-    cx.globalAlpha=l.life*(getFxQ()<.6?.72:1);cx.strokeStyle="#FAB005";cx.lineWidth=2;
-    cx.beginPath();cx.moveTo(l.x1,l.y1);cx.lineTo(mx1,my1);cx.lineTo(mx2,my2);cx.lineTo(l.x2,l.y2);cx.stroke();
-    cx.restore();
+    drawCardLightning(cx,l);
   }
 
   // enemies
   g.ene.forEach(e=>{const dx=e.x-g.p.x,dy=e.y-g.p.y;
     const cullR=e.stageBoss?VW:e.boss?VW*.85:VW*.7;const cullRy=e.stageBoss?VH:e.boss?VH*.85:VH*.7;
     if(Math.abs(dx)>cullR||Math.abs(dy)>cullRy)return;
-    // burn aura — scales with burnLv
-    if(e.burnT>0){
-      const blv=e.burnLv||1;
-      const ba=.12+blv*.06; // Lv1=.18, Lv2=.24, Lv3=.30
-      const br=e.r+2+blv*2; // Lv1=+4, Lv2=+6, Lv3=+8
-      const bc2=blv>=3?"#FFD43B":blv>=2?"#FF922B":"#FF6B6B";
-      cx.save();cx.globalAlpha=ba+Math.sin(now/120+e.t)*.04;cx.fillStyle=bc2;
-      cx.beginPath();cx.arc(e.x,e.y,br,0,Math.PI*2);cx.fill();cx.restore();
-    }
-    // ice slow aura — scales with ice fxLv
-    if(e.st>0&&g.p.fx.ice){
-      const ilv=g.p.fx.ice||1;
-      cx.save();cx.globalAlpha=.2+ilv*.05;cx.fillStyle="#66D9E8";
-      cx.beginPath();cx.arc(e.x,e.y,e.r+2+ilv*1.5,0,Math.PI*2);cx.fill();cx.restore();
-    }
-    // frozen aura — scales with ice fxLv
-    if(e.frozen>0){
-      const ilv=g.p.fx.ice||1;
-      cx.save();cx.globalAlpha=.25+ilv*.06;cx.fillStyle="#74C0FC";
-      cx.beginPath();cx.arc(e.x,e.y,e.r+3+ilv*2,0,Math.PI*2);cx.fill();
-      // Lv2+: ice crystal particles
-      if(ilv>=2&&par.length<MAX_PARTICLES&&Math.random()<(.08+ilv*.04)*getFxQ()){
-        par.push({x:e.x+rn(-e.r,e.r),y:e.y+rn(-e.r,e.r),vx:rn(-.3,.3),vy:rn(-.5,.1),life:.4,color:ilv>=3?"#fff":"#A5D8FF",sz:rn(1.5,3)});
-      }
-      cx.restore();
-    }
-    // poison smoke — scales with poisonLv
-    if(e.poisonT>0){
-      const plv=e.poisonLv||1;
-      const pa=.14+plv*.05; // Lv1=.19, Lv2=.24, Lv3=.29
-      const pc=plv>=3?"#9C36B5":plv>=2?"#69DB7C":"#A9E34B";
-      cx.save();cx.globalAlpha=pa;cx.fillStyle=pc;
-      cx.beginPath();cx.arc(e.x,e.y,e.r+3+plv,0,Math.PI*2);cx.fill();cx.restore();
-      // smoke puffs — rate scales with level
-      const pRate=.25+plv*.08; // Lv1=.33, Lv2=.41, Lv3=.49
-      if(par.length<MAX_PARTICLES&&Math.random()<pRate*getFxQ()){
-        const sc=plv>=3?(Math.random()>.4?"#9C36B5":"#DA77F2"):(Math.random()>.5?"#A9E34B":"#69DB7C");
-        par.push({x:e.x+rn(-e.r,e.r),y:e.y+rn(-e.r*.5,e.r*.3),vx:rn(-.3,.3),vy:rn(-.8,-.2)-.1*plv,life:.5+plv*.08,color:sc,sz:rn(2,4+plv)});
-      }
-    }
+    if(e.stageBoss||e.miniPoo||e.miniDemon||e.ragePoo)drawCardStatus(cx,e,now);
     if(e.stageBoss)drawStageBoss(e,now);
     else if(e.miniPoo||e.miniDemon||e.ragePoo)drawMiniEnemy(e,now);
     else drawEnemy(e);
@@ -1895,56 +1800,12 @@ export function loop(){
   const _bhActive=g.bhEnd&&now<g.bhEnd;
   const pCol=_bhActive?"#2C3E50":g.p.fx.dragon?"#FF922B":g.p.fx.phoenix?"#BE4BDB":"#74C0FC";
   if(joy.a&&par.length<MAX_PARTICLES&&Math.random()<getFxQ()){par.push({x:g.p.x+rn(-4,4),y:g.p.y+PR*.5+rn(0,4),vx:-joy.dx*.4+rn(-.3,.3),vy:-joy.dy*.4+rn(-.1,.3),life:.55,color:pCol,sz:rn(2,4.5)});}
-  // weapon aura particles — ambient element effect around player
-  if(fxLv_>0&&par.length<MAX_PARTICLES&&Math.random()<(.15+fxLv_*.1)*getFxQ()){
-    const aa=rn(0,Math.PI*2),ar=PR+rn(2,6+fxLv_*3);
-    const ac=fx_.dragon?"#FF922B":fx_.fire?"#FF4500":fx_.ice?"#66D9E8":fx_.lightning?"#FAB005":fx_.poison?"#A9E34B":fx_.star?"#F06595":pCol;
-    par.push({x:g.p.x+Math.cos(aa)*ar,y:g.p.y+Math.sin(aa)*ar,vx:Math.cos(aa)*rn(.2,.6),vy:Math.sin(aa)*rn(.2,.6)-.3,life:.4+fxLv_*.15,color:ac,sz:rn(1.5,3+fxLv_)});
-  }
   // dash afterimages
   getDashGhosts().forEach(gh=>{
     cx.save();cx.globalAlpha=gh.life*.4;
-    drawPlayer(gh.x,gh.y,PR,g.time/1000,"#FFE066",gh.face);
+    drawPlayer(gh.x,gh.y,PR,g.time/1000,"#FFE066",gh.face,undefined,{effects:false});
     cx.restore();
   });
-  // 天使之翼：畫在主角身後（drawPlayer 之前）
-  if(g.p._inv&&(!g.p._dashEnd||now>=g.p._dashEnd)){
-    const px=g.p.x,py=g.p.y,f=g.p.face||1;
-    const flap=Math.sin(now/90);
-    const wSpan=38+flap*10; // 翅膀展開寬度
-    const wH=40+flap*6; // 翅膀高度
-    cx.save();
-    // 左翅（3段羽毛）
-    for(let s=0;s<3;s++){
-      const seg=s/3,segA=-.3-seg*.5+flap*.15;
-      const sx2=px-6-s*wSpan*.3,sy=py-2+s*3;
-      const ex=px-wSpan*(1-seg*.2),ey=py-wH*(1-seg*.5)+flap*3;
-      cx.globalAlpha=.55-.1*s;
-      cx.fillStyle=s===0?"rgba(255,255,255,.6)":s===1?"rgba(220,230,255,.5)":"rgba(200,215,245,.4)";
-      cx.beginPath();cx.moveTo(sx2,sy);
-      cx.quadraticCurveTo(ex-4,ey,ex,ey+8);
-      cx.quadraticCurveTo((sx2+ex)/2,sy+6,sx2,sy);
-      cx.fill();
-    }
-    // 右翅（3段羽毛）
-    for(let s=0;s<3;s++){
-      const seg=s/3;
-      const sx2=px+6+s*wSpan*.3,sy=py-2+s*3;
-      const ex=px+wSpan*(1-seg*.2),ey=py-wH*(1-seg*.5)+flap*3;
-      cx.globalAlpha=.55-.1*s;
-      cx.fillStyle=s===0?"rgba(255,255,255,.6)":s===1?"rgba(220,230,255,.5)":"rgba(200,215,245,.4)";
-      cx.beginPath();cx.moveTo(sx2,sy);
-      cx.quadraticCurveTo(ex+4,ey,ex,ey+8);
-      cx.quadraticCurveTo((sx2+ex)/2,sy+6,sx2,sy);
-      cx.fill();
-    }
-    // 羽毛粒子（白色為主）
-    if(par.length<MAX_PARTICLES&&Math.random()<.35){
-      const side=Math.random()>.5?1:-1;
-      par.push({x:px+side*rn(8,wSpan),y:py-rn(0,wH*.6),vx:side*rn(.1,.4),vy:rn(.4,1.2),life:.6,color:"rgba(255,255,255,.7)",sz:rn(1,2.5)});
-    }
-    cx.restore();
-  }
   // 影襲回歸標記（持續發光圈 + 倒數）
   if(g._shadowReturn){
     const sr=g._shadowReturn,st2=now-sr.t,dur=sr.dur||4000;
@@ -1978,15 +1839,15 @@ export function loop(){
   if(g._clones&&g._clones.length>0){
     g._clones.forEach(c=>{
       cx.save();cx.globalAlpha=.4+Math.sin(now/100+c.spawnT)*.1;
-      cx.shadowColor="#868E96";cx.shadowBlur=8;
-      drawPlayer(c.x,c.y,PR*.85,g.time/1000,"#868E96",c.face);
+      cx.shadowBlur=0;
+      drawPlayer(c.x,c.y,PR*.85,g.time/1000,"#868E96",c.face,undefined,{effects:false});
       cx.restore();
     });
   }
   // player (blinks during i-frame)
   cx.save();
   if(g.p._iFrameEnd>0&&now<g.p._iFrameEnd){cx.globalAlpha=Math.sin(now/30)*0.35+0.55;}
-  cx.shadowColor=pCol;cx.shadowBlur=20;drawPlayer(g.p.x,g.p.y,PR,g.time/1000,pCol,g.p.face);cx.restore();
+  cx.shadowBlur=0;drawPlayer(g.p.x,g.p.y,PR,g.time/1000,pCol,g.p.face);cx.restore();
   // co-op link aura visual
   if(g._coopLink&&g.p2){
     const mx2=(g.p.x+g.p2.x)/2,my2=(g.p.y+g.p2.y)/2;
@@ -2052,153 +1913,17 @@ export function loop(){
       cx.fillText(" 挑卡中...",g.p2.x,g.p2.y-PR-18);cx.restore();
     }
   }
-  // 達摩的光劍：光束特效（狙擊風格，圓形收尾）
-  if(g._lightBeams){
-    g._lightBeams=g._lightBeams.filter(b=>{
-      const el=now-b.t;if(el>300)return false;
-      const bp=el/300;
-      // 光束起點跟隨玩家
-      const bx=g.p.x,by=g.p.y;
-      cx.save();cx.lineCap="round"; // 圓形收尾
-      // 外層光暈
-      cx.globalAlpha=(1-bp)*.4;cx.strokeStyle="#FFD43B";cx.lineWidth=6*(1-bp);
-      cx.shadowColor="#FFD43B";cx.shadowBlur=12;
-      cx.beginPath();cx.moveTo(bx,by);
-      cx.lineTo(bx+Math.cos(b.ang)*b.len,by+Math.sin(b.ang)*b.len);cx.stroke();
-      // 內層核心
-      cx.globalAlpha=(1-bp)*.8;cx.strokeStyle="#fff";cx.lineWidth=2*(1-bp);cx.shadowBlur=0;
-      cx.beginPath();cx.moveTo(bx,by);
-      cx.lineTo(bx+Math.cos(b.ang)*b.len,by+Math.sin(b.ang)*b.len);cx.stroke();
-      cx.restore();
-      return true;
-    });
-  }
-  // 達摩的光劍：武器光粒子包覆
-  if(g.p._lightSaber&&g.charType==="swordsman"){
-    const _sAd2=(g&&g.ad)?g.ad:{x:g.p.face||1,y:0};
-    const _sAng2=Math.atan2(_sAd2.y,_sAd2.x);
-    const wpx=g.p.x+Math.cos(_sAng2)*PR*.9,wpy=g.p.y+Math.sin(_sAng2)*PR*.9-PR*.15;
-    for(let lpi=0;lpi<2;lpi++){
-      const la=rn(0,TAU),ld=rn(3,12);
-      cx.save();cx.globalAlpha=.3+Math.sin(now/150+lpi)*.15;
-      cx.fillStyle=lpi%2?"#FFD43B":"#fff";
-      cx.beginPath();cx.arc(wpx+Math.cos(la)*ld,wpy+Math.sin(la)*ld,rn(1,2.5),0,TAU);cx.fill();
-      cx.restore();
-    }
-  }
-  // === 龍寵物繪製（翅膀在後旋轉 + 身體蓋上）===
-  if(g._dragonPet){
-    var _dp=g._dragonPet,_dpF=_dp.face||1,_dpT=now/1000;
-    var _wAng=Math.sin(_dpT*14)*.35; // 振翅（~2.2Hz, ±20度）
-    var _bobY=Math.sin(_dpT*3)*3; // 上下浮動
-    // 移動時傾斜
-    var _dpVx=(_dp._prevX!==undefined)?(_dp.x-_dp._prevX):0;
-    _dp._prevX=_dp.x;
-    var _tilt=Math.max(-.12,Math.min(.12,_dpVx*.06));
-    cx.save();
-    cx.translate(_dp.x,_dp.y+_bobY);
-    cx.scale(_dpF,1); // 圖已翻轉為朝右，face=1不翻，face=-1翻轉
-    cx.rotate(_tilt);
-    // 翅膀（先畫，在身體後面，繞關節旋轉）
-    cx.save();
-    cx.translate(_dpJX-_dpW/2,_dpJY-_dpH/2);
-    cx.rotate(_wAng);
-    if(_dpWingImg.complete&&_dpWingImg.naturalWidth)cx.drawImage(_dpWingImg,-_dpJX,-_dpJY);
-    cx.restore();
-    // 身體蓋上（完整圖，遮住翅膀接合處）
-    if(_dpBodyImg.complete&&_dpBodyImg.naturalWidth)cx.drawImage(_dpBodyImg,-_dpW/2,-_dpH/2);
-    cx.restore();
-    // 噴火（從龍嘴出發）
-    if(g._dragonBreathFx&&g._dragonBreathFx.on){
-      var _bfx=g._dragonBreathFx,_bAng=_bfx.ang,_bR=_bfx.range;
-      // 嘴巴位置：龍頭上方偏前（精靈圖中嘴巴約在左上 1/3 處）
-      var _mx=_dp.x+_dpF*15,_my=_dp.y-14;
-      cx.save();
-      var _cyc2=(_dp.breathCycle||0)%3500,_bFade=_cyc2>1600?(2000-_cyc2)/400:Math.min(1,_cyc2/300);
-      for(var i=0;i<40;i++){var t2=i/40,d2=_bR*t2;
-        var sW=Math.sin(now/80+i*1.3)*.35+Math.sin(now/50+i*2.7)*.25+Math.sin(now/130+i*4.1)*.15;
-        var w2=Math.max(.5,t2*10*(1+sW)+1);var wb=w2*.15;
-        var ox2=(Math.sin(i*1.7+now/180)+Math.sin(i*3.1+now/110)*.6)*wb;
-        var oy2=(Math.cos(i*2.3+now/150)+Math.cos(i*2.9+now/85)*.5)*wb;
-        var col2=t2<.15?"#FFF8E0":t2<.35?"#FFD43B":t2<.55?"#FF922B":t2<.75?"#FF4500":"#CC2200";
-        cx.globalAlpha=_bFade*(1-t2*.4)*(.3+sW*.08);cx.fillStyle=col2;
-        cx.beginPath();cx.arc(_mx+Math.cos(_bAng)*d2+Math.cos(_bAng+PI/2)*ox2,_my+Math.sin(_bAng)*d2+Math.sin(_bAng+PI/2)*oy2,w2,0,TAU);cx.fill();}
-      if(_bFade>.3&&par.length<MAX_PARTICLES-2&&Math.random()<.3){var fa=_bAng+rn(-.3,.3),fd=rn(10,_bR*.7);
-        par.push({x:_mx+Math.cos(fa)*fd,y:_my+Math.sin(fa)*fd,vx:Math.cos(fa)*rn(1,3),vy:Math.sin(fa)*rn(1,3)-rn(.3,.8),life:rn(.2,.4),color:["#FF4500","#FF922B","#FFD43B"][Math.random()*3|0],sz:rn(2,4),g:.02});}
-      cx.restore();
-    }
-  }
   // 殘影斬：殘影剪影
   if(g._ghostShadow&&g._ghostShadow.life>0){
     const gs=g._ghostShadow;gs.life-=.04;
     cx.save();cx.globalAlpha=gs.life*.35;
-    cx.shadowColor="#DA77F2";cx.shadowBlur=12;
-    drawPlayer(gs.x,gs.y,PR,performance.now()/1000,"#DA77F2",gs.face);
+    cx.shadowBlur=0;
+    drawPlayer(gs.x,gs.y,PR,performance.now()/1000,"#DA77F2",gs.face,undefined,{effects:false});
     cx.shadowBlur=0;cx.restore();
     if(gs.life<=0)g._ghostShadow=null;
   }
-  // 殘影斬：紫色斬擊弧
-  if(g._ghostArc){
-    const ga=g._ghostArc,gel=performance.now()-ga.t;
-    if(gel<250){
-      const gp=gel/250;
-      cx.save();cx.globalAlpha=(1-gp)*.6;cx.strokeStyle="#DA77F2";cx.lineWidth=3*(1-gp);
-      cx.shadowColor="#DA77F2";cx.shadowBlur=8;
-      cx.beginPath();cx.arc(ga.x,ga.y,PR*2.5,ga.ang-PI*.4+gp*.3,ga.ang+PI*.4-gp*.1);cx.stroke();
-      cx.strokeStyle="#fff";cx.lineWidth=1.5*(1-gp);
-      cx.beginPath();cx.arc(ga.x,ga.y,PR*2,ga.ang-PI*.3+gp*.2,ga.ang+PI*.3-gp*.05);cx.stroke();
-      cx.shadowBlur=0;cx.restore();
-    }else{g._ghostArc=null;}
-  }
-  // 劍士揮劍弧線 / 坦克盾擊衝擊波
-  if(g._wbSwing>0&&g.charType!=="gunner"){
-    const sw=g._wbSwing,aa=Math.atan2(g.ad.y,g.ad.x);
-    const _hasDbl=g.p.dblAtk>=1; // 影分身=360°特效
-    cx.save();
-    if(g.charType==="swordsman"){
-      const swR=PR*3.5*(1-sw*.3);
-      if(_hasDbl){
-        // 影分身：360°完整環
-        cx.globalAlpha=sw*.5;cx.strokeStyle="#FF922B";cx.lineWidth=3*sw;
-        cx.shadowColor="#FFD43B";cx.shadowBlur=10*sw;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR,0,TAU);cx.stroke();
-        cx.globalAlpha=sw*.25;cx.strokeStyle="#fff";cx.lineWidth=1.5*sw;cx.shadowBlur=0;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR*.75,0,TAU);cx.stroke();
-        // 灰色殘影環
-        cx.globalAlpha=sw*.15;cx.strokeStyle="#868E96";cx.lineWidth=2*sw;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR*1.1,0,TAU);cx.stroke();
-      }else{
-        // 普通弧形斬擊
-        const swArc=PI*.7;
-        cx.globalAlpha=sw*.6;cx.strokeStyle="#FF922B";cx.lineWidth=3*sw;
-        cx.shadowColor="#FFD43B";cx.shadowBlur=8*sw;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR,aa-swArc/2,aa+swArc/2);cx.stroke();
-        cx.globalAlpha=sw*.35;cx.strokeStyle="#fff";cx.lineWidth=1.5*sw;cx.shadowBlur=0;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR*.75,aa-swArc*.4,aa+swArc*.4);cx.stroke();
-      }
-    }else if(g.charType==="assassin"){
-      const swR=PR*2.8*(1-sw*.3);
-      if(_hasDbl){
-        cx.globalAlpha=sw*.45;cx.strokeStyle="#BE4BDB";cx.lineWidth=2.5*sw;
-        cx.shadowColor="#DA77F2";cx.shadowBlur=8*sw;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR,0,TAU);cx.stroke();
-        cx.globalAlpha=sw*.2;cx.strokeStyle="#fff";cx.lineWidth=1.5*sw;cx.shadowBlur=0;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR*.7,0,TAU);cx.stroke();
-      }else{
-        // 快速匕首斬擊弧
-        const swArc=PI*.5;
-        cx.globalAlpha=sw*.6;cx.strokeStyle="#BE4BDB";cx.lineWidth=2.5*sw;
-        cx.shadowColor="#DA77F2";cx.shadowBlur=6*sw;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR,aa-swArc/2,aa+swArc/2);cx.stroke();
-        // 第二把匕首（偏移弧）
-        cx.globalAlpha=sw*.4;cx.strokeStyle="#9C36B5";cx.lineWidth=2*sw;cx.shadowBlur=0;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR*.85,aa-swArc*.3,aa+swArc*.3);cx.stroke();
-        cx.globalAlpha=sw*.25;cx.strokeStyle="#fff";cx.lineWidth=1*sw;
-        cx.beginPath();cx.arc(g.p.x,g.p.y,swR*.65,aa-swArc*.25,aa+swArc*.25);cx.stroke();
-      }
-    }
-    cx.shadowBlur=0;cx.restore();
-  }
+  drawCardStrike(cx,{...g.p,charType:g.charType,_ad:g.ad},g._atkAnim,now,PR);
+  if(g.p2)drawCardStrike(cx,g.p2,g._p2AtkAnim,now,PR);
   // 過熱條：長按攻擊時顯示在主角下方
   if(g.heat>0&&!g.p._noOverheat){
     const heatPct=g.heat/HOLD_COOLDOWN_NEED;
@@ -2279,50 +2004,6 @@ export function loop(){
     cx.globalAlpha=.8;cx.fillStyle="#51CF66";cx.fillRect(bx2,by2,bw2*tPct,bh2);
     cx.restore();
   }
-  // 震波擴散環（基礎=小環綠色，大地震擊=大環橘色）
-  if(g._quakeRingT&&now-g._quakeRingT<(g._quakeRingSmall?400:800)){
-    const isSmall=g._quakeRingSmall;
-    const dur=isSmall?400:800;
-    const qp=(now-g._quakeRingT)/dur;
-    cx.save();
-    if(isSmall){
-      // 基礎震波：2 層小環
-      for(let i=0;i<2;i++){
-        const rp=Math.min(1,Math.max(0,(qp-i*.1)/.4));
-        if(rp<=0||rp>=1)continue;
-        cx.globalAlpha=(1-rp)*.25;cx.strokeStyle=i%2?"#69DB7C":"#51CF66";cx.lineWidth=2*(1-rp);
-        cx.beginPath();cx.ellipse(g.p.x,g.p.y+PR,rp*50+i*10,rp*8+i*3+2,0,0,TAU);cx.stroke();
-      }
-    }else{
-      // 大地震擊：5 層大環 + 中心閃光 + 裂紋
-      for(let i=0;i<5;i++){
-        const rp=Math.min(1,Math.max(0,(qp-i*.06)/.5));
-        if(rp<=0||rp>=1)continue;
-        const cols=["#FF922B","#FFD43B","#FF6B6B","#FF922B","#fff"];
-        cx.globalAlpha=(1-rp)*.5;cx.strokeStyle=cols[i];cx.lineWidth=(5-i)*(1-rp);
-        cx.shadowColor="#FF922B";cx.shadowBlur=6*(1-rp);
-        cx.beginPath();cx.ellipse(g.p.x,g.p.y+PR,rp*180+i*15,rp*30+i*5+3,0,0,TAU);cx.stroke();
-      }
-      cx.shadowBlur=0;
-      // 中心衝擊閃光
-      if(qp<.3){
-        cx.globalAlpha=(1-qp/.3)*.5;
-        const fg=cx.createRadialGradient(g.p.x,g.p.y,0,g.p.x,g.p.y,50+qp*80);
-        fg.addColorStop(0,"#fff");fg.addColorStop(.4,"#FFD43B");fg.addColorStop(.7,"#FF922B");fg.addColorStop(1,"transparent");
-        cx.fillStyle=fg;cx.beginPath();cx.arc(g.p.x,g.p.y,50+qp*80,0,TAU);cx.fill();
-      }
-      // 地面裂紋
-      if(qp<.6){
-        cx.globalAlpha=(1-qp/.6)*.35;cx.strokeStyle="#FF6B6B";cx.lineWidth=1.5;
-        for(let j=0;j<6;j++){
-          const a=TAU*j/6+qp*.5;const d2=20+qp*100;
-          cx.beginPath();cx.moveTo(g.p.x,g.p.y+PR);
-          cx.lineTo(g.p.x+Math.cos(a)*d2,g.p.y+PR+Math.sin(a)*d2*.3);cx.stroke();
-        }
-      }
-    }
-    cx.restore();
-  }
   // 大地震擊 CD 提示
   if(g.p._quake&&g.p._quakeCD&&now<g.p._quakeCD){
     const qLeft=Math.ceil((g.p._quakeCD-now)/1000);
@@ -2339,31 +2020,6 @@ export function loop(){
     cx.save();cx.font="bold 9px Nunito,sans-serif";cx.textAlign="center";
     cx.fillStyle="#868E96";cx.globalAlpha=.7+Math.sin(now/300)*.2;
     cx.fillText(" 鋼鐵意志",g.p.x,g.p.y-PR-20);
-    // 灰色防護光圈
-    cx.globalAlpha=.15+Math.sin(now/400)*.08;cx.strokeStyle="#868E96";cx.lineWidth=2;
-    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+6,0,TAU);cx.stroke();
-    cx.restore();
-  }
-  // 守護者光環視覺
-  if(g.p._guardAura){
-    const ga=g.p._guardAura,gaR=PR+25+ga*10;
-    cx.save();cx.globalAlpha=.08+Math.sin(now/500)*.04;
-    const gaG=cx.createRadialGradient(g.p.x,g.p.y,PR,g.p.x,g.p.y,gaR);
-    gaG.addColorStop(0,"#FFD43B");gaG.addColorStop(1,"transparent");
-    cx.fillStyle=gaG;cx.beginPath();cx.arc(g.p.x,g.p.y,gaR,0,TAU);cx.fill();
-    cx.globalAlpha=.12+Math.sin(now/350)*.06;cx.strokeStyle="#FFD43B";cx.lineWidth=1;
-    cx.setLineDash([3,4]);cx.beginPath();cx.arc(g.p.x,g.p.y,gaR,0,TAU);cx.stroke();cx.setLineDash([]);
-    cx.restore();
-  }
-  // 荊棘反彈特效（被打時觸發，存在 g._thornFlash）
-  if(g._thornFlash&&now-g._thornFlash<300){
-    const tp2=(now-g._thornFlash)/300;
-    cx.save();cx.globalAlpha=(1-tp2)*.5;cx.strokeStyle="#51CF66";cx.lineWidth=2.5*(1-tp2);
-    for(let i=0;i<8;i++){
-      const a=TAU*i/8+tp2*2;const d=PR+tp2*25;
-      cx.beginPath();cx.moveTo(g.p.x+Math.cos(a)*PR,g.p.y+Math.sin(a)*PR);
-      cx.lineTo(g.p.x+Math.cos(a)*d,g.p.y+Math.sin(a)*d);cx.stroke();
-    }
     cx.restore();
   }
   // 狙擊蓄力特效（更顯眼）
@@ -2407,200 +2063,9 @@ export function loop(){
     cx.lineTo(g.p.x+Math.cos(ba)*VW,g.p.y+Math.sin(ba)*VW);cx.stroke();
     cx.shadowBlur=0;cx.restore();
   }
-  // 黑洞持續效果：主角周圍暗能量漩渦
-  if(_bhActive){
-    cx.save();
-    const bhProg=Math.sin(now/100);
-    cx.globalAlpha=.35+bhProg*.1;cx.strokeStyle="#495057";cx.lineWidth=2.5;
-    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+10+bhProg*3,0,Math.PI*2);cx.stroke();
-    cx.globalAlpha=.2;cx.strokeStyle="#CED4DA";cx.lineWidth=1.5;cx.setLineDash([3,3]);
-    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+18+Math.sin(now/150)*4,0,Math.PI*2);cx.stroke();
-    cx.setLineDash([]);cx.restore();
-    if(par.length<MAX_PARTICLES&&Math.random()<.3){
-      const ba=rn(0,Math.PI*2);par.push({x:g.p.x+Math.cos(ba)*(PR+15),y:g.p.y+Math.sin(ba)*(PR+15),vx:-Math.cos(ba)*rn(.5,1.5),vy:-Math.sin(ba)*rn(.5,1.5),life:.4,color:"#495057",sz:rn(2,4)});}
-  }
-  // 機關槍狂暴光環
-  if(g.p._mgBerserkEnd&&now<g.p._mgBerserkEnd){
-    cx.save();cx.globalAlpha=.25+Math.sin(now/60)*.1;cx.strokeStyle="#FF4500";cx.lineWidth=3;
-    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+8+Math.sin(now/80)*3,0,Math.PI*2);cx.stroke();cx.restore();
-    if(par.length<MAX_PARTICLES&&Math.random()<.3)par.push({x:g.p.x+rn(-PR,PR),y:g.p.y+rn(-PR,PR),vx:rn(-.5,.5),vy:rn(-1.2,-.4),life:.3,color:"#FF4500",sz:rn(2,4)});
-  }
-  if(g.bhEnd&&now<g.bhEnd){
-    const br=18+Math.sin(now/120)*2,or=48+Math.sin(now/200)*4;
-    cx.save();cx.globalAlpha=.45;cx.fillStyle="#111";cx.beginPath();cx.arc(g.p.x,g.p.y,br,0,Math.PI*2);cx.fill();
-    cx.strokeStyle="rgba(173,181,189,.7)";cx.lineWidth=2.5;cx.beginPath();cx.arc(g.p.x,g.p.y,or,0,Math.PI*2);cx.stroke();
-    cx.strokeStyle="rgba(73,80,87,.7)";cx.setLineDash([4,3]);cx.beginPath();cx.arc(g.p.x,g.p.y,or+10,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
-    cx.restore();
-  }
-  // 磁力場吸引視覺
-  if(g.mfEnd&&now<g.mfEnd){
-    const _mfDur2=g.p.mfDur||1500;
-    const mfP=Math.min(1,(now-(g.mfEnd-_mfDur2))/_mfDur2); // 0→1 進度
-    const mfR=(g.mfR||200)*(1-mfP*.3); // 範圍逐漸收縮
-    cx.save();
-    // 外圈脈動
-    cx.globalAlpha=.15+Math.sin(now/80)*.08;cx.strokeStyle="#339AF0";cx.lineWidth=3;
-    cx.beginPath();cx.arc(g.mfPx,g.mfPy,mfR,0,Math.PI*2);cx.stroke();
-    // 內圈旋轉虛線
-    cx.globalAlpha=.25;cx.strokeStyle="#74C0FC";cx.lineWidth=2;cx.setLineDash([8,6]);
-    cx.beginPath();cx.arc(g.mfPx,g.mfPy,mfR*.6,now/200,now/200+Math.PI*1.6);cx.stroke();
-    cx.setLineDash([]);
-    // 中心光暈
-    const mg=cx.createRadialGradient(g.mfPx,g.mfPy,0,g.mfPx,g.mfPy,40);
-    mg.addColorStop(0,"rgba(51,154,240,.3)");mg.addColorStop(1,"transparent");
-    cx.globalAlpha=.5+Math.sin(now/100)*.2;cx.fillStyle=mg;cx.beginPath();cx.arc(g.mfPx,g.mfPy,40,0,Math.PI*2);cx.fill();
-    cx.restore();
-  }
-  if(g.p._inv){
-    cx.save();cx.globalAlpha=.2+Math.sin(now/150)*.1;cx.strokeStyle="rgba(255,255,255,.4)";cx.lineWidth=2;cx.beginPath();cx.arc(g.p.x,g.p.y+Math.sin(g.time/1000*3)*2.5,PR+6,0,Math.PI*2);cx.stroke();cx.restore();
-  }
-  if(g.p._sh){cx.save();
-    const shAge=now-(g.p._shSpawn||0),shPulse=shAge<500?1-shAge/500:0;
-    cx.globalAlpha=.12+Math.sin(now/180)*.06+shPulse*.3;cx.strokeStyle="#4DABF7";cx.lineWidth=3+shPulse*4;cx.shadowColor="#4DABF7";cx.shadowBlur=12+shPulse*15;cx.beginPath();cx.arc(g.p.x,g.p.y+Math.sin(now/300)*2,PR+7+shPulse*8,0,Math.PI*2);cx.stroke();
-    cx.shadowBlur=0;cx.globalAlpha=.25+Math.sin(now/150)*.1;cx.strokeStyle="#74C0FC";cx.lineWidth=1.5;cx.beginPath();cx.arc(g.p.x,g.p.y+Math.sin(now/300)*2,PR+4,0,Math.PI*2);cx.stroke();
-    for(let si=0;si<4;si++){const sa=now/400+si*Math.PI/2,sx=g.p.x+Math.cos(sa)*(PR+6),sy=g.p.y+Math.sin(sa)*(PR+6);cx.globalAlpha=.4;cx.fillStyle="#fff";cx.beginPath();cx.arc(sx,sy,1.5,0,Math.PI*2);cx.fill();}
-    cx.restore();}
-  if(g.p.fx.dragon){cx.save();cx.globalAlpha=.12+fxLv_*.03;cx.fillStyle="#FF922B";cx.beginPath();cx.arc(g.p.x,g.p.y,PR+6+(g.p.fx.dragon||1)*3,0,Math.PI*2);cx.fill();cx.restore();}
-  // bulletHeal pulse — zero-particle green flash (fades in 180ms)
-  if(g.p._healFlash&&now-g.p._healFlash<180){
-    const ht=1-(now-g.p._healFlash)/180;
-    cx.save();cx.globalAlpha=ht*.3;cx.strokeStyle="#51CF66";cx.lineWidth=2.5;
-    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+3+(1-ht)*6,0,Math.PI*2);cx.stroke();
-    cx.globalAlpha=ht*.12;cx.fillStyle="#69DB7C";
-    cx.beginPath();cx.arc(g.p.x,g.p.y,PR+2,0,Math.PI*2);cx.fill();
-    cx.restore();
-  }
-
-  // 風刃視覺（漏斗形龍捲風 — 放大版 + 消散淡出）
-  if(g._wb&&g._wb.length>0){
-    g._wb.forEach(wb=>{
-      const fadeAlpha=wb.life<1000?wb.life/1000:1; // 最後1秒淡出
-      const sc=1.8; // 放大倍率
-      cx.save();cx.translate(wb.x,wb.y);cx.scale(sc,sc);
-      const spin=now/50;
-      for(let s=0;s<6;s++){
-        const sy=-12+s*4.5;
-        const sw=12-s*1.6;
-        const sa=spin+s*1.3;
-        cx.globalAlpha=(.5-.05*s)*fadeAlpha;
-        cx.strokeStyle=s<2?"#fff":"#99E9F2";
-        cx.lineWidth=2-s*.2;
-        cx.beginPath();
-        cx.ellipse(Math.sin(sa)*3,sy,sw,3-s*.3,Math.sin(sa+s)*.3,0,Math.PI*2);
-        cx.stroke();
-      }
-      // 底部尖端
-      cx.globalAlpha=.55*fadeAlpha;cx.fillStyle="#99E9F2";
-      cx.beginPath();cx.moveTo(-3,10);cx.lineTo(0,16);cx.lineTo(3,10);cx.fill();
-      cx.restore();
-      // 碎屑粒子（消散期加大量碎片）
-      const pRate=wb.life<1000?.6:.25;
-      if(par.length<MAX_PARTICLES&&Math.random()<pRate){
-        const pSz=wb.life<1000?rn(1.5,3.5):rn(1,2.5);
-        par.push({x:wb.x+rn(-10,10),y:wb.y+rn(-12,8),vx:rn(-1.2,1.2),vy:rn(-1.5,-.4),life:.45,color:"#99E9F2",sz:pSz});}
-    });
-  }
-  // 迴力鏢視覺
-  if(g._booms&&g._booms.length>0){
-    g._booms.forEach(bm=>{
-      cx.save();cx.translate(bm.x,bm.y);cx.rotate(bm.rot);
-      const sz=12,ret=bm.phase==="return";
-      // 外圈光暈
-      cx.globalAlpha=.2;cx.fillStyle=ret?"#fff":"#20C997";
-      cx.beginPath();cx.arc(0,0,sz+4,0,Math.PI*2);cx.fill();
-      // 迴力鏢本體（V形）
-      cx.globalAlpha=ret?.95:.85;
-      cx.fillStyle=ret?"#fff":"#20C997";cx.strokeStyle=ret?"#20C997":"#12B886";cx.lineWidth=2;
-      cx.beginPath();
-      cx.moveTo(sz,0);cx.quadraticCurveTo(sz*.3,-sz*.6,-sz*.2,-sz);
-      cx.lineTo(0,-sz*.3);
-      cx.lineTo(-sz*.2,sz);cx.quadraticCurveTo(sz*.3,sz*.6,sz,0);
-      cx.closePath();cx.fill();cx.stroke();
-      // 中心高光
-      cx.fillStyle="#fff";cx.globalAlpha=.6;
-      cx.beginPath();cx.arc(sz*.2,0,2.5,0,Math.PI*2);cx.fill();
-      cx.restore();
-      // 拖尾粒子
-      if(par.length<MAX_PARTICLES&&Math.random()<.4){
-        par.push({x:bm.x+rn(-4,4),y:bm.y+rn(-4,4),vx:rn(-.5,.5),vy:rn(-.5,.5),life:.3,color:ret?"#fff":"#20C997",sz:rn(2,4)});}
-    });
-  }
-  // orbiters visual（召喚球）
-  if(totalOrb>0){for(let i=0;i<totalOrb;i++){
-    const orbR=42;
-    const a=now/600+Math.PI*2*i/totalOrb;
-    const ox=g.p.x+Math.cos(a)*orbR,oy=g.p.y+Math.sin(a)*orbR;
-    const baseR=7.5,pulse=1+Math.sin(now/200+i*1.5)*.18;
-    const col="#FCC419",colDim="rgba(252,196,25,.15)";
-    cx.save();
-    cx.globalAlpha=.12;cx.strokeStyle=col;cx.lineWidth=1;
-    cx.beginPath();cx.moveTo(g.p.x,g.p.y);cx.lineTo(ox,oy);cx.stroke();
-    cx.globalAlpha=.18+Math.sin(now/180+i)*.06;cx.fillStyle=colDim;
-    cx.beginPath();cx.arc(ox,oy,baseR*pulse*1.8,0,Math.PI*2);cx.fill();
-    cx.globalAlpha=1;
-    const og=cx.createRadialGradient(ox-baseR*.2,oy-baseR*.3,baseR*.15,ox,oy,baseR*pulse);
-    og.addColorStop(0,"#fff");og.addColorStop(.4,col);og.addColorStop(1,"#F59F00");
-    cx.fillStyle=og;cx.beginPath();cx.arc(ox,oy,baseR*pulse,0,Math.PI*2);cx.fill();
-    cx.globalAlpha=.7;cx.fillStyle="#fff";cx.beginPath();cx.arc(ox-baseR*.25,oy-baseR*.3,baseR*.22,0,Math.PI*2);cx.fill();
-    cx.restore();
-    if(par.length<MAX_PARTICLES&&Math.random()<.25*getFxQ()){
-      par.push({x:ox+rn(-3,3),y:oy+rn(-3,3),vx:rn(-.4,.4),vy:rn(-.4,.4),life:.45,color:col,sz:rn(1.5,3.5)});}
-  }}
-
-  // 不死鳥復活動畫
-  if(getPhoenixT()>0){
-    const pt=1-getPhoenixT()/1.2,px=g.p.x,py=g.p.y;
-    cx.save();
-    // 擴散火焰環
-    const rings=3;
-    for(let i=0;i<rings;i++){
-      const delay=i*.12,rt=Math.max(0,pt-delay)/(.8-delay);
-      if(rt<=0||rt>1)continue;
-      const rr=PR+rt*65*(1+i*.4);
-      cx.globalAlpha=(1-rt)*.5;
-      cx.strokeStyle=i===0?"#FF922B":i===1?"#FF6B6B":"#FFD43B";
-      cx.lineWidth=3-rt*2;
-      cx.beginPath();cx.arc(px,py,rr,0,Math.PI*2);cx.stroke();
-    }
-    // 火焰翅膀
-    if(pt<.85){
-      const wt=Math.min(1,pt/.4),wa=(1-Math.abs(pt-.4)/.45)*.55;
-      const wingH=30+wt*25,wingW=15+wt*35;
-      cx.globalAlpha=wa;
-      // 左翅
-      cx.fillStyle="#FF922B";cx.beginPath();
-      cx.moveTo(px,py-5);
-      cx.quadraticCurveTo(px-wingW,py-wingH,px-wingW*.7,py+10);
-      cx.quadraticCurveTo(px-wingW*.3,py-5,px,py-5);
-      cx.fill();
-      cx.fillStyle="#FFD43B";cx.globalAlpha=wa*.6;cx.beginPath();
-      cx.moveTo(px,py-2);
-      cx.quadraticCurveTo(px-wingW*.7,py-wingH*.7,px-wingW*.5,py+5);
-      cx.quadraticCurveTo(px-wingW*.2,py-2,px,py-2);
-      cx.fill();
-      // 右翅
-      cx.globalAlpha=wa;cx.fillStyle="#FF922B";cx.beginPath();
-      cx.moveTo(px,py-5);
-      cx.quadraticCurveTo(px+wingW,py-wingH,px+wingW*.7,py+10);
-      cx.quadraticCurveTo(px+wingW*.3,py-5,px,py-5);
-      cx.fill();
-      cx.fillStyle="#FFD43B";cx.globalAlpha=wa*.6;cx.beginPath();
-      cx.moveTo(px,py-2);
-      cx.quadraticCurveTo(px+wingW*.7,py-wingH*.7,px+wingW*.5,py+5);
-      cx.quadraticCurveTo(px+wingW*.2,py-2,px,py-2);
-      cx.fill();
-    }
-    // 上升火焰粒子
-    if(par.length<MAX_PARTICLES){
-      const fc=["#FF922B","#FFD43B","#FF6B6B","#BE4BDB"];
-      for(let i=0;i<3;i++){
-        const a=Math.random()*Math.PI*2,r=Math.random()*20;
-        par.push({x:px+Math.cos(a)*r,y:py+Math.sin(a)*r,vx:Math.cos(a)*rn(.3,1.2),vy:-rn(1.5,3.5),life:.6+Math.random()*.4,color:fc[Math.random()*4|0],sz:rn(2,5)});
-      }
-    }
-    cx.restore();
-  }
-
+  g._lightBeams=(g._lightBeams||[]).filter(b=>now-b.t<300);
+  g._cardImpacts=(g._cardImpacts||[]).filter(h=>now-h.at<320);
+  drawCardWorld(cx,g,now,PR,getPhoenixT());
 
   // particles
   par.forEach(p=>{cx.globalAlpha=p.life;cx.fillStyle=p.color;cx.beginPath();cx.arc(p.x,p.y,p.sz,0,Math.PI*2);cx.fill();});cx.globalAlpha=1;

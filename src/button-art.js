@@ -1,3 +1,4 @@
+import { cardIllustration } from './card-vfx.js';
 import { drawSpriteWithEyes } from './sprite-eyes.js';
 // Code-native pixel emblems for the formal game interface.
 const shapes = {
@@ -36,6 +37,7 @@ const groups = [
  ['flame',/火|焰|龍之/],['ice',/冰|雪/],['heart',/生命|癒|回血|堅韌|吸血/],['boot',/靴/],['bow',/弩|箭/],['book',/學者/],['coin',/幸運|命運/],['poison',/毒/],['bolt',/雷|閃電/],['split',/分裂|彈幕/],['shadow',/影|虛空/],['target',/追蹤|穿透/],['wing',/翼|不死鳥/],['hourglass',/時光|時間/],['shield',/盾|鐵|守護|石膚/],['sword',/刃|斬|劍|拔刀/],['gun',/機關槍/],['skull',/致命|殺戮/],['burst',/爆|震|毀滅|狂暴|拳/],['orb',/磁|黑洞|吞噬|核心|召喚/]
 ];
 export function cardEmblem(card,compact=false) {
+ if(!compact)return '<span class="card-art"><img src="'+cardIllustration(card)+'" alt="" width="96" height="64"/><small>'+String(card.id).padStart(2,'0')+'</small></span>';
  const kind=groups.find(([,pattern])=>pattern.test(card.n))?.[0]||'gem';
  return '<span class="card-emblem'+(compact?' compact':'')+'" style="--emblem-color:'+(card.c||'#e9c878')+'">'+pixelEmblem(kind,card.c||'#e9c878')+'<small>'+String(card.id).padStart(2,'0')+'</small></span>';
 }
