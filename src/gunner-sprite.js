@@ -1,3 +1,4 @@
+import { drawSpriteWithEyes } from './sprite-eyes.js';
 // Approved generated art; direction changes swap frames without rotating the body.
 let atlas, contract;
 const base = import.meta.env.BASE_URL;
@@ -45,7 +46,7 @@ export function drawPixelGunner(context, x, y, radius, direction, shotAt) {
   if (!atlas || !contract) return false;
   const pose = spritePlacement(x, y, radius, direction, shotAt);
   context.save(); context.imageSmoothingEnabled = false; context.shadowBlur = 0;
-  context.drawImage(atlas, pose.frame.x, pose.frame.y, 64, 64, Math.round(pose.left), Math.round(pose.top), 64 * pose.scale, 64 * pose.scale);
+  drawSpriteWithEyes(context, atlas, 'gunner-pixel', pose.frame.x, pose.frame.y, 64, Math.round(pose.left), Math.round(pose.top), 64 * pose.scale);
   if (pose.elapsed >= 0 && pose.elapsed < 60) {
     const muzzle = getGunnerMuzzle(x, y, radius, direction, shotAt);
     context.fillStyle = '#ffe066';

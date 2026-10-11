@@ -412,3 +412,10 @@ Title Screen
 - 使用者負責測試與驗證；本輪未跑 build、verify 或遊戲操作測試。
 
 - button-art.js 新增 export createRolePortrait，供 installGameButtons 以原生像素繪製選角頭像。依透明度計算可見範圍，再置中至 48×56 畫布。武器徽章移至職業名稱旁。
+
+## 固定眼睛繪製
+
+- 模組總覽：`src/sprite-eyes.js` 保存四張圖集每格舊眼睛座標與共用眼睛繪製函式。
+- 模組依賴：`gunner-sprite.js`、`melee-sprite.js`、`button-art.js` → `sprite-eyes.js`。
+- 函式索引：`drawSpriteWithEyes(ctx,image,key,sx,sy,cell,dx,dy,size)` 先繪角色，再以附近膚色遮掉原眼睛，依固定 2×2 原生格繪眼睛；輸出寬高取同一整數值，雙眼高度一致。
+- 圖片本身不改動；獨立直接顯示 PNG 的工具仍會看到原眼睛。遊戲與正式人物展示頁走共用繪製。

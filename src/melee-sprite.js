@@ -1,3 +1,4 @@
+import { drawSpriteWithEyes } from './sprite-eyes.js';
 // Directional bodies with continuous, hand-anchored weapon motion.
 let atlas,contract,swordAtlas,swordContract,assassinAtlas,assassinContract,shieldAtlas;
 export const assassinActionsReady=Promise.all([new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Cannot load assassin-action.png"));image.src=import.meta.env.BASE_URL+"assassin-action.png";}),fetch(import.meta.env.BASE_URL+"assassin-action.json").then(r=>{if(!r.ok)throw Error("Cannot load assassin-action.json");return r.json();})]).then(([image,data])=>{assassinAtlas=image;assassinContract=data;return true;}).catch(error=>{console.error("Assassin actions unavailable; using dual-dagger fallback.",error);return false;});
@@ -37,7 +38,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
   const stride=active?Math.sin(progress*Math.PI)*2.5*scale:0;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;
   if(role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now))ctx.globalAlpha*=.4;
-  ctx.drawImage(actionAtlas,frame.x,frame.y,96,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale,96*scale);
+  drawSpriteWithEyes(ctx,actionAtlas,role==='swordsman'?'swordsman-action':'assassin-action',frame.x,frame.y,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale);
   ctx.restore();return true;
  }
  const frame=contract.roles[role][index];
@@ -56,7 +57,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const weaponAngle=(active?attackAngle:model.angle)+(role==='swordsman'?swing:0);
  const hidden=role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now);
  ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;if(hidden)ctx.globalAlpha*=.4;
- const drawBody=()=>{ctx.save();ctx.translate(bx,by);ctx.rotate(lean);ctx.drawImage(atlas,frame.x,frame.y,64,64,-32*scale,-40*scale,64*scale,64*scale);ctx.restore();};
+ const drawBody=()=>{ctx.save();ctx.translate(bx,by);ctx.rotate(lean);drawSpriteWithEyes(ctx,atlas,'melee-pixel',frame.x,frame.y,64,-32*scale,-40*scale,64*scale);ctx.restore();};
  const drawWeapon=()=>{
   ctx.save();ctx.translate(pivotX,pivotY);ctx.rotate(weaponAngle+(role==='tank'?0:Math.PI/2));
   if(role==='swordsman')weapons.sword(ctx);

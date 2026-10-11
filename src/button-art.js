@@ -1,3 +1,4 @@
+import { drawSpriteWithEyes } from './sprite-eyes.js';
 // Code-native pixel emblems for the formal game interface.
 const shapes = {
  gun:'M2 5h11v4H8v5H4V9H2z M11 4h2v1h-2z',
@@ -52,7 +53,7 @@ export function createRolePortrait(role) {
  image.onload=()=>{
   const source=document.createElement('canvas');source.width=64;source.height=64;const context=source.getContext('2d',{willReadFrequently:true});
   const row={swordsman:0,tank:1,assassin:2}[role]||0;
-  context.drawImage(image,128,role==='gunner'?0:row*64,64,64,0,0,64,64);
+  drawSpriteWithEyes(context,image,role==='gunner'?'gunner-pixel':'melee-pixel',128,role==='gunner'?0:row*64,64,0,0,64);
   const data=context.getImageData(0,0,64,64).data;let left=64,top=64,right=-1,bottom=-1;
   for(let y=0;y<64;y++)for(let x=0;x<64;x++)if(data[(y*64+x)*4+3]>=128){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
   if(right<left)return;

@@ -35,3 +35,8 @@
 
 ♻️ 沿用 installGameButtons、pixelEmblem 與既有角色圖。
 🆕 新寫 createRolePortrait（CSS 背景定位只會對齊整格，無法依每位角色可見範圍置中）。
+
+| drawSpriteWithEyes | src/sprite-eyes.js | 用逐格座標遮掉原眼睛，繪製固定 2×2 原生格眼睛；同次繪圖雙眼使用相同整數尺寸與高度。選角、槍手與全身近戰動作共用。 |
+
+♻️ 沿用 drawPixelGunner、drawPixelMelee、createRolePortrait。
+🆕 新寫 drawSpriteWithEyes（既有 PNG 眼睛尺寸不一致，生成及縮放无法保證一致）。
