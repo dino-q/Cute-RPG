@@ -75,3 +75,8 @@
 
 ♻️ 沿用 drawPlayer、drawSpriteWithEyes、swordSwing、drawCardWorld、playEndCutscene、drawStageBoss、drawMiniEnemy、showPick、serializeCoopState、applyCoopState。
 🆕 新寫 generated-art、boss-art、treasure-art（既有程式形狀與空白 emoji 沒有生成素材圖集或同一 Boss 結尾）。
+
+| drawCardGround / drawCardIcon | src/card-vfx.js | 地面層避免遮擋；側欄沿用實際卡牌素材。 |
+| drawAbilitySidebar | src/hud.js | 沿用原 loop 側欄，單人與連線客戶端共用。 |
+
+♻️ 沿用 cardWeaponAtlas、drawSpriteWithEyes、drawArt、drawPlayer；胸甲依逐格 torso 貼合，刺客 hands 分別放單刀。🆕 drawAbilitySidebar（原入口僅在主機迴圈，無法給客戶端共用）。

@@ -1,3 +1,4 @@
+import {ART_REVISION} from './generated-art.js';
 import { cardWeaponAtlas, drawCardGun } from './card-vfx.js';
 import { drawSpriteWithEyes } from './sprite-eyes.js';
 // Approved generated art; direction changes swap frames without rotating the body.
@@ -10,7 +11,7 @@ export const gunnerSpriteReady = Promise.all([
     image.onerror = () => reject(new Error('Cannot load gunner-pixel.png'));
     image.src = base + 'gunner-pixel.png';
   }),
-  fetch(base + 'gunner-pixel.json').then(response => {
+  fetch(base+'gunner-pixel.json?v='+ART_REVISION).then(response => {
     if (!response.ok) throw new Error('Cannot load gunner-pixel.json: ' + response.status);
     return response.json();
   })
@@ -47,7 +48,7 @@ export function drawPixelGunner(context, x, y, radius, direction, shotAt, player
   if (!atlas || !contract) return false;
   const pose = spritePlacement(x, y, radius, direction, shotAt);
   context.save(); context.imageSmoothingEnabled = false; context.shadowBlur = 0;
-  drawSpriteWithEyes(context, cardWeaponAtlas(atlas,'gunner-pixel',player), 'gunner-pixel', pose.frame.x, pose.frame.y, 64, Math.round(pose.left), Math.round(pose.top), 64 * pose.scale);
+  drawSpriteWithEyes(context, cardWeaponAtlas(atlas,'gunner-pixel',player,contract), 'gunner-pixel', pose.frame.x, pose.frame.y, 64, Math.round(pose.left), Math.round(pose.top), 64 * pose.scale);
   drawCardGun(context,player,getGunnerMuzzle(x,y,radius,direction,shotAt),{x:Math.cos(pose.index*Math.PI/4),y:Math.sin(pose.index*Math.PI/4)},pose.scale,performance.now());
   if (pose.elapsed >= 0 && pose.elapsed < 60) {
     const muzzle = getGunnerMuzzle(x, y, radius, direction, shotAt);

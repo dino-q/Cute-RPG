@@ -500,3 +500,18 @@ graph LR
 - loop.js / coop.js：大小寶箱共用圖片；showPick / showCoopPick：四階段開箱動作。
 
 此批生成圖經「實裝上去看看」授權，取代上一節待審狀態。殘影斬、寶箱、Boss 和結尾同次更新。使用者自行進行遊戲測試；只執行發布必要打包。
+
+## 2026-10-12 遮擋、装備與辨識修正
+
+- ♻️ 沿用 drawCardWorld / drawPlayer；新增 drawCardGround 在人物之前繪黑洞、磁力場與時停，前景不重繪。黑洞固定於地面的扁橢圓內旋轉，角色保持可見。
+- ♻️ 沿用 cardWeaponAtlas、drawSpriteWithEyes；鐵壁金身不再把整張護甲圖覆蓋角色。使用生成的八方向 fitted-armor，四職業逐格 torso 位置與尺度貼合胸口，保留原皮膚、臉與手。
+- 刺客八方向 × 四動作共 32 格記錄兩隻手的 x/y/angle。dagger-single 從已核准的成對武器圖提取一把完整短刀，再於每隻手獨立繪製。
+- 🆕 drawAbilitySidebar（原右側欄只存在 loop，客戶端沒有共用入口）：將原欄位繪圖搬入 hud.js；使用 drawCardIcon 畫卡牌素材，移除空 emoji 來源。雙人同步 P2 背包，客戶端使用同一入口。
+- 地圖寶箱不再按整格透明留白縮小；可見箱體小寶箱 42、大寶箱 58 畫布單位，進度條置於下方。
+- 污泥小怪可見本體 34、狂暴小怪 29 畫布單位，亮輪廓、略提亮與 110 毫秒受擊閃白；輪廓版本快取，雙人同步閃白剩餘時間。
+- 圖集更新 244 格、26 組、1024×3968。新原稿：角色預覽/fitted-armor-source.png。
+- 生成圖與四套位置資料 URL 使用 ART_REVISION，避免發布後快取舊版裝備。
+- 展示頁可選鐵壁金身與黑洞，再切職業和方向；不操作遊戲測試。
+
+新增匯出索引：card-vfx.js → drawCardGround、drawCardIcon；hud.js → drawAbilitySidebar；generated-art.js → ART_REVISION。
+新增依賴：hud.js → card-vfx.js / cards.js；gunner-sprite.js / melee-sprite.js → generated-art.js。

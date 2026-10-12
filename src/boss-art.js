@@ -6,8 +6,10 @@ export function drawBossArt(c,e,now,x=e.x,y=e.y,size=e.r*2.3){
  const a=Number.isFinite(e._artAngle)?e._artAngle:(e.face<0?Math.PI:Math.PI/2);
  const casting=(e._artAttackUntil||0)>now||['pulse_warn','pulse_boom','dash'].includes(e._p3cycle);
  const dir=directionIndex(a),group=type+(casting?'-attack':'-idle');
+ const minion=!!(e.miniPoo||e.miniDemon||e.ragePoo);
+ if(minion){if(e._artLastHp!==undefined&&e.hp<e._artLastHp)e._artHitUntil=now+110;e._artLastHp=e.hp;}
  const bounce=e.miniPoo||e.miniDemon?Math.sin(now/180+(e.t||0))*1:Math.sin(now/320)*.8;
- drawArt(c,group,dir,x,y+bounce,size,size,{fullCell:true,alpha:e.ragePoo?.72:1});
+ drawArt(c,group,dir,x,y+bounce,size,size,{fullCell:!minion,outline:minion?'#c1ce88':null,brightness:minion?(e._artHitUntil>now?20:1.2):1,alpha:1});
  if((e._spawnShield||0)>now)drawArt(c,'guardian',2,x,y,size*.82,size*.82,{alpha:.65});
  if(type==='devil'&&e.sbPhase>=2)drawArt(c,'fire',4,x,y+size*.26,size*.55,size*.24,{alpha:e.sbPhase===3?.75:.45});
 }

@@ -64,6 +64,14 @@
       "rows": 2,
       "cols": 2,
       "kind": "body"
+    },
+    {
+      "id": "fitted-armor",
+      "file": "角色預覽/fitted-armor-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-75ef8060-010c-45b6-8e5f-51de4e1b4d4f.png",
+      "rows": 2,
+      "cols": 4,
+      "kind": "prop"
     }
   ]
 }

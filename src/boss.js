@@ -648,9 +648,9 @@ export function drawStageBoss(e,now){
 
 export function drawMiniEnemy(e,now){
   const cx=getCx();
-  cx.save();const sz=e.ragePoo?20:e.miniPoo?26:25;
+  cx.save();const sz=e.ragePoo?29:e.miniPoo?34:28;
   cx.translate(e.x,e.y);
-  drawBossArt(cx,e,now,0,0,sz*1.6);
+  drawBossArt(cx,e,now,0,0,sz);
   // HP bar
   if(!e.ragePoo){
     const hpR=e.hp/e.mhp,bw=sz*1.4,bh=3,bx=-bw/2,by=-sz/2-6;

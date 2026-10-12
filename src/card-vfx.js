@@ -14,7 +14,8 @@ export function drawCardPlayerLayer(c,p,x,y,r,now,front=false){
   if(p._guardAura)drawArt(c,'guardian',5,x,y+r*.6,(r+25+p._guardAura*10)*2,30*s,{alpha:.55});
   if(p._shadowStepEnd>now||p._shadowStrikeEnd>now)drawArt(c,'arcane',7,x,y+7*s,36*s,18*s,{alpha:.4,angle:Math.atan2(p._ad?.y||0,p._ad?.x||1)});
  }else{
-  if(p._sh||p.projImmune||p._iwActive)drawArt(c,'guardian',p._iwActive?2:p._sh?1:0,x,y+3*s,42*s,43*s,{alpha:.68});
+  if(p._sh)drawArt(c,'guardian',1,x,y+12*s,32*s,22*s,{alpha:.45});
+  if(p._iwActive)drawArt(c,'guardian',6,x,y+17*s,23*s,12*s,{alpha:.55});
   if(p.thorns)drawArt(c,'guardian',4,x,y+12*s,24*s,17*s,{alpha:.65});
   if(p.regen&&p.hp<p.maxHp&&Math.floor(now/200)%8<3)drawArt(c,'vital',0,x-r-3,y+3-(now%1600)/80,12*s,14*s,{alpha:.7});
   if(p._healFlash&&now-p._healFlash<220){const q=(now-p._healFlash)/220;drawArt(c,'vital',0,x,y-q*16,35*s,35*s,{alpha:1-q});}
@@ -26,32 +27,56 @@ export function drawCardPlayerLayer(c,p,x,y,r,now,front=false){
 // Replace only weapon pixels outside the protected head/body, then attach approved props.
 // Work is cached once per source/tier, never performed per frame.
 const variants=new WeakMap();
-export function cardWeaponAtlas(image,key,p){
- const theme=pick(p);if(!image||!theme||!artFrame('weapon-variants'))return image;
- if(key==='gunner-pixel')return image; // gun kit has its own muzzle-anchored attachment.
+export function cardWeaponAtlas(image,key,p,poseContract){
+ const theme=pick(p),armored=!!p?.projImmune&&key!=='tank-shield';
+ if(!image||(!theme&&!armored)||!artFrame('weapon-variants')||(armored&&!artFrame('fitted-armor')))return image;
+ if(key==='gunner-pixel'&&!armored)return image;
  let cache=variants.get(image);if(!cache){cache=new Map();variants.set(image,cache);}
- const id=key+':'+theme;if(cache.has(id))return cache.get(id);
- const cv=document.createElement('canvas');cv.width=image.width;cv.height=image.height;const c=cv.getContext('2d',{willReadFrequently:true});c.drawImage(image,0,0);
- const cell=key.includes('action')?96:64,data=c.getImageData(0,0,cv.width,cv.height),attachments=[];
+ const id=key+':'+theme+':'+armored;if(cache.has(id))return cache.get(id);
+ const cv=document.createElement('canvas');cv.width=image.width;cv.height=image.height;
+ const c=cv.getContext('2d',{willReadFrequently:true});c.drawImage(image,0,0);
+ const cell=key.includes('action')?96:64,data=c.getImageData(0,0,cv.width,cv.height),attachments=[],plates=[];
  for(let sy=0;sy<cv.height;sy+=cell)for(let sx=0;sx<cv.width;sx+=cell){
-  if(key==='tank-shield'){const dir=sx/64,bounds=[[26,20,5,24],[23,20,10,24],[25,20,13,24],[26,20,12,24],[26,20,4,24],[23,20,11,24],[24,20,15,24],[26,20,11,24]][dir%8];attachments.push({sx,sy,shield:bounds});continue;}
-  const points=[];for(let yy=0;yy<cell;yy++)for(let xx=0;xx<cell;xx++){
+  const role=key==='melee-pixel'?['swordsman','tank','assassin'][sy/64]:null;
+  const frames=role?poseContract?.roles[role]:poseContract?.frames;
+  const pose=frames?.find(f=>f.x===sx&&f.y===sy);
+  const direction=role?sx/cell:frames?.indexOf(pose)%8;
+  if(armored&&pose?.torso)plates.push({sx,sy,torso:pose.torso,direction});
+  if(!theme||key==='gunner-pixel'||key==='melee-pixel')continue;
+  if(key==='tank-shield'){
+   const dir=sx/64,bounds=[[26,20,5,24],[23,20,10,24],[25,20,13,24],[26,20,12,24],[26,20,4,24],[23,20,11,24],[24,20,15,24],[26,20,11,24]][dir%8];attachments.push({sx,sy,shield:bounds});continue;
+  }
+  const assassin=key==='assassin-action',points=[];
+  for(let yy=0;yy<cell;yy++)for(let xx=0;xx<cell;xx++){
    const at=((sy+yy)*cv.width+sx+xx)*4;if(data.data[at+3]<128)continue;
-   const face=cell===96?xx>=30&&xx<=66&&yy>=30&&yy<=68:xx>=19&&xx<=44&&yy>=13&&yy<=47;
-   const body=cell===96?xx>=40&&xx<=58&&yy>=69&&yy<=91:xx>=23&&xx<=41&&yy>=40&&yy<=57;
+   const face=assassin?yy<65&&xx>=35&&xx<=61:xx>=30&&xx<=66&&yy>=30&&yy<=68;
+   const body=assassin?xx>=42&&xx<=53&&yy>=70&&yy<=85:xx>=40&&xx<=58&&yy>=69&&yy<=91;
    if(face||body)continue;
-   const a=data.data[at],b=data.data[at+1],d=data.data[at+2],hi=Math.max(a,b,d),lo=Math.min(a,b,d);
+   const red=data.data[at],green=data.data[at+1],blue=data.data[at+2],hi=Math.max(red,green,blue),lo=Math.min(red,green,blue);
    if(hi<135||hi-lo>75)continue;points.push([xx,yy]);data.data[at+3]=0;
   }
+  if(assassin&&pose?.hands){attachments.push({sx,sy,hands:pose.hands});continue;}
   if(!points.length)continue;
-  const hand=cell===96?[48,77]:[32,46];
-  const near=points.reduce((a,b)=>Math.hypot(b[0]-hand[0],b[1]-hand[1])<Math.hypot(a[0]-hand[0],a[1]-hand[1])?b:a);
+  const hand=[48,77],near=points.reduce((a,b)=>Math.hypot(b[0]-hand[0],b[1]-hand[1])<Math.hypot(a[0]-hand[0],a[1]-hand[1])?b:a);
   const tip=points.reduce((a,b)=>Math.hypot(b[0]-near[0],b[1]-near[1])>Math.hypot(a[0]-near[0],a[1]-near[1])?b:a);
   attachments.push({sx,sy,x:near[0],y:near[1],angle:Math.atan2(tip[1]-near[1],tip[0]-near[0]),size:Math.min(36,Math.max(20,Math.hypot(tip[0]-near[0],tip[1]-near[1])+7))});
  }
- c.putImageData(data,0,0);for(const a of attachments){
+ c.putImageData(data,0,0);
+ for(const plate of plates){
+  const [x,y,w,h]=plate.torso;
+  drawArt(c,'fitted-armor',plate.direction,plate.sx+x,plate.sy+y,w,h);
+  // Restore the original visible skin over the fitted chest plate: face and hands stay readable.
+  for(let yy=Math.floor(y-h/2);yy<=Math.ceil(y+h/2);yy++)for(let xx=Math.floor(x-w/2);xx<=Math.ceil(x+w/2);xx++){
+   const at=((plate.sy+yy)*cv.width+plate.sx+xx)*4,red=data.data[at],green=data.data[at+1],blue=data.data[at+2];
+   if(data.data[at+3]>128&&red>155&&green>95&&blue>55&&red>green*1.12&&green>blue*1.05){
+    c.fillStyle='rgb('+red+','+green+','+blue+')';c.fillRect(plate.sx+xx,plate.sy+yy,1,1);
+   }
+  }
+ }
+ for(const a of attachments){
   if(a.shield){const [x,y,w,h]=a.shield;c.clearRect(a.sx,a.sy,cell,cell);drawArt(c,'weapon-variants',weaponRows[theme]*4+2,a.sx+x+w/2,a.sy+y+h/2,w,h);continue;}
-  const column=key.includes('assassin')?3:1;drawArt(c,'weapon-variants',weaponRows[theme]*4+column,a.sx+a.x,a.sy+a.y,a.size,a.size,{angle:a.angle+Math.PI/4,anchorX:.2,anchorY:.85});
+  if(a.hands){for(const [x,y,angle]of a.hands)drawArt(c,'dagger-single',weaponRows[theme],a.sx+x,a.sy+y,16,16,{angle:angle+Math.PI/4,anchorX:.22,anchorY:.85});continue;}
+  drawArt(c,'weapon-variants',weaponRows[theme]*4+1,a.sx+a.x,a.sy+a.y,a.size,a.size,{angle:a.angle+Math.PI/4,anchorX:.2,anchorY:.85});
  }
  cache.set(id,cv);return cv;
 }
@@ -103,6 +128,13 @@ function drawDragon(c,g,now,lv){
   drawArt(c,'dragon-breath',phase,x,y,len,Math.max(20,len*Math.sin(b.arc||.5)*.85),{angle:b.ang,anchorX:0,anchorY:.5,alpha:.92});
  }
 }
+// Ground effects are drawn before any actor. The world-front pass never repeats them.
+export function drawCardGround(c,g,now){
+ if(!g?.p)return;const p=g.p;
+ if(g.bhEnd>now){c.save();c.translate(p.x,p.y+14);c.scale(1,.58);drawArt(c,'arcane',0,0,0,126,126,{angle:now/1300,alpha:.78});c.restore();}
+ if(g.mfEnd>now)drawArt(c,'arcane',1,g.mfPx,g.mfPy,(g.mfR||200)*1.7,(g.mfR||200)*1.1,{alpha:.65});
+ if(g._cardTsEnd>now)drawArt(c,'arcane',2,p.x,p.y+10,145,105,{angle:Math.sin(now/600)*.04,alpha:.55});
+}
 export function drawCardWorld(c,g,now,r=18,phoenix=0){
  if(!g?.p)return;const p=g.p;
  if(g._dragonPet)drawDragon(c,g,now,p._dragonBreath||p.fx?.dragon||1);
@@ -113,9 +145,6 @@ export function drawCardWorld(c,g,now,r=18,phoenix=0){
  const ga=g._ghostArc;if(ga){const q=(now-ga.t)/340;if(q>=0&&q<1)drawArt(c,'ghost-slash',Math.min(5,Math.floor(q*6)),ga.x+Math.cos(ga.ang)*r*.9,ga.y+Math.sin(ga.ang)*r*.9,r*4.5,r*4.5,{angle:ga.ang,alpha:Math.sin(q*Math.PI)});}
  if(g._quakeRingT){const q=(now-g._quakeRingT)/(g._quakeRingSmall?400:800);if(q>=0&&q<1)drawArt(c,'guardian',8,p.x,p.y+r,(g._quakeRingSmall?65:240)*(1+q*.2),(g._quakeRingSmall?35:110),{alpha:1-q});}
  if(g._thornFlash){const q=(now-g._thornFlash)/300;if(q>=0&&q<1)drawArt(c,'guardian',10,p.x,p.y,r*4,r*3,{alpha:1-q});}
- if(g.bhEnd>now)drawArt(c,'arcane',0,p.x,p.y,112,94,{angle:now/1300});
- if(g.mfEnd>now)drawArt(c,'arcane',1,g.mfPx,g.mfPy,(g.mfR||200)*1.7,(g.mfR||200)*1.5,{alpha:.8});
- if(g._cardTsEnd>now)drawArt(c,'arcane',2,p.x,p.y,145,145,{angle:Math.sin(now/600)*.04,alpha:.6});
  if(phoenix>0){const q=clamp(1-phoenix/1.2);drawArt(c,'phoenix',Math.min(5,Math.floor(q*6)),p.x,p.y-12-q*35,90,90,{fullCell:true,alpha:Math.sin(q*Math.PI)});}
  for(const hit of g._cardImpacts||[]){const q=(now-hit.at)/320;if(q<0||q>=1)continue;const group=themes[hit.kind]||'fire',frame=hit.kind==='explosion'?6:3,size=hit.kind==='explosion'?80:32;drawArt(c,group,frame,hit.x,hit.y,size*(.7+q*.4),size*(.7+q*.4),{alpha:1-q});}
 }
@@ -185,3 +214,7 @@ export function cardIllustration(card){
  return 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="64"><rect width="96" height="64" fill="#182333"/></svg>');
 }
 export function addCardImpact(g,x,y,source){if(!g)return;const kind=typeof source==='string'?source:pick(source);if(!kind||kind==='lightning')return;const now=performance.now();g._cardImpacts=(g._cardImpacts||[]).filter(h=>now-h.at<320).slice(-23);g._cardImpacts.push({x,y,kind,at:now});}
+
+export function drawCardIcon(c,card,x,y,size=22){
+ const [group,frame]=cardArtSlot(card.n);return drawArt(c,group,frame,x,y,size,size);
+}

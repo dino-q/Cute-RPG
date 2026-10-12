@@ -1,19 +1,32 @@
+export const ART_REVISION='equipment-20261012-v2';
 // Approved raster art, packed offline. Drawing always restores canvas state.
 let atlas=null,contract=null;
 export const generatedArtReady=Promise.all([
- new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Cannot load generated-art.png'));im.src=import.meta.env.BASE_URL+'generated-art.png';}),
- fetch(import.meta.env.BASE_URL+'generated-art.json').then(r=>{if(!r.ok)throw Error('Cannot load generated-art.json');return r.json();})
+ new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Cannot load generated-art.png'));im.src=import.meta.env.BASE_URL+'generated-art.png?v='+ART_REVISION;}),
+ fetch(import.meta.env.BASE_URL+'generated-art.json?v='+ART_REVISION).then(r=>{if(!r.ok)throw Error('Cannot load generated-art.json');return r.json();})
 ]).then(([im,data])=>{atlas=im;contract=data;window.dispatchEvent(new Event('game-art-ready'));return true;}).catch(error=>{console.error('Generated game art unavailable.',error);return false;});
 export function artFrame(name,index=0){const frames=contract?.groups[name];return frames?.[((Math.floor(index)%frames.length)+frames.length)%frames.length];}
+const styledFrames=new Map();
+function styledFrame(f,outline,brightness){
+ const key=f.index+':'+outline+':'+brightness;if(styledFrames.has(key))return styledFrames.get(key);
+ const cell=contract.cell,cv=document.createElement('canvas');cv.width=cv.height=cell;const c=cv.getContext('2d');
+ const sx=(f.index%contract.columns)*cell,sy=Math.floor(f.index/contract.columns)*cell;
+ if(outline){for(const [dx,dy]of [[-3,0],[3,0],[0,-3],[0,3]])c.drawImage(atlas,sx,sy,cell,cell,dx,dy,cell,cell);
+ c.globalCompositeOperation='source-in';c.fillStyle=outline;c.fillRect(0,0,cell,cell);c.globalCompositeOperation='source-over';}
+ c.filter='brightness('+(brightness||1)+')';c.drawImage(atlas,sx,sy,cell,cell,0,0,cell,cell);c.filter='none';
+ styledFrames.set(key,cv);return cv;
+}
 export function drawArt(c,name,index,x,y,width,height=width,options={}){
  const f=artFrame(name,index);if(!atlas||!f)return false;
- const cell=contract.cell,b=f.bounds,sw=b[2]-b[0],sh=b[3]-b[1];
+ const cell=contract.cell,pad=options.outline?3:0,b=[Math.max(0,f.bounds[0]-pad),Math.max(0,f.bounds[1]-pad),Math.min(cell,f.bounds[2]+pad),Math.min(cell,f.bounds[3]+pad)],sw=b[2]-b[0],sh=b[3]-b[1];
+ const styled=options.outline||options.brightness?styledFrame(f,options.outline,options.brightness):null;
+ const source=styled||atlas,sx=styled?0:(f.index%contract.columns)*cell,sy=styled?0:Math.floor(f.index/contract.columns)*cell;
  c.save();c.shadowBlur=0;c.imageSmoothingEnabled=false;c.translate(Math.round(x),Math.round(y));
  if(options.angle)c.rotate(options.angle);if(options.flip)c.scale(-1,1);
  if(options.alpha!==undefined)c.globalAlpha*=Math.max(0,Math.min(1,options.alpha));
- if(options.fullCell)c.drawImage(atlas,(f.index%contract.columns)*cell,Math.floor(f.index/contract.columns)*cell,cell,cell,-width/2,-height/2,width,height);
+ if(options.fullCell)c.drawImage(source,sx,sy,cell,cell,-width/2,-height/2,width,height);
  else{const ratio=Math.min(width/sw,height/sh),dw=sw*ratio,dh=sh*ratio;
- c.drawImage(atlas,(f.index%contract.columns)*cell+b[0],Math.floor(f.index/contract.columns)*cell+b[1],sw,sh,-dw*(options.anchorX??.5),-dh*(options.anchorY??.5),dw,dh);}
+ c.drawImage(source,sx+b[0],sy+b[1],sw,sh,-dw*(options.anchorX??.5),-dh*(options.anchorY??.5),dw,dh);}
  c.restore();return true;
 }
 export function artThumbnail(name,index=0){

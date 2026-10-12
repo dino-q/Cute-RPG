@@ -1,16 +1,17 @@
+import {ART_REVISION} from './generated-art.js';
 import { cardWeaponAtlas } from './card-vfx.js';
 import { drawSpriteWithEyes } from './sprite-eyes.js';
 // Directional bodies with continuous, hand-anchored weapon motion.
 let atlas,contract,swordAtlas,swordContract,assassinAtlas,assassinContract,shieldAtlas;
-export const assassinActionsReady=Promise.all([new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Cannot load assassin-action.png"));image.src=import.meta.env.BASE_URL+"assassin-action.png";}),fetch(import.meta.env.BASE_URL+"assassin-action.json").then(r=>{if(!r.ok)throw Error("Cannot load assassin-action.json");return r.json();})]).then(([image,data])=>{assassinAtlas=image;assassinContract=data;return true;}).catch(error=>{console.error("Assassin actions unavailable; using dual-dagger fallback.",error);return false;});
+export const assassinActionsReady=Promise.all([new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Cannot load assassin-action.png"));image.src=import.meta.env.BASE_URL+"assassin-action.png";}),fetch(import.meta.env.BASE_URL+"assassin-action.json?v="+ART_REVISION).then(r=>{if(!r.ok)throw Error("Cannot load assassin-action.json");return r.json();})]).then(([image,data])=>{assassinAtlas=image;assassinContract=data;return true;}).catch(error=>{console.error("Assassin actions unavailable; using dual-dagger fallback.",error);return false;});
 export const tankShieldReady=new Promise(resolve=>{const image=new Image();image.onload=()=>{shieldAtlas=image;resolve(true);};image.onerror=()=>{console.error("Cannot load tank-shield.png; using original shield.");resolve(false);};image.src=import.meta.env.BASE_URL+"tank-shield.png";});
-export const swordActionsReady=Promise.all([new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Cannot load swordsman-action.png"));image.src=import.meta.env.BASE_URL+"swordsman-action.png";}),fetch(import.meta.env.BASE_URL+"swordsman-action.json").then(r=>{if(!r.ok)throw Error("Cannot load swordsman-action.json");return r.json();})]).then(([image,data])=>{swordAtlas=image;swordContract=data;return true;}).catch(error=>{console.error("Sword actions unavailable; using continuous weapon motion.",error);return false;});
+export const swordActionsReady=Promise.all([new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Cannot load swordsman-action.png"));image.src=import.meta.env.BASE_URL+"swordsman-action.png";}),fetch(import.meta.env.BASE_URL+"swordsman-action.json?v="+ART_REVISION).then(r=>{if(!r.ok)throw Error("Cannot load swordsman-action.json");return r.json();})]).then(([image,data])=>{swordAtlas=image;swordContract=data;return true;}).catch(error=>{console.error("Sword actions unavailable; using continuous weapon motion.",error);return false;});
 // Visible shield bounds exclude detached generation scraps beside the actual shield.
 const shieldBounds=[[26,20,5,24],[23,20,10,24],[25,20,13,24],[26,20,12,24],[26,20,4,24],[23,20,11,24],[24,20,15,24],[26,20,11,24]];
 const models=new WeakMap();
 export const meleeSpritesReady=Promise.all([
  new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Cannot load melee-pixel.png'));img.src=import.meta.env.BASE_URL+'melee-pixel.png';}),
- fetch(import.meta.env.BASE_URL+'melee-pixel.json').then(r=>{if(!r.ok)throw Error('Cannot load melee-pixel.json');return r.json();})
+ fetch(import.meta.env.BASE_URL+'melee-pixel.json?v='+ART_REVISION).then(r=>{if(!r.ok)throw Error('Cannot load melee-pixel.json');return r.json();})
 ]).then(([image,data])=>{atlas=image;contract=data;return true;}).catch(error=>{console.error('Melee sprites unavailable; using original appearance.',error);return false;});
 const clamp=v=>Math.max(0,Math.min(1,v));
 const ease=v=>{v=clamp(v);return v*v*(3-2*v);};
@@ -42,7 +43,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
   const stride=active?Math.sin(progress*Math.PI)*2.5*scale:0;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;
   if(role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now))ctx.globalAlpha*=.4;
-  drawSpriteWithEyes(ctx,cardWeaponAtlas(actionAtlas,role+'-action',player),role==='swordsman'?'swordsman-action':'assassin-action',frame.x,frame.y,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale);
+  drawSpriteWithEyes(ctx,cardWeaponAtlas(actionAtlas,role+'-action',player,actionContract),role==='swordsman'?'swordsman-action':'assassin-action',frame.x,frame.y,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale);
   ctx.restore();return true;
  }
  const frame=contract.roles[role][index];
@@ -61,7 +62,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const weaponAngle=(active?attackAngle:model.angle)+(role==='swordsman'?swing:0);
  const hidden=role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now);
  ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;if(hidden)ctx.globalAlpha*=.4;
- const drawBody=()=>{ctx.save();ctx.translate(bx,by);ctx.rotate(lean);drawSpriteWithEyes(ctx,atlas,'melee-pixel',frame.x,frame.y,64,-32*scale,-40*scale,64*scale);ctx.restore();};
+ const drawBody=()=>{ctx.save();ctx.translate(bx,by);ctx.rotate(lean);drawSpriteWithEyes(ctx,cardWeaponAtlas(atlas,'melee-pixel',player,contract),'melee-pixel',frame.x,frame.y,64,-32*scale,-40*scale,64*scale);ctx.restore();};
  const drawArm=()=>{ctx.save();ctx.strokeStyle='#efb789';ctx.lineWidth=(role==='tank'?1.5:3)*scale;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(handX,handY);ctx.lineTo(pivotX,pivotY);ctx.stroke();ctx.restore();};
  const drawWeapon=()=>{
   // Tank forearm is short and sits BEHIND the shield, including south-facing attacks.

@@ -1,3 +1,6 @@
+import {C} from './cards.js';
+import {RC,LVC} from './config.js';
+import {drawCardIcon} from './card-vfx.js';
 import { setActionEmblem } from "./button-art.js";
 // HUD, minimap, floating hints, player damage numbers
 import {
@@ -157,4 +160,60 @@ export function drawMinimap() {
   }
   // viewport box
   const c = _camFn(); mx.strokeStyle = "rgba(255,255,255,.3)"; mx.lineWidth = 1; mx.strokeRect(c.x * sx, c.y * sy, VW * sx, VH * sy);
+}
+
+export function drawAbilitySidebar(cx,inv,player,VW,VH){
+ const g={p:player};
+  // 右側能力欄（溢出時往左換列，避開小地圖）
+  if(inv.length>0){
+    const abS=26,abGap=3,abStep=abS+abGap,abStartY=140;
+    const maxRows=Math.max(1,Math.floor((VH-abStartY-65)/abStep));
+    const _rr=cx.roundRect?function(x,y,w,h,r){cx.beginPath();cx.roundRect(x,y,w,h,r);}
+      :function(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.lineTo(x+w-r,y);cx.arcTo(x+w,y,x+w,y+r,r);cx.lineTo(x+w,y+h-r);cx.arcTo(x+w,y+h,x+w-r,y+h,r);cx.lineTo(x+r,y+h);cx.arcTo(x,y+h,x,y+h-r,r);cx.lineTo(x,y+r);cx.arcTo(x,y,x+r,y,r);cx.closePath();};
+    cx.save();cx.textAlign="center";cx.textBaseline="middle";
+    inv.forEach((ci,i)=>{
+      const cd=C.find(c=>c.id===ci.id);if(!cd)return;
+      const col=Math.floor(i/maxRows),row=i%maxRows;
+      const x=VW-abS-6-col*(abS+4),y=abStartY+row*abStep;
+      // 背景
+      cx.globalAlpha=.35;cx.fillStyle="#0a0a18";
+      _rr(x,y,abS,abS,4);cx.fill();
+      cx.globalAlpha=.25;cx.strokeStyle=RC[cd.r];cx.lineWidth=1;
+      _rr(x,y,abS,abS,4);cx.stroke();
+      // Shared generated card artwork
+      cx.globalAlpha=.8;cx.font="14px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+      drawCardIcon(cx,cd,x+abS/2,y+abS/2-2,abS-5);
+      // Lv 標示
+      cx.globalAlpha=.9;cx.font="bold 7px 'Nunito',sans-serif";
+      cx.fillStyle=LVC[ci.lv]||"#fff";
+      cx.fillText("Lv"+(ci.lv+1),x+abS/2,y+abS-3);
+      // 不死鳥：顯示剩餘復活次數
+      if(cd.n==="不死鳥"){
+        cx.globalAlpha=.9;cx.font="bold 8px 'Nunito',sans-serif";
+        cx.fillStyle=g.p.revive>0?"#51CF66":"#FF4040";
+        cx.fillText(g.p.revive>0?"×"+g.p.revive:"×0",x+abS/2,y+5);
+      }
+      // 已用完標記
+      let used=false;
+      if(cd.n==="不死鳥"&&g.p.revive<=0)used=true;
+      if(cd.n==="幸運幣"||cd.n==="命運轉輪")used=true;
+      if(used){
+        cx.globalAlpha=.5;cx.font="bold 18px 'Nunito',sans-serif";
+        cx.fillStyle="#FF4040";cx.fillText("✕",x+abS/2,y+abS/2);
+      }
+    });
+    // 越戰越勇 buff 圖示
+    if(g.p._angelBuff){
+      const abI=inv.length;
+      const col2=Math.floor(abI/maxRows),row2=abI%maxRows;
+      const ax=VW-abS-6-col2*(abS+4),ay=abStartY+row2*abStep;
+      cx.globalAlpha=.35;cx.fillStyle="#0a0a18";_rr(ax,ay,abS,abS,4);cx.fill();
+      cx.globalAlpha=.25;cx.strokeStyle="#FFD43B";cx.lineWidth=1;_rr(ax,ay,abS,abS,4);cx.stroke();
+      cx.globalAlpha=.8;cx.font="14px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";drawCardIcon(cx,{n:"越戰越勇"},ax+abS/2,ay+abS/2-2,abS-5);
+      cx.globalAlpha=.9;cx.font="bold 7px 'Nunito',sans-serif";cx.fillStyle="#FFD43B";cx.fillText("越戰越勇",ax+abS/2,ay+abS-3);
+    }
+    cx.restore();
+  }
+
+
 }
