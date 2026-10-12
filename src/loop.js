@@ -472,6 +472,8 @@ export function loop(){
     g.ad={x:dx/d,y:dy/d};
     if(Math.abs(g.ad.x)>.3)g.p.face=g.ad.x>0?1:-1;
   }else{const manual=aim.a?Math.hypot(aim.dx||0,aim.dy||0):0;g.ad=manual>.08?{x:aim.dx/manual,y:aim.dy/manual}:(g.p._moveDir||{x:0,y:1});}
+  // Drawing, weapons and firing share the current direction after any skill override.
+  g.p._ad=g.ad;
   // 機關槍狂暴：連射3秒後觸發2秒加速
   if(g.p._minigunBerserk){
     if(aim.a){g.p._mgFireT=(g.p._mgFireT||0)+dt*16.67;

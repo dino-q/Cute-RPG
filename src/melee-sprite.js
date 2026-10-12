@@ -26,7 +26,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const elapsed=animation?.active?now-animation.startT:Infinity;
  const active=elapsed>=0&&elapsed<duration;
  const progress=active?clamp(elapsed/duration):0;
- const attackAngle=travelDirection?Math.atan2(travelDirection.y,travelDirection.x):Number.isFinite(animation?.angle)?animation.angle:Math.atan2(direction.y,direction.x);
+ const attackAngle=travelDirection?Math.atan2(travelDirection.y,travelDirection.x):active&&Number.isFinite(animation?.angle)?animation.angle:Math.atan2(direction.y,direction.x);
  let model=player&&models.get(player);
  if(!model){model={angle:Math.PI/2,time:now,x,y};if(player)models.set(player,model);}
  const dt=Math.max(0,Math.min(.05,(now-model.time)/1000));

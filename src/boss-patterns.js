@@ -53,7 +53,7 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
   g.dn.push({x:e.x,y:e.y-e.r-30,d:type==='mud'?'泥雨・離開落點':type==='slam'?'重拳蓄力・離開標線':type==='wing'?'翼刃突進・側移躲開':type==='claw'?'魔爪橫掃・退到背後':type==='impact'?'墜天重擊・離開落點':'旋轉裂界・鎖定後側移',life:1.8,color:'#f1d599',big:1});
  }
  const p=e._pattern;if(!p)return false;e._artAngle=p.angle;e._artAttackUntil=now+120;
- if(p.type==='rift'&&now<p.executeAt){
+ if(p.type==='rift'){
   if(now<p.lockAt)p.spinAngle=(now-p.startAt)/380;
   else if(!p.locked){p.locked=true;p.angle=Math.atan2(target.y-p.startY,target.x-p.startX);p.spinAngle=Math.PI/4;p.distance=clamp(Math.hypot(target.x-p.startX,target.y-p.startY)+130,230,440);p.endX=clamp(p.startX+Math.cos(p.angle)*p.distance,30,mw-30);p.endY=clamp(p.startY+Math.sin(p.angle)*p.distance,30,mh-30);g.dn.push({x:e.x,y:e.y-e.r-32,d:'方向鎖定・側移躲開',life:.75,color:'#ffd3ef'});}
  }
@@ -71,7 +71,7 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
   }else if(p.type==='slam'){
    let caught=false;for(const player of players(g))if(segmentDistance(player.x,player.y,{x:p.startX,y:p.startY},{x:p.endX,y:p.endY})<p.width+12){hit(g,player,damage,'#d2b275');caught=true;}
    p.recovery=caught?1800:3000;
-  }else if(p.type==='rift'){g.ene=g.ene.filter(m=>m._coreGroup!==p.coreGroup);p.coreGroup=null;p.hitPlayers=[];}
+  }else if(p.type==='rift'){p.hitPlayers=[];}
 
  }
  if(p.type==='rift'){
@@ -87,7 +87,7 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
   p.hitPlayers=p.hitPlayers||[];
   for(const player of players(g)){const id=player===g.p?'p1':'p2';if(!p.hitPlayers.includes(id)&&segmentDistance(player.x,player.y,old,e)<e.r*.7+12){p.hitPlayers.push(id);hit(g,player,damage,'#caa2e8');}}
  }
- if(now>=p.endAt){g.ene=g.ene.filter(m=>!p.coreGroup||m._coreGroup!==p.coreGroup);rest(e,now,p.recovery||2600);}
+ if(now>=p.endAt)rest(e,now,p.recovery||2600);
  return true;
 }
 export function updateBossHazards(g,now){
@@ -122,8 +122,7 @@ export function drawBossPatternGround(c,g,now){
    }
    if(warn){c.save();c.fillStyle='#ffe0fc';c.textAlign='center';c.font='bold 11px sans-serif';c.fillText(p.locked?'方向已鎖定・側移':'裂界蓄力・準備側移',p.startX,p.startY-e.r-38);c.restore();}
   }
-  if(warn&&p.coreGroup)for(const core of g.ene.filter(m=>m._coreGroup===p.coreGroup&&m.hp>0))
-   drawBossRoute(c,e.stageBoss===20?'mud-route':'devil-route',0,{x:e.x,y:e.y},{x:core.x,y:core.y},6,1,.58);
+
  }
 }
 export function drawBossPatternCore(c,e,now){

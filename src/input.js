@@ -165,15 +165,15 @@ $("skillBtn").addEventListener("click",e=>{e.preventDefault();_useCharSkill();})
 // global touchmove — always fires, handles both joysticks
 document.addEventListener("touchmove",e=>{
   if(document.body.classList.contains("layout-editing"))return;
-  if(e.target.closest&&(e.target.closest(".panel")||e.target.closest(".ov")||e.target.closest("#practiceOv")||e.target.closest("#settingsOv")))return;// allow panel/overlay/practice/settings interaction
-  e.preventDefault();
   window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
-  for(let i=0;i<e.touches.length;i++){
-    const t=e.touches[i];
+  // Track already-owned fingers even if another finger is interacting with a panel.
+  for(const t of e.touches){
     if(joy.a&&t.identifier===joy.id)attachTouchToStick(joy,'jzL','jkL',t);
     if(aim.a&&t.identifier===aim.id)attachTouchToStick(aim,'jzR','jkR',t);
   }
-},{passive:false});
+  if(e.target.closest?.(".panel,.ov,#practiceOv,#settingsOv"))return;
+  e.preventDefault();
+},{passive:false,capture:true});
 
 // global touchend/cancel — always fires
 function touchReset(e){
@@ -184,8 +184,8 @@ function touchReset(e){
     if(id===aim.id){aim.a=0;aim.dx=0;aim.dy=0;aim.id=null;aim.sx=null;aim.sy=null;setStick($("jkR"));}
   }
 }
-document.addEventListener("touchend",touchReset,{passive:false});
-document.addEventListener("touchcancel",touchReset,{passive:false});
+document.addEventListener("touchend",touchReset,{passive:false,capture:true});
+document.addEventListener("touchcancel",touchReset,{passive:false,capture:true});
 
 window.addEventListener("keydown",e=>{
   if(document.body.classList.contains("layout-editing")||e.target.closest?.("input,select,textarea"))return;
@@ -204,4 +204,8 @@ window.addEventListener("keyup",e=>{
   if((c==="Space"||e.key===" ")&&aim.id==="kb"){aim.a=0;aim.id=null;}
   if((c==="KeyE"||e.key==="e"||e.key==="E")){const g=_getG();if(g)endUltPress();}
 },{capture:true});
+// Losing focus can swallow keyup/mouseup. Never keep a phantom stick or attack held.
+const releaseInputs=()=>{resetControls();window.__lastTouchSnapshot=[];for(const key of Object.keys(ks))ks[key]=false;};
+window.addEventListener('blur',releaseInputs);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseInputs();});
 } // end setupInputListeners
