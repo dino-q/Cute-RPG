@@ -124,3 +124,12 @@
 ♻️ 沿用 drawPlayer、drawPixelMelee、drawArt、animateChestOpening、showPick、resumeGame、原地圖寶箱碰撞與選卡入背包。🆕 上述函式（原擲幣嵌入動畫內、分身繪圖只在loop且共用主角狀態、首頁沒有保留進度入口）。
 
 ♻️ 沿用 drawRoleEvents、drawArt、pracCloseOnBlank、resetControls、pracRebuildCards、pracUpdateCardUI、setLoopCharType。地震使用原岩塊金裂風格的去底全向圖；盾擊縮小淡化。練習進出／切職業關閉透明遮罩，切職業真正重算卡片並按專屬／通用分組。未新增匯出函式。
+
+| openRewardChest | src/cards-ui.js | 單次開箱、兩人獨立獎勵，近戰／子彈四入口共用。 |
+| resetCoopSession | src/coop.js | 換局清除舊選卡、輸入序號、待確認畫面與排程狀態。 |
+
+♻️ 沿用 showPick、pks、resumeGame、serializeCoopState、applyCoopState、setLoopCoopState 等 setter。🆕 openRewardChest（原四處各自判開箱者並覆寫選卡）、resetCoopSession（原P2模組狀態跨局保留）。_applyP2Card(cardId,offerId)、_handleP2Reroll(idx,offerId) 必須帶當前選卡輪次。showPick新增options.rounds，排隊時保存specificCard與持有者。
+
+| beginCoopRun | src/coop.js | 每次雙人新局／重試都以相同開局確認交換角色；避免SG直接重開只有一人。 |
+
+🆕 beginCoopRun（原握手只寫在第一次選角色入口，重試與SG繞過）。單人新局先移除旧net再銷毀peer；雙人CLIENT再來一次請主機啟動新局，仍按新session確認。

@@ -145,7 +145,7 @@ export function resumeGame(cb) {
     requestAnimationFrame(() => {
       const g = _getG();
       const _isCoopMode = _getIsCoopMode();
-      if (_isCoopMode) { g.p._inv = false; g.p._pickPending = false; }
+      if (_isCoopMode&&!g.pickOpen&&!g._localPickTransition&&!g._localPickQueue?.length) { g.p._inv = false; g.p._pickPending = false; }
       g.run = true;
       const n = performance.now();
       g.lS = n; g.laF = n; g.lhF = n; g.lf = n; g.lastKill = n; g.lastHunt = 0; g.p._iFrameEnd = n + 1500;
@@ -294,6 +294,7 @@ export function triggerVictory(bossE) {
 // ── showOver ──────────────────────────────────────────────────────────────────
 export function showOver() {
   const g = _getG();
+  if(g)g._gameOver=true;
   const inv = _getInv();
   bgmStop();
   // bossBgmStop injected via init

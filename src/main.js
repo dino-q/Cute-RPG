@@ -27,8 +27,8 @@ import {
   initCoop, setCoopVW, setCoopVH,
   _coopGenCode,
   showCoopLobby, coopShowCreate, coopShowJoin, coopCreateCustom, coopBack, coopCreateRoom, _coopDoCreate,
-  coopJoinRoom, coopStart, _coopStartReal,
-  _sendP2Pick, _handleP2Reroll, _applyP2Card, showCoopPick,
+  coopJoinRoom, coopStart, _coopStartReal,beginCoopRun,
+  _sendP2Pick, _handleP2Reroll, _applyP2Card, showCoopPick,resetCoopSession,
   serializeCoopState as _serializeCoopState,
   applyCoopState as _applyCoopState,
   clientRenderLoop as _clientRenderLoop
@@ -185,8 +185,11 @@ function pickChar(charType){
 }
 
 window.startGame=window.SG=function(mode){
+  const requestedMode=mode||_mode||"classic";
+  if(requestedMode==="coop"&&_net?.role==="client"&&g?._gameOver&&!_net.awaitingCharacter){if(_net.conn?.open)_net.conn.send({t:"restartrequest",sessionId:g._coopSessionId});return;}
   if(g?._homeSuspended&&!g._homeRestartApproved){confirmAdventureRestart(()=>startGame(mode));return;}
-  _mode=mode||_mode||"classic";const MC=MODE[_mode];
+  _mode=requestedMode;const MC=MODE[_mode];
+  if(_mode!=="coop"&&_net){const previousNet=_net;_net=null;previousNet.peer?.destroy();}
   _isCoopMode=(_mode==="coop"); // coop flag（非 coop 重設 false）
   const CC=CHAR[_charType]||CHAR.gunner; // 角色數值
   // 嘗試全螢幕（隱藏網址列）
@@ -207,7 +210,7 @@ window.startGame=window.SG=function(mode){
     laF:performance.now(),lhF:performance.now(),lS:performance.now(),lf:performance.now(),
     lastKill:performance.now(),lastHunt:0,
     time:0,run:true,ad:{x:0,y:1},ultFlash:0,ultType:"n",ultCharge:0,ultCdEnd:0,_ultReadyUntil:0,nextBoss:BOSS_EVERY,bossCount:0,heat:0,heatMax:43,heatCD:0,ultHold:false,pickOpen:false,spikeDone:{},huntModeUntil:0,bhEnd:0,bhPow:1,_startTime:performance.now(),_stageBossActive:false,_stageBossLv:0,_boss20:false,_boss30:false,_bigChestTotal:0,_bigChestLeft:0,_angelOffered:false,_pendingStageBoss:0,_ew:null,_cw:null};
-  setG(g);setHudG(g);setEnemiesG(g);setCombatG(g);setHudCoopState(_isCoopMode,_net);setHudAim(aim);initHud({cam,mapW,mapH,crateActive});initEnemies({mapW,mapH});setEnemiesMode(_mode);setEnemiesCoopMode(_isCoopMode);setEnemiesPracticeMode(getPracticeMode());initCombat({showPick,sendP2Pick:_sendP2Pick,mapW,mapH,crateActive,setShake:setLoopShake,isElite:_isElite});setCombatMode(_mode);setCombatCoopState(_isCoopMode,_net,_p2AI);inv=[];inv2=[];setCombatInv(inv,inv2);initSkills({mapW,mapH,setShake:setLoopShake,isElite:_isElite});setSkillsG(g);setSkillsCoopState(_isCoopMode,_net);initCardsUi({show,resumeGame,triggerStageBoss,isElite:_isElite,mapW,mapH});setCardsUiG(g);setCardsUiInv(inv,inv2);resetPar();resetLtnRingIdx();resetDashGhosts();setBossG(g);setBossCoopMode(_isCoopMode);setBossIsElite(_isElite);initBoss({mapW,mapH,triggerVictory,setShake:setLoopShake,setHitFlash:setLoopHitFlash});setStageBoss(null);bossBgmStop();setLoopHitFlash(0);setLoopShake(0,0);setPhoenixT(0);setPhoenixAnim(null);g._wb=[];g._wbSpawnT=0;
+  setG(g);setHudG(g);setEnemiesG(g);setCombatG(g);setHudCoopState(_isCoopMode,_net);setHudAim(aim);initHud({cam,mapW,mapH,crateActive});initEnemies({mapW,mapH});setEnemiesMode(_mode);setEnemiesCoopMode(_isCoopMode);setEnemiesPracticeMode(getPracticeMode());initCombat({showPick,sendP2Pick:_sendP2Pick,mapW,mapH,crateActive,setShake:setLoopShake,isElite:_isElite});setCombatMode(_mode);setCombatCoopState(_isCoopMode,_net,_p2AI);inv=[];inv2=[];setCombatInv(inv,inv2);initSkills({mapW,mapH,setShake:setLoopShake,isElite:_isElite});setSkillsG(g);setSkillsCoopState(_isCoopMode,_net);initCardsUi({show,resumeGame,triggerStageBoss,isElite:_isElite,isCoop:()=>_isCoopMode,sendP2Pick:_sendP2Pick,mapW,mapH});setCardsUiG(g);setCardsUiInv(inv,inv2);resetPar();resetLtnRingIdx();resetDashGhosts();setBossG(g);setBossCoopMode(_isCoopMode);setBossIsElite(_isElite);initBoss({mapW,mapH,triggerVictory,setShake:setLoopShake,setHitFlash:setLoopHitFlash});setStageBoss(null);bossBgmStop();setLoopHitFlash(0);setLoopShake(0,0);setPhoenixT(0);setPhoenixAnim(null);g._wb=[];g._wbSpawnT=0;
   // sync loop.js state for this run
   initLoop({
     getG:()=>g, getCx:()=>cx, getFxctx:()=>fxctx, getFxc:()=>fxc,
@@ -229,17 +232,18 @@ window.startGame=window.SG=function(mode){
     g.p2={charType:"gunner",x:_mw2/2+50,y:_mh2/2,hp:MC.startHp,maxHp:MC.startHp,atk:MC.startAtk,speed:MC.startSpeed,fr:1,armor:0,chain:0,ls:0,slow:1,split:1,expR:99,crit:.05,revive:0,fx:{},regen:0,expMul:1,luck:0,dodge:0,thorns:0,dblAtk:0,shieldCD:0,_sh:false,_shT:0,_shSpawn:0,whirlCount:0,whirlLv:0,orbiters:0,poison:0,hasBH:false,hasTS:false,ultLv:0,pierce:0,homing:0,homingR:200,splash:0,berserk:0,deathBoom:0,dodgeAtk:0,elemBoost:1,ultDmgMul:1,ultRate:1,bulletHeal:0,invCD:0,invDur:0,_inv:false,_ivT:0,timestop:0,tsD:0,tsFrzDur:0,tsCd:0,lStep:false,lStepDur:0,lStepSpd:0,lStepCd:0,_dashEnd:0,_dashDx:0,_dashDy:0,_dashSpd:0,_dashGT:0,chainDmg:1,poisonDmg:0,bossDmg:1,mobDmg:1,poisonBossMul:1,burnBoost:1,crateVis:1,mapExpand:0,pickCount:2,face:-1,_iFrameEnd:0,_healFlash:0,heavyEvery:0,_heavyCount:0,ultCdReduce:0,
       _downed:false,_rescueTimer:0,_downedTime:0,_pickPending:false,contactCap:100,_dodgeCD:0,_mgFireT:0,_mgBerserkEnd:0,levelDmgMul:1,armorCapBonus:0,_swordQiCount:0,_tauntAtkEnd:0,_tauntAtkBonus:0,iceFrag:0};
     g.p._downed=false;g.p._rescueTimer=0;g.p._downedTime=0;g.p._pickPending=false;
-    inv2=[];
+    inv2.length=0;
     // coop 使用 elite 波次系統
     g._ew={num:0,restEnd:performance.now()+3000,active:false};
   }
-  resetJoyAim();
+  resetCoopSession();resetJoyAim();
   show("play");if(getRaf())cancelAnimationFrame(getRaf());setRaf(requestAnimationFrame(loop));
   // 設定技能按鈕圖示
   setSkillCdEnd(0);
   const _si=$("skillIcon"),_sc=$("skillCd");
   if(_si){_si.textContent="";delete _si.dataset.art;}
   if(_sc)_sc.style.display="none";
+  if(_mode==="coop")beginCoopRun(_charType);
   setTimeout(resetControls,60);setTimeout(resetControls,180);
 };
 
@@ -325,8 +329,9 @@ window.pracCloseOnBlank = pracCloseOnBlank;
 // HOST 端收到 "p2picked"/"p2reroll" 後，由 _applyP2Card() / _handleP2Reroll() 處理。
 window._p2PickCard = function(cardId) {
   if (_net && _net.role === "client" && _net.conn && _net.conn.open) {
-    _net.conn.send({ t: "p2picked", cardId });
-    const ov = document.getElementById("_p2PickOv"); if (ov) ov.remove();
+    if(!window._p2OfferId||window._p2PickSending)return;window._p2PickSending=true;
+    const ov=document.getElementById('_p2PickOv');ov?.querySelectorAll('button').forEach(b=>{b.disabled=true;});
+    _net.conn.send({t:'p2picked',cardId,offerId:window._p2OfferId});
   }
 };
 window._p2RerollCard = function(idx) {
@@ -335,7 +340,7 @@ window._p2RerollCard = function(idx) {
     if (window._p2PickRerolled) window._p2PickRerolled[idx] = true;
     const btn = document.getElementById("_p2rr" + idx);
     if (btn) { btn.style.opacity = ".3"; btn.style.pointerEvents = "none"; }
-    _net.conn.send({ t: "p2reroll", idx });
+    _net.conn.send({ t: "p2reroll", idx,offerId:window._p2OfferId });
   }
 };
 
@@ -347,18 +352,21 @@ initInput({
 });
 setupInputListeners();
 
+function syncCoopBindings(){
+ setLoopCoopState(_isCoopMode,_net,_p2AI,_p2Input);setCombatCoopState(_isCoopMode,_net,_p2AI);setSkillsCoopState(_isCoopMode,_net);setHudCoopState(_isCoopMode,_net);setBossCoopMode(_isCoopMode);setEnemiesCoopMode(_isCoopMode);
+}
 /* ════ Co-op module init ════ */
 initCoop({
   getG: ()=>g,
-  setIsCoopMode: (v)=>{ _isCoopMode=v; },
+  setIsCoopMode: (v)=>{ _isCoopMode=v;syncCoopBindings(); },
   getIsCoopMode: ()=>_isCoopMode,
-  setNet: (n)=>{ _net=n; },
+  setNet: (n)=>{ _net=n;syncCoopBindings(); },
   getNet: ()=>_net,
-  setP2AI: (v)=>{ _p2AI=v; },
+  setP2AI: (v)=>{ _p2AI=v;syncCoopBindings(); },
   getP2AI: ()=>_p2AI,
   getP2Input: ()=>_p2Input,
   getInv2: ()=>inv2,
-  setInv2: (v)=>{ inv2=v; },
+  setInv2: (v)=>{ inv2.splice(0,inv2.length,...v); },
   isElite: _isElite,
   showOver,
   startGame,
@@ -400,16 +408,16 @@ initPractice({
   getG: ()=>g,
   getInv: ()=>inv,
   getInv2: ()=>inv2,
-  setInv2: (v)=>{ inv2=v; },
+  setInv2: (v)=>{ inv2.splice(0,inv2.length,...v); },
   getMode: ()=>_mode,
   getCharType: ()=>_charType,
   setCharType: (v)=>{ _charType=v;setLoopCharType(v); },
   getIsCoopMode: ()=>_isCoopMode,
-  setIsCoopMode: (v)=>{ _isCoopMode=v; },
+  setIsCoopMode: (v)=>{ _isCoopMode=v;syncCoopBindings(); },
   getP2AI: ()=>_p2AI,
-  setP2AI: (v)=>{ _p2AI=v; },
+  setP2AI: (v)=>{ _p2AI=v;syncCoopBindings(); },
   getNet: ()=>_net,
-  setNet: (n)=>{ _net=n; },
+  setNet: (n)=>{ _net=n;syncCoopBindings(); },
   getP2Input: ()=>_p2Input,
   startGame,
   show,

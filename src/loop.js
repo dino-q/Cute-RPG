@@ -1,3 +1,4 @@
+import {openRewardChest} from './cards-ui.js';
 import {applyIceControl,tickEnemyControl,applyBossDamageBudget,updateEnemyKnockback,enemySlowFactor} from './enemy-control.js';
 import {updateBossHazards,drawBossPatternGround} from './boss-patterns.js';
 import {recordRoleEffect} from './role-card-art.js';
@@ -177,6 +178,12 @@ function serializeCoopState(){
   return _serializeCoopState(g,cam,par,getDashGhosts,getP2SkillCdEnd,aim,ULT_CHARGE_NEED);
 }
 
+function sendHostSnapshot(now){
+ if(!_isCoopMode||_net?.role!=='host'||!_net.connected||!_net.conn?.open||!g?.p2)return;
+ const interval=g.run?33:200;if(now-(_net._lastStateSent||0)<interval)return;
+ if((_net.conn.dataChannel?.bufferedAmount||0)>262144||(_net.conn.bufferSize||0)>2)return;
+ const state=serializeCoopState();if(state){_net.conn.send(state);_net._lastStateSent=now;}
+}
 /* ═══════ MAIN LOOP ════════ */
 export function loop(){
   // 鳳凰復活動畫（遊戲暫停期間獨立運行）
@@ -198,20 +205,28 @@ export function loop(){
     g.dn.forEach(d=>{cx.save();cx.globalAlpha=d.life;cx.font=(d.big?"bold 15px":"11px")+" Nunito,sans-serif";
       cx.fillStyle=d.color;cx.textAlign="center";cx.fillText(d.d,d.x,d.y);cx.restore();});
     cx.restore();raf=requestAnimationFrame(loop);return;}
-  if(!g||!g.run){raf=requestAnimationFrame(loop);return;}
+  if(!g||!g.run){try{sendHostSnapshot(performance.now());}catch(error){console.error("Coop pause sync error:",error);}raf=requestAnimationFrame(loop);return;}
   try{ // 保護 loop 不被未捕獲異常中斷
   // Client: 送操作，然後和 HOST 共用同一套渲染代碼
-  const _isClientMode=!!(_isCoopMode&&_net&&_net.role==="client"&&_net.connected);
+  const _isClientMode=!!(_isCoopMode&&_net&&_net.role==="client");
   if(_isClientMode){
     try{
       g.time=performance.now();
-      if(_net.conn&&_net.conn.open){_net.conn.send({t:"inp",jx:joy.dx,jy:joy.dy,ja:joy.a,aa:aim.a,ax:aim.dx,ay:aim.dy,ult:!!getClientUltReq(),dodge:!!getClientDodgeReq(),pick:-1,skill:!!getSkillsClientSkillReq()});}
-      setSkillsClientSkillReq(false);setClientUltReq(false);setClientDodgeReq(false);
+      const t=performance.now(),action=getClientUltReq()||getClientDodgeReq()||getSkillsClientSkillReq();
+      if(_net.conn?.open&&(t-(_net._lastInputSent||0)>=33||action)&&(_net.conn.dataChannel?.bufferedAmount||0)<131072){
+       const blocked=g._remotePaused||g.p2?._pickPending||!!window._p2OfferId;
+       _net._inputSeq=(_net._inputSeq||0)+1;
+       _net.conn.send({t:'inp',sessionId:g._coopSessionId,seq:_net._inputSeq,jx:blocked?0:joy.dx,jy:blocked?0:joy.dy,ja:blocked?0:joy.a,aa:blocked?0:aim.a,ax:blocked?0:aim.dx,ay:blocked?0:aim.dy,ult:!blocked&&!!getClientUltReq(),dodge:!blocked&&!!getClientDodgeReq(),skill:!blocked&&!!getSkillsClientSkillReq()});
+       _net._lastInputSent=t;setClientUltReq(false);setClientDodgeReq(false);setSkillsClientSkillReq(false);
+      }
     }catch(e){console.error("CLIENT input error:",e);}
     // 不 return — 繼續往下跑渲染代碼
   }
   const now=performance.now(),frameMs=Math.min(now-g.lf,33),dt=frameMs/16.67;g.lf=now;g.time=now;
   if(!_isClientMode){ // ═══ 以下遊戲邏輯只在 HOST 端執行 ═══
+  if(_net?.role==='host'&&now-(_net._lastInputAt||0)>800)Object.assign(_p2Input,{dx:0,dy:0,a:0,aimA:0,ult:false,dodge:false,skill:false});
+  if(g.p._pickPending)g.p._inv=true;if(g.p2?._pickPending)g.p2._inv=true;
+  if(g.p2?._dodgeInvEnd&&now>=g.p2._dodgeInvEnd){g.p2._dodgeInvEnd=0;if(!g.p2._pickPending&&!g.p2._invEnd)g.p2._inv=false;}
   const moveStart=[g.p,g.p2].map(p=>p?{p,x:p.x,y:p.y}:null);
   updateBossHazards(g,now);
   var bhSafe=!!(g.p.bhSafeEnd&&now<g.p.bhSafeEnd);
@@ -226,7 +241,7 @@ export function loop(){
     if(gp>=1)g.p._gsDash=null;
   }
   // move P1
-  if(!g.p._gsDash&&!g.p._downed){
+  if(!g.p._gsDash&&!g.p._downed&&!g.p._pickPending){
     if(joy.a){g.p.x+=joy.dx*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);g.p.y+=joy.dy*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);if(Math.abs(joy.dx)>.2)g.p.face=joy.dx>0?1:-1;}
   }else if(g.p._downed&&joy.a){
     g.p.x+=joy.dx*.5*dt;g.p.y+=joy.dy*.5*dt; // 倒地爬行
@@ -241,7 +256,7 @@ export function loop(){
     if(gp2>=1)g.p2._gsDash=null;
   }
   // move P2 (co-op) — AI 模式跳過（AI 自己控制移動）
-  if(_isCoopMode&&g.p2&&!_p2AI){
+  if(_isCoopMode&&g.p2&&!_p2AI&&!g.p2._pickPending){
     var p2i=(_net&&_net.role==="host")?_p2Input:joy; // Client 用自己的 joy
     if(g.p2._gsDash){
       // 鬼斬衝刺中，不處理手動移動
@@ -253,7 +268,7 @@ export function loop(){
     g.p2.x=cl(g.p2.x,PR+4,mapW()-PR-4);g.p2.y=cl(g.p2.y,PR+4,mapH()-PR-4);
   }
   // AI P2 行為
-  if(_p2AI&&g.p2&&!g.p2._downed&&!g.p2._gsDash&&_isCoopMode){
+  if(_p2AI&&g.p2&&!g.p2._downed&&!g.p2._pickPending&&!g.p2._gsDash&&_isCoopMode){
     if(!g.p2._aiWander){g.p2._aiWander={tx:g.p2.x,ty:g.p2.y,nextT:0};}
     var aw=g.p2._aiWander;
     var spd2=g.p2.speed*dt*(g.p2._mudSlowEnd>now?.65:1);
@@ -370,7 +385,7 @@ export function loop(){
       if(getDashGhosts().length>8)getDashGhosts().shift();
     }
   }else if(g.p._dashEnd&&now>=g.p._dashEnd){
-    g.p._dashEnd=0;g.p._inv=false;
+    g.p._dashEnd=0;g.p._inv=!!g.p._pickPending;
     burst(g.p.x,g.p.y,"#FFE066",6);
   }
   // decay afterimages
@@ -449,7 +464,7 @@ export function loop(){
   var _p1Cfg=charCfg(g.charType);
   var _gsAtkBuff=(g.charType==="swordsman"&&getSkillCdEnd()>0&&now<getSkillCdEnd())?.7:1;
   var _atkCD=_p1Cfg.atkCD?Math.round(_p1Cfg.atkCD*(g.p.fr||1)*_gsAtkBuff):HOLD_CD*(g.p.fr||1)*mgBerserkMul;
-  if(aim.a&&!g.heatCD&&now-g.lhF>_atkCD){
+  if(aim.a&&!g.p._pickPending&&!g.heatCD&&now-g.lhF>_atkCD){
     // 長按也累加 combo（近戰+槍手通用）
     aim.tn=(aim.tn||0)+1;
     if(!g.heatCD&&aim.tn>2)$("combo").textContent=aim.tn+"x COMBO!";
@@ -474,6 +489,7 @@ export function loop(){
     // P2 auto-aim
     var nr2=null,nd2=1e9;
     g.ene.forEach(e=>{if(e.ragePoo)return;var d=di(g.p2,e);if(d<nd2){nd2=d;nr2=e;}});
+    if(!nr2)g.crates.forEach(cr=>{if(!crateActive(cr))return;const distance=di(g.p2,cr);if(distance<nd2&&distance<VW*.7){nd2=distance;nr2=cr;}});
     if(nr2){var dx2=nr2.x-g.p2.x,dy2=nr2.y-g.p2.y,d2=Math.sqrt(dx2*dx2+dy2*dy2)||1;g.p2._ad={x:dx2/d2,y:dy2/d2};if(Math.abs(g.p2._ad.x)>.3)g.p2.face=g.p2._ad.x>0?1:-1;}
     else{const manual=Math.hypot(_p2Input?.aimDx||0,_p2Input?.aimDy||0);g.p2._ad=manual>.08?{x:_p2Input.aimDx/manual,y:_p2Input.aimDy/manual}:(g.p2._moveDir||{x:0,y:1});}
     // P2 hold-attack（根據 P2 角色類型分流）
@@ -500,7 +516,7 @@ export function loop(){
         var dDist=40;
         g.p2.x=cl(g.p2.x+dd.x*dDist,PR+4,mapW()-PR-4);
         g.p2.y=cl(g.p2.y+dd.y*dDist,PR+4,mapH()-PR-4);
-        g.p2._dodgeCD=now+1500;g.p2._inv=true;g.p2._iFrameEnd=now+300;
+        g.p2._dodgeCD=now+1500;g.p2._inv=true;g.p2._dodgeInvEnd=now+300;g.p2._iFrameEnd=now+300;
         burst(g.p2.x,g.p2.y,"#F06595",8);
       }
     }
@@ -568,7 +584,7 @@ export function loop(){
   if(g.p.invCD>0){
     g.p._ivT=(g.p._ivT||0)+dt*16.67;
     if(g.p._ivT>=g.p.invCD&&!g.p._invEnd){g.p._inv=true;g.p._ivT=0;g.p._invEnd=now+(g.p.invDur||2e3);}
-    if(g.p._invEnd&&now>=g.p._invEnd){g.p._inv=false;g.p._invEnd=0;}
+    if(g.p._invEnd&&now>=g.p._invEnd){g.p._inv=!!g.p._pickPending;g.p._invEnd=0;}
   }
 
   // === 龍寵物系統 ===
@@ -1205,20 +1221,7 @@ export function loop(){
   var c_=cam();
   var crateOpened=false;
   g.crates.forEach(cr=>{if(getPracticeMode()&&!cr.coinReward)return;if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;
-    if(b._isP2&&_isCoopMode&&g.p2){
-      // P2 的子彈打開寶箱 → P2 選卡
-      g.p2._inv=true;g.p2._pickPending=true;
-      if(!_p2AI&&_net&&_net.conn&&_net.conn.open){_sendP2Pick(cr);}
-      else{
-        var _pkCtx4={player:g.p2,inv:inv2,charType:g.p2.charType||"gunner"};
-        if(cr.bigChest){var _bcp3=_isElite()?4:5;g._bigChestTotal=_bcp3;g._bigChestLeft=_bcp3;showPick("bigchest",null,_pkCtx4);}
-        else{showPick("crate",null,_pkCtx4);}
-      }
-    }else{
-      if(_isCoopMode){g.p._inv=true;g.p._pickPending=true;}else{g.run=false;}
-      if(cr.bigChest){var _bcp=_isElite()?4:5;g._bigChestTotal=_bcp;g._bigChestLeft=_bcp;showPick("bigchest");}
-      else{showPick("crate");}
-    }
+    openRewardChest(cr);
   }}});});
 
   // exp orbs — 含追趕加成：wave 超過 level 越多，經驗倍率越高
@@ -2177,12 +2180,7 @@ export function loop(){
   drawAbilitySidebar(cx,inv,g.p,VW,VH);
 
   setHudSkillCd(getSkillCdEnd());hud();drawMinimap();
-  // Host: 每幀送狀態給 Client + debug
-  if(_isCoopMode&&_net&&_net.role==="host"){
-    if(_net.connected&&_net.conn&&_net.conn.open){
-      const _ss=serializeCoopState();if(_ss)_net.conn.send(_ss);
-    }
-  }
+  sendHostSnapshot(now);
   }catch(err){console.error("Game loop error:",err);}
   raf=requestAnimationFrame(loop);
 }

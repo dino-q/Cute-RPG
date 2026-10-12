@@ -1,4 +1,4 @@
-import {resolveExplorationCoin,showCoinFlip} from './cards-ui.js';
+import {resolveExplorationCoin,showCoinFlip,pks} from './cards-ui.js';
 import {drawBossPatternGround} from './boss-patterns.js';
 import {drawTreasure,animateChestOpening} from './treasure-art.js';
 import {drawBossDefeats} from './boss-art.js';
@@ -8,6 +8,7 @@ import { cardEmblem } from "./button-art.js";
 /* ═══ coop.js — PeerJS 連線、狀態同步 ═══ */
 import { Peer } from "peerjs";
 import { $ } from "./utils.js";
+import {resetControls} from "./input.js";
 import { CHAR } from "./config.js";
 import { C } from "./cards.js";
 import { par, filterPar, setPar, drawPlayer, drawEnemy,drawShadowClones } from "./render.js";
@@ -73,6 +74,28 @@ export function initCoop(deps) {
 export function setCoopVW(w) { _VW = w; }
 export function setCoopVH(h) { _VH = h; }
 
+function receiveCoopInput(data,net){
+ const game=_g();if(!game||game._coopAwaitingPlayer||data.sessionId!==game._startTime)return;
+ if(Number.isFinite(data.seq)&&data.seq<=(net._lastInputSeq??-1))return;
+ if(Number.isFinite(data.seq))net._lastInputSeq=data.seq;net._lastInputAt=performance.now();
+ const input=_getP2Input(),number=v=>Number.isFinite(v)?Math.max(-1,Math.min(1,v)):0;
+ input.dx=number(data.jx);input.dy=number(data.jy);input.a=!!data.ja;input.aimA=!!data.aa;input.aimDx=number(data.ax);input.aimDy=number(data.ay);
+ input.ult=input.ult||!!data.ult;input.dodge=input.dodge||!!data.dodge;input.skill=input.skill||!!data.skill;
+}
+function receiveP2Character(data,net){
+ if(!CHAR[data.charType])return;net.p2Character=data.charType;
+ const game=_g();if(!game?.p2)return;
+ if(game._coopAwaitingPlayer&&data.sessionId!==game._startTime)return;
+ if(game._p2CharacterReady)return;
+ const c=CHAR[data.charType];Object.assign(game.p2,{charType:data.charType,hp:c.startHp,maxHp:c.startHp,atk:c.startAtk,speed:c.startSpeed,armor:c.armor,dodge:c.dodge,crit:c.crit,fr:c.fr});
+ game._p2CharacterReady=true;
+ if(game._coopAwaitingPlayer){document.getElementById('coopAwaitingLabel')?.remove();game._coopAwaitingPlayer=false;game.p2._inv=false;game.run=true;game.lf=performance.now();game.lS=game.lf;game.laF=game.lf;}
+}
+function acknowledgeP2Pick(data){
+ if(data.offerId!==window._p2OfferId)return;
+ document.getElementById('_p2PickOv')?.remove();window._p2OfferId=null;window._p2OfferRevision=null;window._p2PickSending=false;resetControls();
+}
+
 /* ═══ Co-op Lobby ═══ */
 export function _coopGenCode() {
   const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -90,6 +113,7 @@ export function showCoopLobby() {
   $("coopJoin").style.display = "none";
   $("coopStatus").style.display = "none";
   $("coopConnected").style.display = "none";
+  $("coopStartBtn").style.display="inline-block";
   const net = _getNet();
   if (net && net.peer) { net.peer.destroy(); _setNet(null); }
 }
@@ -98,7 +122,7 @@ export function coopShowCreate() {
   $("coopMenu").style.display = "none";
   $("coopCreate").style.display = "block";
   $("coopJoin").style.display = "none";
-  $("coopHostCode").value = "";
+  $("coopHostCode").value = "";$("coopHostCode").placeholder="至少4碼，英文或數字";
 }
 
 export function coopShowJoin() {
@@ -109,8 +133,8 @@ export function coopShowJoin() {
 }
 
 export function coopCreateCustom() {
-  const code = ($("coopHostCode").value || "").trim();
-  if (code.length < 2) { $("coopHostCode").style.borderColor = "#FF6B6B"; return; }
+  const code = ($("coopHostCode").value || "").toUpperCase().trim();
+  if (code.length < 4) { $("coopHostCode").style.borderColor = "#FF6B6B"; return; }
   _coopDoCreate(code);
 }
 
@@ -130,6 +154,7 @@ export function coopBack() {
 export function coopCreateRoom() { _coopDoCreate(_coopGenCode()); }
 
 export function _coopDoCreate(code) {
+  code=code.toUpperCase().trim();
   $("coopMenu").style.display = "none";
   $("coopCreate").style.display = "none";
   $("coopStatus").style.display = "block";
@@ -139,33 +164,31 @@ export function _coopDoCreate(code) {
   const peer = new Peer(code, { debug: 0 });
   const netObj = { role: "host", peer, conn: null, roomCode: code, connected: false };
   _setNet(netObj);
-  peer.on("open", () => { $("coopStatusText").textContent = "房間已建立，等待對方加入..."; });
+  peer.on("open", () => {
+    if(_getNet()!==netObj)return; $("coopStatusText").textContent = "房間已建立，等待對方加入..."; });
   peer.on("connection", conn => {
+    if(netObj.connected&&netObj.conn?.open){conn.on('open',()=>conn.close());return;}
     netObj.conn = conn;
     conn.on("open", () => {
+      if(_getNet()!==netObj||netObj.conn!==conn)return;
       netObj.connected = true;
       $("coopStatusText").textContent = "對方已連線！";
       $("coopConnected").style.display = "block";
       conn.on("data", data => {
+        if(_getNet()!==netObj||netObj.conn!==conn)return;
         if (!data) return;
         const p2i = _getP2Input();
-        if (data.t === "inp") { p2i.dx = data.jx || 0; p2i.dy = data.jy || 0; p2i.a = data.ja || 0; p2i.aimA = data.aa || 0; p2i.aimDx = data.ax || 0; p2i.aimDy = data.ay || 0; p2i.ult = !!data.ult; p2i.dodge = !!data.dodge; p2i.pick = data.pick ?? -1; p2i.skill = !!data.skill; }
-        if (data.t === "p2picked" && data.cardId) { _applyP2Card(data.cardId); }
-        if (data.t === "p2reroll" && data.idx !== undefined) { _handleP2Reroll(data.idx); }
-        if (data.t === "p2char" && data.charType) {
-          const g = _g();
-          if (g && g.p2) {
-            g.p2.charType = data.charType;
-            const CC2 = (_CHAR || CHAR)[data.charType] || (_CHAR || CHAR).gunner;
-            g.p2.hp = CC2.startHp; g.p2.maxHp = CC2.startHp; g.p2.atk = CC2.startAtk;
-            g.p2.speed = CC2.startSpeed; g.p2.armor = CC2.armor; g.p2.dodge = CC2.dodge; g.p2.crit = CC2.crit; g.p2.fr = CC2.fr;
-          }
-        }
+        if (data.t === "inp") receiveCoopInput(data,netObj);
+        if (data.t === "p2picked" && data.cardId) { _applyP2Card(data.cardId,data.offerId); }
+        if (data.t === "p2reroll" && data.idx !== undefined) { _handleP2Reroll(data.idx,data.offerId); }
+        if(data.t==='p2char')receiveP2Character(data,netObj);
+        if(data.t==='restartrequest'&&_g()?._gameOver&&data.sessionId===_g()._startTime)_startGame('coop');
       });
-      conn.on("close", () => { netObj.connected = false; const g = _g(); if (g && g.run) { g.run = false; _showOver(); } });
+      conn.on("close", () => { if(_getNet()!==netObj)return;netObj.connected = false; const g = _g(); if (g && g.run) { g.run = false; _showOver(); } });
     });
   });
   peer.on("error", err => {
+    if(_getNet()!==netObj)return;
     if (err.type === "unavailable-id") {
       $("coopStatusText").textContent = " 此密碼已被使用，請換一個";
       $("coopConnected").style.display = "none";
@@ -186,34 +209,40 @@ export function coopJoinRoom() {
   const netObj = { role: "client", peer, conn: null, roomCode: code, connected: false };
   _setNet(netObj);
   peer.on("open", () => {
+    if(_getNet()!==netObj)return;
     const conn = peer.connect(code, { reliable: true });
     netObj.conn = conn;
     conn.on("open", () => {
+      if(_getNet()!==netObj||netObj.conn!==conn)return;
       netObj.connected = true;
       $("coopStatusText").textContent = "已連線！等待 Host 開始...";
       $("coopConnected").style.display = "block";
       $("coopStartBtn").style.display = "none"; // Client 不能按開始
       conn.on("data", data => {
+        if(_getNet()!==netObj||netObj.conn!==conn)return;
         if (!data) return;
         if (data.t === "start") {
+          netObj.awaitingCharacter=true;netObj.sessionId=data.sessionId;
           // CLIENT 收到開始：也選角色後開始
           _setIsCoopMode(true); setEnemiesCoopMode(true); setCombatCoopState(true, netObj, _getP2AI()); setSkillsCoopState(true, netObj); setBossCoopMode(true); _setPendingMode("coop");
           $("coopOv").style.display = "none";
           $("charSelectOv").style.display = "flex";
         }
-        if (data.t === "state") { const g = _g(); if (g) applyCoopState(data, g, _showOver, setPar, setDashGhosts); }
+        if (data.t === "state") { const g = _g(); if (g&&!netObj.awaitingCharacter) applyCoopState(data, g, _showOver, setPar, setDashGhosts); }
+        if(data.t==='p2pickdone')acknowledgeP2Pick(data);
         if (data.t === "coinResult") showCoinFlip(_g()?.p2,()=>{},{win:data.win,award:false,pause:false});
         if (data.t === "p2pick") { const g = _g(); if (g) showCoopPick(data); }
         if (data.t === "over") { const g = _g(); if (g) { g.run = false; _showOver(); } }
       });
-      conn.on("close", () => { netObj.connected = false; const g = _g(); if (g && g.run) { g.run = false; _showOver(); } });
+      conn.on("close", () => { if(_getNet()!==netObj)return;netObj.connected = false; const g = _g(); if (g && g.run) { g.run = false; _showOver(); } });
     });
     conn.on("error", err => {
       $("coopStatusText").textContent = "連線失敗：" + err.type;
       setTimeout(() => { $("coopMenu").style.display = "block"; $("coopStatus").style.display = "none"; $("coopJoin").style.display = "none"; }, 2000);
     });
   });
-  peer.on("error", err => { $("coopStatusText").textContent = "錯誤：" + err.type; });
+  peer.on("error", err => {
+    if(_getNet()!==netObj)return; $("coopStatusText").textContent = "錯誤：" + err.type; });
 }
 
 export function coopStart() {
@@ -226,106 +255,81 @@ export function coopStart() {
 }
 
 // 原始 coopStart 邏輯（pickChar 後呼叫）
-export function _coopStartReal(charType) {
-  const net = _getNet();
-  if (net && net.role === "host" && net.conn && net.connected) {
-    net.conn.send({ t: "start", hostChar: charType });
-  }
-  // CLIENT：選完角色後告知 HOST 自己的角色
-  if (net && net.role === "client" && net.conn && net.conn.open) {
-    net.conn.send({ t: "p2char", charType: charType });
-  }
-  _startGame("coop");
+export function _coopStartReal(){_startGame('coop');}
+export function beginCoopRun(charType){
+ const net=_getNet();
+ const game=_g();
+ if(net?.role==='host'&&net.conn?.open){
+  game._coopAwaitingPlayer=true;game.run=false;game.p2._inv=true;
+  const label=document.createElement('div');label.id='coopAwaitingLabel';label.textContent='等待隊友選好職業，再一起出發';label.style.cssText='position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:40;background:#17283ee8;border:1px solid #a58a54;color:#ead4a3;padding:12px 16px;border-radius:4px;font-size:13px;pointer-events:none;white-space:nowrap';document.body.appendChild(label);
+  net.p2Character=null;net.conn.send({t:'start',hostChar:charType,sessionId:game._startTime});
+ }else if(net?.role==='client'&&net.conn?.open){
+  net.awaitingCharacter=false;game._remoteStateSeq=-1;game._coopSessionId=net.sessionId;
+  net.conn.send({t:'p2char',charType,sessionId:net.sessionId});
+ }
 }
 
 /* ═══ P2 選卡系統 ═══ */
 // HOST 端：P2 打開寶箱 → 生成選項 → 發給 CLIENT
-let _p2BigChestLeft = 0; // P2 大寶箱剩餘次數
-let _p2LastPicks = []; // HOST 記錄當前 P2 選卡選項
-
-export function getP2BigChestLeft() { return _p2BigChestLeft; }
-export function setP2BigChestLeft(v) { _p2BigChestLeft = v; }
-
-export function _sendP2Pick(cr) {
-  const g = _g();
-  const net = _getNet();
-  const inv2 = _getInv2();
-  // 大寶箱：設定多次選卡
-  if (cr && cr.bigChest && _p2BigChestLeft <= 0) {
-    _p2BigChestLeft = _isElite() ? 4 : 5;
-  }
-  const p2ct = g.p2.charType || "gunner";
-  const pool = C.filter(c => {
-    if (c.charReq && c.charReq !== p2ct) return false;
-    const ex = inv2.find(x => x.id === c.id);
-    if (c.once && ex) return false;
-    return !ex || ex.lv < 2;
-  });
-  const picks = []; const used = new Set();
-  for (let i = 0; i < 3 && i < pool.length; i++) {
-    let at2 = 0;
-    while (at2 < 50) { at2++; const c = pool[Math.random() * pool.length | 0]; if (!used.has(c.id)) { used.add(c.id); picks.push({ id: c.id, n: c.n, e: c.e, r: c.r, d: c.d }); break; } }
-  }
-  if (picks.length === 0) { _p2BigChestLeft = 0; return; }
-  const isBig = _p2BigChestLeft > 0;
-  // AI P2：自動選第一張
-  if (_getP2AI()) {
-    _applyP2Card(picks[0].id);
-    if (isBig) { _p2BigChestLeft--; if (_p2BigChestLeft > 0) { setTimeout(() => _sendP2Pick(null), 300); return; } }
-    g.p2._inv = false; g.p2._pickPending = false;
-    g.p2._iFrameEnd = Math.max(performance.now() + 1000,g.p2._coinProtectUntil||0); // AI 也給保護時間
-    return;
-  }
-  // 真人 P2：發送給 CLIENT
-  if (net && net.conn && net.conn.open) {
-    _p2LastPicks = picks.slice(); // HOST 記錄，供重骰用
-    net.conn.send({ t: "p2pick", cards: picks, bigLeft: _p2BigChestLeft });
-  }
+let _p2BigChestLeft=0;
+let _p2LastPicks=[];
+export function getP2BigChestLeft(){return _p2BigChestLeft;}
+export function setP2BigChestLeft(v){_p2BigChestLeft=v;}
+export function resetCoopSession(){
+ _p2BigChestLeft=0;_p2LastPicks=[];window._p2OfferId=null;window._p2OfferRevision=null;window._p2PickSending=false;
+ document.getElementById('_p2PickOv')?.remove();document.getElementById('coopAwaitingLabel')?.remove();
+ const net=_getNet?.();if(net){net._stateSeq=0;net._inputSeq=0;net._lastInputSeq=-1;net._lastInputAt=performance.now();net._lastStateSent=0;}
+ const input=_getP2Input?.();if(input)Object.assign(input,{dx:0,dy:0,a:0,aimA:0,ult:false,dodge:false,skill:false});
 }
-
-// HOST：處理 P2 重骰請求
-export function _handleP2Reroll(idx) {
-  const g = _g();
-  const net = _getNet();
-  const inv2 = _getInv2();
-  if (!g || !g.p2 || idx < 0 || idx >= _p2LastPicks.length) return;
-  const p2ct = g.p2.charType || "gunner";
-  const used = new Set(_p2LastPicks.map(c => c.id));
-  const pool = C.filter(c => {
-    if (c.charReq && c.charReq !== p2ct) return false;
-    if (used.has(c.id)) return false;
-    const ex = inv2.find(x => x.id === c.id);
-    if (c.once && ex) return false;
-    return !ex || ex.lv < 2;
-  });
-  if (pool.length === 0) return;
-  const newCard = pool[Math.random() * pool.length | 0];
-  _p2LastPicks[idx] = { id: newCard.id, n: newCard.n, e: newCard.e, r: newCard.r, d: newCard.d };
-  // 發送更新後的卡片列表給 CLIENT
-  if (net && net.conn && net.conn.open) {
-    net.conn.send({ t: "p2pick", cards: _p2LastPicks, bigLeft: _p2BigChestLeft, reroll: idx });
-  }
+function publishP2Offer(){
+ const game=_g();if(!game?.p2||game._p2Offer)return;
+ const input=_getP2Input();if(input){input.ult=false;input.dodge=false;input.skill=false;}
+ const job=game._p2RewardQueue?.[0];
+ if(!job){_p2BigChestLeft=0;game.p2._pickPending=false;game.p2._inv=false;game.p2._iFrameEnd=Math.max(performance.now()+1000,game.p2._coinProtectUntil||0);return;}
+ const cards=pks(3,null,_getInv2(),game.p2.charType||'gunner').map(c=>({id:c.id,n:c.n,e:c.e,r:c.r,d:c.d,lv:Math.min(2,(_getInv2().find(x=>x.id===c.id)?.lv??-1)+1)}));
+ if(!cards.length){game._p2RewardQueue.shift();publishP2Offer();return;}
+ game._coopOfferSerial=(game._coopOfferSerial||0)+1;
+ const offer={offerId:String(game._startTime)+':'+game._coopOfferSerial,revision:0,cards,rerolled:[false,false,false],seen:cards.map(c=>c.id),source:job.source,bigLeft:job.big?job.remaining:0};
+ game._p2Offer=offer;_p2LastPicks=cards;_p2BigChestLeft=offer.bigLeft;game.p2._pickPending=true;game.p2._inv=true;
+ if(_getP2AI()){
+  setTimeout(()=>{if(_g()===game&&game._p2Offer===offer)_applyP2Card(cards[0].id,offer.offerId);},120);
+ }else{const net=_getNet();if(net?.conn?.open)net.conn.send({t:'p2pick',...offer});}
 }
-
-// HOST 端：收到 CLIENT 選擇後套用
-export function _applyP2Card(cardId) {
-  const g = _g();
-  const inv2 = _getInv2();
-  const cd = C.find(c => c.id === cardId); if (!cd) return;
-  const ex = inv2.find(x => x.id === cd.id);
-  let lv = 0;
-  if (ex) { if (ex.lv < 2) { ex.lv++; lv = ex.lv; } else return; }
-  else { inv2.push({ id: cd.id, lv: 0 }); }
-  cd.ap[lv](g.p2); revealCard(g.p2,cd);
-  if(g.p2._coinFlip){g.p2._coinFlip=false;const win=Math.random()<.5;resolveExplorationCoin(g.p2,win);g.p2._coinProtectUntil=performance.now()+4500;const net=_getNet();if(net?.conn?.open)net.conn.send({t:"coinResult",win});}
-  g.p2.hp = Math.min(g.p2.hp + 15, g.p2.maxHp);
-  if (_burst) _burst(g.p2.x, g.p2.y, "#DA77F2", 12);
-  g.dn.push({ x: g.p2.x, y: g.p2.y - 30, d: cd.e + cd.n + " Lv" + (lv + 1), life: 2, color: "#DA77F2", big: 1 });
-  // 大寶箱：繼續下一輪選卡
-  if (_p2BigChestLeft > 0) { _p2BigChestLeft--; if (_p2BigChestLeft > 0) { setTimeout(() => _sendP2Pick(null), 300); return; } }
-  g.p2._inv = false; g.p2._pickPending = false;
-  // 選卡結束後給 1 秒無敵保護（防止被圍攻秒殺）
-  g.p2._iFrameEnd = performance.now() + 1000;
+export function _sendP2Pick(chest){
+ const game=_g();if(!game?.p2)return;
+ (game._p2RewardQueue||=[]).push({source:chest?.bigChest?'bigchest':'crate',big:!!chest?.bigChest,remaining:chest?.bigChest?(_isElite()?4:5):1});
+ game.p2._pickPending=true;game.p2._inv=true;publishP2Offer();
+}
+export function _handleP2Reroll(idx,offerId){
+ const game=_g(),offer=game?._p2Offer;
+ if(!offer||offer.offerId!==offerId||!Number.isInteger(idx)||idx<0||idx>=offer.cards.length||offer.rerolled[idx]||offer.source==='lucky')return;
+ offer.rerolled[idx]=true;
+ const card=pks(1,new Set(offer.seen),_getInv2(),game.p2.charType||'gunner')[0];
+ if(card){offer.cards[idx]={id:card.id,n:card.n,e:card.e,r:card.r,d:card.d,lv:Math.min(2,(_getInv2().find(x=>x.id===card.id)?.lv??-1)+1)};offer.seen.push(card.id);}
+ offer.revision++;_p2LastPicks=offer.cards;
+ const net=_getNet();if(net?.conn?.open)net.conn.send({t:'p2pick',...offer});
+}
+export function _applyP2Card(cardId,offerId){
+ const game=_g(),offer=game?._p2Offer,inventory=_getInv2();
+ if(!game?.p2||!offer||offer.offerId!==offerId||!offer.cards.some(c=>c.id===cardId))return;
+ const card=C.find(c=>c.id===cardId);if(!card||card.charReq&&card.charReq!==game.p2.charType)return;
+ const entry=inventory.find(x=>x.id===cardId);if(entry&&entry.lv>=2)return;
+ // Consume the offer before applying effects; a repeated message cannot award twice.
+ game._p2Offer=null;_p2LastPicks=[];const job=game._p2RewardQueue[0];job.remaining--;
+ const lv=entry?++entry.lv:0;if(!entry)inventory.push({id:cardId,lv});
+ card.ap[lv](game.p2);revealCard(game.p2,card);
+ const net=_getNet();if(net?.conn?.open)net.conn.send({t:'p2pickdone',offerId});
+ if(card.n==='命運轉輪'){
+  const count=Math.max(1,inventory.length-1),fate=inventory.find(c=>c.id===cardId);inventory.length=0;inventory.push(fate);
+  game._p2RewardQueue.unshift({source:'fate',big:false,remaining:count});
+ }
+ if(game.p2._luckyPick){game.p2._luckyPick=false;game._p2RewardQueue.unshift({source:'lucky',big:false,remaining:1});}
+ if(game.p2._coinFlip){game.p2._coinFlip=false;const win=Math.random()<.5;resolveExplorationCoin(game.p2,win);game.p2._coinProtectUntil=performance.now()+4500;if(net?.conn?.open)net.conn.send({t:'coinResult',win});}
+ if(game.p2._resetUlt){game.p2._resetUlt=false;game.p2._ultCooldown=0;}
+ game.p2.hp=Math.min(game.p2.hp+15,game.p2.maxHp);_burst?.(game.p2.x,game.p2.y,'#DA77F2',12);
+ game.dn.push({x:game.p2.x,y:game.p2.y-30,d:card.n+' Lv'+(lv+1),life:2,color:'#DA77F2',big:1});
+ game._p2RewardQueue=game._p2RewardQueue.filter(q=>q.remaining>0);
+ setTimeout(()=>{if(_g()===game)publishP2Offer();},120);
 }
 
 // CLIENT 端：收到選卡選項 → 顯示 UI
@@ -334,9 +338,13 @@ export function showCoopPick(data) {
   const cards = data.cards || data;
   const bigLeft = data.bigLeft || 0;
   if (!cards || !cards.length) return;
+  const session=_g()?._coopSessionId;if(session!==undefined&&!data.offerId?.startsWith(String(session)+':'))return;
+  if(data.offerId===window._p2OfferId&&data.revision<=window._p2OfferRevision)return;
+  window._p2OfferId=data.offerId;window._p2OfferRevision=data.revision;window._p2PickSending=false;
+  resetControls();
   // 移除舊的 overlay（如果還在）
   const old = document.getElementById("_p2PickOv"); if (old) old.remove();
-  const title = bigLeft > 0 ? ` 大寶箱！(剩餘${bigLeft}次)` : " 寶箱解鎖！選擇一張卡牌";
+  const title=data.source==='lucky'?'幸運抽卡・額外選一張':data.source==='fate'?'命運重抽':bigLeft>0?'大寶箱・剩餘'+bigLeft+'次':'合作寶箱・選擇你的卡牌';
   let h = '<div style="position:fixed;inset:0;background:rgba(10,10,24,.92);z-index:50;display:flex;justify-content:center;align-items:center" id="_p2PickOv">';
   h += '<div style="background:rgba(12,12,30,.96);border-radius:16px;border:1px solid rgba(240,101,149,.2);padding:20px;max-width:360px;width:90%;text-align:center">';
   h += `<div style="color:#F06595;font-size:14px;font-weight:700;margin-bottom:10px">${title}</div>`;
@@ -347,10 +355,10 @@ export function showCoopPick(data) {
     h += `${cardEmblem(C.find(cd=>cd.id===c.id)||c)}`;
     h += `<div style="color:${rc};font-weight:700;font-size:12px;margin:4px 0">${c.n}</div>`;
     h += `<div style="color:${rc};font-size:9px">${c.r}</div>`;
-    h += `<div style="color:rgba(255,255,255,.4);font-size:8px;margin-top:4px;line-height:1.3">${c.d[0]}</div>`;
+    h += `<div style="color:rgba(255,255,255,.4);font-size:8px;margin-top:4px;line-height:1.3">${c.d[c.lv||0]}</div>`;
     h += `<div style="display:flex;gap:4px;margin-top:6px;justify-content:center">`;
     h += `<button onclick="_p2PickCard(${c.id})" style="padding:4px 10px;font-size:10px;border:none;border-radius:6px;background:${rc};color:#000;font-weight:700;cursor:pointer">選擇</button>`;
-    h += `<button onclick="_p2RerollCard(${ci})" id="_p2rr${ci}" style="padding:4px 8px;font-size:9px;border:1px solid rgba(255,255,255,.2);border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);cursor:pointer"></button>`;
+    h += `<button onclick="_p2RerollCard(${ci})" id="_p2rr${ci}" style="padding:4px 8px;font-size:9px;border:1px solid rgba(255,255,255,.2);border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);cursor:pointer">${data.rerolled?.[ci]?"已使用":"重骰"}</button>`;
     h += `</div></div>`;
   });
   h += '</div></div></div>';
@@ -358,7 +366,8 @@ export function showCoopPick(data) {
   animateChestOpening(document.querySelector("#_p2PickOv>div"));
   // 儲存當前卡片供重骰用
   window._p2PickCards = cards;
-  window._p2PickRerolled = [false, false, false];
+  window._p2PickRerolled=data.rerolled?.slice()||[false,false,false];
+  cards.forEach((c,i)=>{const button=document.getElementById("_p2rr"+i);if(button&&(window._p2PickRerolled[i]||data.source==='lucky')){button.disabled=true;button.style.opacity=".3";}});
 }
 
 /* ═══ Co-op Network Sync ═══ */
@@ -371,20 +380,22 @@ function unpackCardScene(g,v){if(!v)return;const now=performance.now();g._bossHa
 
 export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, aim, ULT_CHARGE_NEED) {
   if (!g || !g.p2) return null;
+  g._coopStateSerial=g._coopStateSerial||0;
   const cm = cam();
   return {
-    t: "state",
+    t: "state",sessionId:g._startTime,seq:++g._coopStateSerial,gameOver:!!g._gameOver,waitingPlayer:!!g._coopAwaitingPlayer,
     clones:(g._clones||[]).map(c=>({...c,spawnT:performance.now()-c.spawnT,_attackAt:c._attackAt?performance.now()-c._attackAt:null})),
     cardP1:packCardPlayer(g.p),cardP2:packCardPlayer(g.p2),cardScene:packCardScene(g),
-    p1: { x: g.p.x, y: g.p.y, hp: g.p.hp, mhp: g.p.maxHp, face: g.p.face, _downed: g.p._downed, _iFrameEnd: g.p._iFrameEnd, _rescueTimer: g.p._rescueTimer || 0, _pickPending: g.p._pickPending || false, charType: g.charType, _ad: g.ad, pixelShotAge: g.p._pixelShotAt ? Math.min(1000, performance.now() - g.p._pixelShotAt) : 1000 },
-    p2: { x: g.p2.x, y: g.p2.y, hp: g.p2.hp, mhp: g.p2.maxHp, face: g.p2.face, _downed: g.p2._downed, _iFrameEnd: g.p2._iFrameEnd, _rescueTimer: g.p2._rescueTimer || 0, _pickPending: g.p2._pickPending || false, charType: g.p2.charType, _ad: g.p2._ad, pixelShotAge: g.p2._pixelShotAt ? Math.min(1000, performance.now() - g.p2._pixelShotAt) : 1000 },
-    ene: g.ene.map(e => ({ x: e.x, y: e.y, hp: e.hp, mhp: e.mhp, r: e.r, color: e.color, boss: e.boss, mega: e.mega, tier: e.tier, role: e.role, face: e.face, t: e.t, knock:e._knock?{...e._knock,start:performance.now()-e._knock.start}:null, st: e.st, frozen: e.frozen,_iceChill:e._iceChill,_iceSpeedFactor:e._iceSpeedFactor,_magSlowT:e._magSlowT, stageBoss:e.stageBoss,_bossCore:e._bossCore,_bossOwner:e._bossOwner,_coreGroup:e._coreGroup,pattern:e._pattern?{...e._pattern,startAt:performance.now()-e._pattern.startAt,lockAt:e._pattern.lockAt?e._pattern.lockAt-performance.now():0,executeAt:e._pattern.executeAt-performance.now(),endAt:e._pattern.endAt-performance.now()}:null,recovery:Math.max(0,(e._patternRecoveryEnd||0)-performance.now()),miniPoo:e.miniPoo,miniDemon:e.miniDemon,ragePoo:e.ragePoo,_artAngle:e._artAngle,artHitRemaining:Math.max(0,(e._artHitUntil||0)-performance.now()),artAttackRemaining:Math.max(0,(e._artAttackUntil||0)-performance.now()),spawnShieldRemaining:Math.max(0,(e._spawnShield||0)-performance.now()),teleRemaining:Math.max(0,(e._teleExe||0)-performance.now()),_teleLandX:e._teleLandX,_teleLandY:e._teleLandY,dashChargeRemaining:Math.max(0,(e._dashChargeEnd||0)-performance.now()),_dashAimAngle:e._dashAimAngle,_p3cycle:e._p3cycle,p3age:e._p3t?performance.now()-e._p3t:0, sbPhase: e.sbPhase, _coopShield: e._coopShield, _coopCircles: e._coopCircles, _coopShieldBrokenEnd: e._coopShieldBrokenEnd, _coopCircleTimer: e._coopCircleTimer, _rage: e._rage, _rageState: e._rageState, _rageDx: e._rageDx, _rageDy: e._rageDy, eliteEnemy: e.eliteEnemy, _eDashing: e._eDashing, _eShieldEnd: e._eShieldEnd, dashState: e.dashState, dashDx: e.dashDx, dashDy: e.dashDy, shieldAng: e.shieldAng, flankA: e.flankA, bhExeAt: e.bhExeAt, bossType: e.bossType, poisonT: e.poisonT, burnT: e.burnT, _bleedEnd:e._bleedEnd, _tauntEnd: e._tauntEnd, _tauntTarget: e._tauntTarget })),
+    p1: { x: g.p.x, y: g.p.y, hp: g.p.hp, mhp: g.p.maxHp, face: g.p.face, _downed: g.p._downed, invRemaining:Math.max(0,(g.p._iFrameEnd||0)-performance.now()), _rescueTimer: g.p._rescueTimer || 0, _pickPending: g.p._pickPending || false, charType: g.charType, _ad: g.ad, pixelShotAge: g.p._pixelShotAt ? Math.min(1000, performance.now() - g.p._pixelShotAt) : 1000 },
+    p2: { x: g.p2.x, y: g.p2.y, hp: g.p2.hp, mhp: g.p2.maxHp, face: g.p2.face, _downed: g.p2._downed, invRemaining:Math.max(0,(g.p2._iFrameEnd||0)-performance.now()), _rescueTimer: g.p2._rescueTimer || 0, _pickPending: g.p2._pickPending || false, charType: g.p2.charType, _ad: g.p2._ad, pixelShotAge: g.p2._pixelShotAt ? Math.min(1000, performance.now() - g.p2._pixelShotAt) : 1000 },
+    ene: g.ene.map(e => ({ timers:Object.fromEntries(['_coopShieldBrokenEnd','_eShieldEnd','bhExeAt','_bleedEnd','_tauntEnd'].map(key=>[key,Math.max(0,(e[key]||0)-performance.now())])),x: e.x, y: e.y, hp: e.hp, mhp: e.mhp, r: e.r, color: e.color, boss: e.boss, mega: e.mega, tier: e.tier, role: e.role, face: e.face, t: e.t, knock:e._knock?{...e._knock,start:performance.now()-e._knock.start}:null, st: e.st, frozen: e.frozen,_iceChill:e._iceChill,_iceSpeedFactor:e._iceSpeedFactor,_magSlowT:e._magSlowT, stageBoss:e.stageBoss,_bossCore:e._bossCore,_bossOwner:e._bossOwner,_coreGroup:e._coreGroup,pattern:e._pattern?{...e._pattern,startAt:performance.now()-e._pattern.startAt,lockAt:e._pattern.lockAt?e._pattern.lockAt-performance.now():0,executeAt:e._pattern.executeAt-performance.now(),endAt:e._pattern.endAt-performance.now()}:null,recovery:Math.max(0,(e._patternRecoveryEnd||0)-performance.now()),miniPoo:e.miniPoo,miniDemon:e.miniDemon,ragePoo:e.ragePoo,_artAngle:e._artAngle,artHitRemaining:Math.max(0,(e._artHitUntil||0)-performance.now()),artAttackRemaining:Math.max(0,(e._artAttackUntil||0)-performance.now()),spawnShieldRemaining:Math.max(0,(e._spawnShield||0)-performance.now()),teleRemaining:Math.max(0,(e._teleExe||0)-performance.now()),_teleLandX:e._teleLandX,_teleLandY:e._teleLandY,dashChargeRemaining:Math.max(0,(e._dashChargeEnd||0)-performance.now()),_dashAimAngle:e._dashAimAngle,_p3cycle:e._p3cycle,p3age:e._p3t?performance.now()-e._p3t:0, sbPhase: e.sbPhase, _coopShield: e._coopShield, _coopCircles: e._coopCircles, _coopShieldBrokenEnd: e._coopShieldBrokenEnd, _coopCircleTimer: e._coopCircleTimer, _rage: e._rage, _rageState: e._rageState, _rageDx: e._rageDx, _rageDy: e._rageDy, eliteEnemy: e.eliteEnemy, _eDashing: e._eDashing, _eShieldEnd: e._eShieldEnd, dashState: e.dashState, dashDx: e.dashDx, dashDy: e.dashDy, shieldAng: e.shieldAng, flankA: e.flankA, bhExeAt: e.bhExeAt, bossType: e.bossType, poisonT: e.poisonT, burnT: e.burnT, _bleedEnd:e._bleedEnd, _tauntEnd: e._tauntEnd, _tauntTarget: e._tauntTarget })),
     bul: g.bul.filter(b => b.life > 0).map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, crit: b.crit, life: b.life,cardFx:b.cardFx,_isP2:b._isP2,_minigun:b._minigun,_armorPen:b._armorPen,hm:b.hm,trail:(b.trail||[]).slice(-3) })),
     ebul: g.ebul.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, color: b.color, life: b.life,_groundHit:b._groundHit })),
     dn: g.dn.map(d => ({ x: d.x, y: d.y, d: d.d, life: d.life, color: d.color, big: d.big })),
     orbs: g.orbs.map(o => ({ x: o.x, y: o.y })),
-    crates: g.crates.filter(c => c.hp > 0).map(c => ({ x: c.x, y: c.y, hp: c.hp, mhp: c.mhp, bigChest: c.bigChest, hits: c.hits, needed: c.needed })),
+    crates: g.crates.filter(c => c.hp > 0).map(c => ({unlockLv:c.unlockLv,coinReward:c.coinReward, x: c.x, y: c.y, hp: c.hp, mhp: c.mhp, bigChest: c.bigChest, hits: c.hits, needed: c.needed })),
     pickOpen: g.pickOpen || false,
+    p2Offer:g._p2Offer?{...g._p2Offer,seen:undefined}:null,
     wave: g.wave, level: g.level, score: g.score, kills: g.kills,
     p2Inventory:(_getInv2?.()||[]).map(ci=>({id:ci.id,lv:ci.lv})),
     p2Lv: g.p2Level, p2Exp: g.p2Exp, p2ExpTo: g.p2ExpTo,
@@ -415,17 +426,23 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
 }
 
 export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
-  if (!g) return;
+  if(!g)return;
+  if(g._coopSessionId!==undefined&&data.sessionId!==g._coopSessionId)return;
+  if(Number.isFinite(data.seq)&&data.seq<=(g._remoteStateSeq??-1))return;
+  if(g._coopSessionId===undefined)g._coopSessionId=data.sessionId;
+  g._remoteStateSeq=data.seq;g._remoteStateAt=performance.now();g._remotePaused=data.run===false;
   // 更新雙方玩家（含角色類型同步）
   if (data.p1) { if (data.p1.charType) g.charType = data.p1.charType; Object.assign(g.p, data.p1); g.p.maxHp = data.p1.mhp; }
   if (data.p2 && g.p2) { if (data.p2.charType) g.p2.charType = data.p2.charType; Object.assign(g.p2, data.p2); g.p2.maxHp = data.p2.mhp; }
+  if(data.p1)g.p._iFrameEnd=performance.now()+(data.p1.invRemaining||0);
+  if(data.p2&&g.p2)g.p2._iFrameEnd=performance.now()+(data.p2.invRemaining||0);
   if (data.p1 && Number.isFinite(data.p1.pixelShotAge)) g.p._pixelShotAt = performance.now() - data.p1.pixelShotAge;
   if (data.p2 && g.p2 && Number.isFinite(data.p2.pixelShotAge)) g.p2._pixelShotAt = performance.now() - data.p2.pixelShotAge;
   unpackCardPlayer(g.p,data.cardP1); if(g.p2)unpackCardPlayer(g.p2,data.cardP2); unpackCardScene(g,data.cardScene);
   if(data.p2Inventory){g._clientInventory=data.p2Inventory;_setInv2?.(data.p2Inventory);}
   // 更新敵人
   if(data.clones)g._clones=data.clones.map(c=>({...c,spawnT:performance.now()-c.spawnT,_attackAt:c._attackAt===null?0:performance.now()-c._attackAt}));
-  if(data.ene)g.ene=data.ene.map(e=>({...e,_knock:e.knock?{...e.knock,start:performance.now()-e.knock.start}:null,_teleExe:e.teleRemaining?performance.now()+e.teleRemaining:0,_dashChargeEnd:e.dashChargeRemaining?performance.now()+e.dashChargeRemaining:0,_pattern:e.pattern?{...e.pattern,startAt:performance.now()-e.pattern.startAt,lockAt:e.pattern.lockAt?performance.now()+e.pattern.lockAt:0,executeAt:performance.now()+e.pattern.executeAt,endAt:performance.now()+e.pattern.endAt}:null,_patternRecoveryEnd:performance.now()+(e.recovery||0),_artHitUntil:performance.now()+(e.artHitRemaining||0),_artAttackUntil:performance.now()+(e.artAttackRemaining||0),_spawnShield:e.spawnShieldRemaining?performance.now()+e.spawnShieldRemaining:0,_p3t:e._p3cycle?performance.now()-(e.p3age||0):0}));
+  if(data.ene)g.ene=data.ene.map(e=>({...e,...Object.fromEntries(Object.entries(e.timers||{}).map(([key,remaining])=>[key,remaining?performance.now()+remaining:0])),_knock:e.knock?{...e.knock,start:performance.now()-e.knock.start}:null,_teleExe:e.teleRemaining?performance.now()+e.teleRemaining:0,_dashChargeEnd:e.dashChargeRemaining?performance.now()+e.dashChargeRemaining:0,_pattern:e.pattern?{...e.pattern,startAt:performance.now()-e.pattern.startAt,lockAt:e.pattern.lockAt?performance.now()+e.pattern.lockAt:0,executeAt:performance.now()+e.pattern.executeAt,endAt:performance.now()+e.pattern.endAt}:null,_patternRecoveryEnd:performance.now()+(e.recovery||0),_artHitUntil:performance.now()+(e.artHitRemaining||0),_artAttackUntil:performance.now()+(e.artAttackRemaining||0),_spawnShield:e.spawnShieldRemaining?performance.now()+e.spawnShieldRemaining:0,_p3t:e._p3cycle?performance.now()-(e.p3age||0):0}));
   // 更新子彈
   if (data.bul) g.bul = data.bul;
   if (data.ebul) g.ebul = data.ebul;
@@ -462,6 +479,8 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   if (data.p2Combo !== undefined) g._clientP2Combo = data.p2Combo;
   // 寶箱
   if (data.crates) g.crates = data.crates;
+  if(data.p2Offer)showCoopPick(data.p2Offer);
+  else if(data.p2Offer===null){document.getElementById('_p2PickOv')?.remove();window._p2OfferId=null;window._p2PickSending=false;}
   // 選卡狀態
   if (data.pickOpen !== undefined) g._remotePickOpen = data.pickOpen;
   // 遊戲資訊
@@ -473,7 +492,7 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   if (data.p2Exp !== undefined) g.p2Exp = data.p2Exp;
   if (data.p2ExpTo !== undefined) g.p2ExpTo = data.p2ExpTo;
   if(data.victory&&!g._clientVictoryStarted){g._clientVictoryStarted=true;g._victoryPending=true;g._finalBoss=data.victory;g.run=false;playEndCutscene(()=>{if(_g()===g)showVictoryScreen();});}
-  if(data.run===false&&!g._clientVictoryStarted){g.run=false;showOver();}
+  if(data.gameOver&&!g._clientVictoryStarted&&!g._clientGameOver){g._clientGameOver=true;g.run=false;showOver();}
 }
 
 export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, setPar, getDashGhosts, setDashGhosts, drawPlayer, drawEnemy, drawMinimap, CHAR, getP2SkillCdEnd, aim, $) {
@@ -571,6 +590,8 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   // damage numbers
   g.dn = g.dn.filter(d => { d.life -= .025; return d.life > 0; });
   g.dn.forEach(d => { cx.save(); cx.globalAlpha = Math.min(1, d.life); cx.font = (d.big ? "bold 15px" : "bold 11px") + " 'Nunito',sans-serif"; cx.textAlign = "center"; cx.fillStyle = d.color || "#fff"; cx.fillText(typeof d.d === "number" ? "-" + d.d : d.d, d.x, d.y); cx.restore(); });
+  // Host pause is a waiting state, never a loss.
+  if(g._remotePaused){cx.save();cx.fillStyle='#142337e8';cx.fillRect(16,55,Math.max(180,VW-32),34);cx.fillStyle='#e2c88f';cx.font='bold 13px sans-serif';cx.textAlign='center';cx.fillText('冒險暫停・等待主機繼續',VW/2,77);cx.restore();}
   // 對方選卡中通知
   if (g._remotePickOpen) {
     cx.save(); cx.font = "bold 14px 'Nunito',sans-serif"; cx.textAlign = "center";
@@ -615,39 +636,40 @@ export function pracCoopRoom(opts) {
   const { isCoopMode, getG, getNet, setNet, getP2AI, setP2AI, getP2Input } = opts;
   if (!isCoopMode()) return;
   const code = prompt("輸入房間密碼（留空隨機）：") || "";
-  const roomCode = code.trim().length >= 2 ? code.trim() : _coopGenCode();
+  const roomCode = code.trim().length >= 2 ? code.trim().toUpperCase() : _coopGenCode();
   const peer = new Peer(roomCode, { debug: 0 });
   const netObj = { role: "host", peer, conn: null, roomCode, connected: false };
   setNet(netObj);
   setP2AI(true); // 先用 AI，等對方加入後切換
   peer.on("open", () => {
+    if(_getNet()!==netObj)return;
     const g = getG();
     g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 房間：" + roomCode + " 等待加入...", life: 4, color: "#F06595", big: 1 });
     $("pracRoomBtn").textContent = "" + roomCode;
   });
   peer.on("connection", conn => {
+    if(netObj.connected&&netObj.conn?.open){conn.on('open',()=>conn.close());return;}
     netObj.conn = conn;
     conn.on("open", () => {
+      if(_getNet()!==netObj||netObj.conn!==conn)return;
       netObj.connected = true; setP2AI(false); // 對方加入，關閉 AI
       const g = getG();
       g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 對方已加入！", life: 3, color: "#51CF66", big: 1 });
       $("pracRoomBtn").textContent = "已連線";
       conn.on("data", data => {
+        if(_getNet()!==netObj||netObj.conn!==conn)return;
         const g2 = getG();
         const p2i = getP2Input();
-        if (data && data.t === "inp") { p2i.dx = data.jx || 0; p2i.dy = data.jy || 0; p2i.a = data.ja || 0; p2i.aimA = data.aa || 0; p2i.aimDx = data.ax || 0; p2i.aimDy = data.ay || 0; p2i.ult = !!data.ult; p2i.dodge = !!data.dodge; p2i.skill = !!data.skill; }
+        if(data&&data.t==='inp')receiveCoopInput(data,netObj);
         if (data && data.t === "p2picked" && data.cardId) { _applyP2Card(data.cardId); }
         if (data && data.t === "p2reroll" && data.idx !== undefined) { _handleP2Reroll(data.idx); }
-        if (data && data.t === "p2char" && data.charType && g2 && g2.p2) {
-          g2.p2.charType = data.charType;
-          const CC3 = CHAR[data.charType] || CHAR.gunner;
-          g2.p2.hp = CC3.startHp; g2.p2.maxHp = CC3.startHp; g2.p2.atk = CC3.startAtk; g2.p2.speed = CC3.startSpeed; g2.p2.armor = CC3.armor; g2.p2.dodge = CC3.dodge; g2.p2.crit = CC3.crit; g2.p2.fr = CC3.fr;
-        }
+        if(data&&data.t==='p2char')receiveP2Character(data,netObj);
       });
-      conn.on("close", () => { netObj.connected = false; setP2AI(true); const g3 = getG(); g3.dn.push({ x: g3.p.x, y: g3.p.y - 40, d: " 對方已離線，切換 AI", life: 3, color: "#FF6B6B", big: 1 }); });
+      conn.on("close", () => { if(_getNet()!==netObj)return;netObj.connected = false; setP2AI(true); const g3 = getG(); g3.dn.push({ x: g3.p.x, y: g3.p.y - 40, d: " 對方已離線，切換 AI", life: 3, color: "#FF6B6B", big: 1 }); });
     });
   });
   peer.on("error", err => {
+    if(_getNet()!==netObj)return;
     const g = getG();
     if (err.type === "unavailable-id") {
       g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 此密碼已被使用，請換一個", life: 3, color: "#FF6B6B", big: 1 });
@@ -661,28 +683,32 @@ export function pracCoopJoin(opts) {
   if (!isCoopMode()) return;
   const code = prompt("輸入對方的房間密碼：");
   if (!code || code.trim().length < 2) return;
-  const roomCode = code.trim();
+  const roomCode = code.trim().toUpperCase();
   const net = getNet();
   if (net && net.peer) { net.peer.destroy(); }
   const peer = new Peer(undefined, { debug: 0 });
   const netObj = { role: "client", peer, conn: null, roomCode, connected: false };
   setNet(netObj);
   peer.on("open", () => {
+    if(_getNet()!==netObj)return;
     const conn = peer.connect(roomCode, { reliable: true });
     netObj.conn = conn;
     conn.on("open", () => {
+      if(_getNet()!==netObj||netObj.conn!==conn)return;
       netObj.connected = true; setP2AI(false);
       const g = getG();
       g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 已加入 " + roomCode + "！", life: 3, color: "#51CF66", big: 1 });
       $("pracJoinBtn").textContent = "已連線";
       // Client 送操作、收狀態
       conn.on("data", data => {
+        if(_getNet()!==netObj||netObj.conn!==conn)return;
         const g2 = getG();
         if (data && data.t === "state" && g2) applyCoopState(data, g2, _showOver, setPar, setDashGhosts);
+        if(data&&data.t==='p2pickdone')acknowledgeP2Pick(data);
         if (data && data.t === "coinResult") showCoinFlip(_g()?.p2,()=>{},{win:data.win,award:false,pause:false});
         if (data && data.t === "p2pick") showCoopPick(data);
       });
-      conn.on("close", () => { netObj.connected = false; const g3 = getG(); g3.dn.push({ x: g3.p.x, y: g3.p.y - 40, d: " 已斷線", life: 3, color: "#FF6B6B", big: 1 }); });
+      conn.on("close", () => { if(_getNet()!==netObj)return;netObj.connected = false; const g3 = getG(); g3.dn.push({ x: g3.p.x, y: g3.p.y - 40, d: " 已斷線", life: 3, color: "#FF6B6B", big: 1 }); });
     });
     conn.on("error", err => { const g = getG(); g.dn.push({ x: g.p.x, y: g.p.y - 40, d: " 連線失敗：" + err.type, life: 3, color: "#FF6B6B", big: 1 }); });
   });

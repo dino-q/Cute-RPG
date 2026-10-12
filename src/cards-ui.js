@@ -13,7 +13,7 @@ import { resetControls } from "./input.js";
 let g;
 let inv = [];
 let inv2 = [];
-let _isEliteFn;
+let _isEliteFn,_isCoopFn,_sendP2PickFn;
 let _showFn, _resumeGameFn, _triggerStageBossFn, _mapWFn, _mapHFn;
 
 export function initCardsUi(deps) {
@@ -21,12 +21,15 @@ export function initCardsUi(deps) {
   if (deps.resumeGame) _resumeGameFn = deps.resumeGame;
   if (deps.triggerStageBoss) _triggerStageBossFn = deps.triggerStageBoss;
   if (deps.isElite) _isEliteFn = deps.isElite;
+  if(deps.isCoop)_isCoopFn=deps.isCoop;
+  if(deps.sendP2Pick)_sendP2PickFn=deps.sendP2Pick;
   if (deps.mapW) _mapWFn = deps.mapW;
   if (deps.mapH) _mapHFn = deps.mapH;
 }
 export function setCardsUiG(game) { g = game; }
 export function setCardsUiInv(i1, i2) { inv = i1; inv2 = i2; }
 
+function _isCoop(){return !!(_isCoopFn?.()&&g?.p2);}
 function _isElite() { return _isEliteFn ? _isEliteFn() : false; }
 function show(...args) { if (_showFn) _showFn(...args); }
 function resumeGame(...args) { if (_resumeGameFn) _resumeGameFn(...args); }
@@ -91,71 +94,48 @@ function buildCard(cd, w, i, wrap) {
   const _isRec = _recSet && _recSet.has(cd.n);
   const recBadge = _isRec ? '<div style="font-size:8px;font-weight:900;color:#FFD43B;background:rgba(255,212,59,.15);border:1px solid rgba(255,212,59,.3);border-radius:4px;padding:1px 6px;margin-bottom:3px;display:inline-block"> 推薦</div>' : "";
   b.innerHTML = `${rarBadge}${tpL}${recBadge}${cardEmblem(cd)}<div style="font-size:12px;font-weight:900;margin-bottom:2px">${cd.n}</div>${lvL}<div style="font-size:9px;color:rgba(255,255,255,.5);line-height:1.3">${desc}</div>`;
-  b.onclick = () => pickCard(cd, _bAddCard, _bpp, _binv);
-  b.ontouchstart = e => { e.stopPropagation(); e.preventDefault(); pickCard(cd, _bAddCard, _bpp, _binv); };
+  const session=g,offer=g._localPickId;let used=false;
+  const choose=()=>{if(used||g!==session||g._localPickId!==offer||!g.pickOpen)return;used=true;pickCard(cd,_bAddCard,_bpp,_binv);};
+  b.onclick=choose;b.ontouchstart=e=>{e.stopPropagation();e.preventDefault();choose();};
   wrap.innerHTML = ""; wrap.appendChild(b);
 }
 
-function pickCard(cd, _bAddCard, _bpp, _binv) {
-  const lv = _bAddCard(cd.id);
-  if (lv < 0) return;
-  cd.ap[lv](_bpp); revealCard(_bpp,cd); // 套用卡片效果到玩家
-  if (_bpp._resetUlt) { _bpp._resetUlt = false; g.ultCharge = 0; g.ultCdEnd = 0; }
-  sfx("levelup");
-  // 命運轉輪：清空背包，重抽等同已有卡片數量的輪數
-  if (cd.n === "命運轉輪") {
-    const fateCount = Math.max(1, _binv.length - 1); // 已有卡片數（扣掉命運轉輪本身）
-    const fateEntry = _binv.find(x => x.id === cd.id);
-    _binv.length = 0; if (fateEntry) _binv.push(fateEntry);
-    g._fateQueue = (g._fateQueue || 0) + fateCount;
-  }
-  // 幸運幣：立刻額外三選一（優先最高）
-  if (_bpp._luckyPick) {
-    _bpp._luckyPick = false;
-    g.pickOpen = false;
-    const _savedBigChest = g._bigChestLeft || 0; // 記住大寶箱剩餘
-    setTimeout(() => {
-      showPick("lucky", null, _currentPickCtx);
-      g._bigChestLeft = _savedBigChest; // 恢復大寶箱剩餘
-    }, 80);
-    _currentPickCtx = null;
-    return;
-  }
-  // 探索靴擲幣：立刻觸發
-  if (_bpp._coinFlip) {
-    _bpp._coinFlip = false;
-    g.pickOpen = false;
-    const _savedCtx = _currentPickCtx;
-    const _savedBig2 = g._bigChestLeft || 0;
-    const _savedFate = g._fateQueue || 0;
-    _currentPickCtx = null;
-    showCoinFlip(_bpp, () => {
-      // 擲幣結束後恢復剩餘流程
-      g._bigChestLeft = _savedBig2;
-      g._fateQueue = _savedFate;
-      if (g._fateQueue > 0) { g._bigChestLeft = 0; setTimeout(() => showPick("fate",null,_savedCtx), 300); }
-      else if (g._bigChestLeft > 0) { g._bigChestLeft--; if (g._bigChestLeft > 0) setTimeout(() => showPick("bigchest",null,_savedCtx), 300); else resumeGame(); }
-      else resumeGame();
-    });
-    return;
-  }
-  g.pickOpen = false;
-  _currentPickCtx = null;
-  // 命運連抽（優先於大寶箱剩餘輪）
-  if (g._fateQueue > 0) {
-    g._bigChestLeft = 0;
-    setTimeout(() => showPick("fate"), 300);
-    return;
-  }
-  // 大寶箱多輪
-  if (g._bigChestLeft > 0) {
-    g._bigChestLeft--;
-    if (g._bigChestLeft > 0) {
-      setTimeout(() => showPick("bigchest"), 300);
-      return;
-    }
-  }
-  resumeGame();
+function scheduleLocalPick(src,ctx,delay=120,options={},specificCard=null){
+ const session=g;g._localPickTransition=true;
+ setTimeout(()=>{if(g!==session)return;g._localPickTransition=false;showPick(src,specificCard,ctx,options);},delay);
+}
+function finishLocalPick(ctx){
+ if(g._fateQueue>0){g._bigChestLeft=0;scheduleLocalPick('fate',ctx);return;}
+ if(g._bigChestLeft>0&&--g._bigChestLeft>0){scheduleLocalPick('bigchest',ctx);return;}
+ const queued=g._localPickQueue?.shift();
+ if(queued){scheduleLocalPick(queued.src,queued.ctx,120,queued.options,queued.specificCard);return;}
+ const player=ctx?.player||g.p;player._pickPending=false;player._inv=false;player._iFrameEnd=performance.now()+1500;
+ g._localPickTransition=false;resumeGame();
+}
+function pickCard(cd,add,player,inventory){
+ if(!g.pickOpen||g._localPickTransition)return;
+ const lv=add(cd.id);if(lv<0)return;
+ const ctx=_currentPickCtx;g.pickOpen=false;g._localPickTransition=true;_currentPickCtx=null;
+ cd.ap[lv](player);revealCard(player,cd);sfx('levelup');
+ if(player._resetUlt){player._resetUlt=false;g.ultCharge=0;g.ultCdEnd=0;}
+ if(cd.n==='命運轉輪'){
+  const count=Math.max(1,inventory.length-1),entry=inventory.find(x=>x.id===cd.id);
+  inventory.length=0;if(entry)inventory.push(entry);g._fateQueue=(g._fateQueue||0)+count;
+ }
+ if(player._luckyPick){player._luckyPick=false;scheduleLocalPick('lucky',ctx);return;}
+ if(player._coinFlip){player._coinFlip=false;showCoinFlip(player,()=>finishLocalPick(ctx),{pause:!_isCoop()});return;}
+ finishLocalPick(ctx);
+}
+export function openRewardChest(chest){
+ if(!g||!chest||chest._rewardClaimed)return false;
+ chest._rewardClaimed=true;chest.hp=0;
+ const rounds=chest.bigChest?(_isElite()?4:5):1;
+ if(_isCoop()){
+  g.p._inv=true;g.p._pickPending=true;g.p2._inv=true;g.p2._pickPending=true;
+  _sendP2PickFn?.(chest);
+ }else g.run=false;
+ showPick(chest.bigChest?'bigchest':'crate',null,null,{rounds:chest.bigChest?rounds:0});
+ return true;
 }
 
 /* ═══ adventure coin: one authoritative reward per toss ═══ */
@@ -252,8 +232,12 @@ export function triggerBigChest(count) {
 }
 
 /* ═══ showPick ═══ */
-export function showPick(src, specificCard, pickCtx) {
-  if (g.pickOpen) return;
+export function showPick(src, specificCard, pickCtx,options={}) {
+  if(!g)return;
+  if(g.pickOpen||g._localPickTransition){(g._localPickQueue||=[]).push({src,specificCard,ctx:pickCtx,options});return;}
+  if(options.rounds){g._bigChestTotal=options.rounds;g._bigChestLeft=options.rounds;}
+  g._localPickId=(g._localPickId||0)+1;
+  if(_isCoop()){const p=pickCtx?.player||g.p;p._pickPending=true;p._inv=true;}
   g.pickOpen = true;
   _currentPickCtx = pickCtx || null;
   resetControls();
@@ -267,6 +251,7 @@ export function showPick(src, specificCard, pickCtx) {
   const cnt = isLucky ? 3 : isFate ? 3 : isBig ? 3 : src === "crate" ? 3 : (specificCard ? 1 : (Math.random() * 100 < (25 + luck) ? 3 : (_pp.pickCount || 2)));
   const _pct = _currentPickCtx ? _currentPickCtx.charType : g.charType;
   const pk = specificCard ? [specificCard] : pks(cnt, null, _pinv, _pct);
+  if(!pk.length){g.pickOpen=false;finishLocalPick(pickCtx);return;}
   const roundSeen = new Set(pk.map(c => c.id));
   const noReroll = isLucky;
   const p = $("pickPanel");
@@ -288,7 +273,9 @@ export function showPick(src, specificCard, pickCtx) {
       const rr = document.createElement("button");
       rr.style.cssText = "border:none;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:9px;font-weight:700;font-family:inherit;padding:4px 10px;border-radius:12px;cursor:pointer;transition:opacity .2s;";
       rr.textContent = " 重骰";
+      const session=g,offer=g._localPickId;let rerolled=false;
       rr.onclick = () => {
+        if(rerolled||g!==session||g._localPickId!==offer||!g.pickOpen)return;rerolled=true;
         const exc = new Set(roundSeen);
         const nw = pks(1, exc, _pinv, _pct);
         if (nw.length) { pk[i] = nw[0]; roundSeen.add(nw[0].id); buildCard(nw[0], w, i, cardWrap); }

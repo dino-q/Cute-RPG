@@ -77,7 +77,7 @@ export function p2UseSkill() {
 
 /* ═══ P1 skill ═══ */
 export function useCharSkill() {
-  if (!g || !g.run) return;
+  if (!g || !g.run || (_net?.role==='client'?g.p2:g.p)?._pickPending) return;
   if (_net && _net.role === "client") { _clientSkillReq = true; return; }
   const now = performance.now();
   if (now < _skillCdEnd) return;
@@ -219,7 +219,7 @@ export function _startDash(now) {
 
 /* ═══ ultimate ═══ */
 export function doUlt() {
-  if (!g || !g.run) return;
+  if (!g || !g.run || (_net?.role==='client'?g.p2:g.p)?._pickPending) return;
   if (_net && _net.role === "client") { setClientUltReq(true); return; }
   const isBH = !!g.p.hasBH;
   const isTS = !!g.p.hasTS;

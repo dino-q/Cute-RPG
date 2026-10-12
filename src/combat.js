@@ -1,3 +1,4 @@
+import {openRewardChest} from './cards-ui.js';
 import {applyIceControl,applyBossDamageBudget,startEnemyKnockback} from './enemy-control.js';
 import {recordRoleEffect} from './role-card-art.js';
 import { addCardImpact } from './card-vfx.js';
@@ -295,19 +296,7 @@ export function swordSwing(_pp, _isP2) {
   }
   g.crates.forEach(cr => { if (!crateActive(cr)) return; if (di(_pp, cr) < range) { cr.hits += 2; burst(cr.x, cr.y, "#FFD43B", 3);
     if (cr.hits >= cr.needed && cr.hp > 0) { cr.hp = 0; burst(cr.x, cr.y, "#FFD43B", cr.bigChest ? 20 : 12); sfx("chest");
-      if (_isCoopMode) { _pp._inv = true; _pp._pickPending = true;
-        if (_isP2 && !_p2AI && _net && _net.conn && _net.conn.open) {
-          _sendP2Pick(cr);
-        } else {
-          var _pkCtx = _isP2 ? { player: _pp, inv: _pinv, charType: _pct } : null;
-          if (cr.bigChest) { var _bcp = _isElite() ? 4 : 5; g._bigChestTotal = _bcp; g._bigChestLeft = _bcp; showPick("bigchest", null, _pkCtx); }
-          else { showPick("crate", null, _pkCtx); }
-        }
-      }
-      else { g.run = false;
-        if (cr.bigChest) { var _bcp = _isElite() ? 4 : 5; g._bigChestTotal = _bcp; g._bigChestLeft = _bcp; showPick("bigchest"); }
-        else { showPick("crate"); }
-      }
+      openRewardChest(cr);
     }
   } });
   if (_pp._lightSaber) {
@@ -406,19 +395,7 @@ export function shieldBash(_pp, _isP2) {
   });
   g.crates.forEach(cr => { if (!crateActive(cr)) return; if (di(_pp, cr) < range) { cr.hits += 2; burst(cr.x, cr.y, "#FFD43B", 3);
     if (cr.hits >= cr.needed && cr.hp > 0) { cr.hp = 0; burst(cr.x, cr.y, "#FFD43B", cr.bigChest ? 20 : 12); sfx("chest");
-      if (_isCoopMode) { _pp._inv = true; _pp._pickPending = true;
-        if (_isP2 && !_p2AI && _net && _net.conn && _net.conn.open) {
-          _sendP2Pick(cr);
-        } else {
-          var _pkCtx2 = _isP2 ? { player: _pp, inv: _pinv, charType: _pct } : null;
-          if (cr.bigChest) { var _bcp = _isElite() ? 4 : 5; g._bigChestTotal = _bcp; g._bigChestLeft = _bcp; showPick("bigchest", null, _pkCtx2); }
-          else { showPick("crate", null, _pkCtx2); }
-        }
-      }
-      else { g.run = false;
-        if (cr.bigChest) { var _bcp = _isElite() ? 4 : 5; g._bigChestTotal = _bcp; g._bigChestLeft = _bcp; showPick("bigchest"); }
-        else { showPick("crate"); }
-      }
+      openRewardChest(cr);
     }
   } });
   if (!g[_atkRef]) g[_atkRef] = { active: false, startT: 0 }; g[_atkRef].active = true; g[_atkRef].startT = performance.now(); g[_atkRef].angle = atkAngle;
@@ -540,19 +517,7 @@ export function daggerStrike(_pp, _isP2) {
   // 寶箱破壞
   g.crates.forEach(cr => { if (!crateActive(cr)) return; if (di(_pp, cr) < range) { cr.hits += 2; burst(cr.x, cr.y, "#FFD43B", 3);
     if (cr.hits >= cr.needed && cr.hp > 0) { cr.hp = 0; burst(cr.x, cr.y, "#FFD43B", cr.bigChest ? 20 : 12); sfx("chest");
-      if (_isCoopMode) { _pp._inv = true; _pp._pickPending = true;
-        if (_isP2 && !_p2AI && _net && _net.conn && _net.conn.open) {
-          _sendP2Pick(cr);
-        } else {
-          var _pkCtx = _isP2 ? { player: _pp, inv: _pinv, charType: _pct } : null;
-          if (cr.bigChest) { var _bcp = _isElite() ? 4 : 5; g._bigChestTotal = _bcp; g._bigChestLeft = _bcp; showPick("bigchest", null, _pkCtx); }
-          else { showPick("crate", null, _pkCtx); }
-        }
-      }
-      else { g.run = false;
-        if (cr.bigChest) { var _bcp = _isElite() ? 4 : 5; g._bigChestTotal = _bcp; g._bigChestLeft = _bcp; showPick("bigchest"); }
-        else { showPick("crate"); }
-      }
+      openRewardChest(cr);
     }
   } });
   if (!g[_atkRef]) g[_atkRef] = { active: false, startT: 0 }; g[_atkRef].active = true; g[_atkRef].startT = performance.now(); g[_atkRef].angle = atkAngle;

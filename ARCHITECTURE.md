@@ -666,3 +666,17 @@ graph LR
 - exitPractice與openPractice都關閉pracBackdrop及cardTip，避免退出時留下整頁透明攔截層，新練習仍攔截所有搖桿／攻擊按鍵。保留裝置位置配置。
 - pracRebuildCards只套用通用或當前charReq專屬卡，保留其他職業選卡記錄而暫停效果；重建不觸發擲幣。練習卡片目前職業專屬在前、通用在後；標出分類名稱及數量，DOM重建後讀回所選卡片等級。
 - 依使用者要求未跑遊玩／操作測試；只做發布打包。
+
+## 2026-10-12 雙人通關連線與獎勵修正
+
+- cards-ui新增export openRewardChest(chest)；combat與loop→cards-ui沿用既有依賴方向。三近戰及子彈共用單次_claim判定；合作任一人開箱，P1與P2各自選卡。普通箱各一輪；大箱各4／5輪。cards-ui.init新增isCoop與sendP2Pick注入。P1的showPick(src,specificCard,pickCtx,options)保留獨立佇列，options.rounds在真正開始時設定，不覆寫當前多輪；幸運／擲幣回呼保存持有者，點擊與重骰限制本輪一次。
+- coop新增export resetCoopSession，主startGame建立g後清除P2旧offer／输入与窗口。_sendP2Pick排隊，publishP2Offer按P2職業與背包沿用pks加權。_applyP2Card(cardId,offerId)、_handleP2Reroll(idx,offerId)介面新增offerId；主機驗證本輪候選、先消耗再加卡，重骰每格一次及seen集合。幸運幣、探索靴、命運轉輪續抽改走P2自己的隊列；AI也同路徑，無重複扣大箱輪次。
+- showCoopPick同輪同revision不重建、低revision忽略，保留重骰已用狀態；CLIENT選擇後鎖按鍵等待主機確認，p2pickdone或狀態中的null才收起。每個狀態带p2Offer，可重補畫面。選卡者暫停移動／攻擊／技能，持續受傷保護；另一人可繼續冒險。
+- main雙人分支inv2.length=0，避免更換背包參照；接收背包用splice原地更新。syncCoopBindings在切mode／net／AI時更新loop、combat、skills、HUD、Boss與enemy，包含練習連線。
+- _coopStartReal先建立game，HOST等待P2職業確認後才開戰，CLIENT選角前不寫入舊game；提示等待隊友。sessionId防跨局輸入／選卡，seq防舊畫面／輸入倒退。舊peer／conn所有open／data／close／error忽略非目前實例。正式自訂房至少4碼且統一大寫，重回建房重置開始鈕。
+- sendHostSnapshot內部函式約33毫秒一次，暫停200毫秒一次；RTCDataChannel.bufferedAmount>262144或PeerJS bufferSize>2跳過整圖快照。CLIENT操作约33毫秒，單次動作即時送出，積壓時保留未送動作；HOST用OR保留直到遊戲邏輯消耗，800毫秒無輸入則停止移動。
+- serializeCoopState新增sessionId、seq、gameOver、waitingPlayer、p2Offer。applyCoopState把run=false視為_remotePaused；真正gameOver才觸發結束。暫停不再误判死亡。CLIENT角色斷線時不回退成HOST跑第二套敵人邏輯。
+- 玩家無敵与敵人護盾破除／黑洞處決／流血／嘲諷等期限改剩餘時間传送，在CLIENT還原本機時鐘。P2閃避無敵300毫秒独立清除；P2無怪時也瞄準附近可開寶箱。
+- 發布必要build成功；依使用者要求未跑實際雙人、瀏覽器操作或自動回歸測試。逐段問題與修正紀錄在docs/雙人通關修正紀錄.md，不宣稱不同網路環境全部穩定。
+
+- coop另新增beginCoopRun(charType)，_coopStartReal只沿用startGame。主startGame每次coop都呼叫beginCoopRun，因此再來一次也同步新session与角色確認；CLIENT重試經restartrequest由HOST開新局，不自行建立第二套地圖。轉單人先清_net再銷毀旧peer，避免單人技能還被誤當CLIENT操作。
