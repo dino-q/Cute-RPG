@@ -19,3 +19,28 @@ export function enemySlowFactor(enemy,base=1){
  if(enemy._magSlowT>0)base=Math.min(base,.6);
  return Math.max(.5,Math.min(1,base));
 }
+
+// Clamp all damage sources before any reward/filter can remove a major enemy.
+export function applyBossDamageBudget(enemy,player,now,elite=false){
+ if(!enemy?.boss||enemy.miniPoo||enemy.miniDemon||enemy.ragePoo||enemy._bossCore||enemy.deadHandled)return;
+ const seconds=enemy.stageBoss===20?(elite?150:45):enemy.stageBoss===30?(elite?240:65):elite?(enemy.mega?30:15):(enemy.mega?14:8);
+ const bonus=(player?._angelBuff?1.6:1)*(enemy.bossType==='armor'?Math.min(1.5,1+(player?.armorCapBonus||0)):1);
+ const cap=enemy.mhp/seconds*bonus;
+ if(enemy._secSnap===undefined){enemy._secSnap=enemy.mhp;enemy._secReset=now;}
+ // First enforce the previous window; resetting before enforcement loses lethal hits.
+ enemy.hp=Math.min(enemy.mhp,Math.max(enemy.hp,enemy._secSnap-cap));
+ if(now-enemy._secReset>=1000){enemy._secSnap=enemy.hp;enemy._secReset=now;}
+}
+export function startEnemyKnockback(enemy,origin,now,distance=55){
+ if(enemy.stageBoss||enemy._bossCore||enemy.ragePoo)return;
+ const a=Math.atan2(enemy.y-origin.y,enemy.x-origin.x),amount=enemy.boss?distance*.4:distance;
+ enemy._knock={x:enemy.x,y:enemy.y,dx:Math.cos(a)*amount,dy:Math.sin(a)*amount,start:now,duration:180};
+ enemy._retreatEnd=0;enemy._eDashing=false;enemy.dashState=0;
+}
+export function updateEnemyKnockback(enemy,now,mw,mh){
+ const k=enemy._knock;if(!k)return false;
+ const q=Math.max(0,Math.min(1,(now-k.start)/k.duration)),t=1-Math.pow(1-q,3);
+ enemy.x=Math.max(enemy.r,Math.min(mw-enemy.r,k.x+k.dx*t));enemy.y=Math.max(enemy.r,Math.min(mh-enemy.r,k.y+k.dy*t));
+ if(q>=1)enemy._knock=null;
+ return true;
+}

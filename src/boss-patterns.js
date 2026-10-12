@@ -46,7 +46,15 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
   const type=e.stageBoss===20?(sequence%2?'slam':'mud'):(sequence%2?'rift':'wing');
   const a=Math.atan2(target.y-e.y,target.x-e.x),warning=type==='rift'?1900:type==='mud'?1600:1300;
   const p={type,startAt:now,executeAt:now+warning,endAt:now+warning+500,angle:a,startX:e.x,startY:e.y,done:false};
-  if(type==='mud')p.points=[-1,0,1].map(i=>({x:clamp(target.x+i*68,35,mw-35),y:clamp(target.y+(i?30:0),35,mh-35),r:27}));
+  if(type==='mud'){
+   // Six inner and ten outer pools; one broad escape sector stays open.
+   p.points=[];const escape=a+Math.PI;
+   for(const [count,radius,size] of [[6,95,33],[10,195,38]])for(let i=0;i<count;i++){
+    const angle=escape+.6+(TAU-1.2)*(i+.5)/count;
+    const point={x:clamp(target.x+Math.cos(angle)*radius,40,mw-40),y:clamp(target.y+Math.sin(angle)*radius,40,mh-40),r:size};
+    if(!p.points.some(q=>Math.hypot(q.x-point.x,q.y-point.y)<35))p.points.push(point);
+   }
+  }
   if(type==='slam'||type==='wing'){const length=type==='wing'?230:155;p.endX=clamp(e.x+Math.cos(a)*length,e.r,mw-e.r);p.endY=clamp(e.y+Math.sin(a)*length,e.r,mh-e.r);p.width=type==='wing'?34:28;}
   if(type==='rift'){p.lockAt=now+1100;p.endAt=p.executeAt+1100;p.arm=75;p.x=e.x;p.y=e.y;p.spinAngle=0;}
   g.ebul=[];e._pattern=p;e._artAttackUntil=p.executeAt+500;
@@ -70,8 +78,8 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
  if(!p.done){
   p.done=true;
   if(p.type==='mud'){
-   g._bossHazards=(g._bossHazards||[]).filter(h=>h.endAt>now).concat(p.points.map(q=>({...q,owner:e.stageBoss,startAt:now,endAt:now+3500}))).slice(-6);
-   for(const q of p.points)for(const player of players(g))if(Math.hypot(player.x-q.x,player.y-q.y)<q.r+12)hit(g,player,damage,'#c5a76b');
+   g._bossHazards=(g._bossHazards||[]).filter(h=>h.endAt>now).concat(p.points.map(q=>({...q,owner:e.stageBoss,startAt:now,endAt:now+5000}))).slice(-32);
+   // Mud rain is area control only: slow, without landing damage.
   }else if(p.type==='slam'){
    let caught=false;for(const player of players(g))if(segmentDistance(player.x,player.y,{x:p.startX,y:p.startY},{x:p.endX,y:p.endY})<p.width+12){hit(g,player,damage,'#d2b275');caught=true;}
    p.recovery=caught?1800:3000;

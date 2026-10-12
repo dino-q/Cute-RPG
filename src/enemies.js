@@ -128,7 +128,7 @@ export function spawn(boss, opts = {}) {
   const tierDmg = [1, 1.15, 1.35, 1.6, 1.9][tier] || 1;
   const bhp = (20 + w * 11) * (1 + w * .018) * tierHp;
   const _bossMul = _isElite() ? 1 : (boss ? 4.25 : 1);
-  const _megaMul = _isElite() ? 1 : (mega ? 1.1 : 1);
+  const _megaMul = _isElite() ? 1 : (mega ? 2 : 1);
   const _classicMobNerf = (_mode !== "elite" && !boss) ? .25 : 1;
   const _coopMul = (_mode === "coop") ? (MODE.coop.coopHpMul || 1.5) : 1;
   const hp = Math.floor(bhp * _bossMul * _megaMul * ENEMY_HP_SCALE * grow.hp * earlyMul * _classicMobNerf * _coopMul);
@@ -164,7 +164,7 @@ export function spawn(boss, opts = {}) {
       }
     }
   }
-  g.ene.push({ x, y, hp: finalHp, mhp: finalHp, speed: spd * spdMul * (isEliteEnemy ? .7 : 1), color: isEliteEnemy ? "#E74C3C" : col, t: rn(0, 10), r: ER * rm * rmMul * (isEliteEnemy ? 1.3 : 1), st: 0, boss, mega, tier, face: x < g.p.x ? 1 : -1, xp: boss ? (mega ? 120 : 28) + w * 4 + tier * 4 : isEliteEnemy ? 15 + w : 4 + Math.floor(w / 2) + tier, poisonT: 0, frozen: 0, burnT: 0, burnLv: 0, poisonLv: 0, dmgMul: tierDmg * grow.dmg * (1 + Math.max(0, w - 10) * .018) * earlyMul * (isEliteEnemy ? 1.5 : 1),
+  g.ene.push({ _secSnap:finalHp,_secReset:performance.now(),x, y, hp: finalHp, mhp: finalHp, speed: spd * spdMul * (isEliteEnemy ? .7 : 1), color: isEliteEnemy ? "#E74C3C" : col, t: rn(0, 10), r: ER * rm * rmMul * (isEliteEnemy ? 1.3 : 1), st: 0, boss, mega, tier, face: x < g.p.x ? 1 : -1, xp: boss ? (mega ? 120 : 28) + w * 4 + tier * 4 : isEliteEnemy ? 15 + w : 4 + Math.floor(w / 2) + tier, poisonT: 0, frozen: 0, burnT: 0, burnLv: 0, poisonLv: 0, dmgMul: tierDmg * grow.dmg * (1 + Math.max(0, w - 10) * .018) * earlyMul * (isEliteEnemy ? 1.5 : 1),
     eliteEnemy: isEliteEnemy, _eDashCD: 0, _eShieldEnd: 0, _eShockCD: 0,
     role,
     flankA: rn(0, Math.PI * 2),

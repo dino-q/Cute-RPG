@@ -111,3 +111,8 @@
 
 ♻️ 沿用 drawEnemy、drawRiggedWeapons、drawArt、recordRoleEffect、drawRoleEvents、drawCardWorld、serializeCoopState、applyCoopState。
 🆕 creature-art（原幾何怪身體沒有角色圖片）、roleEffectOrigin（原事件只保存固定座標）、weaponPoseFor（原光束看不到實際繪製握點）。新素材416格46組；劍氣八段，光劍180毫秒，單人與雙人保持同樣位置規則。
+
+| applyBossDamageBudget | src/enemy-control.js | 死亡獎勵與移除前共用每秒傷害預算；先限制再換秒，保護全部真正 Boss。 |
+| startEnemyKnockback / updateEnemyKnockback | src/enemy-control.js | 180毫秒快速滑退，抵銷追擊、保留受擊傾斜，Boss較小推力。 |
+
+♻️ 沿用 recordRoleEffect、drawRoleEvents、drawArt、settleEnemyDeaths、awardEnemyKill、updateBossPattern。🆕 共用傷害預算／擊退函式（原秒末回血與直接改座標無法攔住提早死亡／表達受力）。

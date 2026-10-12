@@ -252,6 +252,7 @@ export function triggerStageBoss(lv){
         bossBgmSetBpm(ps.devilPhase===2?140:160);
       }
     }
+    sb._secSnap=sb.hp;sb._secReset=performance.now();
     // 登場爆發特效
     burst(sb.x,sb.y,bossCol,25);
     for(let i=0;i<20&&par.length<MAX_PARTICLES;i++){const a=Math.PI*2*i/20,v=rn(2,5);par.push({x:sb.x,y:sb.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,color:isPoo?"#D4A017":"#DA77F2",sz:rn(3,7)});}

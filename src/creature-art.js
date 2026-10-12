@@ -15,7 +15,11 @@ export function drawEnemyCreature(c,e,now){
  if(e._artLastHp!==undefined&&e.hp<e._artLastHp)e._artHitUntil=now+100;e._artLastHp=e.hp;
  const phase=Math.floor(now/170+(e.t||0))%4,size=e.r*4.3;
  const hit=e._artHitUntil>now;
- drawArt(c,group,phase,e.x,e.y+e.r,size,size,{fullCell:true,anchorY:.875,flip:e.face<0,brightness:hit?2.3:1});
+ const knock=e._knock,progress=knock?Math.max(0,Math.min(1,(now-knock.start)/knock.duration)):1;
+ const lean=knock?Math.sign(knock.dx)*.2*Math.sin(progress*Math.PI):0;
+ c.save();c.translate(e.x,e.y+e.r);c.rotate(lean);
+ drawArt(c,group,phase,0,-Math.sin(progress*Math.PI)*(knock?5:0),size,size,{fullCell:true,anchorY:.875,flip:e.face<0,brightness:hit?2.3:1});
+ c.restore();
  if(e.mega)drawArt(c,'guardian',5,e.x,e.y+e.r+3,e.r*3.2,e.r*.8,{stretch:true,alpha:.65});
  return true;
 }

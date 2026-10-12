@@ -1,4 +1,4 @@
-import {applyIceControl,tickEnemyControl,enemySlowFactor} from './enemy-control.js';
+import {applyIceControl,tickEnemyControl,applyBossDamageBudget,updateEnemyKnockback,enemySlowFactor} from './enemy-control.js';
 import {updateBossHazards,drawBossPatternGround} from './boss-patterns.js';
 import {recordRoleEffect} from './role-card-art.js';
 import {drawTreasure} from './treasure-art.js';
@@ -832,6 +832,7 @@ export function loop(){
         }
       }
     }
+    if(updateEnemyKnockback(e,now,mapW(),mapH()))return;
     var rawSlow=g.p.slow||1;
     var cs=e.st>0?(_isElite()?1-(1-rawSlow)*.35:rawSlow):1; // 精英/coop模式緩速效果僅35%
     cs=enemySlowFactor(e,cs);
@@ -1178,7 +1179,8 @@ export function loop(){
       if(_iceFragHit){burst(b.x,b.y,"#66D9E8",4);burst(b.x,b.y,"#fff",2);}
       g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(dmg),life:1,color:b.crit?"#FFD43B":_iceFragHit?"#66D9E8":"#fff",big:b.crit});
     }
-    if(e.hp<=0&&!(_isElite()&&e.boss&&!e.stageBoss&&!e.miniPoo&&!e.miniDemon)){
+    applyBossDamageBudget(e,g.p,now,_isElite());
+    if(e.hp<=0&&!e.stageBoss){
       if(ltnThrottle){
         // lightweight kill fx for lightning+split
         burst(e.x,e.y,e.color,5);
@@ -1257,7 +1259,7 @@ export function loop(){
       if(g.p.hp<=0){if(_isCoopMode){g.p._downed=true;g.p._downedTime=now;g.p.hp=0;if(g.p2&&g.p2._downed){g.run=false;showOver();}}else if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();}}
     }return true;}
     if(di(e,g.p)<PR+e.r-4){
-    var _isWB=_isElite()&&e.boss&&!e.miniPoo&&!e.miniDemon;
+    var _isWB=e.boss&&!e.miniPoo&&!e.miniDemon;
     // 坦克擋衝刺：敵人衝刺中撞到坦克 → 擋下+反擊
     var _isDashing=e._eDashing||(e.dashState===2)||(e._rage&&e._rageState==="dash");
     if(g.charType==="tank"&&_isDashing&&!e.stageBoss){
@@ -1276,7 +1278,7 @@ export function loop(){
       g.p._iFrameEnd=now+300;
       return true;
     }
-    if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});if(g.p.dodgeAtk>0){e.hp-=g.p.dodgeAtk;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(g.p.dodgeAtk),life:1,color:"#FFE066"});}return _isWB||e.hp>0;}
+    if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});if(g.p.dodgeAtk>0){e.hp-=g.p.dodgeAtk;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(g.p.dodgeAtk),life:1,color:"#FFE066"});}applyBossDamageBudget(e,g.p,now,_isElite());return _isWB||e.hp>0;}
     if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"擋住",life:1,color:"#4DABF7",big:1});return true;}
     var lateMul=1+Math.max(0,g.wave-10)*.07;
     var surv=(g.p.armor||0)+(g.p.dodge||0)*.9;
@@ -1301,8 +1303,9 @@ export function loop(){
       if(_isCoopMode){g.p._downed=true;g.p._downedTime=now;g.p.hp=0;if(g.p2&&g.p2._downed){g.run=false;showOver();return false;}}
       else if(g.p.revive>0){triggerPhoenixRevive();}else{g.run=false;showOver();return false;}
     }
-    if(_isWB){e._retreatEnd=now+1500;return true;}
-    if(MODE[_mode].enemyContactVanish){awardEnemyKill(e);return false;}
+    applyBossDamageBudget(e,g.p,now,_isElite());
+    if(_isWB){e._retreatEnd=now+900;return true;}
+    if(MODE[_mode].enemyContactVanish&&!e.boss&&!e.mega&&!e.eliteEnemy){awardEnemyKill(e);return false;}
     else{g.p._iFrameEnd=now+500;if(e.hp>0)e._retreatEnd=now+1500;return e.hp>0||(awardEnemyKill(e),false);}
     }
     // P2 contact damage (co-op)
@@ -1540,23 +1543,8 @@ export function loop(){
       }
     });
   }
-  // 每秒傷害上限（精英=全 Boss，經典=僅 Stage Boss）
-  var _capAngelMul=g.p._angelBuff?1.6:1;
-  var _capArmorMul=1+(g.p.armorCapBonus||0);
-  g.ene.forEach(e=>{
-    if(!e.boss)return;
-    // 經典模式：只保護 Stage Boss
-    if(!_isElite()&&!e.stageBoss)return;
-    if(!e._secReset||now-e._secReset>=1000){e._secSnap=e.hp;e._secReset=now;}
-    var acm=(e.bossType==="armor")?_capArmorMul:1;
-    var cap;
-    if(e.stageBoss===20)cap=e.mhp/(_isElite()?150:60)*_capAngelMul*acm;  // ：精英2.5分/經典1分
-    else if(e.stageBoss===30)cap=e.mhp/(_isElite()?240:90)*_capAngelMul*acm; // ：精英4分/經典1.5分
-    else if(_isElite())cap=e.mhp/(e.mega?30:15)*_capAngelMul*acm; // 精英/coop波次Boss
-    else return; // 經典波次Boss不限制
-    var taken=Math.max(0,e._secSnap-e.hp);
-    if(taken>cap){e.hp=e._secSnap-cap;}
-  });
+  // Apply the same budget before every death settlement, including melee/ult/contact.
+  g.ene.forEach(e=>applyBossDamageBudget(e,g.p,now,_isElite()));
   settleEnemyDeaths();
   checkStageBossDeath();
 

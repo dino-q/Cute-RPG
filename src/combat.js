@@ -1,4 +1,4 @@
-import {applyIceControl} from './enemy-control.js';
+import {applyIceControl,applyBossDamageBudget,startEnemyKnockback} from './enemy-control.js';
 import {recordRoleEffect} from './role-card-art.js';
 import { addCardImpact } from './card-vfx.js';
 import { getGunnerMuzzle } from "./gunner-sprite.js";
@@ -77,6 +77,8 @@ export function nearestTargets(src, k) {
 /* ═══ awardEnemyKill ═══ */
 export function awardEnemyKill(e) {
   if (!g || !e || e.deadHandled) return false;
+  applyBossDamageBudget(e,g.p,performance.now(),_isElite());
+  if(e.boss&&!e.miniPoo&&!e.miniDemon&&e.hp>0)return false;
   if(e._bossCore){e.deadHandled=true;return false;}
   e.deadHandled = true;
   g.lastKill = performance.now();
@@ -111,6 +113,7 @@ export function awardEnemyKill(e) {
 export function settleEnemyDeaths(protectBoss) {
   if (!g) return;
   const _wb = protectBoss;
+  for(const e of g.ene)applyBossDamageBudget(e,g.p,performance.now(),_isElite());
   g.ene.forEach(e => {
     if (e.hp > 0 || e.deadHandled) return;
     if (e.stageBoss) return;
@@ -382,13 +385,8 @@ export function shieldBash(_pp, _isP2) {
     if (e._coopShield) { fd = 0; }
     e.hp -= fd; addCardImpact(g,e.x,e.y,_pp);
     if (_pp.bulletHeal > 0) { const mheal2 = Math.max(5, _pp.bulletHeal); _pp.hp = Math.min(_pp.hp + mheal2, _pp.maxHp); _pp._healFlash = now; }
-    if (!e.stageBoss) {
-      const pushF = e.boss ? 15 : 35;
-      if (d > 0) { e.x += dx / d * pushF; e.y += dy / d * pushF; }
-      e.x = cl(e.x, e.r, mapW() - e.r); e.y = cl(e.y, e.r, mapH() - e.r);
-      e._retreatEnd = now + 800;
-      par.push({ x: e.x - dx / d * 10, y: e.y - dy / d * 10, vx: dx / d * 3, vy: dy / d * 3, life: .3, color: "#fff", sz: rn(2, 3.5) });
-    }
+    startEnemyKnockback(e,_pp,now,e.boss?45:65);
+    recordRoleEffect(g,'knockhit',e.x,e.y,Math.atan2(dy,dx),{follow:false});
     e.st = Math.max(e.st || 0, 1000);
     const fx = _pp.fx;
     if (fx.fire) { e.burnT = Math.max(e.burnT || 0, 1400 + Math.max(fx.fire || 0, 1) * 600); e.burnLv = Math.max(fx.fire || 0, 1); }
@@ -436,23 +434,28 @@ export function shieldBash(_pp, _isP2) {
     if (qd2 > range && qd2 <= baseQuakeR) {
       let bqd = baseQuakeDmg; if (e.boss) bqd = Math.min(bqd, 30);
       e.hp -= bqd; e.st = Math.max(e.st || 0, 400);
+      startEnemyKnockback(e,_pp,now,45);
+      recordRoleEffect(g,'knockhit',e.x,e.y,Math.atan2(e.y-_pp.y,e.x-_pp.x),{follow:false});
       burst(e.x, e.y, "#51CF66", 2);
     }
   });
   g._quakeRingT = now; g._quakeRingSmall = true;
-  recordRoleEffect(g,"shieldwave",_pp.x,_pp.y,atkAngle,{owner:_isP2?'p2':'p1'});
+  recordRoleEffect(g,"shieldwave",_pp.x,_pp.y,atkAngle,{owner:_isP2?'p2':'p1',range:baseQuakeR,follow:false});
   if (_pp._quake && (!_pp._quakeCD || now >= _pp._quakeCD)) {
     _pp._quakeCD = now + 3000;
     const qMul = [0, 1, 1.5, 2][_pp._quake] || 1;
     const qDmg = _pp.atk * 2 * qMul;
+    const quakeRange=180+_pp._quake*30;
     g.ene.forEach(e => {
-      if (e.hp <= 0) return;
+      if (e.hp <= 0 || e.ragePoo || di(_pp,e)>quakeRange) return;
       let qd = qDmg; if (e.boss) qd = Math.min(qd, 80);
       e.hp -= qd; e.st = Math.max(e.st || 0, 600);
+      startEnemyKnockback(e,_pp,now,90);
+      recordRoleEffect(g,'knockhit',e.x,e.y,Math.atan2(e.y-_pp.y,e.x-_pp.x),{follow:false});
       burst(e.x, e.y, "#FF922B", 6); burst(e.x, e.y, "#FFD43B", 3);
       g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(qd), life: 1, color: "#FF922B", big: 1 });
     });
-    recordRoleEffect(g,"quake",_pp.x,_pp.y,atkAngle,{level:_pp._quake});
+    recordRoleEffect(g,"quake",_pp.x,_pp.y,atkAngle,{level:_pp._quake,range:quakeRange,owner:_isP2?'p2':'p1'});
     g._quakeRingSmall = false;
     g._quakeRingT = now;
     setShake(.4, 6);

@@ -35,7 +35,8 @@ $('attack').onclick=()=>{
  if(name==='達摩的光劍')scene._lightBeams=[-.25,0,.25].map(a=>({x:player.x,y:player.y,ang:angle+a,len:200,life:180,owner:'p1',follow:true,bindHand:true,t:attackAt}));
  if(name==='殘影斬'){$('ghost').onclick();}
  const events={'大地震擊':'quake','荊棘之盾':'thorns','鋼鐵意志':'ironwill','致命打擊':'critical','毒刃':'poison','暗影步':'shadow','連環殺戮':'chainkill','音速投擲':'sonic'};
- if(events[name])recordRoleEffect(scene,events[name],player.x+Math.cos(angle)*45,player.y+Math.sin(angle)*45,angle);
+ if($('role').value==='tank')recordRoleEffect(scene,'shieldwave',player.x,player.y,angle,{range:94,follow:false});
+ if(events[name])recordRoleEffect(scene,events[name],player.x+(name==='大地震擊'?0:Math.cos(angle)*45),player.y+(name==='大地震擊'?0:Math.sin(angle)*45),angle,name==='大地震擊'?{range:210,level:1}:{});
  if(name==='鋼鐵意志')player._iwActive=true;
  if(name==='暗影步')player._shadowStepEnd=attackAt+1000;
  if(name==='連環殺戮')player._killSpeedEnd=attackAt+1000;
