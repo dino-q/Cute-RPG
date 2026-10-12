@@ -62,7 +62,7 @@ export function rebindActiveTouches(){
   const activeTouches=(window.__lastTouchSnapshot&&window.__lastTouchSnapshot.length)?window.__lastTouchSnapshot:[];
   if(!joy.a){
     const r=$("jzL").getBoundingClientRect();
-    const left=activeTouches.find(t=>t.clientX>=r.left&&t.clientX<=r.right&&t.clientY>=r.top&&t.clientY<=r.bottom);
+    const left=activeTouches.find(t=>t.identifier!==aim.id&&t.clientX>=r.left&&t.clientX<=r.right&&t.clientY>=r.top&&t.clientY<=r.bottom);
     if(left)attachTouchToStick(joy,"jzL","jkL",left);
   }
   if(!aim.a){
@@ -117,26 +117,36 @@ function uK(){let dx=0,dy=0;
 
 /* ═══ Touch & keyboard listener registration ═══ */
 export function setupInputListeners(){
-$("jzL").addEventListener("touchstart",e=>{
-  e.preventDefault();
-  window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
-  const t=e.changedTouches[0],rc=$("jzL").getBoundingClientRect();
-  joy.a=1;joy.id=t.identifier;
-  joy.sx=rc.left+rc.width/2;joy.sy=rc.top+rc.height/2;
-  joy.dx=0;joy.dy=0;
-  setStick($("jkL"));
-},{passive:false});
-
-$("jzR").addEventListener("touchstart",e=>{
-  e.preventDefault();
-  window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
-  const t=e.changedTouches[0],rc=$("jzR").getBoundingClientRect();
-  aim.a=1;aim.id=t.identifier;
-  aim.sx=rc.left+rc.width/2;aim.sy=rc.top+rc.height/2;
-  aim.dx=0;aim.dy=0;
-  setStick($("jkR"));
-  _tapAtk();
-},{passive:false});
+// Both sticks use their current, visible bounds after moving or scaling.
+for(const [state,zoneId,knobId] of [[joy,'jzL','jkL'],[aim,'jzR','jkR']]){
+  const zone=$(zoneId);
+  zone.addEventListener('touchstart',e=>{
+    if(document.body.classList.contains('layout-editing'))return;
+    e.preventDefault();
+    window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
+    if(state.a&&state.id!=='kb')return;
+    const other=state===joy?aim:joy;
+    const touch=Array.from(e.changedTouches).find(t=>t.identifier!==other.id);
+    if(attachTouchToStick(state,zoneId,knobId,touch)&&state===aim)_tapAtk();
+  },{passive:false});
+  zone.addEventListener('mousedown',e=>{
+    if(e.button!==0||document.body.classList.contains('layout-editing'))return;
+    e.preventDefault();
+    if(state.a&&state.id!=='kb')return;
+    if(attachTouchToStick(state,zoneId,knobId,{identifier:'mouse',clientX:e.clientX,clientY:e.clientY})&&state===aim)_tapAtk();
+  });
+}
+window.addEventListener('mousemove',e=>{
+  if(document.body.classList.contains('layout-editing'))return;
+  for(const [state,zoneId,knobId]of [[joy,'jzL','jkL'],[aim,'jzR','jkR']])
+    if(state.a&&state.id==='mouse')attachTouchToStick(state,zoneId,knobId,{identifier:'mouse',clientX:e.clientX,clientY:e.clientY});
+});
+window.addEventListener('mouseup',e=>{
+  if(e.button!==0)return;
+  for(const [state,knobId]of [[joy,'jkL'],[aim,'jkR']])if(state.id==='mouse'){
+    state.a=0;state.dx=0;state.dy=0;state.id=null;state.sx=null;state.sy=null;setStick($(knobId));
+  }
+});
 
 $("ultR").addEventListener("touchstart",e=>{e.preventDefault();e.stopPropagation();startUltPress();},{passive:false});
 $("ultR").addEventListener("touchend",e=>{e.preventDefault();e.stopPropagation();endUltPress();},{passive:false});
@@ -157,22 +167,8 @@ document.addEventListener("touchmove",e=>{
   window.__lastTouchSnapshot=Array.from(e.touches).map(t=>({identifier:t.identifier,clientX:t.clientX,clientY:t.clientY}));
   for(let i=0;i<e.touches.length;i++){
     const t=e.touches[i];
-    if(joy.a&&t.identifier===joy.id){
-      let dx=t.clientX-joy.sx,dy=t.clientY-joy.sy;
-      const d=Math.sqrt(dx*dx+dy*dy),mx=$("jzL").getBoundingClientRect().width/2||70;
-      if(d>mx){dx=dx/d*mx;dy=dy/d*mx;}
-      joy.dx=dx/mx;joy.dy=dy/mx;
-      const knob=$("jkL"),travel=Math.max(0,$("jzL").offsetWidth/2-knob.offsetWidth/2);
-      setStick(knob,joy.dx*travel,joy.dy*travel);
-    }
-    if(aim.a&&t.identifier===aim.id){
-      let dx=t.clientX-aim.sx,dy=t.clientY-aim.sy;
-      const d=Math.sqrt(dx*dx+dy*dy),mx=$("jzR").getBoundingClientRect().width/2||60;
-      if(d>mx){dx=dx/d*mx;dy=dy/d*mx;}
-      aim.dx=dx/mx;aim.dy=dy/mx;
-      const knob=$("jkR"),travel=Math.max(0,$("jzR").offsetWidth/2-knob.offsetWidth/2);
-      setStick(knob,aim.dx*travel,aim.dy*travel);
-    }
+    if(joy.a&&t.identifier===joy.id)attachTouchToStick(joy,'jzL','jkL',t);
+    if(aim.a&&t.identifier===aim.id)attachTouchToStick(aim,'jzR','jkR',t);
   }
 },{passive:false});
 

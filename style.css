@@ -171,3 +171,8 @@ button:focus-visible,[onclick]:focus-visible{outline:3px solid #fff0c7;outline-o
 /* Card artwork uses the same pixel objects as the battlefield. */
 .card-art{display:block;position:relative;margin:5px auto 8px;width:96px;height:64px;border:1px solid #65717a;box-shadow:0 3px 0 #101824}.card-art img{display:block;width:96px;height:64px;image-rendering:pixelated}.card-art small{position:absolute;bottom:3px;right:4px;color:#edd8ad;font:8px monospace}
 @media(max-width:480px){.card-art{width:72px;height:48px}.card-art img{width:72px;height:48px}}
+
+/* Free positioning must not leave transparent control containers over a stick. */
+#ctl,#rbtns{pointer-events:none}
+#rbtns{margin-left:auto}
+#ctl .joyW,#ctl #skillBtn,#ctl #dodgeBtn,#ctl #ultR{pointer-events:auto}
