@@ -169,3 +169,5 @@
 ♻️ 沿用 card、applyCardLevel、drawArt、drawRoleEvents、shieldBash、drawCardWorld、serializeCoopState、pracRebuildCards。🆕 reflectEnemyProjectile（既有坦克被動只扣最近敵人血，沒有真正飛彈反射）。召喚球移除牽線，短殘像及六向命中星屑共用既有圖片。
 
 ♻️ 沿用 updateBossPattern、loop、drawPixelMelee、attachTouchToStick、resetControls。移除取消核心後殘留的裂界清理，避免以未定義群組誤刪整份敵人清單；P1人物方向每幀與實際射擊一致，閒置不沿用過期攻擊角度。多指觸控先更新已持有搖桿，再讓面板處理自身手勢；放開／取消用事件擷取處理，失焦清按鍵。未新增匯出函式。
+
+♻️ 沿用 drawCardGround、drawArt 及 arcane 第1格既有磁力場素材。依Dino澄清恢復建築造型，固定於mfPx/mfPy；結束將同一張圖分成八片外散淡出，保留原吸引／傷害及兩人同步。未新增匯出函式或素材。

@@ -126,29 +126,19 @@ export function drawCardGround(c,g,now){
  for(const [p,state] of [[g.p,g],[g.p2,g._p2Ultimate]]){
   if(!p||!state)continue;
   if(state.bhEnd>now){c.save();c.translate(p.x,p.y+14);c.scale(1,.58);drawArt(c,'arcane',0,0,0,126,126,{angle:now/1300,alpha:.78});c.restore();}
-  // 磁力場吸引視覺
-  if(state.mfEnd&&now<state.mfEnd){
-    const _mfDur2=p.mfDur||1500;
-    const mfP=Math.min(1,(now-(state.mfEnd-_mfDur2))/_mfDur2); // 0→1 進度
-    const mfR=(state.mfR||200)*(1-mfP*.3); // 範圍逐漸收縮
-    c.save();
-    // 外圈脈動
-    c.globalAlpha=.15+Math.sin(now/80)*.08;c.strokeStyle="#339AF0";c.lineWidth=3;
-    c.beginPath();c.arc(state.mfPx,state.mfPy,mfR,0,Math.PI*2);c.stroke();
-    // 內圈旋轉虛線
-    c.globalAlpha=.25;c.strokeStyle="#74C0FC";c.lineWidth=2;c.setLineDash([8,6]);
-    c.beginPath();c.arc(state.mfPx,state.mfPy,mfR*.6,now/200,now/200+Math.PI*1.6);c.stroke();
-    c.setLineDash([]);
-    // 中心光暈
-    const mg=c.createRadialGradient(state.mfPx,state.mfPy,0,state.mfPx,state.mfPy,40);
-    mg.addColorStop(0,"rgba(51,154,240,.3)");mg.addColorStop(1,"transparent");
-    c.globalAlpha=.5+Math.sin(now/100)*.2;c.fillStyle=mg;c.beginPath();c.arc(state.mfPx,state.mfPy,40,0,Math.PI*2);c.fill();
-    c.restore();
-  }
+  // Keep the approved architectural field at the original cast position.
+  const fieldWidth=(state.mfR||200)*1.7,fieldHeight=(state.mfR||200)*1.1;
+  if(state.mfEnd>now)drawArt(c,'arcane',1,state.mfPx,state.mfPy,fieldWidth,fieldHeight,{alpha:.65});
   if(state._mfBurstAt&&now-state._mfBurstAt<650){
-   const q=Math.max(0,(now-state._mfBurstAt)/650),radius=(state.mfR||200)*(.7+q*.45);
-   c.save();c.strokeStyle='#74c0fc';c.lineWidth=2.5*(1-q)+.5;c.globalAlpha=(1-q)*.6;
-   for(let i=0;i<16;i++){const angle=TAU*i/16+q*.16,x=state.mfPx+Math.cos(angle)*radius,y=state.mfPy+Math.sin(angle)*radius;c.save();c.translate(x,y);c.rotate(angle+q*(i%2?1:-1));c.beginPath();c.moveTo(-7,-7);c.lineTo(7,-2);c.lineTo(2,9);c.stroke();c.restore();}c.restore();
+   const q=Math.max(0,(now-state._mfBurstAt)/650),expand=1-Math.pow(1-q,2),radius=Math.hypot(fieldWidth,fieldHeight);
+   // Eight pieces use the same image; the structure itself breaks apart.
+   for(let i=0;i<8;i++){
+    const angle=TAU*i/8,middle=angle+TAU/16;
+    c.save();c.translate(Math.cos(middle)*expand*48,Math.sin(middle)*expand*34+q*q*16);
+    c.translate(state.mfPx,state.mfPy);c.rotate((i%2?1:-1)*q*.09);c.translate(-state.mfPx,-state.mfPy);
+    c.beginPath();c.moveTo(state.mfPx,state.mfPy);c.arc(state.mfPx,state.mfPy,radius,angle+.012,angle+TAU/8-.012);c.closePath();c.clip();
+    drawArt(c,'arcane',1,state.mfPx,state.mfPy,fieldWidth,fieldHeight,{alpha:.65*(1-q)});c.restore();
+   }
   }
   if(state._cardTsEnd>now)drawArt(c,'arcane',2,p.x,p.y+10,145,105,{angle:Math.sin(now/600)*.04,alpha:.55});
  }

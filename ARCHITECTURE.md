@@ -745,3 +745,7 @@ graph LR
 - skillAimDirection曾給P1._ad賦值，但普通auto-aim只更新g.ad，繪圖優先讀舊P1._ad。loop現在每幀同步二者，射擊與角色／武器同方向；drawPixelMelee只在攻擊有效期間採用animation.angle，閒置不繼承過期角度。
 - input觸控先更新已持有的兩指，再判斷練習／設定面板；touchmove/end/cancel使用capture，避免子按鈕stopPropagation吞掉搖桿移動／放開。失焦與頁面隱藏清搖桿、按鍵、大招按住旗標及觸控快照，避免放開事件遺失而卡方向。
 - 未跑遊玩、自動操作或回歸測試；僅發布必要build，Dino自行驗證。
+
+## 2026-10-13 磁力場造型澄清
+
+Dino指定的是已核准的arcane第1格建築造型，不是經典藍色光圈。drawCardGround恢复該圖片原尺度／65%可見度，位置仍使用施放時mfPx/mfPy。結束650ms將同圖以八個扇面裁切成結構碎片，外散、微旋、下落及淡出；既有爆發粒子／傷害及雙人相對時間同步沿用。不生成新美術，不改卡牌數值。只執行發布build，遊玩由Dino驗證。
