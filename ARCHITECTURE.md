@@ -657,3 +657,12 @@ graph LR
 - render.js 新增drawShadowClones(now,r)：完整人物尺寸、82%可見度，四邊1.5單位淺紫輪廓，腳下印記，220毫秒現身、最後700毫秒淡出。分身獨立_ad／_attackAt，不繼承主角隱身／攻击狀態；出刀兩道紫刃，傷害頻率和壽命不變。coop同步分身與相對出刀／出生時間，共用畫面函式。
 - ui.js 新增continueAdventure、confirmAdventureRestart。settingsGoHome直接暫停並標_homeSuspended，首頁新增「繼續冒險・Lv」。沿用同一個g和背包，不重新startGame；有未選完卡片回原pick，否則resumeGame。首頁新角色／startGame在尚有冒險時提醒取代角色、卡片與關卡，先提供繼續原冒險。此功能保留同一網頁的遊戲，未新增重新整理後的磁碟存檔。
 - 使用者自行遊玩測試；本次僅檢閱程式流程及發布打包，未進行遊戲操作／自動測試。
+
+## 2026-10-12 地震去底與練習操作／分類修正
+
+- drawRoleEvents 沿用共用入口。普通shieldwave由360改220毫秒，只有1.2厚度、26%透明青綠細前緣；knockhit改140毫秒、20×9風痕、32%可見度，移除守護圖疊加。只改外觀，擊退距離、時程、命中範圍與傷害沿用。
+- quake-radial由原guardian第8格透過內建image_gen編輯，保留深色岩塊與金色裂紋，移除底座／地面平台，改俯視360度及透明中心。地震使用一張此圖從45%擴張至真正判定直徑，700毫秒；移除前版粗雙圈、20道劍氣與重複地裂。圖集421格48組，ART_REVISION=radial-earth-practice-20261012-v8。
+- pracSwitchChar原本只改少數屬性及重建卡片DOM，未呼叫pracRebuildCards，角色與卡片／動作不同步。現在關閉所有練習面板與pracBackdrop、重設觸控／鍵盤、技能冷卻、攻擊／閃避／影襲／殘影，設定g.charType與g.p.charType，重算卡片。main同步setLoopCharType。
+- exitPractice與openPractice都關閉pracBackdrop及cardTip，避免退出時留下整頁透明攔截層，新練習仍攔截所有搖桿／攻擊按鍵。保留裝置位置配置。
+- pracRebuildCards只套用通用或當前charReq專屬卡，保留其他職業選卡記錄而暫停效果；重建不觸發擲幣。練習卡片目前職業專屬在前、通用在後；標出分類名稱及數量，DOM重建後讀回所選卡片等級。
+- 依使用者要求未跑遊玩／操作測試；只做發布打包。

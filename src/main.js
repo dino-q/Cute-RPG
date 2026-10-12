@@ -403,7 +403,7 @@ initPractice({
   setInv2: (v)=>{ inv2=v; },
   getMode: ()=>_mode,
   getCharType: ()=>_charType,
-  setCharType: (v)=>{ _charType=v; },
+  setCharType: (v)=>{ _charType=v;setLoopCharType(v); },
   getIsCoopMode: ()=>_isCoopMode,
   setIsCoopMode: (v)=>{ _isCoopMode=v; },
   getP2AI: ()=>_p2AI,

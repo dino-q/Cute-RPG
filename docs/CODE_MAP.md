@@ -122,3 +122,5 @@
 | continueAdventure / confirmAdventureRestart | src/ui.js | 同一頁面保留回首頁的冒險，恢復原選卡或戰場，重新開局前顯示進度取代提醒。 |
 
 ♻️ 沿用 drawPlayer、drawPixelMelee、drawArt、animateChestOpening、showPick、resumeGame、原地圖寶箱碰撞與選卡入背包。🆕 上述函式（原擲幣嵌入動畫內、分身繪圖只在loop且共用主角狀態、首頁沒有保留進度入口）。
+
+♻️ 沿用 drawRoleEvents、drawArt、pracCloseOnBlank、resetControls、pracRebuildCards、pracUpdateCardUI、setLoopCharType。地震使用原岩塊金裂風格的去底全向圖；盾擊縮小淡化。練習進出／切職業關閉透明遮罩，切職業真正重算卡片並按專屬／通用分組。未新增匯出函式。
