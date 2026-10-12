@@ -34,13 +34,9 @@ const roleArt = {gunner:['gun','#82c7e8','狙擊'],swordsman:['sword','#f6b363',
 export function pixelEmblem(kind='gem', color='#e9c878') {
  return '<svg class="pixel-emblem" viewBox="0 0 16 16" aria-hidden="true" focusable="false" shape-rendering="crispEdges"><path fill="'+color+'" fill-rule="evenodd" d="'+(shapes[kind]||shapes.gem)+'"/></svg>';
 }
-const groups = [
- ['flame',/火|焰|龍之/],['ice',/冰|雪/],['heart',/生命|癒|回血|堅韌|吸血/],['boot',/靴/],['bow',/弩|箭/],['book',/學者/],['coin',/幸運|命運/],['poison',/毒/],['bolt',/雷|閃電/],['split',/分裂|彈幕/],['shadow',/影|虛空/],['target',/追蹤|穿透/],['wing',/翼|不死鳥/],['hourglass',/時光|時間/],['shield',/盾|鐵|守護|石膚/],['sword',/刃|斬|劍|拔刀/],['gun',/機關槍/],['skull',/致命|殺戮/],['burst',/爆|震|毀滅|狂暴|拳/],['orb',/磁|黑洞|吞噬|核心|召喚/]
-];
 export function cardEmblem(card,compact=false) {
- if(!compact)return '<span class="card-art"><img src="'+cardIllustration(card)+'" alt="" width="96" height="64"/><small>'+String(card.id).padStart(2,'0')+'</small></span>';
- const kind=groups.find(([,pattern])=>pattern.test(card.n))?.[0]||'gem';
- return '<span class="card-emblem'+(compact?' compact':'')+'" style="--emblem-color:'+(card.c||'#e9c878')+'">'+pixelEmblem(kind,card.c||'#e9c878')+'<small>'+String(card.id).padStart(2,'0')+'</small></span>';
+ const art='<img src="'+cardIllustration(card)+'" alt="" width="64" height="64"/>';
+ return '<span class="'+(compact?'card-emblem compact':'card-art')+'" data-card-art="'+card.id+'" style="--emblem-color:'+(card.c||'#e9c878')+'">'+art+'<small>'+String(card.id).padStart(2,'0')+'</small></span>';
 }
 export function setActionEmblem(id,kind,label,key='') {
  const el=document.getElementById(id); if(!el)return;
@@ -99,4 +95,6 @@ export function installGameButtons() {
  cleanToolbar();new MutationObserver(cleanToolbar).observe(toolbar,{subtree:true,childList:true,characterData:true});
 }
 
-window.addEventListener("game-art-ready",()=>{document.querySelectorAll(".card-art").forEach(el=>{const id=Number(el.querySelector("small")?.textContent);const card=C.find(c=>c.id===id);const img=el.querySelector("img");if(card&&img)img.src=cardIllustration(card);});});
+window.addEventListener('card-icons-ready',()=>{
+ for(const el of document.querySelectorAll('[data-card-art]')){const card=C.find(c=>c.id===Number(el.dataset.cardArt)),img=el.querySelector('img');if(card&&img)img.src=cardIllustration(card);}
+});

@@ -196,3 +196,7 @@ body.ending-playing #settingsBtn,body.ending-playing #ctl,body.ending-playing #r
 #gameBlackBars>div{position:absolute;background:#000;pointer-events:none}
 .layout-black-presets{display:flex;gap:5px;margin:6px 0}
 .layout-black-presets button{flex:1;padding:4px!important;font-size:10px!important}
+
+/* Every card surface uses its own generated inventory picture. */
+.card-emblem.compact img{display:block;width:24px;height:24px;object-fit:contain;image-rendering:pixelated}
+.card-art img{object-fit:contain;background:#182333}

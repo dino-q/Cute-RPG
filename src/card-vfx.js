@@ -1,7 +1,8 @@
+import {cardIconUrl,drawInventoryCardIcon} from './card-icons.js';
 import {weaponStyle} from './weapon-rig.js';
 import {legendProfile,drawLegendPlayerLayer,drawLegendBullet,drawLegendStrike} from './legend-card-art.js';
 import {roleEffectOrigin,drawRoleEvents,drawRolePlayerLayer,drawRoleGun,drawRoleBullet} from './role-card-art.js';
-import {drawArt,artFrame,artThumbnail,directionIndex} from './generated-art.js';
+import {drawArt,artFrame,directionIndex} from './generated-art.js';
 const TAU=Math.PI*2;
 const orbMotion=new WeakMap();
 export const CARD_PALETTES={fire:['#713231','#df6045','#ffd080'],ice:['#365b83','#78bddc','#e0fbff'],lightning:['#735224','#e9b649','#fff0b5'],poison:['#43522d','#94be59','#e0ef91'],dragon:['#73352d','#de8144','#ffe2a1'],star:['#544778','#b397d9','#fff2d2'],whirl:['#365f70','#86c7c6','#e0f5e4']};
@@ -188,63 +189,9 @@ export function drawGhostSlash(c,g,now,r,drawPlayer){
  drawPlayer(gs.x-dir.x*r*.3,gs.y-dir.y*r*.3,r,now/1000,'#bfa5f0',gs.face,actor,{effects:false,travelDirection:dir,animation:{active:true,startT:gs.t+150,angle:gs.ang}});
  c.restore();
 }
-function cardArtSlot(n){
- if(n==='星辰劍')return ['star-sword',1];
- if(n==='無盡之刃')return ['infinity-blade',1];
- if(n==='創世神力')return ['genesis',2];
- if(/達摩/.test(n))return ['sword-beam',2];
- if(/劍氣/.test(n))return ['sword-qi-v2',4];
- if(/拔刀/.test(n))return ['sword-draw',2];
- if(/殘影斬/.test(n))return ['ghost-slash',2];
- if(/龍之/.test(n))return ['dragon-flight',8];
- if(/天使之翼/.test(n))return ['angel-wings',2];
- if(/不死鳥/.test(n))return ['phoenix',3];
- if(/守護天使/.test(n))return ['guardian',3];
- if(/荊棘/.test(n))return ['guardian',4];
- if(/大地震/.test(n))return ['guardian',8];
- if(/鏡|反射/.test(n))return ['guardian',0];
- if(/守護星/.test(n))return ['guardian',1];
- if(/鐵壁/.test(n))return ['guardian',2];
- if(/意志/.test(n))return ['guardian',6];
- if(/盾|石膚/.test(n))return ['guardian',7];
- if(/黑洞/.test(n))return ['arcane',0];
- if(/磁力/.test(n))return ['arcane',1];
- if(/時間停止|時光/.test(n))return ['arcane',2];
- if(/影襲/.test(n))return ['arcane',3];
- if(/虛空/.test(n))return ['arcane',4];
- if(/斗篷|隱|分身/.test(n))return ['arcane',5];
- if(/命運/.test(n))return ['arcane',8];
- if(/混沌/.test(n))return ['arcane',9];
- if(/機關槍/.test(n))return ['arsenal',1];
- if(/弩/.test(n))return ['arsenal',3];
- if(/迴力鏢/.test(n))return ['wind',2];
- if(/召喚/.test(n))return ['wind',3];
- if(/旋風|風刃/.test(n))return ['wind',0];
- if(/分裂/.test(n))return ['wind',6];
- if(/穿透/.test(n))return ['wind',5];
- if(/吸血/.test(n))return ['vital',1];
- if(/吞噬/.test(n))return ['vital',2];
- if(/生命|回血|癒|堅韌/.test(n))return ['vital',0];
- if(/狂|越戰/.test(n))return ['vital',3];
- if(/幸運/.test(n))return ['vital',4];
- if(/蓄|集氣/.test(n))return ['vital',5];
- if(/雷/.test(n))return ['weapon-variants',12];
- if(/毒/.test(n))return ['poison',/刃|刺/.test(n)?1:0];
- if(/冰|雪/.test(n))return ['ice',/斬|刃/.test(n)?2:0];
- if(/火|焰|毀滅/.test(n))return ['fire',/斬|刃/.test(n)?2:6];
- if(/斬|刃|劍|創世|星|光/.test(n))return ['star',/創世/.test(n)?6:1];
- if(/閃電步|音速/.test(n))return ['wind',4];
- return ['star',3];
-}
-const cardPictures=new Map();
-export function cardIllustration(card){
- const [group,frame]=cardArtSlot(card.n),key=card.id+':'+!!artFrame(group);
- if(cardPictures.has(key))return cardPictures.get(key);
- const url=artThumbnail(group,frame);if(url){cardPictures.set(key,url);return url;}
- return 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="64"><rect width="96" height="64" fill="#182333"/></svg>');
-}
+export function cardIllustration(card){return cardIconUrl(card);}
 export function addCardImpact(g,x,y,source){if(!g)return;const kind=typeof source==='string'?source:legendProfile(source)?.key||pick(source);if(!kind||kind==='lightning')return;const now=performance.now();g._cardImpacts=(g._cardImpacts||[]).filter(h=>now-h.at<320).slice(-23);g._cardImpacts.push({x,y,kind,at:now});}
 
 export function drawCardIcon(c,card,x,y,size=22){
- const [group,frame]=cardArtSlot(card.n);return drawArt(c,group,frame,x,y,size,size);
+ return drawInventoryCardIcon(c,card,x,y,size);
 }

@@ -753,3 +753,12 @@ Dino指定的是已核准的arcane第1格建築造型，不是經典藍色光圈
 ## 2026-10-13 汙泥王泥地威脅加強
 
 loop的七處_mudSlowEnd移動倍率由.65改.35，踩泥地只保留35%速度，包含P1/P2手動、AI、一般閃避／閃電步的x/y位移。updateBossHazards仍每幀更新、離開泥地90ms後解除；十六落點、5秒泥地、無傷害沿用。鬼斬與八閃的固定動作時程沿用。只執行發布build，由Dino遊玩驗證。
+
+## 2026-10-13 全卡專屬圖示
+
+模組／匯出索引：src/card-icons.js → cardIconsReady、cardIconUrl、drawInventoryCardIcon。card-vfx → card-icons → assets/card-icons.json；button-art仍經cardIllustration取圖，hud仍經drawCardIcon，art-preview等待cardIconsReady。card-vfx移除內部cardArtSlot與cardPictures，不再用regex猜卡圖。
+
+- 67張正式卡逐張獨立圖示，資料完整卡名對應圖集位置，素材由內建image_gen五組生成，generate2dsprite去底、64px對齊、細碎孤點清理；同圖集512×576供選卡、練習、設定、說明和單人／雙人側欄。compact卡列改用相同PNG，不再使用共用SVG。大卡圖用object-fit:contain避免拉伸。
+- assets/card-icons.png/json是獨立圖集，不影響原招式／角色圖集；來源docs/card-icon-sources.json、角色預覽/card-icons-a～e-source.png、匯出scripts/prepare-card-icons.py。67筆完整覆蓋、圖像雜湊均獨立、沒有空格／輸出邊緣接觸；資料在docs/card-icon-qc.json。
+- 特別狀態「越戰越勇」不是卡片，明確沿用狂暴之力圖案，避免原側欄特殊狀態變空白。
+- docs/卡片圖示總覽.png與art-preview.html#cards提供全部圖示。圖片完成後card-icons-ready更新已在畫面的DOM。未改卡牌數值或效果；僅素材檢查與發布打包，Dino負責遊玩。

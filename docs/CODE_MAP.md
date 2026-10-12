@@ -173,3 +173,8 @@
 ♻️ 沿用 drawCardGround、drawArt 及 arcane 第1格既有磁力場素材。依Dino澄清恢復建築造型，固定於mfPx/mfPy；結束將同一張圖分成八片外散淡出，保留原吸引／傷害及兩人同步。未新增匯出函式或素材。
 
 ♻️ 沿用 updateBossHazards 與 loop 既有泥地移動倍率：剩餘移速65%改35%（緩速65%），七處計算涵蓋P1、P2、AI與一般衝刺。泥地範圍、5秒存留與不扣血規則沿用；未新增函式。
+
+| cardIconsReady / cardIconUrl / drawInventoryCardIcon | src/card-icons.js | 載入67張專屬卡圖集，依完整卡名指定格位；DOM卡圖與畫布側欄共用。 |
+| prepare-card-icons.py | scripts/prepare-card-icons.py | 沿用generate2dsprite去底與分格；整理64px图示、明確對應、完整總覽及素材檢查紀錄。 |
+
+♻️ 沿用 cardEmblem、cardIllustration、drawCardIcon、drawAbilitySidebar、generate2dsprite。🆕 card-icons模組（原regex配圖與compact SVG互不一致，無一張卡一張圖的契約）。game-art-ready卡圖更新改為card-icons-ready；非卡片按鈕pixelEmblem仍沿用。

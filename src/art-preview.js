@@ -1,3 +1,4 @@
+import {cardIconsReady} from './card-icons.js';
 import {drawEnemy,setCx,setG} from './render.js';
 import {updateBossPattern,drawBossPatternGround,drawBossPatternCore} from './boss-patterns.js';
 import {recordRoleEffect} from './role-card-art.js';
@@ -95,7 +96,7 @@ function frame(now){
  const t=endAt===null?0:Math.min(9.5,(now-endAt)/1000);drawBossEndingFrame(ending,endType,t,960,540,(c,x,y,r,seconds,front)=>hero(c,x,y,r,role,front?{x:0,y:1}:{x:0,y:-1},{active:false},{charType:role,fx:{}}));
  requestAnimationFrame(frame);
 }
-Promise.all([generatedArtReady,bossArtReady,endingArtReady,gunnerSpriteReady,meleeSpritesReady,swordActionsReady,assassinActionsReady,tankShieldReady]).then(()=>{
+Promise.all([cardIconsReady,generatedArtReady,bossArtReady,endingArtReady,gunnerSpriteReady,meleeSpritesReady,swordActionsReady,assassinActionsReady,tankShieldReady]).then(()=>{
 $('cards').innerHTML=C.map(card=>'<div class="card"><img alt="" src="'+cardIllustration(card)+'"><div>'+card.n+'</div></div>').join('');
 requestAnimationFrame(frame);
 });

@@ -1,0 +1,314 @@
+{
+  "generation": "built-in image_gen",
+  "revision": "card-icons-20261013-v1",
+  "sources": [
+    {
+      "file": "角色預覽/card-icons-a-source.png",
+      "raw": "C:/Users/AG_Di/.codex/generated_images/01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3/exec-602fb1d9-a706-4093-bf73-454cdfcec2e9.png",
+      "rows": 4,
+      "cols": 4,
+      "cards": [
+        {
+          "id": 1,
+          "name": "火焰彈"
+        },
+        {
+          "id": 2,
+          "name": "冰錐"
+        },
+        {
+          "id": 3,
+          "name": "生命果"
+        },
+        {
+          "id": 4,
+          "name": "疾風靴"
+        },
+        {
+          "id": 5,
+          "name": "連弩"
+        },
+        {
+          "id": 6,
+          "name": "鏡盾"
+        },
+        {
+          "id": 7,
+          "name": "自癒術"
+        },
+        {
+          "id": 8,
+          "name": "學者帽"
+        },
+        {
+          "id": 9,
+          "name": "幸運幣"
+        },
+        {
+          "id": 10,
+          "name": "集氣珠"
+        },
+        {
+          "id": 11,
+          "name": "磁力場"
+        },
+        {
+          "id": 12,
+          "name": "毒刺"
+        },
+        {
+          "id": 13,
+          "name": "穿透之力"
+        },
+        {
+          "id": 14,
+          "name": "蓄力拳"
+        },
+        {
+          "id": 15,
+          "name": "回血斬"
+        },
+        {
+          "id": 16,
+          "name": "探索靴"
+        }
+      ]
+    },
+    {
+      "file": "角色預覽/card-icons-b-source.png",
+      "raw": "C:/Users/AG_Di/.codex/generated_images/01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3/exec-d3f005b0-2ef9-4843-b830-f674113e47e4.png",
+      "rows": 4,
+      "cols": 4,
+      "cards": [
+        {
+          "id": 17,
+          "name": "堅韌心"
+        },
+        {
+          "id": 18,
+          "name": "石膚術"
+        },
+        {
+          "id": 19,
+          "name": "雷擊鏈"
+        },
+        {
+          "id": 20,
+          "name": "分裂彈"
+        },
+        {
+          "id": 21,
+          "name": "閃避斗篷"
+        },
+        {
+          "id": 22,
+          "name": "鐵壁金身"
+        },
+        {
+          "id": 23,
+          "name": "守護星"
+        },
+        {
+          "id": 24,
+          "name": "影分身"
+        },
+        {
+          "id": 25,
+          "name": "烈焰風暴"
+        },
+        {
+          "id": 26,
+          "name": "暴風雪"
+        },
+        {
+          "id": 27,
+          "name": "追蹤彈"
+        },
+        {
+          "id": 28,
+          "name": "吸血領主"
+        },
+        {
+          "id": 29,
+          "name": "召喚球"
+        },
+        {
+          "id": 30,
+          "name": "旋風斬"
+        },
+        {
+          "id": 31,
+          "name": "狂暴之力"
+        },
+        {
+          "id": 32,
+          "name": "連鎖爆破"
+        }
+      ]
+    },
+    {
+      "file": "角色預覽/card-icons-c-source.png",
+      "raw": "C:/Users/AG_Di/.codex/generated_images/01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3/exec-dcb9b811-1d59-49ff-bce1-a50b65feeb27.png",
+      "rows": 4,
+      "cols": 4,
+      "cards": [
+        {
+          "id": 33,
+          "name": "破甲箭"
+        },
+        {
+          "id": 34,
+          "name": "迴力鏢"
+        },
+        {
+          "id": 35,
+          "name": "機關槍"
+        },
+        {
+          "id": 36,
+          "name": "閃電步"
+        },
+        {
+          "id": 37,
+          "name": "元素精通"
+        },
+        {
+          "id": 38,
+          "name": "大招增幅"
+        },
+        {
+          "id": 39,
+          "name": "彈幕之王"
+        },
+        {
+          "id": 40,
+          "name": "龍之心"
+        },
+        {
+          "id": 41,
+          "name": "星辰劍"
+        },
+        {
+          "id": 42,
+          "name": "時光沙"
+        },
+        {
+          "id": 43,
+          "name": "不死鳥"
+        },
+        {
+          "id": 44,
+          "name": "黑洞"
+        },
+        {
+          "id": 45,
+          "name": "天使之翼"
+        },
+        {
+          "id": 46,
+          "name": "毀滅之手"
+        },
+        {
+          "id": 47,
+          "name": "無盡之刃"
+        },
+        {
+          "id": 48,
+          "name": "虛空步"
+        }
+      ]
+    },
+    {
+      "file": "角色預覽/card-icons-d-source.png",
+      "raw": "C:/Users/AG_Di/.codex/generated_images/01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3/exec-7ad1bbd2-b899-4630-a95c-251f3c5f6821.png",
+      "rows": 4,
+      "cols": 4,
+      "cards": [
+        {
+          "id": 49,
+          "name": "命運轉輪"
+        },
+        {
+          "id": 50,
+          "name": "混沌核心"
+        },
+        {
+          "id": 51,
+          "name": "時間停止"
+        },
+        {
+          "id": 52,
+          "name": "殘影斬"
+        },
+        {
+          "id": 53,
+          "name": "劍氣強化"
+        },
+        {
+          "id": 54,
+          "name": "拔刀術"
+        },
+        {
+          "id": 55,
+          "name": "達摩的光劍"
+        },
+        {
+          "id": 56,
+          "name": "荊棘之盾"
+        },
+        {
+          "id": 57,
+          "name": "大地震擊"
+        },
+        {
+          "id": 58,
+          "name": "鋼鐵意志"
+        },
+        {
+          "id": 59,
+          "name": "守護者光環"
+        },
+        {
+          "id": 60,
+          "name": "致命打擊"
+        },
+        {
+          "id": 61,
+          "name": "暗影步"
+        },
+        {
+          "id": 62,
+          "name": "毒刃"
+        },
+        {
+          "id": 63,
+          "name": "連環殺戮"
+        },
+        {
+          "id": 64,
+          "name": "音速投擲"
+        }
+      ]
+    },
+    {
+      "file": "角色預覽/card-icons-e-source.png",
+      "raw": "C:/Users/AG_Di/.codex/generated_images/01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3/exec-883d9272-5063-4ae9-b3fa-8d562821315d.png",
+      "rows": 2,
+      "cols": 2,
+      "cards": [
+        {
+          "id": 65,
+          "name": "萬物吞噬"
+        },
+        {
+          "id": 66,
+          "name": "創世神力"
+        },
+        {
+          "id": 67,
+          "name": "折光反射盾"
+        }
+      ]
+    }
+  ]
+}
