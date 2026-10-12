@@ -163,3 +163,7 @@
 | setLayoutNotice | src/control-layout.js | 固定提示容器，共用可移動／縮放位置，隱藏時仍可預覽編輯。 |
 
 ♻️ 沿用 getLayoutViewport、applyControlLayout、hud、showHint、showChaosNotice、drawCardGround、drawRoleEvents、drawCardStrike、drawCardGun、addCardImpact。🆕 setLayoutNotice（原動態提示無穩定容器，不能在發生前調版面）。恢復原版磁力場光圈與固定落點；碎裂、兩人提示及坦克普通攻擊共用現有美術。
+
+| reflectEnemyProjectile | src/combat.js | 兩位坦克共用飛彈反射，保留來向與真實彈道，排除地面／不可避傷害。 |
+
+♻️ 沿用 card、applyCardLevel、drawArt、drawRoleEvents、shieldBash、drawCardWorld、serializeCoopState、pracRebuildCards。🆕 reflectEnemyProjectile（既有坦克被動只扣最近敵人血，沒有真正飛彈反射）。召喚球移除牽線，短殘像及六向命中星屑共用既有圖片。

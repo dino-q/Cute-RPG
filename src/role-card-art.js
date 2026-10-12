@@ -19,8 +19,11 @@ export function roleEffectOrigin(game,e){
 export function drawRoleEvents(c,game,now,ground=false){
  for(const e of game?._roleEffects||[]){
   const {x,y}=roleEffectOrigin(game,e);const q=clamp((now-e.at)/e.life);if(q<=0||q>=1)continue;const alpha=Math.sin(q*Math.PI);
+  if(e.kind==='reflect'){
+   if(!ground){drawArt(c,'guardian',0,x+Math.cos(e.angle)*24,y+Math.sin(e.angle)*24,42,42,{angle:e.angle,alpha:1-q});drawArt(c,'star',3,x+Math.cos(e.angle)*30,y+Math.sin(e.angle)*30,28,28,{alpha:1-q});}continue;
+  }
   if(e.kind==='orb-impact'){
-   if(!ground){drawArt(c,'star',3,x,y,38+q*14,38+q*14,{alpha:1-q});drawArt(c,'arcane',5,x,y,28+q*24,28+q*24,{alpha:.5*(1-q)});}continue;
+   if(!ground){drawArt(c,'star',3,x,y,30+q*20,30+q*20,{alpha:1-q});for(let i=0;i<6;i++){const a=TAU*i/6+e.angle,reach=8+q*24;drawArt(c,'star',0,x+Math.cos(a)*reach,y+Math.sin(a)*reach,11*(1-q)+3,11*(1-q)+3,{angle:a,alpha:(1-q)*.8});}}continue;
   }
   if(e.kind==='snipe'){
    if(!ground)drawArt(c,'sword-beam',Math.min(3,Math.floor(q*4)),x,y,e.range||420,13,{angle:e.angle,anchorX:0,stretch:true,alpha:1-q});continue;
@@ -90,6 +93,8 @@ export function drawRoleEvents(c,game,now,ground=false){
      c.beginPath();c.arc(x,y,radius,e.angle-.7,e.angle+.7);c.stroke();c.restore();
     }
    }else if(e.kind==='shieldwave'){
+    const p=e.owner==='p2'?game.p2:game.p;
+    if(p?.thorns)for(const side of [-1,0,1])drawArt(c,'guardian',10,x+Math.cos(e.angle)*30-Math.sin(e.angle)*side*12,y+Math.sin(e.angle)*30+Math.cos(e.angle)*side*12,22,28,{angle:e.angle,alpha:.85*(1-q)});
     const reach=20+q*20;drawArt(c,'guardian',5,x+Math.cos(e.angle)*reach,y+Math.sin(e.angle)*reach,38,22,{angle:e.angle,stretch:true,alpha:.75*(1-q)});
     if(q<.5)drawArt(c,'star',3,x+Math.cos(e.angle)*29,y+Math.sin(e.angle)*29,22,22,{alpha:.7*(1-q/.5)});
    }continue;

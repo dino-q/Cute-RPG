@@ -1,3 +1,4 @@
+import {drawArt} from './generated-art.js';
 import {drawRiggedWeapons,drawRiggedHands} from './weapon-rig.js';
 import {drawAttachedCardLayer} from './attached-card-art.js';
 import {ART_REVISION} from './generated-art.js';
@@ -80,6 +81,8 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
    const shieldScale=.75*scale;
    if(shieldAtlas){const [sx,sy,sw,sh]=shieldBounds[index];ctx.drawImage(cardWeaponAtlas(shieldAtlas,'tank-shield',player),index*64+sx,sy,sw,sh,-sw*shieldScale/2,-sh*shieldScale/2,sw*shieldScale,sh*shieldScale);}
    else{ctx.scale(.4125*scale,.4125*scale);weapons.shield(ctx);}
+   if(effects&&player?.thorns)drawArt(ctx,'guardian',10,0,0,22*scale,24*scale,{angle:weaponAngle+Math.PI/2,alpha:.85});
+   if(effects&&player?._reflectShield)drawArt(ctx,'guardian',0,0,0,19*scale,22*scale,{angle:weaponAngle+Math.PI/2,alpha:.7});
   }
   else {ctx.scale(scale,scale);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-17,3,15);ctx.fillStyle='#9586ae';ctx.fillRect(2,-14,1,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,5);ctx.translate(-9,5);ctx.rotate(.55);ctx.fillStyle=fx.poison?'#9bd78b':'#e4d9f5';ctx.fillRect(-1,-14,3,12);ctx.fillStyle='#d4aff5';ctx.fillRect(-4,-2,9,2);ctx.fillStyle='#46304d';ctx.fillRect(-1,0,3,4);}
   ctx.restore();

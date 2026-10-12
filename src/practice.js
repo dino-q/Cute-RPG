@@ -231,7 +231,7 @@ export function pracRebuildCards() {
   g.p.charType=g.charType;g.p.speed=CC.startSpeed;
   g.p.atk = CC.startAtk; g.p.fr = CC.fr; g.p.armor = CC.armor; g.p.crit = CC.crit; g.p.dodge = CC.dodge;
   g.p.chain = 0; g.p.ls = 0; g.p.slow = 1; g.p.split = 1; g.p.revive = 0; g.p.fx = {}; g.p.regen = 0;
-  g.p._orbLevel=0;g.p._orbPower=0;g.p._orbRange=0;g.p._orbCD=0;g.p.ultCdReduce=0;g.p.burnBossMul=1;g.p.iceFrag=0;g.p.thorns = 0; g.p.dblAtk = 0; g.p.windBlades = 0; g.p.orbiters = 0; g.p.poison = 0; g.p.pierce = 0;
+  g.p._orbLevel=0;g.p._orbPower=0;g.p._orbRange=0;g.p._orbCD=0;g.p.ultCdReduce=0;g.p.burnBossMul=1;g.p.iceFrag=0;g.p.thorns = 0;g.p._reflectShield=0;g.p._reflectShieldEnd=0; g.p.dblAtk = 0; g.p.windBlades = 0; g.p.orbiters = 0; g.p.poison = 0; g.p.pierce = 0;
   g.p.homing = 0; g.p.homingR = 200; g.p.splash = 0; g.p.berserk = 0; g.p.deathBoom = 0; g.p.dodgeAtk = 0;
   g.p.elemBoost = 1; g.p.ultDmgMul = 1; g.p.ultRate = 1; g.p.bulletHeal = 0; g.p.bossDmg = 1; g.p.mobDmg = 1;
   g.p.hasBH = false; g.p.hasTS = false; g.p.projImmune = false; g.p.boomerang = 0;

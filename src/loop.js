@@ -1,3 +1,4 @@
+import {reflectEnemyProjectile} from './combat.js';
 import {openRewardChest} from './cards-ui.js';
 import {applyIceControl,tickEnemyControl,applyBossDamageBudget,updateEnemyKnockback,enemySlowFactor} from './enemy-control.js';
 import {updateBossHazards,drawBossPatternGround} from './boss-patterns.js';
@@ -1062,6 +1063,13 @@ export function loop(){
       // out of viewport range?
       if(!b._groundHit&&(Math.abs(b.x-g.p.x)>VW||Math.abs(b.y-g.p.y)>VH))return false;
       if(b.life<=0)return false;
+      if(b._reflected){
+       for(const e of g.ene){if(e.hp<=0||e.ragePoo||e._bossCore||e._coopShield||(e._spawnShield&&now<e._spawnShield))continue;if(di(b,e)<e.r+4){const damage=(b.dmg||1)*(e.bossType==='armor'?.7:1);e.hp-=damage;addCardImpact(g,e.x,e.y,'ice');g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(damage),life:.8,color:'#b3f3ff'});return false;}}return true;
+      }
+      for(const [player,isP2]of [[g.p,false],[g.p2,true]]){
+       if(!player||(isP2&&!_isCoopMode)||b._targetPlayer===(isP2?'p1':'p2'))continue;
+       if(di(b,player)<PR+8&&reflectEnemyProjectile(g,b,player,now,isP2))return true;
+      }
       // hit player? (respects i-frame)
       if(b._targetPlayer!=='p2'&&!g.p._inv&&(!bhSafe||b._absoluteBossDamage)&&!(g.p._iFrameEnd>0&&now<g.p._iFrameEnd)&&di(b,g.p)<PR+4){
         if(!b._groundHit&&g.p.projImmune){burst(g.p.x,g.p.y,"#CED4DA",4);g.dn.push({x:g.p.x,y:g.p.y-25,d:"彈開",life:1,color:"#CED4DA"});return false;}

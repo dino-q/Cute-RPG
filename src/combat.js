@@ -554,3 +554,13 @@ export function tapAtk() {
   }
   clearTimeout(cTimer); cTimer = setTimeout(() => { if (!g.heatCD) { $("combo").textContent = ""; } aim.tn = 0; }, 700);
 }
+
+// Reflect actual projectiles. Ground hazards and unavoidable pulses never enter this path.
+export function reflectEnemyProjectile(game,bullet,player,now,isP2=false){
+ const level=player?._reflectShield||0,speed=Math.hypot(bullet.vx||0,bullet.vy||0);
+ if(!level||player._downed||player._pickPending||bullet._groundHit||bullet._absoluteBossDamage||bullet._reflected||speed<.01||now<(player._reflectShieldEnd||0))return false;
+ player._reflectShieldEnd=now+[1200,900,600][level-1];
+ bullet.vx=-bullet.vx;bullet.vy=-bullet.vy;bullet.x=player.x+bullet.vx/speed*(PR+9);bullet.y=player.y+bullet.vy/speed*(PR+9);
+ bullet.dmg=(bullet.dmg||1)*[1,1.5,2][level-1];bullet.life=1;bullet.color='#b3f3ff';bullet._reflected=true;bullet._isP2=isP2;
+ recordRoleEffect(game,'reflect',player.x,player.y,Math.atan2(bullet.vy,bullet.vx),{owner:isP2?'p2':'p1',follow:true});return true;
+}

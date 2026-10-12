@@ -118,7 +118,7 @@ card("劍氣強化","","R","atk",["劍氣每4次觸發","劍氣每3次+250%傷�
 card("拔刀術","","SR","atk",["範圍+30% 20%流血","範圍+50% 30%流血","範圍+80% 40%流血"],[s=>{s._drawSlash=1;s._bleedChance=.2},s=>{s._drawSlash=2;s._bleedChance=.3},s=>{s._drawSlash=3;s._bleedChance=.4}],"#FF6B6B");C[C.length-1].charReq="swordsman";
 card("達摩的光劍","","SSR","atk",["攻+15 揮劍射出3道光束","攻+15 揮劍射出3道光束","攻+15 揮劍射出3道光束"],[s=>{s.atk+=15;s._lightSaber=true},s=>{s.atk+=15;s._lightSaber=true},s=>{s.atk+=15;s._lightSaber=true}],"#FFD43B",null,1);C[C.length-1].charReq="swordsman";
 // ═══ 坦克專屬卡 ═══
-card("荊棘之盾","","R","pas",["反彈75%實際傷害","反彈150%實際傷害","反彈300%實際傷害"],[s=>{s.thorns=(s.thorns||0)+.75},s=>{s.thorns=(s.thorns||0)+1.5},s=>{s.thorns=(s.thorns||0)+3}],"#51CF66");C[C.length-1].charReq="tank";
+card("荊棘之盾","","R","pas",["攻+4 接觸反傷75%・盾擊刺芒","攻+8 接觸反傷150%・盾擊刺芒","攻+12 接觸反傷300%・盾擊刺芒"],[s=>{s.atk+=4;s.thorns=(s.thorns||0)+.75},s=>{s.atk+=8;s.thorns=(s.thorns||0)+1.5},s=>{s.atk+=12;s.thorns=(s.thorns||0)+3}],"#51CF66");C[C.length-1].charReq="tank";
 card("大地震擊","","SR","atk",["盾擊觸發全向地震與擊退・範圍210(Boss最高80)","地震傷害+50%・範圍240","地震傷害+100%・範圍270"],[s=>{s._quake=1},s=>{s._quake=2},s=>{s._quake=3}],"#FF922B");C[C.length-1].charReq="tank";
 card("鋼鐵意志","","R","pas",["<30%HP自動減傷30%+回血","<30%HP減傷40%+回血","<30%HP減傷50%+回血"],[s=>{s._ironWill=.3},s=>{s._ironWill=.4},s=>{s._ironWill=.5}],"#868E96");C[C.length-1].charReq="tank";
 card("守護者光環","","SR","pas",["周圍減傷10%+自己5%","周圍減傷15%+自己10%","周圍減傷20%+自己15%"],[s=>{s._guardAura=1;s.armor=(s.armor||0)+.05},s=>{s._guardAura=2;s.armor=(s.armor||0)+.1},s=>{s._guardAura=3;s.armor=(s.armor||0)+.15}],"#FFD43B");C[C.length-1].charReq="tank";
@@ -133,6 +133,9 @@ card("創世神力","","SSR","atk",["攻+15 攻速+30% 暴+15%","攻+25 攻速+4
 
 
 
+
+// Append new cards to preserve every existing card ID.
+card('折光反射盾','','SR','pas',['反射飛彈100%傷害・間隔1.2秒（地面招式除外）','反射飛彈150%傷害・間隔0.9秒（地面招式除外）','反射飛彈200%傷害・間隔0.6秒（地面招式除外）'],[s=>{s._reflectShield=1},s=>{s._reflectShield=2},s=>{s._reflectShield=3}],'#9ddced');C[C.length-1].charReq='tank';
 
 export function rndBuff(s){
  const before={atk:s.atk,maxHp:s.maxHp,hp:s.hp,dodge:s.dodge||0,fr:s.fr,crit:s.crit??.05,ls:s.ls||0,armor:s.armor||0};

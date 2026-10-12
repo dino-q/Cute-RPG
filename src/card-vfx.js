@@ -3,6 +3,7 @@ import {legendProfile,drawLegendPlayerLayer,drawLegendBullet,drawLegendStrike} f
 import {roleEffectOrigin,drawRoleEvents,drawRolePlayerLayer,drawRoleGun,drawRoleBullet} from './role-card-art.js';
 import {drawArt,artFrame,artThumbnail,directionIndex} from './generated-art.js';
 const TAU=Math.PI*2;
+const orbMotion=new WeakMap();
 export const CARD_PALETTES={fire:['#713231','#df6045','#ffd080'],ice:['#365b83','#78bddc','#e0fbff'],lightning:['#735224','#e9b649','#fff0b5'],poison:['#43522d','#94be59','#e0ef91'],dragon:['#73352d','#de8144','#ffe2a1'],star:['#544778','#b397d9','#fff2d2'],whirl:['#365f70','#86c7c6','#e0f5e4']};
 const pick=p=>p?._lightSaber?'star':Object.keys(CARD_PALETTES).find(k=>k==='dragon'&&p?.fx?.[k])||['star','fire','ice','lightning','poison','whirl'].find(k=>p?.fx?.[k]||(k==='poison'&&p?._poisonBlade))||null;
 
@@ -162,7 +163,8 @@ export function drawCardWorld(c,g,now,r=18,phoenix=0){
   const count=Math.min(3,actor.orbiters||0),balls=actor._summonOrbs||[];
   for(let i=0;i<count;i++){
    const a=now/600+TAU*i/count,ball=balls[i],ox=ball?.ox??Math.cos(a)*44,oy=ball?.oy??Math.sin(a)*44,x=actor.x+ox,y=actor.y+oy,attacking=!!(ball?.target||ball?.attacking);
-   if(attacking){c.save();c.globalAlpha=.4;c.lineWidth=1.4;c.strokeStyle='#cbb787';c.beginPath();c.moveTo(actor.x+Math.cos(a)*44,actor.y+Math.sin(a)*44);c.quadraticCurveTo(actor.x+ox*.5-oy*.1,actor.y+oy*.5+ox*.1,x,y);c.stroke();c.restore();}
+   let motions=orbMotion.get(actor);if(!motions){motions=[];orbMotion.set(actor,motions);}const previous=motions[i],dx=previous?x-previous.x:0,dy=previous?y-previous.y:0,speed=Math.hypot(dx,dy),heading=speed>.1?Math.atan2(dy,dx):(previous?.angle??a);motions[i]={x,y,angle:heading};
+   if(attacking){for(let tail=1;tail<=3;tail++){const distance=tail*7;drawArt(c,'star',0,x-Math.cos(heading)*distance,y-Math.sin(heading)*distance,15-tail*2,15-tail*2,{angle:heading,alpha:.28/tail});}drawArt(c,'star',7,x,y,24,24,{angle:heading,alpha:.65});}
    drawArt(c,'arcane',5,x,y,27,27,{angle:now/1000+i,alpha:.6});drawArt(c,'star',0,x,y,attacking?19:16,attacking?19:16,{angle:a,brightness:1.15});
   }
  }
