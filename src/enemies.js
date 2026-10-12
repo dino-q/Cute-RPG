@@ -215,10 +215,10 @@ export function triggerHuntPressure(now) {
   if (!g || !g.run) return;
   if (now - g.lastKill < 9e3 || now - g.lastHunt < 6e3) return;
   g.lastHunt = now;
-  g.huntModeUntil = now + 4500;
-  g.ene.forEach(e => { if (e.hp > 0) { e._huntStart = now + Math.random() * 1200; e._huntEnd = e._huntStart + 1800 + Math.random() * 1500; } });
+  g.huntModeUntil = now + 6500;
+  g.ene.forEach(e => { if (e.hp > 0) { if(e.boss||e.stageBoss||e.ragePoo)return;e._huntStart=now+Math.random()*900;e._huntEnd=now+6500;e._rage=1;e._rageDashes=0;e._rageState='charge';e._rageT=e._huntStart+550;const a=Math.atan2(g.p.y-e.y,g.p.x-e.x);e._rageDx=Math.cos(a);e._rageDy=Math.sin(a); } });
   const tier = Math.min(maxTierForWave(g.wave), 2 + Math.floor(g.wave / 8));
   const pack = g.wave < 8 ? [ROLE_FLANKER, ROLE_NORMAL] : [ROLE_DASHER, ROLE_SHOOTER, ROLE_FLANKER];
-  pack.forEach(role => { const pre = g.ene.length; if (pre < MAX_ENEMIES) { spawn(false, { role, tier }); if (g.ene.length > pre) { const ne = g.ene[g.ene.length - 1]; ne._huntStart = now + Math.random() * 1200; ne._huntEnd = ne._huntStart + 1800 + Math.random() * 1500; } } });
+  pack.forEach(role => { const pre = g.ene.length; if (pre < MAX_ENEMIES) { spawn(false, { role, tier }); if (g.ene.length > pre) { const ne = g.ene[g.ene.length - 1]; ne._huntStart=now+600;ne._huntEnd=now+6500;ne._rage=1;ne._rageDashes=0;ne._rageState='charge';ne._rageT=now+1100;const a=Math.atan2(g.p.y-ne.y,g.p.x-ne.x);ne._rageDx=Math.cos(a);ne._rageDy=Math.sin(a); } } });
   g.dn.push({ x: g.p.x, y: g.p.y - 60, d: " 被獵殺！快擊殺敵人止壓", life: 1.6, color: "#FF6B6B", big: 1 });
 }

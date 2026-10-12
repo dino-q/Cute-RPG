@@ -537,7 +537,7 @@ export function daggerStrike(_pp, _isP2) {
 
 /* ═══ tapAtk: dispatch by character type ═══ */
 export function tapAtk() {
-  if (!g || !g.run || g.heatCD > 0) return;
+  if (!g || !g.run || g.heatCD > 0 || g.p._bladeRush) return;
   if (_net && _net.role === "client") return;
   const now = performance.now(); aim.tn = (aim.tn || 0) + 1; const el = now - (aim.lt || 0); aim.lt = now; const bonus = el < 180 ? Math.min(aim.tn * .5, 4) : 0; if (el > 360) aim.tn = 1;
   // 新角色在此添加分支，或使用 atkType 配置擴展

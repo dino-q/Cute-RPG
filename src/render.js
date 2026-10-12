@@ -640,14 +640,13 @@ export function drawEnemy(e) {
   if(role===ROLE_FLANKER)drawArt(cx,'wind',4,x,cy+r,r*2,r*.7,{stretch:true,alpha:.35});
   if(e.boss)drawArt(cx,'guardian',5,x,cy+r,r*3,r*.8,{stretch:true,alpha:e.mega?.8:.55});
   // 暴走視覺
-  if (e._rage && e._rageDashes < 3) {
-    const enow = performance.now();
-    cx.globalAlpha = .3 + Math.sin(enow / 60) * .15; cx.strokeStyle = "#FF4040"; cx.lineWidth = 2;
-    cx.beginPath(); cx.arc(x, cy, r + 4, 0, Math.PI * 2); cx.stroke();
-    if (e._rageState === "charge") {
-      cx.globalAlpha = .4 + Math.sin(enow / 80) * .2; cx.setLineDash([4, 3]); cx.strokeStyle = "#FF0000"; cx.lineWidth = 2;
-      cx.beginPath(); cx.moveTo(x, cy); cx.lineTo(x + e._rageDx * 60, cy + e._rageDy * 60); cx.stroke(); cx.setLineDash([]);
-    }
+  if(e._tauntEnd>performance.now())drawArt(cx,'guardian',6,x,cy-r-13,17,17,{alpha:.75});
+  if(e._rage&&e._rageDashes<3){
+   if(e._rageState==='charge'){
+    const angle=Math.atan2(e._rageDy||0,e._rageDx||1),distance=e.role===ROLE_SHOOTER?145:220;
+    for(let i=1;i<=5;i++)drawArt(cx,'wind',4,x+Math.cos(angle)*distance*i/5,cy+Math.sin(angle)*distance*i/5,23,10,{angle,stretch:true,alpha:.25+i*.06});
+    drawArt(cx,'arcane',5,x,cy+r,35,18,{stretch:true,alpha:.5});
+   }else if(e._rageState==='dash')drawArt(cx,'wind',4,x-(e._rageDx||0)*25,cy-(e._rageDy||0)*25,43,17,{angle:Math.atan2(e._rageDy||0,e._rageDx||1),stretch:true,alpha:.5});
   }
   // co-op shield bubble + circles
   if (e._coopShield && e._coopCircles) {

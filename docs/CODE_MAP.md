@@ -137,3 +137,7 @@
 | castRoleUltimate | src/skills.js | 四職業大招命中範圍、人物動作與限量特效；P1/P2同入口。 |
 
 ♻️ 沿用 recordRoleEffect、drawRoleEvents、drawArt、queueBossGroundHit、updateBossPattern、settleEnemyDeaths 及角色全身動作。🆕 castRoleUltimate（原全場傷害與P2通用爆炸沒有職業範圍）。
+
+| updateAssassinUltimates | src/skills.js | 主機逐幀處理八段高速位移、沿路命中及每敵人最多三次傷害，P1/P2共用。 |
+
+♻️ 沿用 castRoleUltimate、recordRoleEffect、drawRoleEvents、getDashGhosts、drawPlayer、triggerHuntPressure、drawEnemyCreature。🆕 updateAssassinUltimates（原刺客大招只有一次範圍扣血，沒有真正人物移動）。

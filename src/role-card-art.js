@@ -2,7 +2,7 @@ import {weaponPoseFor} from './weapon-rig.js';
 import {drawArt} from './generated-art.js';
 const TAU=Math.PI*2,clamp=v=>Math.max(0,Math.min(1,v));
 export function recordRoleEffect(game,kind,x,y,angle=0,data={}){
- if(!game)return;const now=performance.now(),life=kind==='qi'?400:kind==='draw'?280:kind==='quake'?700:kind==='shieldwave'?220:kind==='knockhit'?140:360;
+ if(!game)return;const now=performance.now(),life=kind==='qi'?400:kind==='draw'?280:kind==='quake'?700:kind==='shieldwave'?190:kind==='knockhit'?170:360;
  const follow=data.follow??['qi','draw','shieldwave','ironwill','chainkill','sonic','shadow'].includes(kind),owner=data.owner||'p1',p=owner==='p2'?game.p2:game.p;
  const active=(game._roleEffects||[]).filter(e=>now-e.at<e.life&&!(follow&&e.owner===owner&&e.kind===kind&&['qi','draw','shieldwave'].includes(kind)));
  if(active.some(e=>e.kind===kind&&e.owner===owner&&Math.hypot(e.x-x,e.y-y)<6&&now-e.at<80))return;
@@ -19,7 +19,23 @@ export function roleEffectOrigin(game,e){
 export function drawRoleEvents(c,game,now,ground=false){
  for(const e of game?._roleEffects||[]){
   const {x,y}=roleEffectOrigin(game,e);const q=clamp((now-e.at)/e.life);if(q<=0||q>=1)continue;const alpha=Math.sin(q*Math.PI);
+  if(e.kind==='taunt'){
+   if(ground){const radius=28+(e.range||145)*(1-Math.pow(1-q,3));
+    for(let i=0;i<8;i++){const a=TAU*i/8;drawArt(c,'guardian',5,x+Math.cos(a)*radius,y+Math.sin(a)*radius,34,20,{angle:a,alpha:.6*(1-q)});}}
+   else drawArt(c,'guardian',6,x,y+12,48,42,{alpha:alpha*.65});
+   continue;
+  }
+  if(e.kind==='rush-cut'){
+   if(!ground){const dx=e.endX-x,dy=e.endY-y,length=Math.hypot(dx,dy);
+    for(const side of [-1,1])drawArt(c,'sword-beam',2,x-Math.sin(e.angle)*side*7,y+Math.cos(e.angle)*side*7,length,5,{angle:e.angle,anchorX:0,stretch:true,alpha:.6*(1-q)});}
+   continue;
+  }
+  if(e.kind==='rush-start'||e.kind==='rush-finish'){
+   if(!ground)for(const side of [-1,1])drawArt(c,'sword-draw',Math.min(3,Math.floor(q*4)),x,y,e.kind==='rush-finish'?110:65,e.kind==='rush-finish'?110:65,{angle:e.angle+side*.6,alpha:alpha*.85});
+   continue;
+  }
   if(e.kind==='ultimate'||e.kind==='ultimate-target'){
+
    const phase=Math.min(7,Math.floor(q*8)),fade=Math.sin(Math.PI*q),range=e.range||300;
    if(e.kind==='ultimate-target'){
     if(!ground)for(const sign of [-1,1])drawArt(c,'sword-draw',Math.min(3,Math.floor(q*4)),x,y,105,105,{angle:e.angle+sign*Math.PI/4,alpha:fade});
@@ -49,14 +65,14 @@ export function drawRoleEvents(c,game,now,ground=false){
      const diameter=limit*2*(.45+.55*expand),fade=q<.18?q/.18:Math.pow(1-q,.65);
      drawArt(c,'quake-radial',0,x,y,diameter,diameter,{alpha:fade*.88});
     }else{
-     const radius=12+(limit-12)*expand;
-     c.save();c.globalAlpha*=.26*(1-q);c.strokeStyle='#92bfa4';c.lineWidth=1.2;
-     c.beginPath();c.arc(x,y,radius,0,TAU);c.stroke();c.restore();
+     const radius=16+Math.min(limit-16,68)*expand;
+     c.save();c.globalAlpha*=.43*(1-q);c.strokeStyle='#a7c4b1';c.lineWidth=1.5;
+     c.beginPath();c.arc(x,y,radius,e.angle-.7,e.angle+.7);c.stroke();c.restore();
     }
    }continue;
   }
   if(e.kind==='knockhit'){
-   if(!ground){const distance=q*22;drawArt(c,'wind',4,x+Math.cos(e.angle)*distance,y+Math.sin(e.angle)*distance,20,9,{angle:e.angle,stretch:true,alpha:.32*(1-q)});}continue;
+   if(!ground){const distance=q*16;drawArt(c,'wind',4,x+Math.cos(e.angle)*distance,y+Math.sin(e.angle)*distance,27,11,{angle:e.angle,stretch:true,alpha:.48*(1-q)});if(q<.45)drawArt(c,'star',3,x,y,17,17,{alpha:.5*(1-q/.45)});}continue;
   }
   if(ground)continue;
 
@@ -81,6 +97,7 @@ export function drawRoleEvents(c,game,now,ground=false){
 export function drawRolePlayerLayer(c,p,x,y,r,now,front){
  if(!p)return;const cards=p._roleCards||{},s=r/18;
  if(!front){
+  if(p._tauntVisualEnd>now){const fade=Math.min(1,(p._tauntVisualEnd-now)/450);drawArt(c,'guardian',5,x,y+16*s,66*s,25*s,{stretch:true,alpha:fade*.45});}
   if(p._guardAura)drawArt(c,'guardian',5,x,y+13*s,110+20*p._guardAura,44+8*p._guardAura,{stretch:true,alpha:.65});
   if(p._chainKill&&p._killSpeedEnd>now)drawArt(c,'vital',7,x,y+14*s,42*s,21*s,{alpha:.7});
  }else{

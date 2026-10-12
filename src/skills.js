@@ -68,7 +68,7 @@ function _castSkill(ct, now, pp, isP2) {
 
 /* ═══ P2 skill (AI auto-cast) ═══ */
 export function p2UseSkill() {
-  if (!g || !g.run || !g.p2) return;
+  if (!g || !g.run || !g.p2 || g.p2._bladeRush) return;
   const now = performance.now();
   if (now < _p2SkillCdEnd) return;
   const ct = g.p2.charType || "gunner";
@@ -78,7 +78,7 @@ export function p2UseSkill() {
 
 /* ═══ P1 skill ═══ */
 export function useCharSkill() {
-  if (!g || !g.run || (_net?.role==='client'?g.p2:g.p)?._pickPending) return;
+  if (!g || !g.run || (_net?.role==='client'?g.p2:g.p)?._pickPending || (_net?.role==='client'?g.p2:g.p)?._bladeRush) return;
   if (_net && _net.role === "client") { _clientSkillReq = true; return; }
   const now = performance.now();
   if (now < _skillCdEnd) return;
@@ -171,18 +171,11 @@ export function skillTaunt(now, _pp, _isP2) {
   if (_pp._tauntAtkBonus > 0) { _pp.atk -= _pp._tauntAtkBonus; }
   const _tauntBonus = Math.floor(2 * (_pp.ultDmgMul || 1));
   _pp._tauntAtkEnd = now + 3000; _pp._tauntAtkBonus = _tauntBonus; _pp.atk += _tauntBonus;
-  for (let ring = 0; ring < 4; ring++) {
-    const rOff = ring * 8, spd = 4 + ring * 2.5, cnt = 14 + ring * 6;
-    for (let i = 0; i < cnt; i++) {
-      const a = TAU * i / cnt + ring * .25;
-      const cols = ["#51CF66", "#FFD43B", "#FF6B6B", "#fff", "#FF4040"];
-      par.push({ x: _pp.x + Math.cos(a) * (12 + rOff), y: _pp.y + Math.sin(a) * (12 + rOff), vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, life: 1 + ring * .25, color: cols[(i + ring) % 5], sz: rn(2.5, 6 + ring) });
-    }
-  }
-  g.dn.push({ x: _pp.x, y: _pp.y - 40, d: " 嘲諷！", life: 2.5, color: "#51CF66", big: 1 });
-  burst(_pp.x, _pp.y, "#51CF66", 30); burst(_pp.x, _pp.y, "#FFD43B", 20); burst(_pp.x, _pp.y, "#FF4040", 10);
-  g._tauntRingT = now;
-  setShake(.3, 5);
+  recordRoleEffect(g,'taunt',_pp.x,_pp.y,Math.atan2(_pad.y,_pad.x),{owner:_isP2?'p2':'p1',follow:true,life:850,range:145});
+  _pp._tauntVisualEnd=now+3000;
+  g.dn.push({x:_pp.x,y:_pp.y-40,d:'迎戰！',life:1.2,color:'#a8cfb5',big:1});
+  burst(_pp.x,_pp.y,'#a2bfa8',8);setShake(.12,2);
+
 }
 
 /* ═══ assassin: shadow strike (影襲) ═══ */
@@ -222,8 +215,17 @@ export function _startDash(now) {
 
 // Shared by both players. Card-based black hole/time-stop/magnet still use their own rules.
 export function castRoleUltimate(player,now,damage,isP2=false){
- if(!g||!player)return;
+ if(!g||!player||player._bladeRush)return;
  const ct=player.charType||(isP2?'gunner':g.charType),dir=(isP2?player._ad:g.ad)||player._moveDir||{x:0,y:1},angle=Math.atan2(dir.y,dir.x),owner=isP2?'p2':'p1';
+ if(ct==='assassin'){
+  const viewW=document.getElementById('cv')?.width||window.innerWidth,viewH=document.getElementById('cv')?.height||window.innerHeight;
+  const targets=g.ene.filter(e=>e.hp>0&&!e.ragePoo&&!e._bossCore&&Math.abs(e.x-player.x)<Math.min(520,viewW*.48)&&Math.abs(e.y-player.y)<Math.min(520,viewH*.48)).sort((a,b)=>di(player,a)-di(player,b)).slice(0,8);
+  player._gsDash=null;player._dashEnd=0;if(!isP2)g._shadowReturn=null;
+  player._bladeRush={elapsed:0,leg:-1,targets,damage,isP2,angle,origin:{x:player.x,y:player.y},hits:new Map(),lastGhost:0};
+  player._iFrameEnd=Math.max(player._iFrameEnd||0,now+1450);
+  recordRoleEffect(g,'rush-start',player.x,player.y,angle,{owner,follow:true,life:250});
+  sfx('ult');g.dn.push({x:player.x,y:player.y-40,d:'八閃・雙刃影殺',life:1.4,color:'#d6c3f5',big:1});return;
+ }
  const names={gunner:'天穹貫穿砲',swordsman:'八方破天斬',tank:'不破盾陣',assassin:'雙刃影殺'};
  recordRoleEffect(g,'ultimate',player.x,player.y,angle,{role:ct,owner,follow:ct!=='tank',life:950,range:ct==='gunner'?650:ct==='tank'?280:ct==='assassin'?320:300});
  player._iFrameEnd=Math.max(player._iFrameEnd||0,now+700);
@@ -244,6 +246,45 @@ export function castRoleUltimate(player,now,damage,isP2=false){
  }
  settleEnemyDeaths();setShake(.3,ct==='tank'?7:4);sfx('ult');
  g.dn.push({x:player.x,y:player.y-40,d:names[ct]||names.gunner,life:1.6,color:ct==='assassin'?'#d4b9ff':ct==='tank'?'#b1eccb':'#ffe3a2',big:1});
+}
+
+
+// Host-owned timed movement: pause-safe, no delayed callbacks from a previous game.
+export function updateAssassinUltimates(now,elapsedMs){
+ if(!g)return;
+ for(const player of [g.p,g.p2].filter(Boolean)){
+  const rush=player._bladeRush;if(!rush)continue;
+  if((player.charType||(rush.isP2?'assassin':g.charType))!=='assassin'||player.hp<=0||player._downed||player._pickPending){player._bladeRush=null;continue;}
+  rush.elapsed+=elapsedMs;const leg=Math.min(7,Math.floor(rush.elapsed/170)),q=Math.min(1,(rush.elapsed-leg*170)/170),owner=rush.isP2?'p2':'p1';
+  if(leg!==rush.leg){
+   rush.leg=leg;rush.from={x:player.x,y:player.y};rush.legHits=new Set();
+   const living=rush.targets.filter(e=>e.hp>0),target=living.length?living[leg%living.length]:null;
+   const a=target?Math.atan2(target.y-player.y,target.x-player.x):rush.angle+leg*TAU/8;
+   const tx=target?target.x+Math.cos(a)*55:rush.origin.x+Math.cos(a)*100,ty=target?target.y+Math.sin(a)*55:rush.origin.y+Math.sin(a)*100;
+   const distance=Math.hypot(tx-player.x,ty-player.y),limit=Math.min(1,350/(distance||1));
+   rush.to={x:cl(player.x+(tx-player.x)*limit,PR+4,mapW()-PR-4),y:cl(player.y+(ty-player.y)*limit,PR+4,mapH()-PR-4)};
+   rush.angle=Math.atan2(rush.to.y-player.y,rush.to.x-player.x);
+   const anim=rush.isP2?'_p2AtkAnim':'_atkAnim';g[anim]={active:true,startT:now,angle:rush.angle};
+   recordRoleEffect(g,'rush-cut',player.x,player.y,rush.angle,{owner,follow:false,life:230,endX:rush.to.x,endY:rush.to.y});
+  }
+  const old={x:player.x,y:player.y},t=1-Math.pow(1-q,2);
+  player.x=rush.from.x+(rush.to.x-rush.from.x)*t;player.y=rush.from.y+(rush.to.y-rush.from.y)*t;
+  player._travelFacing={x:Math.cos(rush.angle),y:Math.sin(rush.angle),until:now+100};player._iFrameEnd=now+150;
+  player.face=Math.cos(rush.angle)>=0?1:-1;
+  if(now-rush.lastGhost>45){rush.lastGhost=now;_dashGhosts.push({x:player.x,y:player.y,face:player.face,charType:'assassin',fx:{...player.fx},direction:{x:Math.cos(rush.angle),y:Math.sin(rush.angle)},life:.65});if(_dashGhosts.length>16)_dashGhosts.shift();}
+  const dx=player.x-old.x,dy=player.y-old.y,length=dx*dx+dy*dy;
+  for(const enemy of rush.targets){
+   if(enemy.hp<=0||enemy._coopShield||rush.legHits.has(enemy)||(rush.hits.get(enemy)||0)>=3)continue;
+   const along=length?cl(((enemy.x-old.x)*dx+(enemy.y-old.y)*dy)/length,0,1):0;
+   if(Math.hypot(enemy.x-old.x-dx*along,enemy.y-old.y-dy*along)>enemy.r+42)continue;
+   rush.legHits.add(enemy);rush.hits.set(enemy,(rush.hits.get(enemy)||0)+1);
+   const dmg=_isElite()&&enemy.stageBoss?Math.min(rush.damage/3,enemy.mhp*.05/3):rush.damage/3;
+   enemy.hp-=dmg;recordRoleEffect(g,'ultimate-target',enemy.x,enemy.y,rush.angle,{owner,follow:false,life:240});
+   g.dn.push({x:enemy.x,y:enemy.y-enemy.r,d:Math.floor(dmg),life:.6,color:'#d3bbf4'});burst(enemy.x,enemy.y,'#c1a7ea',4);
+  }
+  settleEnemyDeaths();
+  if(rush.elapsed>=1360){player._bladeRush=null;player._iFrameEnd=now+250;recordRoleEffect(g,'rush-finish',player.x,player.y,rush.angle,{owner,follow:true,life:330});setShake(.16,3);}
+ }
 }
 
 export function doUlt() {
@@ -306,7 +347,7 @@ export function doUlt() {
   const burstCount = 40 + ultLv * 12;
   for (let i = 0; i < burstCount && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / burstCount, v = rn(2, 7 + ultLv); par.push({ x: g.p.x + Math.cos(a) * 20, y: g.p.y + Math.sin(a) * 20, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.3 + ultLv * .15, color: cols[i % cols.length], sz: rn(3, 8 + ultLv) }); }
   g.ultFlash = isBH ? 1 : isTS ? .6 : (isMF?.3:.18); g.ultType = isBH ? "bh" : "n"; if (!isCd) g.ultCharge = 0; sfx("ult");
-  if (isLS) _startDash(now);
+  if (isLS&&!g.p._bladeRush) _startDash(now);
   if (_comboUlt) {
     g.dn.push({ x: g.p.x, y: g.p.y - 50, d: " 合體大招！×3 傷害！", life: 3, color: "#FFD43B", big: 1 });
     g.dn.push({ x: g.p2.x, y: g.p2.y - 50, d: " 合體大招！", life: 3, color: "#F06595", big: 1 });

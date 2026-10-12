@@ -13,10 +13,11 @@ export function enemyArtGroup(e){
 export function drawEnemyCreature(c,e,now){
  const group=enemyArtGroup(e);if(!artFrame(group))return false;
  if(e._artLastHp!==undefined&&e.hp<e._artLastHp)e._artHitUntil=now+100;e._artLastHp=e.hp;
- const phase=Math.floor(now/170+(e.t||0))%4,size=e.r*4.3;
+ const hunting=e._rage&&e._rageDashes<3,charging=hunting&&e._rageState==='charge',dashing=hunting&&e._rageState==='dash';
+ const phase=charging?1:Math.floor(now/(dashing?85:170)+(e.t||0))%4,size=e.r*4.3;
  const hit=e._artHitUntil>now;
  const knock=e._knock,progress=knock?Math.max(0,Math.min(1,(now-knock.start)/knock.duration)):1;
- const lean=knock?Math.sign(knock.dx)*.2*Math.sin(progress*Math.PI):0;
+ const lean=knock?Math.sign(knock.dx)*.2*Math.sin(progress*Math.PI):charging?(e.face||1)*-.12:dashing?(e.face||1)*.18:0;
  c.save();c.translate(e.x,e.y+e.r);c.rotate(lean);
  drawArt(c,group,phase,0,-Math.sin(progress*Math.PI)*(knock?5:0),size,size,{fullCell:true,anchorY:.875,flip:e.face<0,brightness:hit?2.3:1});
  c.restore();

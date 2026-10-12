@@ -77,7 +77,7 @@ function startUltPress(){
   const g=_getG();
   if(!g)return;
   const _net=_getNet();
-  if((_net?.role==='client'?g.p2:g.p)?._pickPending||g._remotePaused)return;
+  if((_net?.role==='client'?g.p2:g.p)?._pickPending||(_net?.role==='client'?g.p2:g.p)?._bladeRush||g._remotePaused)return;
   if(_net&&_net.role==="client"){_clientUltReq=true;return;} // CLIENT 直接發 flag
   if(g.p.hasBH||g.p.hasTS||g.p.hasMF){if(performance.now()>=(g.ultCdEnd||0))_doUlt();}
   else if(g.ultCharge>=ULT_CHARGE_NEED)_doUlt();
@@ -89,7 +89,7 @@ function doDodge(){
   const g=_getG();
   if(!g||!g.run)return;
   const _net=_getNet();
-  if((_net?.role==='client'?g.p2:g.p)?._pickPending||g._remotePaused)return;
+  if((_net?.role==='client'?g.p2:g.p)?._pickPending||(_net?.role==='client'?g.p2:g.p)?._bladeRush||g._remotePaused)return;
   if(_net&&_net.role==="client"){_clientDodgeReq=true;return;}
   const now=performance.now();
   if(g.p._dodgeCD&&now<g.p._dodgeCD)return;
