@@ -10,28 +10,17 @@ function rest(e,now,duration=2500){
  e._pattern=null;e._patternRecoveryEnd=now+duration;e._spawnShield=0;e._shieldNextCD=now+duration+5000;
  e.sbAtkCD=Math.max(e.sbAtkCD||0,now+duration+1400);e.sbTeleCD=Math.max(e.sbTeleCD||0,now+duration+2500);
  e.sbSpawnCD=Math.max(e.sbSpawnCD||0,now+duration+4000);e.sbPulseCD=Math.max(e.sbPulseCD||0,now+duration+3000);
- e._patternAt=now+duration+5500;
+ e._patternAt=now+duration+(e.stageBoss===30?1800:5500);
 }
 export function clearBossPattern(g,e){
  if(e)g.ene=g.ene.filter(m=>!m._bossCore||m._bossOwner!==e.stageBoss);
  if(e){e._pattern=null;e._patternRecoveryEnd=0;}
  g._bossHazards=[];
 }
-function cores(g,e,pattern,now,mw,mh){
- const hp=Math.max(35,Math.min(150,(g.p.atk+4)*3));
- pattern.coreGroup=e.stageBoss+':'+now;pattern.coreCount=2;
- for(const side of [-1,1]){
-  const a=pattern.angle+side*Math.PI*.55;
-  g.ene.push({x:clamp(e.x+Math.cos(a)*105,24,mw-24),y:clamp(e.y+Math.sin(a)*105,24,mh-24),
-   hp,mhp:hp,r:15,speed:0,t:0,color:e.stageBoss===20?'#a6ce80':'#ffcf71',boss:false,mega:false,tier:0,role:0,face:1,xp:0,st:0,frozen:0,
-   poisonT:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:0,_bossCore:true,_bossOwner:e.stageBoss,_coreGroup:pattern.coreGroup,deadHandled:false});
- }
- e._spawnShield=pattern.executeAt;
-}
 export function updateBossPattern(g,e,now,dt,target,mw,mh){
  if(!g||!e||e.hp<=0)return false;
  const phase=e.hp/e.mhp>.66?1:e.hp/e.mhp>.33?2:3;
- if(e.stageBoss===30&&phase!==e.sbPhase){clearBossPattern(g,e);e._patternAt=now+2500;return false;}
+ // Phase changes wait until the current cast and recovery finish.
  const gap=e._patternLastTick?now-e._patternLastTick:0;e._patternLastTick=now;
  if(gap>250){
   const shift=gap-16;for(const key of ['_teleExe','_teleLandShow','_dashChargeEnd','_chargeEnd','_p3dashPause','_p3t'])if(e[key])e[key]+=shift;e._patternAt=(e._patternAt||now)+shift;
@@ -43,8 +32,8 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
  const busy=!!e._teleExe||!!e._chargeEnd||!!e._dashChargeEnd||(e._p3cycle&&!['idle','free'].includes(e._p3cycle));
  if(!e._pattern&&now>=e._patternAt&&!busy){
   const sequence=e._patternSequence||0;e._patternSequence=sequence+1;
-  const type=e.stageBoss===20?(sequence%2?'slam':'mud'):(sequence%2?'rift':'wing');
-  const a=Math.atan2(target.y-e.y,target.x-e.x),warning=type==='rift'?1900:type==='mud'?1600:1300;
+  const type=e.stageBoss===20?(sequence%2?'slam':'mud'):(['claw','wing','impact','rift'][sequence%4]);
+  const a=Math.atan2(target.y-e.y,target.x-e.x),warning=type==='rift'?1900:type==='mud'?1600:type==='impact'?1500:1300;
   const p={type,startAt:now,executeAt:now+warning,endAt:now+warning+500,angle:a,startX:e.x,startY:e.y,done:false};
   if(type==='mud'){
    // Six inner and ten outer pools; one broad escape sector stays open.
@@ -55,20 +44,15 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
     if(!p.points.some(q=>Math.hypot(q.x-point.x,q.y-point.y)<35))p.points.push(point);
    }
   }
-  if(type==='slam'||type==='wing'){const length=type==='wing'?230:155;p.endX=clamp(e.x+Math.cos(a)*length,e.r,mw-e.r);p.endY=clamp(e.y+Math.sin(a)*length,e.r,mh-e.r);p.width=type==='wing'?34:28;}
+  if(type==='slam'||type==='wing'){const length=type==='wing'?clamp(Math.hypot(target.x-e.x,target.y-e.y)+100,300,520):155;p.endX=clamp(e.x+Math.cos(a)*length,e.r,mw-e.r);p.endY=clamp(e.y+Math.sin(a)*length,e.r,mh-e.r);p.width=type==='wing'?46:28;}
+  if(type==='claw'){p.radius=250;p.spread=Math.PI*1.35;p.endAt=p.executeAt+650;}
+  if(type==='impact'){p.x=clamp(target.x,e.r,mw-e.r);p.y=clamp(target.y,e.r,mh-e.r);p.radius=200;p.endAt=p.executeAt+750;}
   if(type==='rift'){p.lockAt=now+1100;p.endAt=p.executeAt+1100;p.arm=75;p.x=e.x;p.y=e.y;p.spinAngle=0;}
   g.ebul=[];e._pattern=p;e._artAttackUntil=p.executeAt+500;
-  if(type==='mud'||type==='rift')cores(g,e,p,now,mw,mh);
-  g.dn.push({x:e.x,y:e.y-e.r-30,d:type==='mud'?'泥雨・打破泥核可中斷':type==='slam'?'重拳蓄力・離開標線':type==='wing'?'張翼衝刺・側移躲開':'旋轉裂界・打破任一核心可中斷',life:1.8,color:'#f1d599',big:1});
+  // Committed casts have no destructible interrupt cores.
+  g.dn.push({x:e.x,y:e.y-e.r-30,d:type==='mud'?'泥雨・離開落點':type==='slam'?'重拳蓄力・離開標線':type==='wing'?'翼刃突進・側移躲開':type==='claw'?'魔爪橫掃・退到背後':type==='impact'?'墜天重擊・離開落點':'旋轉裂界・鎖定後側移',life:1.8,color:'#f1d599',big:1});
  }
  const p=e._pattern;if(!p)return false;e._artAngle=p.angle;e._artAttackUntil=now+120;
- if(p.coreGroup){
-  const alive=g.ene.filter(m=>m._bossCore&&m._coreGroup===p.coreGroup&&m.hp>0).length;
-  if(alive<p.coreCount){
-   g.ene=g.ene.filter(m=>m._coreGroup!==p.coreGroup);
-   g.dn.push({x:e.x,y:e.y-e.r-30,d:'失衡！反擊機會',life:2.4,color:'#b5e5ab',big:1});rest(e,now,3000);return true;
-  }
- }
  if(p.type==='rift'&&now<p.executeAt){
   if(now<p.lockAt)p.spinAngle=(now-p.startAt)/380;
   else if(!p.locked){p.locked=true;p.angle=Math.atan2(target.y-p.startY,target.x-p.startX);p.spinAngle=Math.PI/4;p.distance=clamp(Math.hypot(target.x-p.startX,target.y-p.startY)+130,230,440);p.endX=clamp(p.startX+Math.cos(p.angle)*p.distance,30,mw-30);p.endY=clamp(p.startY+Math.sin(p.angle)*p.distance,30,mh-30);g.dn.push({x:e.x,y:e.y-e.r-32,d:'方向鎖定・側移躲開',life:.75,color:'#ffd3ef'});}
@@ -80,6 +64,10 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
   if(p.type==='mud'){
    g._bossHazards=(g._bossHazards||[]).filter(h=>h.endAt>now).concat(p.points.map(q=>({...q,owner:e.stageBoss,startAt:now,endAt:now+5000}))).slice(-32);
    // Mud rain is area control only: slow, without landing damage.
+  }else if(p.type==='claw'){
+   for(const player of players(g)){const angle=Math.atan2(player.y-p.startY,player.x-p.startX),delta=Math.atan2(Math.sin(angle-p.angle),Math.cos(angle-p.angle));if(Math.hypot(player.x-p.startX,player.y-p.startY)<p.radius+12&&Math.abs(delta)<p.spread/2)hit(g,player,damage,'#eca9de');}
+  }else if(p.type==='impact'){
+   e.x=p.x;e.y=p.y;for(const player of players(g))if(Math.hypot(player.x-p.x,player.y-p.y)<p.radius+12)hit(g,player,damage,'#d49fea');
   }else if(p.type==='slam'){
    let caught=false;for(const player of players(g))if(segmentDistance(player.x,player.y,{x:p.startX,y:p.startY},{x:p.endX,y:p.endY})<p.width+12){hit(g,player,damage,'#d2b275');caught=true;}
    p.recovery=caught?1800:3000;
@@ -115,6 +103,14 @@ export function drawBossPatternGround(c,g,now){
   const warn=now<p.executeAt,progress=clamp((now-p.startAt)/(p.executeAt-p.startAt),0,1),phase=warn?Math.min(3,Math.floor(progress*4)):Math.min(3,Math.floor((now-p.executeAt)/125));
   if(p.type==='mud'){
    for(const q of p.points)drawArt(c,'mud-geyser',(warn?0:4)+phase,q.x,q.y,q.r*2,q.r*2,{stretch:true,alpha:warn?.75+.25*progress:1});
+  }else if(p.type==='claw'){
+   for(let i=0;i<13;i++){const angle=p.angle-p.spread/2+p.spread*i/12;
+    drawBossRoute(c,'devil-route',warn?0:8,{x:p.startX+Math.cos(angle)*65,y:p.startY+Math.sin(angle)*65},{x:p.startX+Math.cos(angle)*p.radius,y:p.startY+Math.sin(angle)*p.radius},warn?14:26,phase,warn?.45+.25*progress:.85);
+   }
+  }else if(p.type==='impact'){
+   const radius=p.radius*(warn?1:.6+.4*clamp((now-p.executeAt)/500,0,1));
+   for(let i=0;i<16;i++){const angle=TAU*i/16;drawArt(c,warn?'arcane':'sword-qi-v2',warn?5:6,p.x+Math.cos(angle)*radius,p.y+Math.sin(angle)*radius,35,48,{angle,alpha:warn?.5+.35*progress:1-clamp((now-p.executeAt)/750,0,1)});}
+   if(!warn)drawArt(c,'quake-radial',0,p.x,p.y,radius*2,radius*2,{alpha:.8*(1-clamp((now-p.executeAt)/750,0,1))});
   }else if(p.type==='slam'||p.type==='wing'){
    const a={x:p.startX,y:p.startY},b={x:p.endX,y:p.endY};
    drawBossRoute(c,p.type==='slam'?'mud-route':'devil-route',warn?0:p.type==='slam'?4:8,a,b,p.width*2,phase,warn?.72+.28*progress:.85);
@@ -124,7 +120,7 @@ export function drawBossPatternGround(c,g,now){
    for(const turn of [0,Math.PI/2]){const angle=a+turn;
     drawBossRoute(c,'devil-route',warn?4:8,{x:x-Math.cos(angle)*arm,y:y-Math.sin(angle)*arm},{x:x+Math.cos(angle)*arm,y:y+Math.sin(angle)*arm},24,warn?Math.min(3,Math.floor(progress*4)):Math.floor(now/90)%4,warn?.65+.35*progress:1);
    }
-   if(warn){c.save();c.fillStyle='#ffe0fc';c.textAlign='center';c.font='bold 11px sans-serif';c.fillText(p.locked?'方向已鎖定・側移':'破任一核心可中斷',p.startX,p.startY-e.r-38);c.restore();}
+   if(warn){c.save();c.fillStyle='#ffe0fc';c.textAlign='center';c.font='bold 11px sans-serif';c.fillText(p.locked?'方向已鎖定・側移':'裂界蓄力・準備側移',p.startX,p.startY-e.r-38);c.restore();}
   }
   if(warn&&p.coreGroup)for(const core of g.ene.filter(m=>m._coreGroup===p.coreGroup&&m.hp>0))
    drawBossRoute(c,e.stageBoss===20?'mud-route':'devil-route',0,{x:e.x,y:e.y},{x:core.x,y:core.y},6,1,.58);

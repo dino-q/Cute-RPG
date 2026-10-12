@@ -19,7 +19,29 @@ export function roleEffectOrigin(game,e){
 export function drawRoleEvents(c,game,now,ground=false){
  for(const e of game?._roleEffects||[]){
   const {x,y}=roleEffectOrigin(game,e);const q=clamp((now-e.at)/e.life);if(q<=0||q>=1)continue;const alpha=Math.sin(q*Math.PI);
+  if(e.kind==='ultimate'||e.kind==='ultimate-target'){
+   const phase=Math.min(7,Math.floor(q*8)),fade=Math.sin(Math.PI*q),range=e.range||300;
+   if(e.kind==='ultimate-target'){
+    if(!ground)for(const sign of [-1,1])drawArt(c,'sword-draw',Math.min(3,Math.floor(q*4)),x,y,105,105,{angle:e.angle+sign*Math.PI/4,alpha:fade});
+   }else if(e.role==='tank'){
+    if(ground){drawArt(c,'quake-radial',0,x,y,range*2*(.35+.65*q),range*2*(.35+.65*q),{alpha:fade*.85});
+     for(let i=0;i<8;i++){const a=TAU*i/8;drawArt(c,'guardian',6,x+Math.cos(a)*range*.7,y+Math.sin(a)*range*.7,65,75,{angle:a,alpha:fade*.75});}}
+   }else if(e.role==='gunner'){
+    if(!ground){const extension=clamp((q-.12)/.22),width=18+Math.sin(q*Math.PI)*42;
+     for(const offset of [-16,0,16])drawArt(c,'sword-beam',Math.min(3,Math.floor(q*4)),x+Math.cos(e.angle)*24-Math.sin(e.angle)*offset,y+Math.sin(e.angle)*24+Math.cos(e.angle)*offset,range*extension,width*(offset===0?1:.35),{angle:e.angle,stretch:true,anchorX:0,alpha:fade*(offset===0?1:.65)});
+     drawArt(c,'star',7,x+Math.cos(e.angle)*24,y+Math.sin(e.angle)*24,64,64,{angle:e.angle,alpha:fade});}
+   }else if(e.role==='swordsman'){
+    if(!ground)for(let i=0;i<8;i++){const a=e.angle+TAU*i/8+(q<.5?q*TAU:Math.PI),radius=q<.5?35+q*90:80+(q-.5)*2*(range-80);
+     drawArt(c,'sword-qi-v2',phase,x+Math.cos(a)*radius,y+Math.sin(a)*radius,55,85,{angle:a,alpha:fade});}
+   }else if(e.role==='assassin'){
+    if(!ground)for(let i=0;i<6;i++){const a=e.angle+TAU*i/6,radius=45+Math.sin(q*Math.PI)*110;
+     drawArt(c,'arcane',5,x+Math.cos(a)*radius,y+Math.sin(a)*radius,36,55,{alpha:fade*.5});
+     for(const side of [-1,1])drawArt(c,'sword-draw',Math.min(3,Math.floor(q*4)),x+Math.cos(a)*radius,y+Math.sin(a)*radius,72,72,{angle:a+side*.5,alpha:fade});}
+   }
+   continue;
+  }
   if(e.kind==='quake'||e.kind==='shieldwave'){
+
    if(ground){
     const limit=e.range||(e.kind==='quake'?210:90),expand=1-Math.pow(1-q,3);
     if(e.kind==='quake'){

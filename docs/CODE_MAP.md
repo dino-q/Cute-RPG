@@ -133,3 +133,7 @@
 | beginCoopRun | src/coop.js | 每次雙人新局／重試都以相同開局確認交換角色；避免SG直接重開只有一人。 |
 
 🆕 beginCoopRun（原握手只寫在第一次選角色入口，重試與SG繞過）。單人新局先移除旧net再銷毀peer；雙人CLIENT再來一次請主機啟動新局，仍按新session確認。
+
+| castRoleUltimate | src/skills.js | 四職業大招命中範圍、人物動作與限量特效；P1/P2同入口。 |
+
+♻️ 沿用 recordRoleEffect、drawRoleEvents、drawArt、queueBossGroundHit、updateBossPattern、settleEnemyDeaths 及角色全身動作。🆕 castRoleUltimate（原全場傷害與P2通用爆炸沒有職業範圍）。

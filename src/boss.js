@@ -265,6 +265,7 @@ export function triggerStageBoss(lv){
 export function updateStageBoss(e,now,dt){
   if(!e||e.hp<=0)return;
   const lv=e.stageBoss;
+  e.frozen=0;e.st=0;e._knock=null; // Boss casts cannot be frozen, stunned or displaced.
   // 護盾循環：每6秒觸發2秒護盾
   if(!e._spawnShield||now>=e._spawnShield){
     if(!e._shieldNextCD)e._shieldNextCD=now+6000;
@@ -280,7 +281,8 @@ export function updateStageBoss(e,now,dt){
   //  Phase transitions
   if(lv===30){
     const hpPct=e.hp/e.mhp,newPhase=hpPct>.66?1:hpPct>.33?2:3;
-    if(newPhase!==e.sbPhase){
+    const casting=!!e._pattern||e._patternRecoveryEnd>now||!!e._teleExe||!!e._dashChargeEnd||!!e._chargeEnd||(e._p3cycle&&!['idle','free'].includes(e._p3cycle));
+    if(newPhase!==e.sbPhase&&!casting){
       const oldPhase=e.sbPhase;clearBossPattern(g,e);e._patternAt=now+2500;e.sbPhase=newPhase;sfxBossAtk("phase");setHitFlash(.5);setShake(.4,6);
       burst(e.x,e.y,"#9B59B6",30);
       if(newPhase===2&&!e._dealDone){

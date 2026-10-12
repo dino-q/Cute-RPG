@@ -1,3 +1,4 @@
+import {recordRoleEffect} from './role-card-art.js';
 // Character skills, ultimates, dodge
 import {
   PI, TAU, PR,
@@ -218,6 +219,33 @@ export function _startDash(now) {
 }
 
 /* ═══ ultimate ═══ */
+
+// Shared by both players. Card-based black hole/time-stop/magnet still use their own rules.
+export function castRoleUltimate(player,now,damage,isP2=false){
+ if(!g||!player)return;
+ const ct=player.charType||(isP2?'gunner':g.charType),dir=(isP2?player._ad:g.ad)||player._moveDir||{x:0,y:1},angle=Math.atan2(dir.y,dir.x),owner=isP2?'p2':'p1';
+ const names={gunner:'天穹貫穿砲',swordsman:'八方破天斬',tank:'不破盾陣',assassin:'雙刃影殺'};
+ recordRoleEffect(g,'ultimate',player.x,player.y,angle,{role:ct,owner,follow:ct!=='tank',life:950,range:ct==='gunner'?650:ct==='tank'?280:ct==='assassin'?320:300});
+ player._iFrameEnd=Math.max(player._iFrameEnd||0,now+700);
+ const animKey=isP2?'_p2AtkAnim':'_atkAnim';
+ g[animKey]={...(g[animKey]||{}),active:true,startT:now,angle,_qiSpin:ct==='swordsman'};
+ player._pixelShotAt=now;player._attackAt=now;
+ if(ct==='tank')player._iFrameEnd=Math.max(player._iFrameEnd,now+1600);
+ let targetEffects=0;
+ for(const enemy of g.ene){
+  if(enemy.hp<=0||enemy.ragePoo||enemy._bossCore)continue;
+  const dx=enemy.x-player.x,dy=enemy.y-player.y,distance=Math.hypot(dx,dy),along=dx*Math.cos(angle)+dy*Math.sin(angle),across=Math.abs(dx*Math.sin(angle)-dy*Math.cos(angle));
+  const caught=ct==='gunner'?along>=-35&&along<=650&&across<=65+enemy.r:distance<=(ct==='tank'?280:ct==='assassin'?320:300)+enemy.r;
+  if(!caught||enemy._coopShield)continue;
+  const dealt=_isElite()&&enemy.stageBoss?Math.min(damage,enemy.mhp*.05):damage;
+  enemy.hp-=dealt;burst(enemy.x,enemy.y,ct==='assassin'?'#ceb0ff':ct==='tank'?'#a6e6c2':'#ffe5a6',8);
+  g.dn.push({x:enemy.x,y:enemy.y-enemy.r,d:Math.floor(dealt),life:1.2,color:'#ffe5bd',big:1});
+  if(ct==='assassin'&&targetEffects++<8)recordRoleEffect(g,'ultimate-target',enemy.x,enemy.y,angle,{role:ct,owner,follow:false,life:750});
+ }
+ settleEnemyDeaths();setShake(.3,ct==='tank'?7:4);sfx('ult');
+ g.dn.push({x:player.x,y:player.y-40,d:names[ct]||names.gunner,life:1.6,color:ct==='assassin'?'#d4b9ff':ct==='tank'?'#b1eccb':'#ffe3a2',big:1});
+}
+
 export function doUlt() {
   if (!g || !g.run || (_net?.role==='client'?g.p2:g.p)?._pickPending) return;
   if (_net && _net.role === "client") { setClientUltReq(true); return; }
@@ -269,14 +297,15 @@ export function doUlt() {
     }
   }
   if (isCd) g.ultCdEnd = now + cdVal;
-  if (!isTS && !isMF || isBH) {
+  if(!isCd)castRoleUltimate(g.p,now,baseDmg,false);
+  if (isBH) {
     g.ene.forEach(e => { const ud = (_isElite() && e.stageBoss) ? Math.min(baseDmg, e.mhp * .05) : baseDmg; e.hp -= ud; g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(ud), life: 1.3, color: isBH ? "#868E96" : "#FFD43B", big: 1 }); if (e.hp <= 0) burst(e.x, e.y, e.color, 14); });
     settleEnemyDeaths();
   }
   const cols = isBH ? ["#495057", "#868E96", "#CED4DA", "#fff"] : isTS ? ["#74C0FC", "#4DABF7", "#339AF0", "#fff"] : ["#BE4BDB", "#FFD43B", "#FF6B6B", "#74C0FC", "#fff"];
   const burstCount = 40 + ultLv * 12;
   for (let i = 0; i < burstCount && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / burstCount, v = rn(2, 7 + ultLv); par.push({ x: g.p.x + Math.cos(a) * 20, y: g.p.y + Math.sin(a) * 20, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.3 + ultLv * .15, color: cols[i % cols.length], sz: rn(3, 8 + ultLv) }); }
-  g.ultFlash = isBH ? 1 : isTS ? .6 : (_comboUlt ? 1.5 : 1); g.ultType = isBH ? "bh" : "n"; if (!isCd) g.ultCharge = 0; sfx("ult");
+  g.ultFlash = isBH ? 1 : isTS ? .6 : (isMF?.3:.18); g.ultType = isBH ? "bh" : "n"; if (!isCd) g.ultCharge = 0; sfx("ult");
   if (isLS) _startDash(now);
   if (_comboUlt) {
     g.dn.push({ x: g.p.x, y: g.p.y - 50, d: " 合體大招！×3 傷害！", life: 3, color: "#FFD43B", big: 1 });

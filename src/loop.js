@@ -51,7 +51,7 @@ import {
   initSkills, setSkillsG, setSkillsCoopState, setSkillsClientSkillReq, getSkillsClientSkillReq,
   getDashGhosts, setDashGhosts, resetDashGhosts, SKILL_CDS,
   getSkillCdEnd, setSkillCdEnd, getP2SkillCdEnd, setP2SkillCdEnd,
-  p2UseSkill, useCharSkill, skillSnipe, skillGhostSlash, skillTaunt, _startDash, doUlt
+  p2UseSkill, useCharSkill, skillSnipe, skillGhostSlash, skillTaunt, _startDash, doUlt, castRoleUltimate
 } from "./skills.js";
 import {
   initCardsUi, setCardsUiG, setCardsUiInv, getCardLv, addCard, pks,
@@ -527,16 +527,11 @@ export function loop(){
       if(_p2AI)g.p2._aiUltT=now;
       g.p2._ultCooldown=now+3000; // 3s cooldown for P2 ult
       g._p2UltTime=now;
-      // check if P1 also pressed within 1 sec → combo triggers from P1's doUlt
-      if(g._p1UltTime&&now-g._p1UltTime<1000){
-        doUlt(); // triggers combo check inside doUlt
-      }else{
-        // P2 solo ult: basic damage burst
-        var p2Dmg=(ULT_D+g.p2.atk*6+g.p2Level*5);
-        g.ene.forEach(e=>{var d2=di(g.p2,e);if(d2<200){e.hp-=p2Dmg;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(p2Dmg),life:1.3,color:"#F06595",big:1});if(e.hp<=0)burst(e.x,e.y,e.color,10);}});
-        burst(g.p2.x,g.p2.y,"#F06595",20);g.ultFlash=.5;sfx("ult");
-        g.dn.push({x:g.p2.x,y:g.p2.y-30,d:" P2 大招！",life:1.5,color:"#F06595",big:1});
-      }
+      const combo=g._p1UltTime&&now-g._p1UltTime<1000;
+      const p2Dmg=(ULT_D+g.p2.atk*6+g.p2Level*5)*(g.p2.ultDmgMul||1)*(1+(g.p2.ultLv||0)*.35)*(combo?3:1);
+      castRoleUltimate(g.p2,now,p2Dmg,true);
+      if(combo){g._p1UltTime=0;g._p2UltTime=0;}
+
     }
     if(g.p2._ultCooldown&&now>=g.p2._ultCooldown)g.p2._ultCooldown=0;
   }
@@ -760,6 +755,7 @@ export function loop(){
 
   // enemies chase — role-aware AI
   g.ene.forEach(e=>{if(e._bossCore)return;
+    if(e.boss&&!e.miniPoo&&!e.miniDemon){e.frozen=0;e.st=0;}
     e.t+=.03*dt;e.st=Math.max(0,e.st-dt*16.67);e.frozen=Math.max(0,e.frozen-dt*16.67);tickEnemyControl(e,dt*16.67);
     // 精英怪特殊能力
     if(e.eliteEnemy&&e.hp>0&&e.frozen<=0){
