@@ -171,3 +171,5 @@
 ♻️ 沿用 updateBossPattern、loop、drawPixelMelee、attachTouchToStick、resetControls。移除取消核心後殘留的裂界清理，避免以未定義群組誤刪整份敵人清單；P1人物方向每幀與實際射擊一致，閒置不沿用過期攻擊角度。多指觸控先更新已持有搖桿，再讓面板處理自身手勢；放開／取消用事件擷取處理，失焦清按鍵。未新增匯出函式。
 
 ♻️ 沿用 drawCardGround、drawArt 及 arcane 第1格既有磁力場素材。依Dino澄清恢復建築造型，固定於mfPx/mfPy；結束將同一張圖分成八片外散淡出，保留原吸引／傷害及兩人同步。未新增匯出函式或素材。
+
+♻️ 沿用 updateBossHazards 與 loop 既有泥地移動倍率：剩餘移速65%改35%（緩速65%），七處計算涵蓋P1、P2、AI與一般衝刺。泥地範圍、5秒存留與不扣血規則沿用；未新增函式。

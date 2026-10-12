@@ -244,7 +244,7 @@ export function loop(){
   }
   // move P1
   if(!g.p._bladeRush&&!g.p._gsDash&&!g.p._downed&&!g.p._pickPending){
-    if(joy.a){g.p.x+=joy.dx*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);g.p.y+=joy.dy*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);if(Math.abs(joy.dx)>.2)g.p.face=joy.dx>0?1:-1;}
+    if(joy.a){g.p.x+=joy.dx*g.p.speed*dt*(g.p._mudSlowEnd>now?.35:1);g.p.y+=joy.dy*g.p.speed*dt*(g.p._mudSlowEnd>now?.35:1);if(Math.abs(joy.dx)>.2)g.p.face=joy.dx>0?1:-1;}
   }else if(g.p._downed&&joy.a){
     g.p.x+=joy.dx*.5*dt;g.p.y+=joy.dy*.5*dt; // 倒地爬行
   }
@@ -263,7 +263,7 @@ export function loop(){
     if(g.p2._gsDash||g.p2._bladeRush){
       // 鬼斬衝刺中，不處理手動移動
     }else if(!g.p2._downed){
-      if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*g.p2.speed*dt*(g.p2._mudSlowEnd>now?.65:1);g.p2.y+=p2i.dy*g.p2.speed*dt*(g.p2._mudSlowEnd>now?.65:1);if(Math.abs(p2i.dx)>.2)g.p2.face=p2i.dx>0?1:-1;}
+      if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*g.p2.speed*dt*(g.p2._mudSlowEnd>now?.35:1);g.p2.y+=p2i.dy*g.p2.speed*dt*(g.p2._mudSlowEnd>now?.35:1);if(Math.abs(p2i.dx)>.2)g.p2.face=p2i.dx>0?1:-1;}
     }else{
       if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*.5*dt;g.p2.y+=p2i.dy*.5*dt;} // 倒地爬行
     }
@@ -273,7 +273,7 @@ export function loop(){
   if(_p2AI&&g.p2&&!g.p2._downed&&!g.p2._pickPending&&!g.p2._gsDash&&!g.p2._bladeRush&&_isCoopMode){
     if(!g.p2._aiWander){g.p2._aiWander={tx:g.p2.x,ty:g.p2.y,nextT:0};}
     var aw=g.p2._aiWander;
-    var spd2=g.p2.speed*dt*(g.p2._mudSlowEnd>now?.65:1);
+    var spd2=g.p2.speed*dt*(g.p2._mudSlowEnd>now?.35:1);
     // 找有護盾的 Boss（需要去佔圈）
     var shieldBoss=null;
     g.ene.forEach(e=>{if(e.boss&&e._coopShield&&e._coopCircles)shieldBoss=e;});
@@ -384,8 +384,8 @@ export function loop(){
   // 閃電步 dash movement + afterimage
   if(player._dashEnd&&now<player._dashEnd){
     var ds=player._dashSpd||8;
-    player.x+=player._dashDx*ds*player.speed*dt*(player._mudSlowEnd>now?.65:1);
-    player.y+=player._dashDy*ds*player.speed*dt*(player._mudSlowEnd>now?.65:1);
+    player.x+=player._dashDx*ds*player.speed*dt*(player._mudSlowEnd>now?.35:1);
+    player.y+=player._dashDy*ds*player.speed*dt*(player._mudSlowEnd>now?.35:1);
     player.x=cl(player.x,PR+4,mapW()-PR-4);player.y=cl(player.y,PR+4,mapH()-PR-4);
     // 閃電步：吸取路過的經驗球
     g.orbs.forEach(o=>{if(di(o,player)<80){o.x=player.x;o.y=player.y;}});
