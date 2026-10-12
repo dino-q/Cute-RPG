@@ -515,3 +515,34 @@ graph LR
 
 新增匯出索引：card-vfx.js → drawCardGround、drawCardIcon；hud.js → drawAbilitySidebar；generated-art.js → ART_REVISION。
 新增依賴：hud.js → card-vfx.js / cards.js；gunner-sprite.js / melee-sprite.js → generated-art.js。
+
+## 2026-10-12 職業卡可見效果、Boss 招式與龍息朝向
+
+模組總覽與函式索引：
+- src/role-card-art.js：recordRoleEffect、drawRoleEvents、drawRolePlayerLayer、drawRoleGun、drawRoleBullet。最多 16 筆事件，按原射擊、劍氣、盾擊、暴擊、施毒、擊殺與防禦條件繪製，不改卡牌數值。
+- src/boss-patterns.js：updateBossPattern、clearBossPattern、updateBossHazards、drawBossPatternGround、drawBossPatternCore。固定交替新招式、預告、可破壞核心、泥地減速及反擊空檔；繪圖不執行傷害。
+
+依賴圖：
+```mermaid
+graph LR
+ combat --> role_card_art[role-card-art.js]
+ card_vfx[card-vfx.js] --> role_card_art
+ role_card_art --> generated_art[generated-art.js]
+ boss --> boss_patterns[boss-patterns.js]
+ loop --> boss_patterns
+ render --> boss_patterns
+ coop --> boss_patterns
+ boss_patterns --> generated_art
+ preview[art-preview.js] --> role_card_art
+```
+
+- cards.js 保留 ap 數值，套用時記錄 _roleCards 等級。practice.js 重建前清除旗標；coop.js 同步旗標、限量事件、核心、預告與相對時間。
+- 達摩光劍沿用 200 範圍、三道原傷害線，改用水平生成光束並 stretch 繪製。劍氣按原 360 度命中呈現八道外擴月牙與人物旋身；拔刀術使用白紅快斬弧。
+- drawArt 新增 stretch 選項，其他圖片保持等比例。图集 29 組、256 格、1024×4096。
+- 無自動目標時攻擊向下，保留手動瞄準。getGunnerPose 預設亦向下。
+- 龍息開啟時圖片方向、嘴部起點與火焰共用 b.ang；無龍息時依實際移動方向飛行，保留振翅。
+- 污泥王交替泥雨／重拳；惡魔交替張翼衝刺／十字裂界。預告 1.3～1.9 秒，範圍固定、不追著玩家改線。新招期間停止原攻擊、清理原敵彈；原有 Boss 血量不改。
+- 泥雨／裂界各兩顆核心，破壞任一顆中斷並反擊 3 秒。核心無接觸傷害、無經驗或擊殺獎勵；死亡與換階段清理。
+- 新招基礎傷害最多 26，沿用原受傷／減傷／閃避／護盾／倒地與復活；地面命中不當作可彈開子彈。命中後 700 毫秒保護，避免同招重複傷害。
+- 泥地 3.5 秒，移速乘 .65，不持續扣血。重拳落空後反擊 3 秒、命中後 1.8 秒；其他新招後 2.6 秒。新招及反擊期間無 Boss 接觸傷害。
+- art-preview.html 可選全部 17 張職業卡，手動看外觀與觸發示意；主遊戲依既有條件。使用者自行測試，只執行發布必要 npm run build。

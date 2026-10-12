@@ -1,3 +1,4 @@
+import {drawRoleEvents,drawRolePlayerLayer,drawRoleGun,drawRoleBullet} from './role-card-art.js';
 import {drawArt,artFrame,artThumbnail,directionIndex} from './generated-art.js';
 const TAU=Math.PI*2;
 export const CARD_PALETTES={fire:['#713231','#df6045','#ffd080'],ice:['#365b83','#78bddc','#e0fbff'],lightning:['#735224','#e9b649','#fff0b5'],poison:['#43522d','#94be59','#e0ef91'],dragon:['#73352d','#de8144','#ffe2a1'],star:['#544778','#b397d9','#fff2d2'],whirl:['#365f70','#86c7c6','#e0f5e4']};
@@ -5,17 +6,16 @@ const pick=p=>p?._lightSaber?'star':Object.keys(CARD_PALETTES).find(k=>k==='drag
 
 const themes={fire:'fire',dragon:'fire',ice:'ice',poison:'poison',star:'star',whirl:'wind'};
 const clamp=v=>Math.max(0,Math.min(1,v));
-const weaponRows={fire:1,ice:2,lightning:3,poison:4,dragon:5,star:6,whirl:7};
+const weaponRows={steel:0,fire:1,ice:2,lightning:3,poison:4,dragon:5,star:6,whirl:7};
 export function drawPixelPhoenix(c,x,y,size,time=0,flap=0){drawArt(c,'phoenix',2+(Math.floor((time+flap*100)/130)%3),x,y,size,size,{fullCell:true});}
 export function drawCardPlayerLayer(c,p,x,y,r,now,front=false){
- if(!p)return;const f=p.fx||{},s=r/18;
+ if(!p)return;const f=p.fx||{},s=r/18;drawRolePlayerLayer(c,p,x,y,r,now,front);
  if(!front){
   if(p.invCD&&p._inv)drawArt(c,'angel-wings',Math.floor(now/160)%6,x,y-8*s,72*s,52*s,{fullCell:true});
-  if(p._guardAura)drawArt(c,'guardian',5,x,y+r*.6,(r+25+p._guardAura*10)*2,30*s,{alpha:.55});
+
   if(p._shadowStepEnd>now||p._shadowStrikeEnd>now)drawArt(c,'arcane',7,x,y+7*s,36*s,18*s,{alpha:.4,angle:Math.atan2(p._ad?.y||0,p._ad?.x||1)});
  }else{
   if(p._sh)drawArt(c,'guardian',1,x,y+12*s,32*s,22*s,{alpha:.45});
-  if(p._iwActive)drawArt(c,'guardian',6,x,y+17*s,23*s,12*s,{alpha:.55});
   if(p.thorns)drawArt(c,'guardian',4,x,y+12*s,24*s,17*s,{alpha:.65});
   if(p.regen&&p.hp<p.maxHp&&Math.floor(now/200)%8<3)drawArt(c,'vital',0,x-r-3,y+3-(now%1600)/80,12*s,14*s,{alpha:.7});
   if(p._healFlash&&now-p._healFlash<220){const q=(now-p._healFlash)/220;drawArt(c,'vital',0,x,y-q*16,35*s,35*s,{alpha:1-q});}
@@ -28,7 +28,7 @@ export function drawCardPlayerLayer(c,p,x,y,r,now,front=false){
 // Work is cached once per source/tier, never performed per frame.
 const variants=new WeakMap();
 export function cardWeaponAtlas(image,key,p,poseContract){
- const theme=pick(p),armored=!!p?.projImmune&&key!=='tank-shield';
+ const theme=pick(p)||(key==='tank-shield'&&(p?.thorns>0)?'thorn':p?._guardAura?'star':p?._qiEvery?'ice':p?._drawSlash||p?._ironWill?'steel':p?._roleCards?.['致命打擊']?'star':p?._atkDodge?'whirl':null),armored=!!(p?.projImmune||p?._iwActive)&&key!=='tank-shield';
  if(!image||(!theme&&!armored)||!artFrame('weapon-variants')||(armored&&!artFrame('fitted-armor')))return image;
  if(key==='gunner-pixel'&&!armored)return image;
  let cache=variants.get(image);if(!cache){cache=new Map();variants.set(image,cache);}
@@ -74,22 +74,23 @@ export function cardWeaponAtlas(image,key,p,poseContract){
   }
  }
  for(const a of attachments){
-  if(a.shield){const [x,y,w,h]=a.shield;c.clearRect(a.sx,a.sy,cell,cell);drawArt(c,'weapon-variants',weaponRows[theme]*4+2,a.sx+x+w/2,a.sy+y+h/2,w,h);continue;}
+  if(a.shield){const [x,y,w,h]=a.shield;c.clearRect(a.sx,a.sy,cell,cell);drawArt(c,theme==='thorn'?'guardian':'weapon-variants',theme==='thorn'?4:weaponRows[theme]*4+2,a.sx+x+w/2,a.sy+y+h/2,w,h);continue;}
   if(a.hands){for(const [x,y,angle]of a.hands)drawArt(c,'dagger-single',weaponRows[theme],a.sx+x,a.sy+y,16,16,{angle:angle+Math.PI/4,anchorX:.22,anchorY:.85});continue;}
   drawArt(c,'weapon-variants',weaponRows[theme]*4+1,a.sx+a.x,a.sy+a.y,a.size,a.size,{angle:a.angle+Math.PI/4,anchorX:.2,anchorY:.85});
  }
  cache.set(id,cv);return cv;
 }
 export function drawCardGun(c,p,muzzle,dir,scale,now){
- if(!p||!muzzle)return;const k=pick(p);if(!k&&!p._minigun&&!p._crossbow)return;
+ if(!p||!muzzle)return;drawRoleGun(c,p,muzzle,dir,scale,now);const k=pick(p);if(!k&&!p._minigun&&!p._crossbow&&!Object.keys(p._roleCards||{}).length)return;
  const a=Math.atan2(dir.y,dir.x),mini=p._minigun;
- const group=mini||p._crossbow?'arsenal':'weapon-variants',frame=mini?Math.min(2,Math.max(0,mini-1)):p._crossbow?3:weaponRows[k]*4;
+ const barrage=!!p._roleCards?.['彈幕之王'];
+ const group=mini||p._crossbow||barrage?'arsenal':'weapon-variants',frame=mini?Math.min(2,Math.max(0,mini-1)):barrage?2:p._crossbow?3:(weaponRows[k]||0)*4;
  const width=(mini?24:p._crossbow?22:18)*scale;
  drawArt(c,group,frame,muzzle.x-Math.cos(a)*width*.46,muzzle.y-Math.sin(a)*width*.46,width,15*scale,{angle:a});
  if(p._pixelShotAt&&now-p._pixelShotAt<60&&k!=='lightning')drawArt(c,themes[k]||'fire',3,muzzle.x+Math.cos(a)*5,muzzle.y+Math.sin(a)*5,12,12,{alpha:1-(now-p._pixelShotAt)/60,angle:a});
 }
 export function drawCardBullet(c,b,p,now,r=3){
- p=b.cardFx||p;const k=pick(p),a=Math.atan2(b.vy||0,b.vx||1);
+ p=b.cardFx||p;if(drawRoleBullet(c,b,p,now,r))return;const k=pick(p),a=Math.atan2(b.vy||0,b.vx||1);
  c.save();c.shadowBlur=0;const trails=b.trail||[];for(let i=Math.max(0,trails.length-4);i<trails.length;i++){const q=trails[i];c.globalAlpha=clamp(q.life||0)*.3;c.fillStyle=k==='lightning'?'#FAB005':(CARD_PALETTES[k]?.[1]||'#d4b471');c.beginPath();c.arc(q.x,q.y,1.2,0,TAU);c.fill();}c.globalAlpha=1;
  if(k==='lightning'){c.translate(b.x,b.y);c.rotate(a);c.fillStyle=b.crit?'#FFD43B':'#FAB005';c.beginPath();c.moveTo(r*1.2,0);c.lineTo(r*.2,r*.5);c.lineTo(r*.5,0);c.lineTo(-r*.2,-r*.5);c.lineTo(r*.2,0);c.closePath();c.fill();c.fillStyle='#fff';c.beginPath();c.arc(0,0,r*.25,0,TAU);c.fill();}
  else if(k)drawArt(c,themes[k],0,b.x,b.y,r*(k==='ice'?5:4),r*3,{angle:a});
@@ -118,7 +119,7 @@ function drawDragon(c,g,now,lv){
  const dp=g._dragonPet;let m=dragonMotion.get(g);if(!m){m={x:dp.x,y:dp.y,angle:dp.face<0?Math.PI:0,movingUntil:0};dragonMotion.set(g,m);}
  const dx=dp.x-m.x,dy=dp.y-m.y;if(Math.hypot(dx,dy)>.05){m.angle=Math.atan2(dy,dx);m.movingUntil=now+180;}
  m.x=dp.x;m.y=dp.y;const b=g._dragonBreathFx,attack=b?.on;
- const moving=m.movingUntil>now,angle=moving?m.angle:attack?b.ang:m.angle,dir=directionIndex(angle),size=70+Math.min(3,lv)*4;
+ const moving=m.movingUntil>now,angle=attack?b.ang:m.angle,dir=directionIndex(angle),size=70+Math.min(3,lv)*4;
  const group=moving?'dragon-flight':attack?'dragon-attack':'dragon-idle';
  const frame=group==='dragon-flight'?dir*4+Math.floor(now/130)%4:dir;
  // Maintain flight sheet origin, not a changing per-frame visible bbox.
@@ -130,20 +131,21 @@ function drawDragon(c,g,now,lv){
 }
 // Ground effects are drawn before any actor. The world-front pass never repeats them.
 export function drawCardGround(c,g,now){
- if(!g?.p)return;const p=g.p;
+ if(!g?.p)return;const p=g.p;drawRoleEvents(c,g,now,true);
  if(g.bhEnd>now){c.save();c.translate(p.x,p.y+14);c.scale(1,.58);drawArt(c,'arcane',0,0,0,126,126,{angle:now/1300,alpha:.78});c.restore();}
  if(g.mfEnd>now)drawArt(c,'arcane',1,g.mfPx,g.mfPy,(g.mfR||200)*1.7,(g.mfR||200)*1.1,{alpha:.65});
  if(g._cardTsEnd>now)drawArt(c,'arcane',2,p.x,p.y+10,145,105,{angle:Math.sin(now/600)*.04,alpha:.55});
 }
 export function drawCardWorld(c,g,now,r=18,phoenix=0){
- if(!g?.p)return;const p=g.p;
+ if(!g?.p)return;const p=g.p;drawRoleEvents(c,g,now,false);
  if(g._dragonPet)drawDragon(c,g,now,p._dragonBreath||p.fx?.dragon||1);
  for(const w of g._wb||[])drawArt(c,'wind',1,w.x,w.y,32,32,{angle:now/380,alpha:Math.min(1,w.life/700)});
  for(const b of g._booms||[])drawArt(c,'wind',2,b.x,b.y,28,28,{angle:b.rot||0});
  for(let i=0;i<(p.orbiters||0);i++){const a=now/600+TAU*i/p.orbiters;drawArt(c,'star',0,p.x+Math.cos(a)*42,p.y+Math.sin(a)*42,17,17,{angle:a});}
- for(const b of g._lightBeams||[]){const q=(now-b.t)/300;if(q<0||q>=1)continue;drawArt(c,'star',5,b.x??p.x,b.y??p.y,b.len,24,{angle:b.ang,anchorX:0,alpha:1-q});}
+ for(const b of g._lightBeams||[]){const q=(now-b.t)/300;if(q<0||q>=1)continue;
+ const len=b.len*Math.min(1,.35+q*5),x=(b.x??p.x)+Math.cos(b.ang)*15,y=(b.y??p.y)+Math.sin(b.ang)*15;
+ drawArt(c,'sword-beam',Math.min(3,Math.floor(q*4)),x,y,len,12,{stretch:true,angle:b.ang,anchorX:0,alpha:q<.65?1:(1-q)/.35});}
  const ga=g._ghostArc;if(ga){const q=(now-ga.t)/340;if(q>=0&&q<1)drawArt(c,'ghost-slash',Math.min(5,Math.floor(q*6)),ga.x+Math.cos(ga.ang)*r*.9,ga.y+Math.sin(ga.ang)*r*.9,r*4.5,r*4.5,{angle:ga.ang,alpha:Math.sin(q*Math.PI)});}
- if(g._quakeRingT){const q=(now-g._quakeRingT)/(g._quakeRingSmall?400:800);if(q>=0&&q<1)drawArt(c,'guardian',8,p.x,p.y+r,(g._quakeRingSmall?65:240)*(1+q*.2),(g._quakeRingSmall?35:110),{alpha:1-q});}
  if(g._thornFlash){const q=(now-g._thornFlash)/300;if(q>=0&&q<1)drawArt(c,'guardian',10,p.x,p.y,r*4,r*3,{alpha:1-q});}
  if(phoenix>0){const q=clamp(1-phoenix/1.2);drawArt(c,'phoenix',Math.min(5,Math.floor(q*6)),p.x,p.y-12-q*35,90,90,{fullCell:true,alpha:Math.sin(q*Math.PI)});}
  for(const hit of g._cardImpacts||[]){const q=(now-hit.at)/320;if(q<0||q>=1)continue;const group=themes[hit.kind]||'fire',frame=hit.kind==='explosion'?6:3,size=hit.kind==='explosion'?80:32;drawArt(c,group,frame,hit.x,hit.y,size*(.7+q*.4),size*(.7+q*.4),{alpha:1-q});}
@@ -165,6 +167,9 @@ export function drawGhostSlash(c,g,now,r,drawPlayer){
  c.restore();
 }
 function cardArtSlot(n){
+ if(/達摩/.test(n))return ['sword-beam',2];
+ if(/劍氣/.test(n))return ['sword-qi',1];
+ if(/拔刀/.test(n))return ['sword-draw',2];
  if(/殘影斬/.test(n))return ['ghost-slash',2];
  if(/龍之/.test(n))return ['dragon-flight',8];
  if(/天使之翼/.test(n))return ['angel-wings',2];

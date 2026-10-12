@@ -72,6 +72,30 @@
       "rows": 2,
       "cols": 4,
       "kind": "prop"
+    },
+    {
+      "id": "sword-beam",
+      "file": "角色預覽/sword-beam-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-d56542b8-f853-48e8-8769-fdd049cbf94c.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "fx"
+    },
+    {
+      "id": "sword-qi",
+      "file": "角色預覽/sword-qi-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-696aacb4-bd2c-4ac0-908b-f59933412215.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "fx"
+    },
+    {
+      "id": "sword-draw",
+      "file": "角色預覽/sword-draw-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-67583685-06f1-4a49-af18-0fcebcee3cdc.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "fx"
     }
   ]
 }

@@ -1,4 +1,4 @@
-export const ART_REVISION='equipment-20261012-v2';
+export const ART_REVISION='role-boss-20261012-v3';
 // Approved raster art, packed offline. Drawing always restores canvas state.
 let atlas=null,contract=null;
 export const generatedArtReady=Promise.all([
@@ -25,7 +25,7 @@ export function drawArt(c,name,index,x,y,width,height=width,options={}){
  if(options.angle)c.rotate(options.angle);if(options.flip)c.scale(-1,1);
  if(options.alpha!==undefined)c.globalAlpha*=Math.max(0,Math.min(1,options.alpha));
  if(options.fullCell)c.drawImage(source,sx,sy,cell,cell,-width/2,-height/2,width,height);
- else{const ratio=Math.min(width/sw,height/sh),dw=sw*ratio,dh=sh*ratio;
+ else{const ratio=Math.min(width/sw,height/sh),dw=options.stretch?width:sw*ratio,dh=options.stretch?height:sh*ratio;
  c.drawImage(source,sx+b[0],sy+b[1],sw,sh,-dw*(options.anchorX??.5),-dh*(options.anchorY??.5),dw,dh);}
  c.restore();return true;
 }

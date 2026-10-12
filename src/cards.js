@@ -5,7 +5,11 @@ let CID = 0;
 let _isEliteFn = null;
 export function setCardsIsElite(fn) { _isEliteFn = fn; }
 function _isElite() { return _isEliteFn ? _isEliteFn() : false; }
-function card(n,e,r,tp,d,ap,c,fx,once){C.push({id:++CID,n,e,r,tp,d,ap,c,fx:fx||null,once:!!once});}
+function card(n,e,r,tp,d,ap,c,fx,once){
+ const entry={id:++CID,n,e,r,tp,d,ap:[],c,fx:fx||null,once:!!once};
+ entry.ap=ap.map((apply,level)=>player=>{apply(player);if(entry.charReq){player._roleCards={...(player._roleCards||{}),[entry.n]:level+1};}});
+ C.push(entry);
+}
 // once=1 的卡片只能拿一次、不能升級（拿過後不再出現在選卡池）。
 // 它們的 3 個等級定義相同是因為 card() 固定吃 [Lv1,Lv2,Lv3] 陣列，並非設計失誤。
 // once 卡：幸運幣、磁力場、自癒術、鐵壁金身、守護星、影分身、閃電步、命運轉輪、時間停止。

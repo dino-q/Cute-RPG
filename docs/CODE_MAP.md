@@ -80,3 +80,11 @@
 | drawAbilitySidebar | src/hud.js | 沿用原 loop 側欄，單人與連線客戶端共用。 |
 
 ♻️ 沿用 cardWeaponAtlas、drawSpriteWithEyes、drawArt、drawPlayer；胸甲依逐格 torso 貼合，刺客 hands 分別放單刀。🆕 drawAbilitySidebar（原入口僅在主機迴圈，無法給客戶端共用）。
+
+| recordRoleEffect / drawRoleEvents | src/role-card-art.js | 限量職業卡事件與地面／前景分層。 |
+| drawRolePlayerLayer / drawRoleGun / drawRoleBullet | src/role-card-art.js | 裝備、槍口與彈體，避開臉部。 |
+| updateBossPattern / clearBossPattern / updateBossHazards | src/boss-patterns.js | 新招、核心、空檔與泥地減速。 |
+| drawBossPatternGround / drawBossPatternCore | src/boss-patterns.js | 共用危險預告、核心與反擊提示。 |
+
+♻️ 沿用 swordSwing、shieldBash、daggerStrike、awardEnemyKill、drawCardWorld、drawPixelMelee、drawArt、serializeCoopState、applyCoopState 及原受傷結算。
+🆕 新寫 role-card-art（既有元素入口沒有職業條件事件）、boss-patterns（既有 Boss 沒有可中斷核心及分時預告）。drawArt 增加 stretch，解決光束等比例縮短；龍圖與龍息共用 b.ang。

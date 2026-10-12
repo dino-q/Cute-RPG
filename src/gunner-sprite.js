@@ -24,8 +24,8 @@ export const gunnerSpriteReady = Promise.all([
 
 export function getGunnerPose(direction = { x: 0, y: -1 }) {
   const x = Number.isFinite(direction?.x) ? direction.x : 0;
-  const y = Number.isFinite(direction?.y) ? direction.y : -1;
-  const angle = x || y ? Math.atan2(y, x) : -Math.PI / 2;
+  const y = Number.isFinite(direction?.y) ? direction.y : 1;
+  const angle = x || y ? Math.atan2(y, x) : Math.PI / 2;
   const index = ((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8;
   return { index, frame: contract?.frames[index], x: Math.cos(angle), y: Math.sin(angle) };
 }

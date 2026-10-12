@@ -1,3 +1,4 @@
+import {recordRoleEffect} from './role-card-art.js';
 import { addCardImpact } from './card-vfx.js';
 import { getGunnerMuzzle } from "./gunner-sprite.js";
 // Combat: shooting, melee, collision, kill settlement
@@ -75,6 +76,7 @@ export function nearestTargets(src, k) {
 /* ═══ awardEnemyKill ═══ */
 export function awardEnemyKill(e) {
   if (!g || !e || e.deadHandled) return false;
+  if(e._bossCore){e.deadHandled=true;return false;}
   e.deadHandled = true;
   g.lastKill = performance.now();
   sfx("kill");
@@ -88,6 +90,7 @@ export function awardEnemyKill(e) {
   if (g.p._shadowStep > 0) {
     const now = performance.now();
     g.p._shadowStepEnd = now + g.p._shadowStep;
+    recordRoleEffect(g,"shadow",g.p.x,g.p.y+12);
     g.p._iFrameEnd = Math.max(g.p._iFrameEnd || 0, now + g.p._shadowStep);
   }
   if (g.p.ls > 0) {
@@ -111,6 +114,7 @@ export function settleEnemyDeaths(protectBoss) {
     if (e.hp > 0 || e.deadHandled) return;
     if (e.stageBoss) return;
     if (_wb && _isElite() && e.boss && !e.miniPoo && !e.miniDemon) return;
+    if(e._bossCore){e.deadHandled=true;return;}
     burst(e.x, e.y, e.color, 10);
     if (g.p.deathBoom > 0) {
       burst(e.x, e.y, "#FF922B", 8); addCardImpact(g,e.x,e.y,'explosion');
@@ -170,14 +174,14 @@ export function fire(dmg, dx, dy, sp, p) {
         var _cyc = (_nt - pp._hmCycleT) % 3500;
         _hmOn = _cyc < 500;
       }
-      g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, cardFx:{fx:{...pp.fx},_lightSaber:pp._lightSaber,_poisonBlade:pp._poisonBlade}, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
+      g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, cardFx:{fx:{...pp.fx},_lightSaber:pp._lightSaber,_poisonBlade:pp._poisonBlade,_roleCards:{...pp._roleCards}}, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
     }
   });
 }
 
 /* ═══ swordSwing (melee arc damage) ═══ */
 export function swordSwing(_pp, _isP2) {
-  if (!_pp) _pp = g.p; var _pad = _isP2 ? (g.p2 && g.p2._ad || { x: 0, y: -1 }) : g.ad; var _atkRef = _isP2 ? "_p2AtkAnim" : "_atkAnim"; var _wbRef = _isP2 ? "_p2WbSwing" : "_wbSwing"; var _pct = _isP2 ? (g.p2 ? g.p2.charType : "gunner") : g.charType; var _pinv = _isP2 ? inv2 : inv;
+  if (!_pp) _pp = g.p; var _pad = _isP2 ? (g.p2 && g.p2._ad || { x: 0, y: 1 }) : g.ad; var _atkRef = _isP2 ? "_p2AtkAnim" : "_atkAnim"; var _wbRef = _isP2 ? "_p2WbSwing" : "_wbSwing"; var _pct = _isP2 ? (g.p2 ? g.p2.charType : "gunner") : g.charType; var _pinv = _isP2 ? inv2 : inv;
   if (!g || !g.run) return;
   const now = performance.now();
   const splitBonus = Math.max(1, (_pp.split || 1) * .5 + .5);
@@ -202,6 +206,7 @@ export function swordSwing(_pp, _isP2) {
   const qiEvery = _pp._qiEvery || 5;
   const isQi = _pp._swordQiCount % qiEvery === 0;
   const qiMul = isQi ? (_pp._qiMul || 2) : 1;
+  if(_pp._drawSlash)recordRoleEffect(g,"draw",_pp.x,_pp.y,atkAngle,{range,level:_pp._drawSlash});
   const dmg = baseDmg; // capture for ghost slash closure
   g.ene.forEach(e => {
     if (e.hp <= 0 || e.ragePoo) return;
@@ -318,7 +323,7 @@ export function swordSwing(_pp, _isP2) {
         burst(e.x, e.y, "#FFD43B", 3);
         g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(bfd), life: .7, color: "#FFD43B" });
       });
-      const bLen = rn(120, beamRange);
+      const bLen = beamRange;
       if (!g._lightBeams) g._lightBeams = [];
       g._lightBeams.push({ x: _pp.x, y: _pp.y, ang: ba, len: bLen, t: performance.now() });
       for (let pi = 0; pi < 5; pi++) {
@@ -331,14 +336,7 @@ export function swordSwing(_pp, _isP2) {
   g[_atkRef].active = true; g[_atkRef].startT = performance.now(); g[_atkRef].angle = atkAngle; g[_atkRef]._qiSpin = false;
   if (isQi) {
     g[_atkRef]._qiSpin = true;
-    for (let ring = 0; ring < 3; ring++) {
-      const cnt = 10 + ring * 4, spd = 3 + ring * 1.5;
-      for (let i = 0; i < cnt; i++) {
-        const a = TAU * i / cnt + ring * .2;
-        par.push({ x: _pp.x + Math.cos(a) * (15 + ring * 8), y: _pp.y + Math.sin(a) * (15 + ring * 8), vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, life: .8 + ring * .15, color: ["#FFD43B", "#fff", "#FF922B", "#FFE066"][i % 4], sz: rn(2.5, 5 + ring) });
-      }
-    }
-    burst(_pp.x, _pp.y, "#FFD43B", 15); burst(_pp.x, _pp.y, "#fff", 8);
+    recordRoleEffect(g,"qi",_pp.x,_pp.y,atkAngle,{range:range+40,level:_pp._roleCards?.["劍氣強化"]||0});
     g.dn.push({ x: _pp.x, y: _pp.y - 35, d: " 劍氣！", life: 1.5, color: "#FFD43B", big: 1 });
     setShake(.2, 4);
   }
@@ -346,7 +344,7 @@ export function swordSwing(_pp, _isP2) {
 
 /* ═══ shieldBash (tank melee) ═══ */
 export function shieldBash(_pp, _isP2) {
-  if (!_pp) _pp = g.p; var _pad = _isP2 ? (g.p2 && g.p2._ad || { x: 0, y: -1 }) : g.ad; var _atkRef = _isP2 ? "_p2AtkAnim" : "_atkAnim"; var _wbRef = _isP2 ? "_p2WbSwing" : "_wbSwing"; var _pct = _isP2 ? (g.p2 ? g.p2.charType : "gunner") : g.charType; var _pinv = _isP2 ? inv2 : inv;
+  if (!_pp) _pp = g.p; var _pad = _isP2 ? (g.p2 && g.p2._ad || { x: 0, y: 1 }) : g.ad; var _atkRef = _isP2 ? "_p2AtkAnim" : "_atkAnim"; var _wbRef = _isP2 ? "_p2WbSwing" : "_wbSwing"; var _pct = _isP2 ? (g.p2 ? g.p2.charType : "gunner") : g.charType; var _pinv = _isP2 ? inv2 : inv;
   if (!g || !g.run) return;
   const now = performance.now();
   const splitBonus = Math.max(1, (_pp.split || 1) * .4 + .6);
@@ -440,6 +438,7 @@ export function shieldBash(_pp, _isP2) {
     }
   });
   g._quakeRingT = now; g._quakeRingSmall = true;
+  recordRoleEffect(g,"shieldwave",_pp.x,_pp.y,atkAngle);
   if (_pp._quake && (!_pp._quakeCD || now >= _pp._quakeCD)) {
     _pp._quakeCD = now + 3000;
     const qMul = [0, 1, 1.5, 2][_pp._quake] || 1;
@@ -451,6 +450,7 @@ export function shieldBash(_pp, _isP2) {
       burst(e.x, e.y, "#FF922B", 6); burst(e.x, e.y, "#FFD43B", 3);
       g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(qd), life: 1, color: "#FF922B", big: 1 });
     });
+    recordRoleEffect(g,"quake",_pp.x,_pp.y,atkAngle,{level:_pp._quake});
     g._quakeRingSmall = false;
     g._quakeRingT = now;
     setShake(.4, 6);
@@ -466,7 +466,7 @@ export function shieldBash(_pp, _isP2) {
 
 /* ═══ daggerStrike (assassin melee) ═══ */
 export function daggerStrike(_pp, _isP2) {
-  if (!_pp) _pp = g.p; var _pad = _isP2 ? (g.p2 && g.p2._ad || { x: 0, y: -1 }) : g.ad; var _atkRef = _isP2 ? "_p2AtkAnim" : "_atkAnim"; var _pct = _isP2 ? (g.p2 ? g.p2.charType : "gunner") : g.charType; var _pinv = _isP2 ? inv2 : inv;
+  if (!_pp) _pp = g.p; var _pad = _isP2 ? (g.p2 && g.p2._ad || { x: 0, y: 1 }) : g.ad; var _atkRef = _isP2 ? "_p2AtkAnim" : "_atkAnim"; var _pct = _isP2 ? (g.p2 ? g.p2.charType : "gunner") : g.charType; var _pinv = _isP2 ? inv2 : inv;
   if (!g || !g.run) return;
   const now = performance.now();
   const splitBonus = Math.max(1, (_pp.split || 1) * .4 + .6);
@@ -498,6 +498,7 @@ export function daggerStrike(_pp, _isP2) {
     if (e.eliteEnemy) { const hasEl = !!(_pp.fx.fire || _pp.fx.ice || _pp.fx.lightning || _pp.fx.poison || _pp.fx.dragon); if (hasEl) fd *= 1.2; else { fd *= .5; fd = Math.max(fd, 1); } }
     if (e._coopShield) { fd = 0; }
     e.hp -= fd; addCardImpact(g,e.x,e.y,_pp);
+    if(fd>0&&_assCrit&&_pp._roleCards?.["致命打擊"])recordRoleEffect(g,"critical",e.x,e.y,atkAngle);
     e.st = Math.max(e.st || 0, 600);
     if (_pp.bulletHeal > 0) { const mheal = Math.max(5, _pp.bulletHeal); _pp.hp = Math.min(_pp.hp + mheal, _pp.maxHp); _pp._healFlash = now; }
     // 近戰回血（比劍士少一些）
@@ -509,6 +510,7 @@ export function daggerStrike(_pp, _isP2) {
     if (fx.ice) { if (Math.random() < .2) e.frozen = Math.max(e.frozen || 0, 400); else e.st = Math.max(e.st || 0, 1000); }
     // 毒刃（卡片效果）
     if (_pp._poisonBlade && Math.random() < _pp._poisonBlade) {
+      recordRoleEffect(g,"poison",e.x,e.y,atkAngle);
       e.poisonT = Math.max(e.poisonT || 0, 2000); e.poisonLv = Math.max(e.poisonLv || 0, 1);
       g.dn.push({ x: e.x + rn(-8, 8), y: e.y - e.r - 12, d: "中毒", life: .8, color: "#A9E34B" });
     }
@@ -527,6 +529,7 @@ export function daggerStrike(_pp, _isP2) {
     // 擊殺加速被動
     if (e.hp <= 0 && !e.deadHandled) {
       _pp._killSpeedEnd = now + 2000;
+      if(_pp._chainKill)recordRoleEffect(g,"chainkill",_pp.x,_pp.y,atkAngle);
     }
   });
   // 寶箱破壞
@@ -556,6 +559,7 @@ export function daggerStrike(_pp, _isP2) {
   // 音速投擲：攻擊時機率完全閃避
   if (_pp._atkDodge > 0 && Math.random() < _pp._atkDodge) {
     _pp._iFrameEnd = Math.max(_pp._iFrameEnd || 0, now + 300);
+    recordRoleEffect(g,"sonic",_pp.x,_pp.y,atkAngle);
     burst(_pp.x, _pp.y, "#74C0FC", 4);
     g.dn.push({ x: _pp.x, y: _pp.y - 25, d: "閃!", life: .6, color: "#74C0FC" });
   }

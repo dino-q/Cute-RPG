@@ -37,7 +37,8 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const actionContract=role==='swordsman'?swordContract:role==='assassin'?assassinContract:null;
  if(actionAtlas&&actionContract){
   // Each key pose animates hands, shoulders, stance AND the blade together.
-  const lockedIndex=active?((Math.round(attackAngle/(Math.PI/4))%8)+8)%8:index;
+  const qiTurn=active&&animation?._qiSpin?Math.PI*2*ease((progress-.12)/.72):0;
+  const lockedIndex=active?((Math.round((attackAngle+qiTurn)/(Math.PI/4))%8)+8)%8:index;
   const row=active?(progress<.18?0:progress<.45?1:progress<.74?2:3):3;
   const frame=actionContract.frames[row*8+lockedIndex];
   const stride=active?Math.sin(progress*Math.PI)*2.5*scale:0;

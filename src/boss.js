@@ -1,3 +1,4 @@
+import {updateBossPattern,clearBossPattern} from './boss-patterns.js';
 import {drawBossArt,bossName} from './boss-art.js';
 // Stage Boss system — Lv20  / Lv30 
 import { MAX_PARTICLES, ROLE_NORMAL, PR } from "./config.js";
@@ -278,7 +279,7 @@ export function updateStageBoss(e,now,dt){
   if(lv===30){
     const hpPct=e.hp/e.mhp,newPhase=hpPct>.66?1:hpPct>.33?2:3;
     if(newPhase!==e.sbPhase){
-      const oldPhase=e.sbPhase;e.sbPhase=newPhase;sfxBossAtk("phase");setHitFlash(.5);setShake(.4,6);
+      const oldPhase=e.sbPhase;clearBossPattern(g,e);e._patternAt=now+2500;e.sbPhase=newPhase;sfxBossAtk("phase");setHitFlash(.5);setShake(.4,6);
       burst(e.x,e.y,"#9B59B6",30);
       if(newPhase===2&&!e._dealDone){
         e._dealDone=true; // 惡魔交易只觸發一次
@@ -387,6 +388,8 @@ export function updateStageBoss(e,now,dt){
     if(dl.accT>=5000){dl.accT-=5000;const heal=dl.healPer5;g.p.hp=Math.min(g.p.hp+heal,g.p.maxHp);
       g.dn.push({x:g.p.x,y:g.p.y-30,d:"+"+heal,life:.8,color:"#69DB7C"});}
   }
+
+  if(updateBossPattern(g,e,now,dt,_sbt,mapW(),mapH())){g.lS=now;return;}
 
   // Move（撞擊後退開）
   e.t+=.02*dt;
@@ -665,6 +668,7 @@ export function checkStageBossDeath(){
   if(!g._stageBossActive||!_stageBoss)return;
   if(_stageBoss.hp<=0){
     const lv=_stageBoss.stageBoss,e=_stageBoss;
+    clearBossPattern(g,e);
     g._stageBossActive=false;bossBgmStop();
     g._bossDefeats=(g._bossDefeats||[]).filter(d=>performance.now()-d.at<1500).slice(-1);
     g._bossDefeats.push({type:lv,x:e.x,y:e.y,size:e.r*2.3,at:performance.now()});

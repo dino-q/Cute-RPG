@@ -1,3 +1,5 @@
+import {updateBossHazards,drawBossPatternGround} from './boss-patterns.js';
+import {recordRoleEffect} from './role-card-art.js';
 import {drawTreasure} from './treasure-art.js';
 import {drawBossDefeats} from './boss-art.js';
 import { drawCardBullet, drawCardLightning, drawCardWorld, drawCardGround, drawCardIcon, drawCardStrike, drawGhostSlash, addCardImpact, drawCardStatus } from './card-vfx.js';
@@ -209,6 +211,7 @@ export function loop(){
   }
   const now=performance.now(),frameMs=Math.min(now-g.lf,33),dt=frameMs/16.67;g.lf=now;g.time=now;
   if(!_isClientMode){ // ═══ 以下遊戲邏輯只在 HOST 端執行 ═══
+  updateBossHazards(g,now);
   var bhSafe=!!(g.p.bhSafeEnd&&now<g.p.bhSafeEnd);
   setFxQ(frameMs>24?Math.max(.45,getFxQ()-.05):Math.min(1,getFxQ()+.02));
 
@@ -222,7 +225,7 @@ export function loop(){
   }
   // move P1
   if(!g.p._gsDash&&!g.p._downed){
-    if(joy.a){g.p.x+=joy.dx*g.p.speed*dt;g.p.y+=joy.dy*g.p.speed*dt;if(Math.abs(joy.dx)>.2)g.p.face=joy.dx>0?1:-1;}
+    if(joy.a){g.p.x+=joy.dx*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);g.p.y+=joy.dy*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);if(Math.abs(joy.dx)>.2)g.p.face=joy.dx>0?1:-1;}
   }else if(g.p._downed&&joy.a){
     g.p.x+=joy.dx*.5*dt;g.p.y+=joy.dy*.5*dt; // 倒地爬行
   }
@@ -241,7 +244,7 @@ export function loop(){
     if(g.p2._gsDash){
       // 鬼斬衝刺中，不處理手動移動
     }else if(!g.p2._downed){
-      if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*g.p2.speed*dt;g.p2.y+=p2i.dy*g.p2.speed*dt;if(Math.abs(p2i.dx)>.2)g.p2.face=p2i.dx>0?1:-1;}
+      if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*g.p2.speed*dt*(g.p2._mudSlowEnd>now?.65:1);g.p2.y+=p2i.dy*g.p2.speed*dt*(g.p2._mudSlowEnd>now?.65:1);if(Math.abs(p2i.dx)>.2)g.p2.face=p2i.dx>0?1:-1;}
     }else{
       if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*.5*dt;g.p2.y+=p2i.dy*.5*dt;} // 倒地爬行
     }
@@ -251,7 +254,7 @@ export function loop(){
   if(_p2AI&&g.p2&&!g.p2._downed&&!g.p2._gsDash&&_isCoopMode){
     if(!g.p2._aiWander){g.p2._aiWander={tx:g.p2.x,ty:g.p2.y,nextT:0};}
     var aw=g.p2._aiWander;
-    var spd2=g.p2.speed*dt;
+    var spd2=g.p2.speed*dt*(g.p2._mudSlowEnd>now?.65:1);
     // 找有護盾的 Boss（需要去佔圈）
     var shieldBoss=null;
     g.ene.forEach(e=>{if(e.boss&&e._coopShield&&e._coopCircles)shieldBoss=e;});
@@ -314,7 +317,7 @@ export function loop(){
       }
     });
     // 閃避敵彈
-    g.ebul.forEach(b=>{
+    g.ebul.forEach(b=>{if(b._groundHit)return;
       var bd=di(g.p2,b);
       if(bd<40){
         var bx=g.p2.x-b.x,by=g.p2.y-b.y,bl=Math.sqrt(bx*bx+by*by)||1;
@@ -352,8 +355,8 @@ export function loop(){
   // 閃電步 dash movement + afterimage
   if(g.p._dashEnd&&now<g.p._dashEnd){
     var ds=g.p._dashSpd||8;
-    g.p.x+=g.p._dashDx*ds*g.p.speed*dt;
-    g.p.y+=g.p._dashDy*ds*g.p.speed*dt;
+    g.p.x+=g.p._dashDx*ds*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);
+    g.p.y+=g.p._dashDy*ds*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);
     g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
     // 閃電步：吸取路過的經驗球
     g.orbs.forEach(o=>{if(di(o,g.p)<80){o.x=g.p.x;o.y=g.p.y;}});
@@ -424,13 +427,13 @@ export function loop(){
 
   // auto-aim target (attack input only triggers shooting, not direction control)
   var nr=null,nd=1e9;
-  g.ene.forEach(e=>{if(e.ragePoo)return;var d=di(g.p,e);if(d<nd){nd=d;nr=e;}});
+  g.ene.forEach(e=>{if(e.hp<=0||e.ragePoo)return;var d=di(g.p,e);if(d<nd){nd=d;nr=e;}});
   g.crates.forEach(cr=>{if(!crateActive(cr))return;var d=di(g.p,cr);if(d<nd&&d<VW*.7){nd=d;nr=cr;}});
   if(nr){
     var dx=nr.x-g.p.x,dy=nr.y-g.p.y,d=Math.sqrt(dx*dx+dy*dy)||1;
     g.ad={x:dx/d,y:dy/d};
     if(Math.abs(g.ad.x)>.3)g.p.face=g.ad.x>0?1:-1;
-  }else g.ad={x:0,y:-1};
+  }else{const manual=aim.a?Math.hypot(aim.dx||0,aim.dy||0):0;g.ad=manual>.08?{x:aim.dx/manual,y:aim.dy/manual}:{x:0,y:1};}
   // 機關槍狂暴：連射3秒後觸發2秒加速
   if(g.p._minigunBerserk){
     if(aim.a){g.p._mgFireT=(g.p._mgFireT||0)+dt*16.67;
@@ -469,7 +472,7 @@ export function loop(){
     var nr2=null,nd2=1e9;
     g.ene.forEach(e=>{if(e.ragePoo)return;var d=di(g.p2,e);if(d<nd2){nd2=d;nr2=e;}});
     if(nr2){var dx2=nr2.x-g.p2.x,dy2=nr2.y-g.p2.y,d2=Math.sqrt(dx2*dx2+dy2*dy2)||1;g.p2._ad={x:dx2/d2,y:dy2/d2};if(Math.abs(g.p2._ad.x)>.3)g.p2.face=g.p2._ad.x>0?1:-1;}
-    else{g.p2._ad=g.p2._ad||{x:0,y:-1};}
+    else{const manual=Math.hypot(_p2Input?.aimDx||0,_p2Input?.aimDy||0);g.p2._ad=manual>.08?{x:_p2Input.aimDx/manual,y:_p2Input.aimDy/manual}:{x:0,y:1};}
     // P2 hold-attack（根據 P2 角色類型分流）
     var p2aim=_p2AI?_p2Input.aimA:(_net&&_net.role==="host")?_p2Input.aimA:aim.a;
     if(!g.p2._lhF)g.p2._lhF=0;
@@ -480,7 +483,7 @@ export function loop(){
       if(p2ct==="swordsman"){swordSwing(g.p2,true);}
       else if(p2ct==="tank"){shieldBash(g.p2,true);}
       else if(p2ct==="assassin"){daggerStrike(g.p2,true);}
-      else{var ad2=g.p2._ad||{x:0,y:-1};fire((2.2+g.p2.atk*.7),ad2.x,ad2.y,g.p2._minigun?.12:.07,g.p2);g._p2AtkAnim={active:true,startT:now};g._p2WbSwing=1;}
+      else{var ad2=g.p2._ad||{x:0,y:1};fire((2.2+g.p2.atk*.7),ad2.x,ad2.y,g.p2._minigun?.12:.07,g.p2);g._p2AtkAnim={active:true,startT:now};g._p2WbSwing=1;}
       g.p2._lhF=now;
     }
     // P2 技能：AI 自動施放 / 真人透過 _p2Input.skill
@@ -490,7 +493,7 @@ export function loop(){
     if(_p2Input&&_p2Input.dodge){
       _p2Input.dodge=false;
       if(!g.p2._dodgeCD||now>=g.p2._dodgeCD){
-        var dd=g.p2._ad||{x:0,y:-1};
+        var dd=g.p2._ad||{x:0,y:1};
         var dDist=40;
         g.p2.x=cl(g.p2.x+dd.x*dDist,PR+4,mapW()-PR-4);
         g.p2.y=cl(g.p2.y+dd.y*dDist,PR+4,mapH()-PR-4);
@@ -547,7 +550,7 @@ export function loop(){
   // 鋼鐵意志：<30% HP 自動減傷+回血
   if(g.p._ironWill&&g.p.hp>0){
     var iwActive=g.p.hp/g.p.maxHp<.3;
-    if(iwActive&&!g.p._iwActive){g.p._iwActive=true;g.dn.push({x:g.p.x,y:g.p.y-30,d:" 鋼鐵意志！",life:1.5,color:"#868E96",big:1});}
+    if(iwActive&&!g.p._iwActive){g.p._iwActive=true;recordRoleEffect(g,"ironwill",g.p.x,g.p.y+12);g.dn.push({x:g.p.x,y:g.p.y-30,d:" 鋼鐵意志！",life:1.5,color:"#868E96",big:1});}
     if(!iwActive&&g.p._iwActive&&g.p.hp/g.p.maxHp>=.5)g.p._iwActive=false;
     if(g.p._iwActive){g.p.hp=Math.min(g.p.hp+g.p.maxHp*.03*dt/60,g.p.maxHp);}
   }
@@ -737,7 +740,8 @@ export function loop(){
   });
 
   // enemies chase — role-aware AI
-  g.ene.forEach(e=>{e.t+=.03*dt;e.st=Math.max(0,e.st-dt*16.67);e.frozen=Math.max(0,e.frozen-dt*16.67);
+  g.ene.forEach(e=>{if(e._bossCore)return;
+    e.t+=.03*dt;e.st=Math.max(0,e.st-dt*16.67);e.frozen=Math.max(0,e.frozen-dt*16.67);
     // 精英怪特殊能力
     if(e.eliteEnemy&&e.hp>0&&e.frozen<=0){
       var _elt=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p;
@@ -1019,13 +1023,13 @@ export function loop(){
       if(Math.abs(b.x-g.p.x)>VW||Math.abs(b.y-g.p.y)>VH)return false;
       if(b.life<=0)return false;
       // hit player? (respects i-frame)
-      if(!g.p._inv&&!bhSafe&&!(g.p._iFrameEnd>0&&now<g.p._iFrameEnd)&&di(b,g.p)<PR+4){
-        if(g.p.projImmune){burst(g.p.x,g.p.y,"#CED4DA",4);g.dn.push({x:g.p.x,y:g.p.y-25,d:"彈開",life:1,color:"#CED4DA"});return false;}
+      if(b._targetPlayer!=='p2'&&!g.p._inv&&!bhSafe&&!(g.p._iFrameEnd>0&&now<g.p._iFrameEnd)&&di(b,g.p)<PR+4){
+        if(!b._groundHit&&g.p.projImmune){burst(g.p.x,g.p.y,"#CED4DA",4);g.dn.push({x:g.p.x,y:g.p.y-25,d:"彈開",life:1,color:"#CED4DA"});return false;}
         // 劍士：揮劍中擋子彈（30% 機率）
-        if(g.charType==="swordsman"&&g._wbSwing>.3&&Math.random()<.3){
+        if(!b._groundHit&&g.charType==="swordsman"&&g._wbSwing>.3&&Math.random()<.3){
           burst(g.p.x,g.p.y,"#FF922B",3);g.dn.push({x:g.p.x,y:g.p.y-25,d:"彈開",life:.8,color:"#FF922B"});return false;}
         // 坦克：內建遠距傷害減半
-        var _tankProjMit=g.charType==="tank"?.5:1;
+        var _tankProjMit=!b._groundHit&&g.charType==="tank"?.5:1;
         if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});return false;}
         if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"擋住",life:1,color:"#4DABF7",big:1});return false;}
         var lateMul=1+Math.max(0,g.wave-10)*.07;
@@ -1038,7 +1042,7 @@ export function loop(){
           var ne=null,nd=1e9;g.ene.forEach(e2=>{if(e2.hp<=0)return;var d2=di(g.p,e2);if(d2<nd){nd=d2;ne=e2;}});
           if(ne&&nd<150){var rd=dmg*.15;ne.hp-=rd;burst(ne.x,ne.y,"#51CF66",3);g.dn.push({x:ne.x,y:ne.y-ne.r,d:Math.floor(rd),life:.6,color:"#51CF66"});}
         }
-        g.p.hp-=dmg;burst(g.p.x,g.p.y,"#FF6B6B",4);_hitFlash=1;_shakeT=.35;_shakePow=Math.min(6,2+dmg/15);sfx("hurt");showPlayerDmg(dmg);
+        g.p.hp-=dmg;if(b._groundHit)g.p._iFrameEnd=now+700;burst(g.p.x,g.p.y,"#FF6B6B",4);_hitFlash=1;_shakeT=.35;_shakePow=Math.min(6,2+dmg/15);sfx("hurt");showPlayerDmg(dmg);
         g.dn.push({x:g.p.x,y:g.p.y-20,d:Math.floor(dmg),life:1,color:"#FF6B6B"});
         if(g.p.hp<=0){
           if(_isCoopMode){g.p._downed=true;g.p._downedTime=now;g.p.hp=0;if(g.p2&&g.p2._downed){g.run=false;showOver();}}
@@ -1047,14 +1051,14 @@ export function loop(){
         return false;
       }
       // hit P2? (co-op)
-      if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd)&&di(b,g.p2)<PR+4){
+      if(b._targetPlayer!=='p1'&&_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd)&&di(b,g.p2)<PR+4){
         if(Math.random()<(g.p2.dodge||0)){g.dn.push({x:g.p2.x,y:g.p2.y-25,d:"MISS",life:1,color:"#B197FC"});return false;}
         var lm2=1+Math.max(0,g.wave-10)*.07;
-        var _p2TankMit=(g.p2.charType==="tank")?.5:1;
+        var _p2TankMit=(!b._groundHit&&g.p2.charType==="tank")?.5:1;
         var dm2=Math.min(50,b.dmg*lm2)*(1-(g.p2.armor||0))*_p2TankMit;
         // P2 坦克：遠程反彈15%
         if(g.p2.charType==="tank"&&dm2>0){var ne2=null,nd2=1e9;g.ene.forEach(e2=>{if(e2.hp<=0)return;var d2=di(g.p2,e2);if(d2<nd2){nd2=d2;ne2=e2;}});if(ne2&&nd2<150){var rd2=dm2*.15;ne2.hp-=rd2;burst(ne2.x,ne2.y,"#51CF66",3);g.dn.push({x:ne2.x,y:ne2.y-ne2.r,d:Math.floor(rd2),life:.6,color:"#51CF66"});}}
-        g.p2.hp-=dm2;burst(g.p2.x,g.p2.y,"#FF6B6B",4);sfx("hurt");showPlayerDmg(dm2,g.p2);
+        g.p2.hp-=dm2;if(b._groundHit)g.p2._iFrameEnd=now+700;burst(g.p2.x,g.p2.y,"#FF6B6B",4);sfx("hurt");showPlayerDmg(dm2,g.p2);
         if(g.p2.hp<=0){g.p2._downed=true;g.p2._downedTime=now;g.p2.hp=0;if(g.p._downed){g.run=false;showOver();}}
         return false;
       }
@@ -1237,7 +1241,7 @@ export function loop(){
   if(!g.p._inv&&!bhSafe&&!iFrameActive){
   // NOTE: 接觸碰撞後敵人消失(return false)是目前的暫時設計，用來降低怪物難度。
   // 如果日後主角太強，可改回 return e.hp>0 讓敵人存活，並只在 e.hp<=0 時 awardEnemyKill。
-  g.ene=g.ene.filter(e=>{if(e.bhExeAt)return true;
+  g.ene=g.ene.filter(e=>{if(e._bossCore)return true;if(e.bhExeAt)return true;
     // 狂暴便便：撞到扣剩餘HP 1/3，不可摧毀
     if(e.ragePoo){if(di(e,g.p)<PR+e.r-4){
       if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});g.p._iFrameEnd=now+400;return true;}
@@ -1248,7 +1252,7 @@ export function loop(){
     }return true;}
     // Stage Boss：接觸造成傷害但Boss不消失（脈衝蓄力期間免撞傷）
     if(e.stageBoss){var _pulseWarn=e._p3cycle==="pulse_warn"||e._p3cycle==="pulse_boom";
-    if(!_pulseWarn&&di(e,g.p)<PR+e.r-4){
+    if(!_pulseWarn&&!e._pattern&&!(e._patternRecoveryEnd>now)&&di(e,g.p)<PR+e.r-4){
       if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});g.p._iFrameEnd=now+400;return true;}
       var lateMul=1+Math.max(0,g.wave-10)*.07;
       var dmg=Math.min(g.p.contactCap||100,(12+g.wave*3)*(e.dmgMul||1)*lateMul)*(1-g.p.armor);
@@ -1290,7 +1294,7 @@ export function loop(){
       dmg*=(1-proxMit);
     }
     if(g.p._iwActive)dmg*=(1-g.p._ironWill); // 鋼鐵意志減傷
-    if(g.p.thorns>0){var td=dmg*g.p.thorns;e.hp-=td;g._thornFlash=now;
+    if(g.p.thorns>0){var td=dmg*g.p.thorns;e.hp-=td;g._thornFlash=now;recordRoleEffect(g,"thorns",e.x,e.y);
       burst(g.p.x,g.p.y,"#51CF66",4);g.dn.push({x:e.x,y:e.y-e.r-5,d:Math.floor(td),life:.7,color:"#51CF66"});}
     // 坦克被動：接觸傷害反彈15%
     // NOTE: 遠程子彈的反彈在 ebul hit 區段另外處理（約 line+400）。
@@ -1450,7 +1454,7 @@ export function loop(){
     g._boomCD=(g._boomCD||0)-dt*16.67;
     if(g._boomCD<=0&&g._booms.length<g.p.boomerang*2){
       g._boomCD=1500;
-      var ad=g.ad||{x:0,y:-1},spd=5.5;
+      var ad=g.ad||{x:0,y:1},spd=5.5;
       var cnt=g.p.boomerang;
       for(var i=0;i<cnt;i++){
         var spread=(i-(cnt-1)/2)*.3;
@@ -1735,7 +1739,7 @@ export function loop(){
   // map border
   cx.strokeStyle="rgba(255,255,255,.06)";cx.lineWidth=2;cx.strokeRect(0,0,mapW(),mapH());
 
-  drawCardGround(cx,g,performance.now());
+  drawCardGround(cx,g,performance.now());drawBossPatternGround(cx,g,performance.now());
   // crates
   const crateSense=Infinity; // crate hints always visible across full map
   g.crates.forEach(cr=>{if(!crateActive(cr))return;
@@ -1752,7 +1756,7 @@ export function loop(){
   cx.globalAlpha=1; // reset after bullet trail rendering
 
   // enemy bullets
-  g.ebul.forEach(b=>{
+  g.ebul.forEach(b=>{if(b._groundHit)return;
     cx.save();cx.globalAlpha=Math.min(b.life*3,1);cx.shadowColor=b.color;cx.shadowBlur=6;
     cx.fillStyle=b.color;cx.beginPath();cx.arc(b.x,b.y,4,0,Math.PI*2);cx.fill();
     cx.fillStyle="rgba(0,0,0,.4)";cx.beginPath();cx.arc(b.x,b.y,2,0,Math.PI*2);cx.fill();

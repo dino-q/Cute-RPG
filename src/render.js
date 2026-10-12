@@ -1,3 +1,4 @@
+import {drawBossPatternCore} from './boss-patterns.js';
 import { drawCardPlayerLayer, drawCardStatus } from './card-vfx.js';
 import { drawPixelMelee } from "./melee-sprite.js";
 // Render module — drawing functions for player, enemy, particles, title hero
@@ -572,6 +573,7 @@ export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
 
 /* ═══ draw enemy ═══ */
 export function drawEnemy(e) {
+  if(e._bossCore){drawBossPatternCore(cx,e,performance.now());return;}
   drawCardStatus(cx,e,performance.now());
   const x = e.x, y = e.y, r = e.r, tier = e.tier || 0, f = e.face || 1;
   const bob = Math.sin(e.t * 3) * 2, cy = y + bob;
