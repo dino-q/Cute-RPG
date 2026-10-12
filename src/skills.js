@@ -128,7 +128,8 @@ export function skillGhostSlash(now, _pp, _isP2) {
   const hitRange = PR * 4;
   _pp._iFrameEnd = now + 500;
   _pp._gsDash = { startX, startY, endX, endY, startT: now, dur: 200 };
-  for (let i = 0; i < 6; i++) { const p = i / 5; _dashGhosts.push({ x: startX + ndx * dashDist * p, y: startY + ndy * dashDist * p, face: _pp.face, life: 1 }); }
+  _pp._travelFacing={x:endX-startX,y:endY-startY,until:now+200};
+  for (let i = 0; i < 6; i++) { const p = i / 5; _dashGhosts.push({ x: startX + ndx * dashDist * p, y: startY + ndy * dashDist * p, face: _pp.face, charType:_pp.charType||g.charType, fx:{..._pp.fx}, direction:{x:ndx,y:ndy}, life: 1 }); }
   setTimeout(() => {
     if (!g || !g.run) return;
     g.ene.forEach(e => {

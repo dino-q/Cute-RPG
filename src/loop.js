@@ -358,7 +358,7 @@ export function loop(){
     // spawn afterimage every ~40ms
     if(!g.p._dashGT||now-g.p._dashGT>40){
       g.p._dashGT=now;
-      getDashGhosts().push({x:g.p.x,y:g.p.y,face:g.p.face,life:1});
+      getDashGhosts().push({x:g.p.x,y:g.p.y,face:g.p.face,charType:g.charType,fx:{...g.p.fx},direction:{x:g.p._dashDx,y:g.p._dashDy},life:1});
       if(getDashGhosts().length>8)getDashGhosts().shift();
     }
   }else if(g.p._dashEnd&&now>=g.p._dashEnd){
@@ -1585,11 +1585,12 @@ export function loop(){
       sr._fromX=g.p.x;sr._fromY=g.p.y;
       const dx=sr.x-g.p.x,dy=sr.y-g.p.y;
       sr._retDur=Math.min(400,Math.max(150,Math.sqrt(dx*dx+dy*dy)*0.8)); // 距離越遠時間越長，最多400ms
+      g.p._travelFacing={x:dx,y:dy,until:now+sr._retDur};
       g.p._iFrameEnd=Math.max(g.p._iFrameEnd||0,now+sr._retDur+500);
       g.p._shadowStrikeEnd=Math.max(g.p._shadowStrikeEnd||0,now+sr._retDur+200);
       sfx("ult");
       // 起始殘影
-      getDashGhosts().push({x:g.p.x,y:g.p.y,face:g.p.face,life:.8});
+      getDashGhosts().push({x:g.p.x,y:g.p.y,face:g.p.face,charType:g.charType,fx:{...g.p.fx},direction:{x:sr.x-sr._fromX,y:sr.y-sr._fromY},life:.8});
     }
     // 階段2：衝刺中（平滑移動 + 沿途殘影）
     if(sr._returning){
@@ -1598,7 +1599,7 @@ export function loop(){
       g.p.x=sr._fromX+(sr.x-sr._fromX)*ease;
       g.p.y=sr._fromY+(sr.y-sr._fromY)*ease;
       // 沿途殘影（每50ms一個）
-      if(!sr._lastGhost||now-sr._lastGhost>50){sr._lastGhost=now;getDashGhosts().push({x:g.p.x,y:g.p.y,face:g.p.face,life:.5});}
+      if(!sr._lastGhost||now-sr._lastGhost>50){sr._lastGhost=now;getDashGhosts().push({x:g.p.x,y:g.p.y,face:g.p.face,charType:g.charType,fx:{...g.p.fx},direction:{x:sr.x-sr._fromX,y:sr.y-sr._fromY},life:.5});}
       // 到達
       if(retP>=1){
         g.p.x=sr.x;g.p.y=sr.y;
@@ -1783,7 +1784,7 @@ export function loop(){
   const ltStep=ltCnt>80?3:ltCnt>44?2:(getFxQ()<.6?2:1);
   for(let li=0;li<g.ltn.length;li+=ltStep){
     const l=g.ltn[li];if(l.life<=0)continue;
-    drawCardLightning(cx,l);
+    drawCardLightning(cx,l,getFxQ(),ltCnt);
   }
 
   // enemies
@@ -1803,7 +1804,7 @@ export function loop(){
   // dash afterimages
   getDashGhosts().forEach(gh=>{
     cx.save();cx.globalAlpha=gh.life*.4;
-    drawPlayer(gh.x,gh.y,PR,g.time/1000,"#FFE066",gh.face,undefined,{effects:false});
+    drawPlayer(gh.x,gh.y,PR,g.time/1000,"#FFE066",gh.face,gh,{effects:false,travelDirection:gh.direction,animation:{active:false}});
     cx.restore();
   });
   // 影襲回歸標記（持續發光圈 + 倒數）

@@ -61,3 +61,7 @@
 🆕 新寫 card-vfx（舊幾何武器與重複模糊光圈無法接到人物全身動作）。
 
 ♻️ 沿用 attachTouchToStick、setStick：搖桿開始與移動都讀取目前可見範圍，觸控與滑鼠共用同一方向／縮放算法。#ctl、#rbtns 透明空白區不攔截事件，右側按鍵容器維持靠右；只有實際搖桿與技能按鈕接收點擊。
+
+| getSkillTravelDirection | src/utils.js | 從閃電步／閃避、鬼斬及影襲回歸取得實際位移方向；角色和殘影共用，獨立於瞄準方向。 |
+
+♻️ 沿用 drawCardLightning 還原原版平滑雙層電擊；沿用 drawPlayer、drawPixelMelee、drawPixelGunner 顯示位移方向。🆕 新寫 getSkillTravelDirection（原本角色朝向只由攻擊或上一幀座標推導，位移時可能朝錯方向）。

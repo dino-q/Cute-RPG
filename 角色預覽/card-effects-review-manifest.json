@@ -1,0 +1,164 @@
+{
+  "status": "待使用者檢查；未接入遊戲、未發布",
+  "generation": "內建 image_gen；generate2dsprite 僅去底、分格與匯出",
+  "assets": [
+    {
+      "id": "dragon-idle-review",
+      "file": "dragon-idle-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-e2a13375-2c57-4ae8-9014-1b1b849abb77.png",
+      "rows": 2,
+      "cols": 4,
+      "type": "body"
+    },
+    {
+      "id": "dragon-attack-review",
+      "file": "dragon-attack-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-ac32a23e-0d1d-40ae-8609-23a178f7c98f.png",
+      "rows": 2,
+      "cols": 4,
+      "type": "body"
+    },
+    {
+      "id": "dragon-flight-review",
+      "file": "dragon-flight-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-d7e1b667-ba22-4067-b03f-69a30caeb820.png",
+      "rows": 8,
+      "cols": 4,
+      "type": "body"
+    },
+    {
+      "id": "dragon-breath-review",
+      "file": "dragon-breath-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-f37d46a0-29d3-436b-88cc-bfed310dd56b.png",
+      "rows": 2,
+      "cols": 2,
+      "type": "sequence"
+    },
+    {
+      "id": "angel-wings-review",
+      "file": "angel-wings-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-bc39930e-f66e-46df-ac2a-0188a5a83064.png",
+      "rows": 2,
+      "cols": 3,
+      "type": "sequence"
+    },
+    {
+      "id": "phoenix-review",
+      "file": "phoenix-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-5026e5fb-66c7-44f9-b45e-6c5493e70cd4.png",
+      "rows": 2,
+      "cols": 3,
+      "type": "sequence"
+    },
+    {
+      "id": "fire-effects-review",
+      "file": "fire-effects-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-18407eba-ea0b-4a24-9b50-b304849bafad.png",
+      "rows": 2,
+      "cols": 4,
+      "type": "pack"
+    },
+    {
+      "id": "ice-effects-review",
+      "file": "ice-effects-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-cf2bfadf-ceed-44c4-90fc-20606e30a70f.png",
+      "rows": 2,
+      "cols": 4,
+      "type": "pack"
+    },
+    {
+      "id": "poison-effects-review",
+      "file": "poison-effects-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-167db30e-c90b-414d-8386-444486de4262.png",
+      "rows": 2,
+      "cols": 4,
+      "type": "pack"
+    },
+    {
+      "id": "star-effects-review",
+      "file": "star-effects-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-c6424ceb-ee65-400d-863f-7b359b08fa38.png",
+      "rows": 2,
+      "cols": 4,
+      "type": "pack"
+    },
+    {
+      "id": "guardian-effects-review",
+      "file": "guardian-effects-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-2ff611af-bb1a-4e0b-a3a1-2e646f5f7e4c.png",
+      "rows": 3,
+      "cols": 4,
+      "type": "pack"
+    },
+    {
+      "id": "arcane-effects-review",
+      "file": "arcane-effects-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-b0d2bead-7a35-4bf6-8c54-9beda3ecea93.png",
+      "rows": 3,
+      "cols": 4,
+      "type": "pack"
+    },
+    {
+      "id": "wind-effects-review",
+      "file": "wind-effects-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-31fac705-34bf-413f-9226-387d12b558dc.png",
+      "rows": 2,
+      "cols": 4,
+      "type": "pack"
+    },
+    {
+      "id": "vital-effects-review",
+      "file": "vital-effects-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-6f9b5e13-a60a-488e-87bc-401be8079296.png",
+      "rows": 2,
+      "cols": 4,
+      "type": "pack"
+    },
+    {
+      "id": "weapon-variants-review",
+      "file": "weapon-variants-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-9de6ccbc-f6de-4d52-a71f-049eefddd990.png",
+      "rows": 8,
+      "cols": 4,
+      "type": "pack"
+    },
+    {
+      "id": "arsenal-review",
+      "file": "arsenal-review.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-16f31c59-28d5-41ba-9a0d-63a99c05ded7.png",
+      "rows": 2,
+      "cols": 3,
+      "type": "pack"
+    }
+  ],
+  "dragon": {
+    "directions": [
+      "E",
+      "SE",
+      "S",
+      "SW",
+      "W",
+      "NW",
+      "N",
+      "NE"
+    ],
+    "flight": {
+      "columns": 4,
+      "rows": 8,
+      "frameMs": 130
+    },
+    "idle": {
+      "columns": 4,
+      "rows": 2
+    },
+    "attack": {
+      "columns": 4,
+      "rows": 2
+    },
+    "breath": {
+      "columns": 2,
+      "rows": 2
+    }
+  },
+  "cardScope": "66 張一般卡牌及隱藏越戰越勇；純數值卡保留玩法，不加常駐效果"
+}

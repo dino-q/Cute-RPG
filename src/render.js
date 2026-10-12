@@ -7,7 +7,7 @@ import {
   PI, TAU, MAX_PARTICLES, LIGHTNING_CAP,
   CHAR, ROLE_NORMAL, ROLE_FLANKER, ROLE_SHOOTER, ROLE_DASHER, ROLE_SHIELD
 } from "./config.js";
-import { rn, di, $ } from "./utils.js";
+import { rn, di, $, getSkillTravelDirection } from "./utils.js";
 
 /* ═══ module-local refs (set by main.js via setters) ═══ */
 let cx, g, fxQ = 1;
@@ -259,6 +259,7 @@ export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
   cx.save(); const f = face || 1, bob = Math.sin(t * 3) * 1.5, cy = y + bob;
   const player = playerState || (g && g.p);
   const fx = player ? player.fx || {} : {};
+  const travelDirection=renderOptions?.travelDirection||getSkillTravelDirection(player);
   const ct = player?.charType || (g ? g.charType : "gunner");
   const cc = CHAR[ct] || CHAR.gunner;
   cx.shadowBlur=0;
@@ -272,12 +273,12 @@ export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
   const _wbS = g && g._wbSwing || 0;
 
   const meleeDirection=player?._ad||(g&&g.ad)||{x:0,y:1};
-  const pixelMelee=ct!=='gunner'&&drawPixelMelee(cx,ct,x,cy,r,meleeDirection,g?._atkAnim,player,fx,{sword:()=>_drawSword(cx,r*.7,fx),shield:()=>_drawMiniShield(cx,fx)},renderOptions?.aiming);
+  const pixelMelee=ct!=='gunner'&&drawPixelMelee(cx,ct,x,cy,r,meleeDirection,renderOptions?.animation||g?._atkAnim,player,fx,{sword:()=>_drawSword(cx,r*.7,fx),shield:()=>_drawMiniShield(cx,fx)},renderOptions?.aiming,travelDirection);
   if (pixelMelee) {
     // Continuous weapon animation already drawn; common card shields follow below.
   } else if (ct === "gunner") {
     const attacking = renderOptions?.aiming || (Number.isFinite(player?._pixelShotAt) && performance.now() - player._pixelShotAt < 550);
-    const direction = attacking ? (player?._ad || (g && g.ad) || { x: f, y: 0 }) : { x: 0, y: 1 };
+    const direction = travelDirection || (attacking ? (player?._ad || (g && g.ad) || { x: f, y: 0 }) : { x: 0, y: 1 });
     if (!drawPixelGunner(cx, x, cy, r, direction, player?._pixelShotAt, player)) {
     // ─── 槍手：身體 + 槍（含後座力動畫）───
     const bg = cx.createRadialGradient(x - f * r * .1, cy - r * .3, r * .1, x, cy, r);

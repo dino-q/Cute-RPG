@@ -355,8 +355,8 @@ export function showCoopPick(data) {
 
 /* ═══ Co-op Network Sync ═══ */
 // Visual state uses ages/remaining time so two browser clocks never need to match.
-function packCardPlayer(p){const now=performance.now(),v={};for(const k of ['fx','_lightSaber','_poisonBlade','_minigun','invCD','_inv','_sh','projImmune','_iwActive','thorns','_guardAura','revive','orbiters','berserk','regen'])v[k]=p[k];for(const k of ['_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd'])v[k]=Math.max(0,(p[k]||0)-now);if(p._healFlash)v.healAge=now-p._healFlash;if(p._cardReveal)v.reveal={...p._cardReveal,at:now-p._cardReveal.at};return v;}
-function unpackCardPlayer(p,v){if(!v)return;const now=performance.now();Object.assign(p,v);for(const k of ['_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd'])p[k]=v[k]?now+v[k]:0;p._healFlash=v.healAge===undefined?0:now-v.healAge;p._cardReveal=v.reveal?{...v.reveal,at:now-v.reveal.at}:null;}
+function packCardPlayer(p){const now=performance.now(),v={};for(const k of ['fx','_lightSaber','_poisonBlade','_minigun','invCD','_inv','_sh','projImmune','_iwActive','thorns','_guardAura','revive','orbiters','berserk','regen','_dashDx','_dashDy'])v[k]=p[k];for(const k of ['_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])v[k]=Math.max(0,(p[k]||0)-now);if(p._travelFacing)v.travel={...p._travelFacing,until:Math.max(0,p._travelFacing.until-now)};if(p._healFlash)v.healAge=now-p._healFlash;if(p._cardReveal)v.reveal={...p._cardReveal,at:now-p._cardReveal.at};return v;}
+function unpackCardPlayer(p,v){if(!v)return;const now=performance.now();Object.assign(p,v);for(const k of ['_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])p[k]=v[k]?now+v[k]:0;p._travelFacing=v.travel?{...v.travel,until:now+v.travel.until}:null;p._healFlash=v.healAge===undefined?0:now-v.healAge;p._cardReveal=v.reveal?{...v.reveal,at:now-v.reveal.at}:null;}
 function packCardScene(g){const now=performance.now();return {impacts:(g._cardImpacts||[]).map(h=>({...h,at:now-h.at})),dragon:g._dragonPet?{x:g._dragonPet.x,y:g._dragonPet.y,face:g._dragonPet.face}:null,wb:(g._wb||[]).map(w=>({x:w.x,y:w.y,life:w.life})),booms:(g._booms||[]).map(b=>({x:b.x,y:b.y,rot:b.rot,phase:b.phase})),bh:Math.max(0,(g.bhEnd||0)-now),mf:Math.max(0,(g.mfEnd||0)-now),ts:Math.max(0,(g._cardTsEnd||0)-now),mfPx:g.mfPx,mfPy:g.mfPy,mfR:g.mfR,mfDur:g.p.mfDur,quake:g._quakeRingT?now-g._quakeRingT:1000,small:g._quakeRingSmall,thorn:g._thornFlash?now-g._thornFlash:1000};}
 function unpackCardScene(g,v){if(!v)return;const now=performance.now();g._cardImpacts=(v.impacts||[]).map(h=>({...h,at:now-h.at}));g._dragonPet=v.dragon;g._wb=v.wb;g._booms=v.booms;g.bhEnd=v.bh?now+v.bh:0;g.mfEnd=v.mf?now+v.mf:0;g._cardTsEnd=v.ts?now+v.ts:0;g.mfPx=v.mfPx;g.mfPy=v.mfPy;g.mfR=v.mfR;g.p.mfDur=v.mfDur;g._quakeRingT=now-v.quake;g._quakeRingSmall=v.small;g._thornFlash=now-v.thorn;}
 
@@ -381,7 +381,7 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
     // 視覺同步（限量避免頻寬爆）
     par: par.slice(-30).map(p => ({ x: p.x, y: p.y, vx: p.vx, vy: p.vy, life: p.life, color: p.color, sz: p.sz })),
     ltn: g.ltn.slice(-8).map(l => ({ x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, life: l.life, c: l.c })),
-    ghosts: getDashGhosts().slice(-6).map(gh => ({ x: gh.x, y: gh.y, face: gh.face, life: gh.life })),
+    ghosts: getDashGhosts().slice(-6).map(gh => ({ x: gh.x, y: gh.y, face: gh.face, life: gh.life,charType:gh.charType,fx:gh.fx,direction:gh.direction })),
     // 特效數據
     heat: g.heat || 0, heatCD: g.heatCD || 0, _heatWarn: g._heatWarn || false,
     coopLink: g._coopLink || false,
@@ -514,7 +514,7 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   if(g.ltn)g.ltn.forEach(l=>drawCardLightning(cx,l));
   // 殘影
   setDashGhosts(getDashGhosts().filter(gh => { gh.life -= .04; return gh.life > 0; }));
-  getDashGhosts().forEach(gh => { cx.save(); cx.globalAlpha = gh.life * .4; drawPlayer(gh.x, gh.y, PR, now / 1000, "#FFE066", gh.face,undefined,{effects:false}); cx.restore(); });
+  getDashGhosts().forEach(gh => { cx.save(); cx.globalAlpha = gh.life * .4; drawPlayer(gh.x, gh.y, PR, now / 1000, "#FFE066", gh.face,gh,{effects:false,travelDirection:gh.direction,animation:{active:false}}); cx.restore(); });
   // 殘影斬剪影
   if (g._ghostShadow && g._ghostShadow.life > 0) {
     g._ghostShadow.life -= .04;

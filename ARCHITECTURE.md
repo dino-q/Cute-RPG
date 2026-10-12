@@ -451,3 +451,9 @@ graph LR
 skills 只記錄時停的視覺期限，未改傷害或凍結機制。card-vfx 不匯入遊戲狀態；透過參數取得資料。
 
 函式索引：CARD_PALETTES、drawPixelPhoenix、drawCardPlayerLayer、cardWeaponAtlas、drawCardGun、drawCardBullet、drawCardStatus、drawCardLightning、drawCardWorld、revealCard、drawCardStrike、cardIllustration、addCardImpact，均在 src/card-vfx.js。逐卡呈現方式見 docs/卡片特效改版清單.md。
+
+## 位移朝向與待審美術（2026-10-12）
+
+函式索引：src/utils.js 新增 getSkillTravelDirection(player,now)，供 src/render.js 取得技能位移朝向。優先使用閃避／閃電步向量、鬼斬起終點、影襲回程向量；殘影記錄自己的方向與職業。雙人同步使用剩餘時間，避免不同裝置的時鐘造成朝向錯亂。drawCardLightning 保留同名入口，內容恢復原版平滑雙線折電。
+
+美術新稿在角色預覽/卡牌特效預覽-待確認.html；圖檔來源與各表格尺寸在角色預覽/card-effects-review-manifest.json。待 Dino 看圖確認後才接入 assets 或發布；這批生成圖未取代現役素材。

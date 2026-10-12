@@ -15,20 +15,21 @@ export const meleeSpritesReady=Promise.all([
 const clamp=v=>Math.max(0,Math.min(1,v));
 const ease=v=>{v=clamp(v);return v*v*(3-2*v);};
 const angleDelta=(a,b)=>Math.atan2(Math.sin(b-a),Math.cos(b-a));
-export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weapons,forceAim=false){
+export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weapons,forceAim=false,travelDirection=null){
  if(!atlas||!contract?.roles[role])return false;
  const now=performance.now(),scale=r/18*1.25;
  const duration=role==='assassin'?150:role==='tank'?280:320;
  const elapsed=animation?.active?now-animation.startT:Infinity;
  const active=elapsed>=0&&elapsed<duration;
  const progress=active?clamp(elapsed/duration):0;
- const attackAngle=Number.isFinite(animation?.angle)?animation.angle:Math.atan2(direction.y,direction.x);
+ const attackAngle=travelDirection?Math.atan2(travelDirection.y,travelDirection.x):Number.isFinite(animation?.angle)?animation.angle:Math.atan2(direction.y,direction.x);
  let model=player&&models.get(player);
  if(!model){model={angle:Math.PI/2,time:now,x,y};if(player)models.set(player,model);}
  const dt=Math.max(0,Math.min(.05,(now-model.time)/1000));
  const actualX=player?.x??x,actualY=player?.y??y;
  const dx=actualX-model.x,dy=actualY-model.y,moving=Math.hypot(dx,dy)>.08;
- const target=active||forceAim?attackAngle:moving?Math.atan2(dy,dx):Math.PI/2;
+ const target=travelDirection?Math.atan2(travelDirection.y,travelDirection.x):active||forceAim?attackAngle:moving?Math.atan2(dy,dx):Math.PI/2;
+ if(travelDirection)model.angle=target;
  model.angle+=angleDelta(model.angle,target)*Math.min(1,dt*(active?32:16));model.time=now;model.x=actualX;model.y=actualY;
  const index=((Math.round(model.angle/(Math.PI/4))%8)+8)%8;
  const actionAtlas=role==='swordsman'?swordAtlas:role==='assassin'?assassinAtlas:null;
