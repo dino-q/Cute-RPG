@@ -1,4 +1,7 @@
-import { drawCardBullet, drawCardLightning, drawCardWorld, drawCardStrike, revealCard } from './card-vfx.js';
+import {drawTreasure,animateChestOpening} from './treasure-art.js';
+import {drawBossDefeats} from './boss-art.js';
+import {playEndCutscene,showVictoryScreen} from './ui.js';
+import { drawCardBullet, drawCardLightning, drawCardWorld, drawCardStrike, drawGhostSlash, revealCard } from './card-vfx.js';
 import { cardEmblem } from "./button-art.js";
 /* ═══ coop.js — PeerJS 連線、狀態同步 ═══ */
 import { Peer } from "peerjs";
@@ -10,7 +13,7 @@ import { drawMinimap } from "./hud.js";
 import { setEnemiesCoopMode } from "./enemies.js";
 import { setCombatCoopState } from "./combat.js";
 import { setSkillsCoopState, getP2SkillCdEnd, getDashGhosts, setDashGhosts } from "./skills.js";
-import { setBossCoopMode } from "./boss.js";
+import { setBossCoopMode,drawStageBoss,drawMiniEnemy } from "./boss.js";
 
 // ── module-level deps injected via initCoop ──
 let _g = null;        // getter: ()=>g
@@ -348,6 +351,7 @@ export function showCoopPick(data) {
   });
   h += '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', h);
+  animateChestOpening(document.querySelector("#_p2PickOv>div"));
   // 儲存當前卡片供重骰用
   window._p2PickCards = cards;
   window._p2PickRerolled = [false, false, false];
@@ -355,10 +359,10 @@ export function showCoopPick(data) {
 
 /* ═══ Co-op Network Sync ═══ */
 // Visual state uses ages/remaining time so two browser clocks never need to match.
-function packCardPlayer(p){const now=performance.now(),v={};for(const k of ['fx','_lightSaber','_poisonBlade','_minigun','invCD','_inv','_sh','projImmune','_iwActive','thorns','_guardAura','revive','orbiters','berserk','regen','_dashDx','_dashDy'])v[k]=p[k];for(const k of ['_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])v[k]=Math.max(0,(p[k]||0)-now);if(p._travelFacing)v.travel={...p._travelFacing,until:Math.max(0,p._travelFacing.until-now)};if(p._healFlash)v.healAge=now-p._healFlash;if(p._cardReveal)v.reveal={...p._cardReveal,at:now-p._cardReveal.at};return v;}
+function packCardPlayer(p){const now=performance.now(),v={};for(const k of ['fx','_lightSaber','_poisonBlade','_minigun','_crossbow','invCD','_inv','_sh','projImmune','_iwActive','thorns','_guardAura','revive','orbiters','berserk','regen','_dashDx','_dashDy'])v[k]=p[k];for(const k of ['_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])v[k]=Math.max(0,(p[k]||0)-now);if(p._travelFacing)v.travel={...p._travelFacing,until:Math.max(0,p._travelFacing.until-now)};if(p._healFlash)v.healAge=now-p._healFlash;if(p._cardReveal)v.reveal={...p._cardReveal,at:now-p._cardReveal.at};return v;}
 function unpackCardPlayer(p,v){if(!v)return;const now=performance.now();Object.assign(p,v);for(const k of ['_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])p[k]=v[k]?now+v[k]:0;p._travelFacing=v.travel?{...v.travel,until:now+v.travel.until}:null;p._healFlash=v.healAge===undefined?0:now-v.healAge;p._cardReveal=v.reveal?{...v.reveal,at:now-v.reveal.at}:null;}
-function packCardScene(g){const now=performance.now();return {impacts:(g._cardImpacts||[]).map(h=>({...h,at:now-h.at})),dragon:g._dragonPet?{x:g._dragonPet.x,y:g._dragonPet.y,face:g._dragonPet.face}:null,wb:(g._wb||[]).map(w=>({x:w.x,y:w.y,life:w.life})),booms:(g._booms||[]).map(b=>({x:b.x,y:b.y,rot:b.rot,phase:b.phase})),bh:Math.max(0,(g.bhEnd||0)-now),mf:Math.max(0,(g.mfEnd||0)-now),ts:Math.max(0,(g._cardTsEnd||0)-now),mfPx:g.mfPx,mfPy:g.mfPy,mfR:g.mfR,mfDur:g.p.mfDur,quake:g._quakeRingT?now-g._quakeRingT:1000,small:g._quakeRingSmall,thorn:g._thornFlash?now-g._thornFlash:1000};}
-function unpackCardScene(g,v){if(!v)return;const now=performance.now();g._cardImpacts=(v.impacts||[]).map(h=>({...h,at:now-h.at}));g._dragonPet=v.dragon;g._wb=v.wb;g._booms=v.booms;g.bhEnd=v.bh?now+v.bh:0;g.mfEnd=v.mf?now+v.mf:0;g._cardTsEnd=v.ts?now+v.ts:0;g.mfPx=v.mfPx;g.mfPy=v.mfPy;g.mfR=v.mfR;g.p.mfDur=v.mfDur;g._quakeRingT=now-v.quake;g._quakeRingSmall=v.small;g._thornFlash=now-v.thorn;}
+function packCardScene(g){const now=performance.now();return {defeats:(g._bossDefeats||[]).filter(d=>now-d.at<1500).map(d=>({...d,at:now-d.at})),impacts:(g._cardImpacts||[]).map(h=>({...h,at:now-h.at})),dragon:g._dragonPet?{x:g._dragonPet.x,y:g._dragonPet.y,face:g._dragonPet.face,breathCycle:g._dragonPet.breathCycle}:null,wb:(g._wb||[]).map(w=>({x:w.x,y:w.y,life:w.life})),booms:(g._booms||[]).map(b=>({x:b.x,y:b.y,rot:b.rot,phase:b.phase})),bh:Math.max(0,(g.bhEnd||0)-now),mf:Math.max(0,(g.mfEnd||0)-now),ts:Math.max(0,(g._cardTsEnd||0)-now),mfPx:g.mfPx,mfPy:g.mfPy,mfR:g.mfR,mfDur:g.p.mfDur,quake:g._quakeRingT?now-g._quakeRingT:1000,small:g._quakeRingSmall,thorn:g._thornFlash?now-g._thornFlash:1000};}
+function unpackCardScene(g,v){if(!v)return;const now=performance.now();g._bossDefeats=(v.defeats||[]).map(d=>({...d,at:now-d.at}));g._cardImpacts=(v.impacts||[]).map(h=>({...h,at:now-h.at}));g._dragonPet=v.dragon;g._wb=v.wb;g._booms=v.booms;g.bhEnd=v.bh?now+v.bh:0;g.mfEnd=v.mf?now+v.mf:0;g._cardTsEnd=v.ts?now+v.ts:0;g.mfPx=v.mfPx;g.mfPy=v.mfPy;g.mfR=v.mfR;g.p.mfDur=v.mfDur;g._quakeRingT=now-v.quake;g._quakeRingSmall=v.small;g._thornFlash=now-v.thorn;}
 
 
 export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, aim, ULT_CHARGE_NEED) {
@@ -369,7 +373,7 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
     cardP1:packCardPlayer(g.p),cardP2:packCardPlayer(g.p2),cardScene:packCardScene(g),
     p1: { x: g.p.x, y: g.p.y, hp: g.p.hp, mhp: g.p.maxHp, face: g.p.face, _downed: g.p._downed, _iFrameEnd: g.p._iFrameEnd, _rescueTimer: g.p._rescueTimer || 0, _pickPending: g.p._pickPending || false, charType: g.charType, _ad: g.ad, pixelShotAge: g.p._pixelShotAt ? Math.min(1000, performance.now() - g.p._pixelShotAt) : 1000 },
     p2: { x: g.p2.x, y: g.p2.y, hp: g.p2.hp, mhp: g.p2.maxHp, face: g.p2.face, _downed: g.p2._downed, _iFrameEnd: g.p2._iFrameEnd, _rescueTimer: g.p2._rescueTimer || 0, _pickPending: g.p2._pickPending || false, charType: g.p2.charType, _ad: g.p2._ad, pixelShotAge: g.p2._pixelShotAt ? Math.min(1000, performance.now() - g.p2._pixelShotAt) : 1000 },
-    ene: g.ene.map(e => ({ x: e.x, y: e.y, hp: e.hp, mhp: e.mhp, r: e.r, color: e.color, boss: e.boss, mega: e.mega, tier: e.tier, role: e.role, face: e.face, t: e.t, st: e.st, frozen: e.frozen, stageBoss: e.stageBoss, sbPhase: e.sbPhase, _coopShield: e._coopShield, _coopCircles: e._coopCircles, _coopShieldBrokenEnd: e._coopShieldBrokenEnd, _coopCircleTimer: e._coopCircleTimer, _rage: e._rage, _rageState: e._rageState, _rageDx: e._rageDx, _rageDy: e._rageDy, eliteEnemy: e.eliteEnemy, _eDashing: e._eDashing, _eShieldEnd: e._eShieldEnd, dashState: e.dashState, dashDx: e.dashDx, dashDy: e.dashDy, shieldAng: e.shieldAng, flankA: e.flankA, bhExeAt: e.bhExeAt, bossType: e.bossType, poisonT: e.poisonT, burnT: e.burnT, _bleedEnd:e._bleedEnd, _tauntEnd: e._tauntEnd, _tauntTarget: e._tauntTarget })),
+    ene: g.ene.map(e => ({ x: e.x, y: e.y, hp: e.hp, mhp: e.mhp, r: e.r, color: e.color, boss: e.boss, mega: e.mega, tier: e.tier, role: e.role, face: e.face, t: e.t, st: e.st, frozen: e.frozen, stageBoss:e.stageBoss,miniPoo:e.miniPoo,miniDemon:e.miniDemon,ragePoo:e.ragePoo,_artAngle:e._artAngle,artAttackRemaining:Math.max(0,(e._artAttackUntil||0)-performance.now()),spawnShieldRemaining:Math.max(0,(e._spawnShield||0)-performance.now()),_p3cycle:e._p3cycle,p3age:e._p3t?performance.now()-e._p3t:0, sbPhase: e.sbPhase, _coopShield: e._coopShield, _coopCircles: e._coopCircles, _coopShieldBrokenEnd: e._coopShieldBrokenEnd, _coopCircleTimer: e._coopCircleTimer, _rage: e._rage, _rageState: e._rageState, _rageDx: e._rageDx, _rageDy: e._rageDy, eliteEnemy: e.eliteEnemy, _eDashing: e._eDashing, _eShieldEnd: e._eShieldEnd, dashState: e.dashState, dashDx: e.dashDx, dashDy: e.dashDy, shieldAng: e.shieldAng, flankA: e.flankA, bhExeAt: e.bhExeAt, bossType: e.bossType, poisonT: e.poisonT, burnT: e.burnT, _bleedEnd:e._bleedEnd, _tauntEnd: e._tauntEnd, _tauntTarget: e._tauntTarget })),
     bul: g.bul.filter(b => b.life > 0).map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, crit: b.crit, life: b.life,cardFx:b.cardFx,_isP2:b._isP2,_minigun:b._minigun,_armorPen:b._armorPen,hm:b.hm,trail:(b.trail||[]).slice(-3) })),
     ebul: g.ebul.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, color: b.color, life: b.life })),
     dn: g.dn.map(d => ({ x: d.x, y: d.y, d: d.d, life: d.life, color: d.color, big: d.big })),
@@ -387,7 +391,7 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
     coopLink: g._coopLink || false,
     lightBeams: (g._lightBeams || []).slice(-3).map(b => ({ x: b.x, y: b.y, ang: b.ang, len: b.len, t: performance.now()-b.t })),
     dragonFx: g._dragonBreathFx ? { ang: g._dragonBreathFx.ang, range: g._dragonBreathFx.range, on: g._dragonBreathFx.on } : null,
-    ghostShadow: g._ghostShadow && g._ghostShadow.life > 0 ? { x: g._ghostShadow.x, y: g._ghostShadow.y, face: g._ghostShadow.face, life: g._ghostShadow.life } : null,
+    ghostShadow:g._ghostShadow&&performance.now()-g._ghostShadow.t<470?{...g._ghostShadow,t:performance.now()-g._ghostShadow.t}:null,
     ghostArc: g._ghostArc ? { x: g._ghostArc.x, y: g._ghostArc.y, ang: g._ghostArc.ang, t: performance.now()-g._ghostArc.t } : null,
     ultFlash: g.ultFlash || 0,
     p1Atk: g._atkAnim ? { active: g._atkAnim.active, elapsed: performance.now() - g._atkAnim.startT, _qiSpin: g._atkAnim._qiSpin, angle: g._atkAnim.angle } : null,
@@ -399,6 +403,7 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
     p2Ult: g.ultCharge || 0, p2UltNeed: ULT_CHARGE_NEED,
     p2SkillCd: Math.max(0, getP2SkillCdEnd() - performance.now()),
     p2Combo: aim.tn || 0,
+    victory:g._victoryPending?g._finalBoss:null,
     run: g.run
   };
 }
@@ -412,7 +417,7 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   if (data.p2 && g.p2 && Number.isFinite(data.p2.pixelShotAge)) g.p2._pixelShotAt = performance.now() - data.p2.pixelShotAge;
   unpackCardPlayer(g.p,data.cardP1); if(g.p2)unpackCardPlayer(g.p2,data.cardP2); unpackCardScene(g,data.cardScene);
   // 更新敵人
-  if (data.ene) g.ene = data.ene;
+  if(data.ene)g.ene=data.ene.map(e=>({...e,_artAttackUntil:performance.now()+(e.artAttackRemaining||0),_spawnShield:e.spawnShieldRemaining?performance.now()+e.spawnShieldRemaining:0,_p3t:e.p3age?performance.now()-e.p3age:0}));
   // 更新子彈
   if (data.bul) g.bul = data.bul;
   if (data.ebul) g.ebul = data.ebul;
@@ -431,7 +436,7 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   if (data.coopLink !== undefined) g._coopLink = data.coopLink;
   if (data.lightBeams) g._lightBeams = data.lightBeams.map(b=>({...b,t:performance.now()-b.t}));
   if (data.dragonFx !== undefined) g._dragonBreathFx = data.dragonFx;
-  if (data.ghostShadow !== undefined) g._ghostShadow = data.ghostShadow;
+  if (data.ghostShadow !== undefined) g._ghostShadow=data.ghostShadow?{...data.ghostShadow,t:performance.now()-data.ghostShadow.t}:null;
   if (data.ghostArc !== undefined) g._ghostArc = data.ghostArc?{...data.ghostArc,t:performance.now()-data.ghostArc.t}:null;
   if (data.ultFlash !== undefined) g.ultFlash = data.ultFlash;
   // 動畫同步：elapsed → 本地 startT
@@ -459,12 +464,13 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   if (data.p2Lv !== undefined) g.p2Level = data.p2Lv;
   if (data.p2Exp !== undefined) g.p2Exp = data.p2Exp;
   if (data.p2ExpTo !== undefined) g.p2ExpTo = data.p2ExpTo;
-  if (data.run === false) { g.run = false; showOver(); }
+  if(data.victory&&!g._clientVictoryStarted){g._clientVictoryStarted=true;g._victoryPending=true;g._finalBoss=data.victory;g.run=false;playEndCutscene(()=>{if(_g()===g)showVictoryScreen();});}
+  if(data.run===false&&!g._clientVictoryStarted){g.run=false;showOver();}
 }
 
 export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, setPar, getDashGhosts, setDashGhosts, drawPlayer, drawEnemy, drawMinimap, CHAR, getP2SkillCdEnd, aim, $) {
   if (!g || !cx) return;
-  const now = g.time || performance.now();
+  const now = performance.now();
   const cm = cam();
   cx.clearRect(0, 0, VW, VH); cx.save(); cx.translate(-cm.x, -cm.y);
   // background
@@ -476,16 +482,12 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   // crates (寶箱)
   if (g.crates) g.crates.forEach(c => {
     if (c.hp <= 0) return;
-    const cs2 = c.bigChest ? 14 : 10;
-    cx.save(); cx.fillStyle = c.bigChest ? "#FFD43B" : "#FF922B"; cx.globalAlpha = .9;
-    cx.fillRect(c.x - cs2 / 2, c.y - cs2 / 2, cs2, cs2);
-    cx.strokeStyle = c.bigChest ? "#FCC419" : "#E8590C"; cx.lineWidth = 1.5; cx.strokeRect(c.x - cs2 / 2, c.y - cs2 / 2, cs2, cs2);
-    cx.fillStyle = "#fff"; cx.globalAlpha = .6; cx.font = "bold 8px sans-serif"; cx.textAlign = "center";
-    cx.fillText(c.bigChest ? "" : "", c.x, c.y + 3);
-    cx.restore();
+    drawTreasure(cx,c,performance.now());
+
   });
   // enemies
-  g.ene.forEach(e => { if (e.hp > 0) drawEnemy(e); });
+  g.ene.forEach(e=>{if(e.hp<=0)return;if(e.stageBoss)drawStageBoss(e,performance.now());else if(e.miniPoo||e.miniDemon||e.ragePoo)drawMiniEnemy(e,performance.now());else drawEnemy(e);});
+  drawBossDefeats(cx,g,performance.now());
   // bullets
   g.bul.forEach(b=>{if(b.life>0)drawCardBullet(cx,b,b._isP2?g.p2:g.p,performance.now(),BR);});
   // enemy bullets
@@ -516,12 +518,8 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   setDashGhosts(getDashGhosts().filter(gh => { gh.life -= .04; return gh.life > 0; }));
   getDashGhosts().forEach(gh => { cx.save(); cx.globalAlpha = gh.life * .4; drawPlayer(gh.x, gh.y, PR, now / 1000, "#FFE066", gh.face,gh,{effects:false,travelDirection:gh.direction,animation:{active:false}}); cx.restore(); });
   // 殘影斬剪影
-  if (g._ghostShadow && g._ghostShadow.life > 0) {
-    g._ghostShadow.life -= .04;
-    cx.save(); cx.globalAlpha = g._ghostShadow.life * .35; cx.shadowColor = "#DA77F2"; cx.shadowBlur = 12;
-    drawPlayer(g._ghostShadow.x, g._ghostShadow.y, PR, now / 1000, "#DA77F2", g._ghostShadow.face,undefined,{effects:false});
-    cx.restore();
-  }
+  drawGhostSlash(cx,g,performance.now(),PR,drawPlayer);
+
   // 過熱條（CLIENT 端 P2 用 — 顯示在自己角色下方）
   if (g.p2 && g.heat > 0) {
     const _hp3 = g.heat / 15, _hbW = PR * 2.4, _hbH = 3, _hbX = g.p2.x - _hbW / 2, _hbY = g.p2.y + PR + 8;

@@ -1,3 +1,6 @@
+import {endingArtReady,drawBossEndingFrame,bossName} from './boss-art.js';
+import {drawPixelGunner} from './gunner-sprite.js';
+import {drawPixelMelee} from './melee-sprite.js';
 import { drawPixelPhoenix, drawCardWorld } from './card-vfx.js';
 import { getLayoutViewport, applyControlLayout } from './control-layout.js';
 import { cardEmblem, pixelEmblem } from "./button-art.js";
@@ -183,90 +186,31 @@ export function sfxVictory() {
 }
 
 // ── playEndCutscene ───────────────────────────────────────────────────────────
-export function playEndCutscene(onComplete) {
-  const ov = document.getElementById("endCutsceneOv");
-  const vid = document.getElementById("endVid");
-  const fxCv = document.getElementById("endFx");
-  const titleEl = document.getElementById("endTitleText");
-  const subEl = document.getElementById("endSubText");
-
-  // 如果沒有 overlay 元素，直接完成
-  if (!ov || !vid) { if (onComplete) onComplete(); return; }
-
-  const muted = getMuted();
-  vid.muted = muted;
-  vid.src = "./assets/END_clip_clean.mp4";
-  ov.style.display = "block";
-
-  let fxCtx2 = null;
-  if (fxCv) { fxCv.width = window.innerWidth; fxCv.height = window.innerHeight; fxCtx2 = fxCv.getContext("2d"); }
-
-  // 標題動畫
-  if (titleEl) {
-    titleEl.style.transition = "opacity 1.5s ease, transform 1.5s ease";
-    titleEl.style.opacity = "0"; titleEl.style.transform = "scale(1.8)";
-    setTimeout(() => {
-      titleEl.style.opacity = "1"; titleEl.style.transform = "scale(1)";
-    }, 300);
-  }
-  if (subEl) {
-    subEl.style.transition = "opacity 1.5s ease 1s";
-    subEl.style.opacity = "0";
-    setTimeout(() => { subEl.style.opacity = "1"; }, 1000);
-  }
-
-  // 粒子特效 loop
-  let _fxRaf;
-  const fxPar = [];
-  function fxLoop() {
-    if (!fxCtx2) { _fxRaf = requestAnimationFrame(fxLoop); return; }
-    const W = fxCv.width, H = fxCv.height;
-    fxCtx2.clearRect(0, 0, W, H);
-    if (Math.random() < 0.05) {
-      const x = Math.random() * W, y = Math.random() * H * 0.6;
-      const col = ["#FFD43B", "#FF6B6B", "#74C0FC", "#BE4BDB", "#51CF66"][Math.random() * 5 | 0];
-      for (let i = 0; i < 12; i++) {
-        const a = Math.random() * Math.PI * 2;
-        fxPar.push({ x, y, vx: Math.cos(a) * rn(1, 3), vy: Math.sin(a) * rn(1, 3), life: 1 + Math.random() * 0.5, color: col, sz: rn(2, 5) });
-      }
-    }
-    fxPar.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.02; p.life -= 0.012; fxCtx2.globalAlpha = Math.max(0, p.life * 0.7); fxCtx2.fillStyle = p.color; fxCtx2.beginPath(); fxCtx2.arc(p.x, p.y, p.sz, 0, Math.PI * 2); fxCtx2.fill(); });
-    for (let i = fxPar.length - 1; i >= 0; i--) { if (fxPar[i].life <= 0) fxPar.splice(i, 1); }
-    fxCtx2.globalAlpha = 1;
-    _fxRaf = requestAnimationFrame(fxLoop);
-  }
-  fxLoop();
-
-  function finish() {
-    if (_fxRaf) cancelAnimationFrame(_fxRaf);
-    vid.pause();
-    ov.style.transition = "opacity 0.8s ease";
-    ov.style.opacity = "0";
-    setTimeout(() => {
-      ov.style.display = "none"; ov.style.opacity = "1";
-      ov.style.transition = "";
-      if (onComplete) onComplete();
-    }, 800);
-  }
-
-  vid.onended = finish;
-  // 逾時保險：最多 30 秒
-  const _cutsceneTimeout = setTimeout(finish, 30000);
-  vid.onended = () => { clearTimeout(_cutsceneTimeout); finish(); };
-  // 點擊跳過
-  ov.onclick = () => { clearTimeout(_cutsceneTimeout); finish(); };
-
-  vid.play().catch(() => {
-    // iOS：有聲播放失敗 → 嘗試靜音播放
-    vid.muted = true;
-    vid.play().catch(() => {
-      // 完全無法播放 → 顯示靜態勝利畫面 3 秒
-      vid.style.display = "none";
-      setTimeout(() => { clearTimeout(_cutsceneTimeout); finish(); }, 3000);
-    });
-  });
+let endingCancel=null;
+export function playEndCutscene(onComplete){
+ const game=_getG(),ov=document.getElementById('endCutsceneOv'),cv=document.getElementById('endFx');
+ if(!ov||!cv){onComplete?.();return;}
+ endingCancel?.();resetControls();ov.style.display='block';ov.style.opacity='1';
+ document.body.classList.add('ending-playing');
+ const ctx=cv.getContext('2d'),type=game?._finalBoss?.type||30;
+ const players=[{...game?.p,charType:game?.charType||'gunner'},...(game?.p2?[{...game.p2}]:[])];
+ let done=false,raf=0,start=null;
+ const skip=document.getElementById('endSkip');
+ const fit=()=>{cv.width=Math.max(1,window.innerWidth);cv.height=Math.max(1,window.innerHeight);};fit();window.addEventListener('resize',fit);
+ function finish(call=true){if(done)return;done=true;cancelAnimationFrame(raf);window.removeEventListener('resize',fit);skip?.removeEventListener('click',skipNow);document.removeEventListener('keydown',keys);
+ ov.style.display='none';document.body.classList.remove('ending-playing');endingCancel=null;if(call)onComplete?.();}
+ function skipNow(ev){ev?.stopPropagation();finish();}
+ function keys(ev){if(ev.key==='Escape'||ev.key==='Enter'){ev.preventDefault();finish();}}
+ endingCancel=()=>finish(false);skip?.addEventListener('click',skipNow);document.addEventListener('keydown',keys);
+ function hero(c,x,y,r,t,front){players.forEach((p,i)=>{const xx=x+(i-(players.length-1)/2)*r*2.2,dir=front?{x:0,y:1}:{x:0,y:-1};
+ if(p.charType==='gunner')drawPixelGunner(c,xx,y,r,dir,0,p);
+ else drawPixelMelee(c,p.charType,xx,y,r,dir,{active:false},p,{}, {sword:()=>{},shield:()=>{}},true,dir);});}
+ function frame(now){if(done)return;if(game&&_getG()!==game){finish(false);return;}
+ if(start===null)start=now;const t=(now-start)/1000;drawBossEndingFrame(ctx,type,t,cv.width,cv.height,hero);
+ if(t>=9.5){finish();return;}raf=requestAnimationFrame(frame);}
+ // Start the timeline only when the ending art has finished loading.
+ endingArtReady.then(()=>{if(!done)raf=requestAnimationFrame(frame);});
 }
-
 // ── showVictoryScreen ─────────────────────────────────────────────────────────
 export function showVictoryScreen() {
   const g = _getG();
@@ -281,7 +225,7 @@ export function showVictoryScreen() {
   p.innerHTML = `
     <div class="screen-emblem">${pixelEmblem("crown")}</div>
     <h1 style="font-size:26px;font-weight:900;color:#FFD43B;margin:0 0 6px;text-shadow:0 0 20px #FFD43B60;animation:fadeIn .8s both">恭喜通關！</h1>
-    <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 18px;animation:fadeIn 1s .3s both">你擊敗了最終魔王！</p>
+    <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0 0 18px;animation:fadeIn 1s .3s both">你擊敗了${bossName(g._finalBoss?.type||30)}！</p>
     <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid rgba(255,215,0,.15);animation:fadeIn 1s .6s both">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center">
         <div><div style="color:rgba(255,255,255,.4);font-size:10px">分數</div><div style="color:#FFD43B;font-size:22px;font-weight:900">${g.score}</div></div>
@@ -292,7 +236,7 @@ export function showVictoryScreen() {
     </div>
     <div style="animation:fadeIn 1s .9s both">
       <div style="color:rgba(255,255,255,.4);font-size:10px;margin-bottom:6px">收集卡牌</div>
-      <div style="color:#FFD43B;font-size:20px;font-weight:900;margin-bottom:8px">${inv.length} / 52</div>
+      <div style="color:#FFD43B;font-size:20px;font-weight:900;margin-bottom:8px">${inv.length} / ${C.length}</div>
       <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;max-height:100px;overflow-y:auto">${inv.map(ci => { const cd = C.find(c => c.id === ci.id); return cd ? `<span style="display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);border-radius:5px;padding:2px 5px;font-size:10px;border:1px solid ${RC[cd.r]}25;color:${RC[cd.r]}">${cardEmblem(cd,true)}${cd.n}<span style="font-size:8px;font-weight:900;background:${LVC[ci.lv]};color:#000;border-radius:2px;padding:0 3px;margin-left:2px">Lv${ci.lv + 1}</span></span>` : ""; }).join("")}</div>
     </div>
     <button class="btn btn-b" style="margin-top:18px;animation:fadeIn 1s 1.2s both;box-shadow:0 0 20px rgba(255,215,0,.3)" onclick="SG()"> 再來一次</button>`;
@@ -322,6 +266,8 @@ export function showVictoryScreen() {
 // ── triggerVictory ────────────────────────────────────────────────────────────
 export function triggerVictory(bossE) {
   const g = _getG();
+  if(!g||g._victoryPending)return;
+  g._finalBoss={type:bossE.stageBoss||30,phase:bossE.sbPhase||1};
   _setShake(0.8, 10);
   g.ultFlash = 1.5; g.ultType = "n";
   for (let i = 0; i < 60; i++) {
@@ -332,6 +278,7 @@ export function triggerVictory(bossE) {
   g.run = true; g._victoryPending = true;
   const vn = performance.now(); g.lf = vn; g.lS = vn; g.laF = vn;
   setTimeout(() => {
+    if(_getG()!==g)return;
     g.run = false;
     playEndCutscene(() => {
       requestAnimationFrame(() => requestAnimationFrame(() => showVictoryScreen()));

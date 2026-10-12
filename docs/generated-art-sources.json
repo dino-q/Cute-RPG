@@ -1,0 +1,69 @@
+{
+  "generation": "built-in image_gen",
+  "sources": [
+    {
+      "id": "sludge-idle",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-62df615c-40f0-41da-9ede-eaea645d22f0.png",
+      "file": "角色預覽/sludge-idle-source.png",
+      "rows": 2,
+      "cols": 4,
+      "kind": "body"
+    },
+    {
+      "id": "devil-idle",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-d18bc129-6c0a-4d6e-87e1-fe5985e41ffd.png",
+      "file": "角色預覽/devil-idle-source.png",
+      "rows": 2,
+      "cols": 4,
+      "kind": "body"
+    },
+    {
+      "id": "sludge-attack",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-6463d6c7-b85e-4d88-8702-598f714c967a.png",
+      "file": "角色預覽/sludge-attack-source.png",
+      "rows": 2,
+      "cols": 4,
+      "kind": "body"
+    },
+    {
+      "id": "devil-attack",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-271b8935-a98b-47cf-9d9b-30b006cb9c19.png",
+      "file": "角色預覽/devil-attack-source.png",
+      "rows": 2,
+      "cols": 4,
+      "kind": "body"
+    },
+    {
+      "id": "sludge-defeat",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-de58e83a-81cf-449c-841d-70f9f4a77dea.png",
+      "file": "角色預覽/sludge-defeat-source.png",
+      "rows": 2,
+      "cols": 3,
+      "kind": "body"
+    },
+    {
+      "id": "devil-defeat",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-8db86497-76f5-4562-96ed-3075af7ad399.png",
+      "file": "角色預覽/devil-defeat-source.png",
+      "rows": 2,
+      "cols": 3,
+      "kind": "body"
+    },
+    {
+      "id": "ghost-slash",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-e5d4246b-539a-49f7-a99a-c9e943d412b1.png",
+      "file": "角色預覽/ghost-slash-source.png",
+      "rows": 2,
+      "cols": 3,
+      "kind": "fx"
+    },
+    {
+      "id": "chest-art",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-6713d90a-05d0-4a44-8982-569c3226ff8c.png",
+      "file": "角色預覽/chest-art-source.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "body"
+    }
+  ]
+}

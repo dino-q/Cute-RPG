@@ -1,3 +1,4 @@
+import {C} from './cards.js';
 import { cardIllustration } from './card-vfx.js';
 import { drawSpriteWithEyes } from './sprite-eyes.js';
 // Code-native pixel emblems for the formal game interface.
@@ -97,3 +98,5 @@ export function installGameButtons() {
  });
  cleanToolbar();new MutationObserver(cleanToolbar).observe(toolbar,{subtree:true,childList:true,characterData:true});
 }
+
+window.addEventListener("game-art-ready",()=>{document.querySelectorAll(".card-art").forEach(el=>{const id=Number(el.querySelector("small")?.textContent);const card=C.find(c=>c.id===id);const img=el.querySelector("img");if(card&&img)img.src=cardIllustration(card);});});

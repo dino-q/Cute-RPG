@@ -1,3 +1,4 @@
+import {drawBossArt,bossName} from './boss-art.js';
 // Stage Boss system — Lv20  / Lv30 
 import { MAX_PARTICLES, ROLE_NORMAL, PR } from "./config.js";
 import { di, cl, rn } from "./utils.js";
@@ -163,12 +164,12 @@ export function triggerStageBoss(lv){
   const isPoo=lv===20;
   const bossCol=isPoo?"#8B6914":"#9B59B6";
   const bossEmoji=isPoo?"":"";
-  const bossTitle=isPoo?"中場 Boss 登場！":"最終魔王降臨！";
+  const bossTitle=bossName(lv);
 
   // VW/VH — read from canvas at trigger time
   const _cv=document.getElementById("cv");
-  const VW=_cv?_cv.width:400;
-  const VH=_cv?_cv.height:700;
+  const VW=window.innerWidth;
+  const VH=window.innerHeight;
 
   // 暫停 + 暗幕
   const _entOv=document.createElement("div");
@@ -203,6 +204,7 @@ export function triggerStageBoss(lv){
     _ectx.globalAlpha=.3+pulse;_ectx.fillStyle=bossCol;
     _ectx.beginPath();_ectx.arc(VW/2,VH/2,30+_entT*.02,0,Math.PI*2);_ectx.fill();
     _ectx.globalAlpha=1;
+    drawBossArt(_ectx,{stageBoss:lv,x:VW/2,y:VH/2-55,r:60,_artAngle:Math.PI/2},_entT,VW/2,VH/2-55,160);
     _entRaf=requestAnimationFrame(entLoop);
   }
   entLoop();
@@ -210,10 +212,9 @@ export function triggerStageBoss(lv){
   // 0.6秒：顯示 Boss emoji + 名稱
   setTimeout(()=>{
     const txt=document.createElement("div");
-    txt.style.cssText="position:relative;z-index:1;text-align:center";
+    txt.style.cssText="position:relative;z-index:1;text-align:center;margin-top:160px";
     txt.innerHTML=`
-      <div style="font-size:60px;animation:fl 1.5s ease-in-out infinite;filter:drop-shadow(0 0 20px ${bossCol})">${bossEmoji}</div>
-      <div style="font-size:20px;font-weight:900;color:${bossCol};text-shadow:0 0 20px ${bossCol};margin-top:8px;animation:fadeIn .5s both">${bossTitle}</div>
+            <div style="font-size:20px;font-weight:900;color:${bossCol};text-shadow:0 0 20px ${bossCol};margin-top:8px;animation:fadeIn .5s both">${bossTitle}</div>
       <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;animation:fadeIn .8s .3s both">${isPoo?" 防禦型 — 物理傷害降低":" 韌性型 — 免疫控制效果"}</div>
     `;
     _entOv.appendChild(txt);
@@ -271,6 +272,7 @@ export function updateStageBoss(e,now,dt){
   const _sbt=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p;
   const dx=_sbt.x-e.x,dy=_sbt.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
   if(Math.abs(dx)>2)e.face=dx>0?1:-1;
+  e._artAngle=Math.atan2(dy,dx);
 
   //  Phase transitions
   if(lv===30){
@@ -423,7 +425,7 @@ export function updateStageBoss(e,now,dt){
 
   //  Attacks
   if(lv===20){
-    if(now>e.sbAtkCD){e.sbAtkCD=now+(e._pooRage?3000:4000);sfxBossAtk("shockwave");
+    if(now>e.sbAtkCD){e._artAttackUntil=now+500;e.sbAtkCD=now+(e._pooRage?3000:4000);sfxBossAtk("shockwave");
       for(let i=0;i<10;i++){const a=Math.PI*2*i/10;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*3,vy:Math.sin(a)*3,dmg:15+g.wave*1.2,life:1.2,color:"#8B6914"});}burst(e.x,e.y,"#8B6914",12);}
     if(now>e.sbSpawnCD){e.sbSpawnCD=now+(e._pooRage?8000:10000);sfxBossAtk("spawn");
       const spnHp=400+g.wave*25;
@@ -437,7 +439,7 @@ export function updateStageBoss(e,now,dt){
     const phase=e.sbPhase,brgCD=phase===1?3000:phase===2?2200:1600;
     // Phase 3 循環中（非 idle/free）停止所有遠程攻擊
     const p3inCycle=phase===3&&e._p3cycle&&e._p3cycle!=="idle"&&e._p3cycle!=="free";
-    if(!p3inCycle&&now>e.sbAtkCD){e.sbAtkCD=now+brgCD;sfxBossAtk("darkshot");
+    if(!p3inCycle&&now>e.sbAtkCD){e._artAttackUntil=now+500;e.sbAtkCD=now+brgCD;sfxBossAtk("darkshot");
       const n=phase===1?5:phase===2?8:10,baseA=Math.atan2(dy,dx),spread=Math.PI/(phase===1?4:3);
       for(let i=0;i<n;i++){const a=baseA-spread/2+spread*i/(n-1),sp=3+phase*.5;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:12+g.wave*1.5+phase*5,life:1.5,color:"#9B59B6"});}}
     if(!p3inCycle&&phase>=2&&now>e.sbSpawnCD){e.sbSpawnCD=now+6000;sfxBossAtk("crosswave");
@@ -609,49 +611,8 @@ export function updateStageBoss(e,now,dt){
 export function drawStageBoss(e,now){
   if(!e||e.hp<=0)return;
   const cx=getCx();
-  const lv=e.stageBoss,shielded=e._spawnShield&&now<e._spawnShield;cx.save();
-  const bounce=Math.sin(now/(lv===20?200:300))*4,breathe=1+Math.sin(now/400)*.06;
-  // 受擊反饋：短暫縮放脈衝（快速恢復，不會持續變形）
-  const hitPulse=e.st>0?1+Math.max(0,1-e.st/300)*.12:0;
-  const scaleX=breathe+(hitPulse>0?hitPulse*.04:0);
-  const scaleY=breathe-(hitPulse>0?hitPulse*.03:0);
-  // 護盾視覺（加大 + 多層 + 脈動）
-  if(shielded){
-    const sp=Math.sin(now/80)*.2;
-    cx.globalAlpha=.15+sp;cx.fillStyle="#4DABF7";cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2.4,0,Math.PI*2);cx.fill();
-    cx.globalAlpha=.4+sp;cx.strokeStyle="#fff";cx.lineWidth=3;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2,0,Math.PI*2);cx.stroke();
-    cx.globalAlpha=.6;cx.strokeStyle="#4DABF7";cx.lineWidth=1.5;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2.2+Math.sin(now/120)*3,0,Math.PI*2);cx.stroke();
-    cx.globalAlpha=1;
-  }
-  if(lv===30){const phase=e.sbPhase;
-    // 亮色底圖光盤（讓Boss在暗背景中清楚可見）
-    const grad=cx.createRadialGradient(e.x,e.y+bounce,0,e.x,e.y+bounce,e.r*3);
-    const pulse=.5+Math.sin(now/200)*.15;
-    if(phase===1){grad.addColorStop(0,"rgba(200,140,255,"+(.45*pulse)+")");grad.addColorStop(.4,"rgba(155,89,182,"+(.3*pulse)+")");grad.addColorStop(1,"rgba(155,89,182,0)");}
-    else if(phase===2){grad.addColorStop(0,"rgba(255,120,100,"+(.5*pulse)+")");grad.addColorStop(.4,"rgba(231,76,60,"+(.35*pulse)+")");grad.addColorStop(1,"rgba(231,76,60,0)");}
-    else{grad.addColorStop(0,"rgba(255,80,80,"+(.6*pulse)+")");grad.addColorStop(.35,"rgba(220,50,50,"+(.4*pulse)+")");grad.addColorStop(1,"rgba(192,57,43,0)");}
-    cx.globalAlpha=1;cx.fillStyle=grad;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*3,0,Math.PI*2);cx.fill();
-    // 外圈亮環
-    const ringPulse=.6+Math.sin(now/120)*.2;
-    cx.globalAlpha=ringPulse;cx.strokeStyle=phase===1?"#C89DFF":phase===2?"#FF6B6B":"#FF4040";cx.lineWidth=2.5;
-    cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2.2+Math.sin(now/100)*3,0,Math.PI*2);cx.stroke();
-    if(phase>=2){cx.globalAlpha=ringPulse*.6;cx.strokeStyle=phase===2?"#E74C3C":"#FF4040";cx.lineWidth=1.5;cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*2.8+Math.sin(now/80)*4,0,Math.PI*2);cx.stroke();}
-    if(phase===3){cx.globalAlpha=.2+Math.sin(now/60)*.1;cx.fillStyle="#E74C3C";cx.beginPath();cx.arc(e.x,e.y+bounce,e.r*3.2,0,Math.PI*2);cx.fill();}}
-  cx.globalAlpha=e.st>0?.85:1;cx.font=`${lv===20?e.r*1.8:e.r*2}px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif`;cx.textAlign="center";cx.textBaseline="middle";
-  cx.save();cx.translate(e.x,e.y+bounce);cx.scale(scaleX,scaleY);
-  if(lv===20){const rageShake=e._pooRage?(Math.random()-.5)*.15:0;cx.rotate(Math.sin(now/500)*.06+rageShake);cx.fillText("",0,0);}
-  else{
-    if(e.sbPhase>=2)cx.translate((Math.random()-.5)*2,(Math.random()-.5)*2);
-    // 亮色光暈底層（讓 emoji 從暗背景中突出）
-    const gPhase=e.sbPhase||1;
-    const glowCol=gPhase===1?"rgba(190,120,255,.6)":gPhase===2?"rgba(231,100,100,.6)":"rgba(255,80,80,.7)";
-    cx.shadowColor=glowCol;cx.shadowBlur=20;
-    cx.fillText("",0,0);
-    // 再疊一層加強亮度
-    cx.shadowBlur=35;cx.globalAlpha=.5;cx.fillText("",0,0);
-    cx.shadowBlur=0;
-  }
-  cx.restore();
+  const lv=e.stageBoss,bounce=Math.sin(now/320)*.8;cx.save();
+  drawBossArt(cx,e,now);
   // HP bar
   const barW=e.r*2.5,barH=5,bx2=e.x-barW/2,by2=e.y-e.r-16+bounce;
   cx.globalAlpha=.6;cx.fillStyle="#333";cx.fillRect(bx2,by2,barW,barH);
@@ -687,13 +648,9 @@ export function drawStageBoss(e,now){
 
 export function drawMiniEnemy(e,now){
   const cx=getCx();
-  cx.save();const bounce=Math.sin(now/120+e.t)*3,wobble=Math.sin(now/200+e.t*2)*.15;
-  cx.translate(e.x,e.y+bounce);cx.rotate(wobble);
-  const sz=e.ragePoo?16:e.miniPoo?20:16;
-  cx.font=sz+"px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";cx.textAlign="center";cx.textBaseline="middle";
-  if(e.ragePoo){cx.globalAlpha=.5;cx.fillText("",0,0);}
-  else cx.fillText(e.miniPoo?"":"",0,0);
-  cx.rotate(-wobble);
+  cx.save();const sz=e.ragePoo?20:e.miniPoo?26:25;
+  cx.translate(e.x,e.y);
+  drawBossArt(cx,e,now,0,0,sz*1.6);
   // HP bar
   if(!e.ragePoo){
     const hpR=e.hp/e.mhp,bw=sz*1.4,bh=3,bx=-bw/2,by=-sz/2-6;
@@ -709,6 +666,8 @@ export function checkStageBossDeath(){
   if(_stageBoss.hp<=0){
     const lv=_stageBoss.stageBoss,e=_stageBoss;
     g._stageBossActive=false;bossBgmStop();
+    g._bossDefeats=(g._bossDefeats||[]).filter(d=>performance.now()-d.at<1500).slice(-1);
+    g._bossDefeats.push({type:lv,x:e.x,y:e.y,size:e.r*2.3,at:performance.now()});
     // 波次制：Boss 擊敗後給休息時間，避免立刻出怪
     if(g._ew){g._ew.active=false;g._ew.restEnd=performance.now()+4000;}
     g.ebul=[]; // 清空敵彈

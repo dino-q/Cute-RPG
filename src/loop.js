@@ -1,4 +1,6 @@
-import { drawCardBullet, drawCardLightning, drawCardWorld, drawCardStrike, addCardImpact, drawCardStatus } from './card-vfx.js';
+import {drawTreasure} from './treasure-art.js';
+import {drawBossDefeats} from './boss-art.js';
+import { drawCardBullet, drawCardLightning, drawCardWorld, drawCardStrike, drawGhostSlash, addCardImpact, drawCardStatus } from './card-vfx.js';
 // Main game loop — extracted from main.js (Stage 3-14)
 import {
   PI, TAU, PR, ER, BR, PS,
@@ -1737,31 +1739,8 @@ export function loop(){
   const crateSense=Infinity; // crate hints always visible across full map
   g.crates.forEach(cr=>{if(!crateActive(cr))return;
     const cdx=cr.x-g.p.x,cdy=cr.y-g.p.y;if(Math.abs(cdx)>VW*.7||Math.abs(cdy)>VH*.7)return;
-    const isBig=!!cr.bigChest;
-    const sz=isBig?18:12;
-    cx.save();
-    if(isBig){
-      // 大寶箱：金色光暈 + 脈動
-      const pulse=1+Math.sin(now/200)*.08;
-      cx.globalAlpha=.25+Math.sin(now/150)*.1;cx.fillStyle="#FFD43B";
-      cx.beginPath();cx.arc(cr.x,cr.y,sz*1.8*pulse,0,Math.PI*2);cx.fill();
-      cx.globalAlpha=1;
-    }
-    cx.fillStyle=isBig?"#5C4A1E":"#3D3522";cx.fillRect(cr.x-sz,cr.y-sz,sz*2,sz*2);
-    cx.strokeStyle=isBig?"#FFD43B":"#FFD43B60";cx.lineWidth=isBig?2:1.5;cx.strokeRect(cr.x-sz,cr.y-sz,sz*2,sz*2);
-    if(isBig){cx.strokeStyle="#fff";cx.lineWidth=1;cx.strokeRect(cr.x-sz+2,cr.y-sz+2,sz*2-4,sz*2-4);}
-    cx.fillStyle="#FFD43B";cx.font=`bold ${isBig?16:10}px Nunito`;cx.textAlign="center";
-    cx.fillText(isBig?"":"",cr.x,cr.y+(isBig?6:4));
-    if(di(cr,g.p)<=crateSense){
-      cx.strokeStyle=isBig?"rgba(255,215,0,.8)":"rgba(18,184,134,.75)";
-      cx.lineWidth=2;cx.beginPath();
-      cx.arc(cr.x,cr.y,(sz+6)+Math.sin(now/160)*1.5,0,Math.PI*2);cx.stroke();
-    }
-    // progress bar
-    const pct=cr.hits/cr.needed;if(pct>0){
-      const bw=sz*2;cx.fillStyle="rgba(0,0,0,.3)";cx.fillRect(cr.x-sz,cr.y+sz+3,bw,3);
-      cx.fillStyle=isBig?"#FFD43B":"#FFD43B";cx.fillRect(cr.x-sz,cr.y+sz+3,bw*pct,3);}
-    cx.restore();
+    drawTreasure(cx,cr,now);
+
   });
 
   // orbs
@@ -1797,6 +1776,7 @@ export function loop(){
     else drawEnemy(e);
   });
 
+  drawBossDefeats(cx,g,now);
   // player movement trail
   const _bhActive=g.bhEnd&&now<g.bhEnd;
   const pCol=_bhActive?"#2C3E50":g.p.fx.dragon?"#FF922B":g.p.fx.phoenix?"#BE4BDB":"#74C0FC";
@@ -1914,15 +1894,7 @@ export function loop(){
       cx.fillText(" 挑卡中...",g.p2.x,g.p2.y-PR-18);cx.restore();
     }
   }
-  // 殘影斬：殘影剪影
-  if(g._ghostShadow&&g._ghostShadow.life>0){
-    const gs=g._ghostShadow;gs.life-=.04;
-    cx.save();cx.globalAlpha=gs.life*.35;
-    cx.shadowBlur=0;
-    drawPlayer(gs.x,gs.y,PR,performance.now()/1000,"#DA77F2",gs.face,undefined,{effects:false});
-    cx.shadowBlur=0;cx.restore();
-    if(gs.life<=0)g._ghostShadow=null;
-  }
+  drawGhostSlash(cx,g,performance.now(),PR,drawPlayer);
   drawCardStrike(cx,{...g.p,charType:g.charType,_ad:g.ad},g._atkAnim,now,PR);
   if(g.p2)drawCardStrike(cx,g.p2,g._p2AtkAnim,now,PR);
   // 過熱條：長按攻擊時顯示在主角下方

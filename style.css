@@ -176,3 +176,5 @@ button:focus-visible,[onclick]:focus-visible{outline:3px solid #fff0c7;outline-o
 #ctl,#rbtns{pointer-events:none}
 #rbtns{margin-left:auto}
 #ctl .joyW,#ctl #skillBtn,#ctl #dodgeBtn,#ctl #ultR{pointer-events:auto}
+
+body.ending-playing #settingsBtn,body.ending-playing #ctl,body.ending-playing #rbtns{visibility:hidden;pointer-events:none}

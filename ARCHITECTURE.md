@@ -457,3 +457,46 @@ skills 只記錄時停的視覺期限，未改傷害或凍結機制。card-vfx �
 函式索引：src/utils.js 新增 getSkillTravelDirection(player,now)，供 src/render.js 取得技能位移朝向。優先使用閃避／閃電步向量、鬼斬起終點、影襲回程向量；殘影記錄自己的方向與職業。雙人同步使用剩餘時間，避免不同裝置的時鐘造成朝向錯亂。drawCardLightning 保留同名入口，內容恢復原版平滑雙線折電。
 
 美術新稿在角色預覽/卡牌特效預覽-待確認.html；圖檔來源與各表格尺寸在角色預覽/card-effects-review-manifest.json。待 Dino 看圖確認後才接入 assets 或發布；這批生成圖未取代現役素材。
+
+## 生成卡牌、Boss、殘影斬與寶箱（2026-10-12）
+
+模組總覽：
+- src/generated-art.js：圖集載入、逐格繪圖與縮圖。assets/generated-art.png/json 共 24 組、228 格；原稿由內建 image_gen 生成。
+- src/boss-art.js：八方向 Boss、攻擊、召喚怪與六格擊敗動作；暗城／晨光兩張生成場景。純繪圖。
+- src/treasure-art.js：大小寶箱與四階段開箱；地圖與選卡彈窗共用。
+- src/art-preview.js / art-preview.html：獨立手動美術展示，不啟動主遊戲邏輯。Vite 同時打包遊戲與展示頁。
+- scripts/prepare-generated-art.py：沿用 generate2dsprite 去底／分格／對齊後打包。來源在 docs/generated-art-sources.json。
+
+依賴圖：
+```mermaid
+graph LR
+ card_vfx[card-vfx.js] --> generated_art[generated-art.js]
+ boss[boss.js] --> boss_art[boss-art.js]
+ boss_art --> generated_art
+ ui[ui.js] --> boss_art
+ ui --> melee_sprite[melee-sprite.js]
+ ui --> gunner_sprite[gunner-sprite.js]
+ treasure_art[treasure-art.js] --> generated_art
+ loop[loop.js] --> treasure_art
+ loop --> boss_art
+ coop[coop.js] --> treasure_art
+ coop --> boss_art
+ coop --> ui
+ cards_ui[cards-ui.js] --> treasure_art
+ preview[art-preview.js] --> card_vfx
+ preview --> boss_art
+ preview --> treasure_art
+```
+
+函式索引：
+- generated-art.js：generatedArtReady、artFrame、drawArt、artThumbnail、directionIndex。
+- boss-art.js：bossArtReady、bossName、drawBossArt、drawBossDefeats、endingArtReady、drawBossEndingFrame。
+- treasure-art.js：drawTreasure、animateChestOpening。
+- card-vfx.js：新增 drawGhostSlash；原有匯出介面保留，改用生成圖。drawCardLightning 保留平滑雙線電擊。cardWeaponAtlas 保護臉部／身體，替換武器金屬區並快取；drawCardGun 使用槍口位置。
+- ui.js：playEndCutscene 保留完成回呼，改即時畫布；9.5 秒後完成。「跳過動畫」／Escape／Enter 可略過，事件與動畫迴圈清理一次。g._finalBoss 記錄 type、phase。
+- coop.js：同步殘影方向與相對時間、Boss 攻擊／護盾剩餘時間、迷你怪旗標、擊敗圖、龍週期與通關資料；客戶端通關只觸發一次。
+- combat.js：殘影斬保存角色方向與卡牌外觀，移除環狀粒子。原 150 毫秒傷害延遲、比例與扇形範圍沿用。
+- cards.js：連弩加純外觀旗標 _crossbow，攻速數值不改。
+- loop.js / coop.js：大小寶箱共用圖片；showPick / showCoopPick：四階段開箱動作。
+
+此批生成圖經「實裝上去看看」授權，取代上一節待審狀態。殘影斬、寶箱、Boss 和結尾同次更新。使用者自行進行遊戲測試；只執行發布必要打包。

@@ -266,16 +266,10 @@ export function swordSwing(_pp, _isP2) {
   if (_pp._ghostSlash) {
     const gsMul = _pp._ghostSlash;
     const _gsX = _pp.x, _gsY = _pp.y, _gsF = _pp.face;
-    g._ghostShadow = { x: _gsX, y: _gsY, face: _gsF, life: 1, t: performance.now() };
+    const ghostGame=g;
+    g._ghostShadow = { x:_gsX,y:_gsY,face:_gsF,ang:atkAngle,life:1,t:performance.now(),player:{charType:"swordsman",face:_gsF,fx:{..._pp.fx},_lightSaber:_pp._lightSaber,_poisonBlade:_pp._poisonBlade} };
     setTimeout(() => {
-      if (!g || !g.run) return;
-      for (let ring = 0; ring < 2; ring++) {
-        const cnt = 8 + ring * 4, spd = 2 + ring * 1.5;
-        for (let gi = 0; gi < cnt; gi++) {
-          const a = atkAngle + TAU * gi / cnt + ring * .2;
-          par.push({ x: _gsX + Math.cos(a) * (10 + ring * 8), y: _gsY + Math.sin(a) * (10 + ring * 8), vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, life: .5 + ring * .1, color: gi % 3 === 0 ? "#fff" : gi % 3 === 1 ? "#DA77F2" : "#BE4BDB", sz: rn(2, 4 + ring) });
-        }
-      }
+      if (g!==ghostGame || !g.run) return;
       g._ghostArc = { x: _gsX, y: _gsY, ang: atkAngle, t: performance.now() };
       g.ene.forEach(e => {
         if (e.hp <= 0) return;

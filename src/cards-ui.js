@@ -1,3 +1,4 @@
+import {animateChestOpening} from './treasure-art.js';
 import { revealCard } from './card-vfx.js';
 import { cardEmblem } from "./button-art.js";
 // Card selection UI, angel card, big chest
@@ -355,5 +356,6 @@ export function showPick(src, specificCard, pickCtx) {
     }
     cc.appendChild(col);
   });
+  if(src==="crate"||isBig)animateChestOpening(p);
   show("pick");
 }

@@ -65,3 +65,13 @@
 | getSkillTravelDirection | src/utils.js | 從閃電步／閃避、鬼斬及影襲回歸取得實際位移方向；角色和殘影共用，獨立於瞄準方向。 |
 
 ♻️ 沿用 drawCardLightning 還原原版平滑雙層電擊；沿用 drawPlayer、drawPixelMelee、drawPixelGunner 顯示位移方向。🆕 新寫 getSkillTravelDirection（原本角色朝向只由攻擊或上一幀座標推導，位移時可能朝錯方向）。
+
+| generatedArtReady / artFrame / drawArt / artThumbnail / directionIndex | src/generated-art.js | 載入生成圖集，依方向與格次共用繪圖。 |
+| bossArtReady / bossName / drawBossArt / drawBossDefeats | src/boss-art.js | Boss、召喚怪、入場與擊敗圖共用。 |
+| endingArtReady / drawBossEndingFrame | src/boss-art.js | 同一 Boss 退場與暗城轉晨光的 9.5 秒結尾，遊戲與展示共用。 |
+| drawTreasure / animateChestOpening | src/treasure-art.js | 大小寶箱、受擊進度與開箱選卡動作。 |
+| drawGhostSlash | src/card-vfx.js | 保存攻擊方向與角色，150 毫秒後重演全身揮劍。 |
+| prepare-generated-art.py | scripts/prepare-generated-art.py | 沿用 generate2dsprite 去底和對齊，整理 228 格生成美術。 |
+
+♻️ 沿用 drawPlayer、drawSpriteWithEyes、swordSwing、drawCardWorld、playEndCutscene、drawStageBoss、drawMiniEnemy、showPick、serializeCoopState、applyCoopState。
+🆕 新寫 generated-art、boss-art、treasure-art（既有程式形狀與空白 emoji 沒有生成素材圖集或同一 Boss 結尾）。
