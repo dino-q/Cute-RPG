@@ -405,7 +405,7 @@ export function loop(){
 
   for(const [player,state,level] of [[g.p,g,g.level],[g.p2,g._p2Ultimate,g.p2Level||1]]){
    if(!player||!state)continue;
-   if(state.mfEnd){state.mfPx=player.x;state.mfPy=player.y;}
+
   // black-hole ult field: 3s duration, pull + stylish execute for non-boss enemies
   if(state.bhEnd&&now<state.bhEnd){
     var bhLv=(player.ultLv||0),bhR=170+bhLv*30;
@@ -439,10 +439,10 @@ export function loop(){
     }
   }else if(state.mfEnd){
     // 磁力爆發！推開+傷害（先清 flag 防止重複觸發）
-    var _mfPx=state.mfPx,_mfPy=state.mfPy;state.mfEnd=0;
+    var _mfPx=state.mfPx,_mfPy=state.mfPy;state.mfEnd=0;state._mfBurstAt=now;
     var mfDmg=(ULT_D+player.atk*4+level*3)*(player.ultDmgMul||1)*(player.elemBoost||1)*(state.mfDmgMul||1);
     g.ene.forEach(e=>{
-      if(e.stageBoss&&di(e,player)>(state.mfR||200)+e.r)return;
+      if(e.stageBoss&&Math.hypot(e.x-_mfPx,e.y-_mfPy)>(state.mfR||200)+e.r)return;
       if(e.stageBoss){var sd2=Math.min(mfDmg,e.mhp*.05);e.hp-=sd2;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(sd2),life:1.2,color:"#339AF0",big:1});return;}
       var dx=e.x-_mfPx,dy=e.y-_mfPy,d=Math.sqrt(dx*dx+dy*dy)||1;
       if(d>(state.mfR||200)+e.r)return;
@@ -2105,14 +2105,6 @@ export function loop(){
       const eg=fctx.createRadialGradient(VW/2,VH/2,VW*.2,VW/2,VH/2,VW*.7);
       eg.addColorStop(0,"transparent");eg.addColorStop(1,"#9B59B6");
       fctx.fillStyle=eg;fctx.fillRect(0,0,VW,VH);
-      // 中央文字
-      fctx.globalAlpha=.7+pwFlash*.3;
-      fctx.font="bold 22px Nunito,sans-serif";fctx.textAlign="center";fctx.textBaseline="middle";
-      fctx.fillStyle="#FF4040";fctx.shadowColor="#FF4040";fctx.shadowBlur=15;
-      fctx.fillText(" 靠近Boss！",VW/2,VH*0.18);
-      fctx.font="bold 13px Nunito,sans-serif";fctx.fillStyle="#FFD43B";fctx.shadowColor="#FFD43B";
-      fctx.fillText("圈外衝擊波無處閃避・進入安全圈",VW/2,VH*0.24);
-      fctx.shadowBlur=0;
       fctx.restore();
     }
     // ult flash
@@ -2125,11 +2117,6 @@ export function loop(){
     cx.save();cx.globalAlpha=g._pooWarnAlpha;
     cx.fillStyle="rgba(139,105,20,.15)";cx.fillRect(0,0,VW,VH);
     cx.strokeStyle="#FF4040";cx.lineWidth=4;cx.strokeRect(4,4,VW-8,VH-8);
-    cx.globalAlpha=g._pooWarnAlpha+.3;
-    cx.font="bold 28px 'Nunito',sans-serif";cx.textAlign="center";cx.fillStyle="#FF4040";
-    cx.fillText(" 便便軍團來襲！",VW/2,VH/2-20);
-    cx.font="bold 16px 'Nunito',sans-serif";cx.fillStyle="#FFD43B";
-    cx.fillText("無法破壞！只能閃避！",VW/2,VH/2+15);
     cx.restore();
   }
 

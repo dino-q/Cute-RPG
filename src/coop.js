@@ -1,3 +1,4 @@
+import {setLayoutNotice} from './control-layout.js';
 import {resolveExplorationCoin,showCoinFlip,pks} from './cards-ui.js';
 import {drawBossPatternGround} from './boss-patterns.js';
 import {drawTreasure,animateChestOpening} from './treasure-art.js';
@@ -89,7 +90,7 @@ function receiveP2Character(data,net){
  if(game._p2CharacterReady)return;
  const c=CHAR[data.charType];Object.assign(game.p2,{charType:data.charType,hp:c.startHp,maxHp:c.startHp,atk:c.startAtk,speed:c.startSpeed,armor:c.armor,dodge:c.dodge,crit:c.crit,fr:c.fr});
  game._p2CharacterReady=true;
- if(game._coopAwaitingPlayer){document.getElementById('coopAwaitingLabel')?.remove();game._coopAwaitingPlayer=false;game.p2._inv=false;game.run=true;game.lf=performance.now();game.lS=game.lf;game.laF=game.lf;}
+ if(game._coopAwaitingPlayer){setLayoutNotice('coopAwaitingLabel','',false);game._coopAwaitingPlayer=false;game.p2._inv=false;game.run=true;game.lf=performance.now();game.lS=game.lf;game.laF=game.lf;}
 }
 function acknowledgeP2Pick(data){
  if(data.offerId!==window._p2OfferId)return;
@@ -261,7 +262,7 @@ export function beginCoopRun(charType){
  const game=_g();
  if(net?.role==='host'&&net.conn?.open){
   game._coopAwaitingPlayer=true;game.run=false;game.p2._inv=true;
-  const label=document.createElement('div');label.id='coopAwaitingLabel';label.textContent='等待隊友選好職業，再一起出發';label.style.cssText='position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:40;background:#17283ee8;border:1px solid #a58a54;color:#ead4a3;padding:12px 16px;border-radius:4px;font-size:13px;pointer-events:none;white-space:nowrap';document.body.appendChild(label);
+  setLayoutNotice('coopAwaitingLabel','等待隊友選好職業，再一起出發');
   net.p2Character=null;net.conn.send({t:'start',hostChar:charType,sessionId:game._startTime});
  }else if(net?.role==='client'&&net.conn?.open){
   net.awaitingCharacter=false;game._remoteStateSeq=-1;game._coopSessionId=net.sessionId;
@@ -277,7 +278,7 @@ export function getP2BigChestLeft(){return _p2BigChestLeft;}
 export function setP2BigChestLeft(v){_p2BigChestLeft=v;}
 export function resetCoopSession(){
  _p2BigChestLeft=0;_p2LastPicks=[];window._p2OfferId=null;window._p2OfferRevision=null;window._p2PickSending=false;
- document.getElementById('_p2PickOv')?.remove();document.getElementById('coopAwaitingLabel')?.remove();
+ document.getElementById('_p2PickOv')?.remove();setLayoutNotice('coopAwaitingLabel','',false);
  const net=_getNet?.();if(net){net._stateSeq=0;net._inputSeq=0;net._lastInputSeq=-1;net._lastInputAt=performance.now();net._lastStateSent=0;}
  const input=_getP2Input?.();if(input)Object.assign(input,{dx:0,dy:0,a:0,aimA:0,ult:false,ultHold:false,dodge:false,skill:false});
 }
@@ -372,10 +373,10 @@ export function showCoopPick(data) {
 
 /* ═══ Co-op Network Sync ═══ */
 // Visual state uses ages/remaining time so two browser clocks never need to match.
-function packCardPlayer(p){const now=performance.now(),v={_bladeRush:p._bladeRush?true:null};for(const k of ['_legendCards','_moveDir','_roleCards','_swordQiCount','_qiEvery','_qiMul','_drawSlash','_ironWill','_quake','_chainKill','_atkDodge','fx','_lightSaber','_poisonBlade','_minigun','_crossbow','invCD','_inv','_sh','projImmune','_iwActive','thorns','_guardAura','revive','orbiters','berserk','regen','_chaosNotice','_dashDx','_dashDy','hasBH','hasTS','hasMF','ultRate','ultCdReduce','mfCd','tsCd','mfDur','ultLv','lStep','atk','fr','armor','dodge','crit','_orbLevel','_orbPower','_orbRange','_orbCD'])v[k]=p[k];for(const k of ['_tauntVisualEnd','_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])v[k]=Math.max(0,(p[k]||0)-now);v._summonOrbs=(p._summonOrbs||[]).map(b=>({ox:b.ox,oy:b.oy,attacking:!!b.target}));if(p._travelFacing)v.travel={...p._travelFacing,until:Math.max(0,p._travelFacing.until-now)};if(p._healFlash)v.healAge=now-p._healFlash;if(p._cardReveal)v.reveal={...p._cardReveal,at:now-p._cardReveal.at};return v;}
+function packCardPlayer(p){const now=performance.now(),v={_bladeRush:p._bladeRush?true:null};for(const k of ['_legendCards','_moveDir','_roleCards','_swordQiCount','_qiEvery','_qiMul','_drawSlash','_ironWill','_quake','_chainKill','_atkDodge','fx','_lightSaber','_poisonBlade','_minigun','_crossbow','invCD','_inv','_sh','projImmune','_iwActive','thorns','_guardAura','revive','orbiters','berserk','regen','deathBoom','_chaosNotice','_dashDx','_dashDy','hasBH','hasTS','hasMF','ultRate','ultCdReduce','mfCd','tsCd','mfDur','ultLv','lStep','atk','fr','armor','dodge','crit','_orbLevel','_orbPower','_orbRange','_orbCD'])v[k]=p[k];for(const k of ['_tauntVisualEnd','_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])v[k]=Math.max(0,(p[k]||0)-now);v._summonOrbs=(p._summonOrbs||[]).map(b=>({ox:b.ox,oy:b.oy,attacking:!!b.target}));if(p._travelFacing)v.travel={...p._travelFacing,until:Math.max(0,p._travelFacing.until-now)};if(p._healFlash)v.healAge=now-p._healFlash;if(p._cardReveal)v.reveal={...p._cardReveal,at:now-p._cardReveal.at};return v;}
 function unpackCardPlayer(p,v){if(!v)return;const now=performance.now();Object.assign(p,v);for(const k of ['_tauntVisualEnd','_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])p[k]=v[k]?now+v[k]:0;p._travelFacing=v.travel?{...v.travel,until:now+v.travel.until}:null;p._healFlash=v.healAge===undefined?0:now-v.healAge;p._cardReveal=v.reveal?{...v.reveal,at:now-v.reveal.at}:null;}
-function packCardScene(g){const now=performance.now();return {hazards:(g._bossHazards||[]).map(h=>({...h,startAt:now-h.startAt,endAt:h.endAt-now})),roleEffects:(g._roleEffects||[]).filter(e=>now-e.at<e.life).map(e=>({...e,at:now-e.at})),defeats:(g._bossDefeats||[]).filter(d=>now-d.at<1500).map(d=>({...d,at:now-d.at})),impacts:(g._cardImpacts||[]).map(h=>({...h,at:now-h.at})),dragon:g._dragonPet?{x:g._dragonPet.x,y:g._dragonPet.y,face:g._dragonPet.face,breathCycle:g._dragonPet.breathCycle}:null,wb:(g._wb||[]).map(w=>({x:w.x,y:w.y,life:w.life})),booms:(g._booms||[]).map(b=>({x:b.x,y:b.y,rot:b.rot,phase:b.phase})),bh:Math.max(0,(g.bhEnd||0)-now),mf:Math.max(0,(g.mfEnd||0)-now),ts:Math.max(0,(g._cardTsEnd||0)-now),mfPx:g.mfPx,mfPy:g.mfPy,mfR:g.mfR,mfDur:g.p.mfDur,quake:g._quakeRingT?now-g._quakeRingT:1000,small:g._quakeRingSmall,thorn:g._thornFlash?now-g._thornFlash:1000};}
-function unpackCardScene(g,v){if(!v)return;const now=performance.now();g._bossHazards=(v.hazards||[]).map(h=>({...h,startAt:now-h.startAt,endAt:now+h.endAt}));g._roleEffects=(v.roleEffects||[]).map(e=>({...e,at:now-e.at}));g._bossDefeats=(v.defeats||[]).map(d=>({...d,at:now-d.at}));g._cardImpacts=(v.impacts||[]).map(h=>({...h,at:now-h.at}));g._dragonPet=v.dragon;g._wb=v.wb;g._booms=v.booms;g.bhEnd=v.bh?now+v.bh:0;g.mfEnd=v.mf?now+v.mf:0;g._cardTsEnd=v.ts?now+v.ts:0;g.mfPx=v.mfPx;g.mfPy=v.mfPy;g.mfR=v.mfR;g.p.mfDur=v.mfDur;g._quakeRingT=now-v.quake;g._quakeRingSmall=v.small;g._thornFlash=now-v.thorn;}
+function packCardScene(g){const now=performance.now();return {hazards:(g._bossHazards||[]).map(h=>({...h,startAt:now-h.startAt,endAt:h.endAt-now})),roleEffects:(g._roleEffects||[]).filter(e=>now-e.at<e.life).map(e=>({...e,at:now-e.at})),defeats:(g._bossDefeats||[]).filter(d=>now-d.at<1500).map(d=>({...d,at:now-d.at})),impacts:(g._cardImpacts||[]).map(h=>({...h,at:now-h.at})),dragon:g._dragonPet?{x:g._dragonPet.x,y:g._dragonPet.y,face:g._dragonPet.face,breathCycle:g._dragonPet.breathCycle}:null,wb:(g._wb||[]).map(w=>({x:w.x,y:w.y,life:w.life})),booms:(g._booms||[]).map(b=>({x:b.x,y:b.y,rot:b.rot,phase:b.phase})),bh:Math.max(0,(g.bhEnd||0)-now),mf:Math.max(0,(g.mfEnd||0)-now),ts:Math.max(0,(g._cardTsEnd||0)-now),pulseWarn:Math.max(0,(g._pulseWarnEnd||0)-now),pooWarn:g._pooWarnAlpha||0,mfBurstAge:g._mfBurstAt?now-g._mfBurstAt:1000,mfPx:g.mfPx,mfPy:g.mfPy,mfR:g.mfR,mfDur:g.p.mfDur,quake:g._quakeRingT?now-g._quakeRingT:1000,small:g._quakeRingSmall,thorn:g._thornFlash?now-g._thornFlash:1000};}
+function unpackCardScene(g,v){if(!v)return;const now=performance.now();g._bossHazards=(v.hazards||[]).map(h=>({...h,startAt:now-h.startAt,endAt:now+h.endAt}));g._roleEffects=(v.roleEffects||[]).map(e=>({...e,at:now-e.at}));g._bossDefeats=(v.defeats||[]).map(d=>({...d,at:now-d.at}));g._cardImpacts=(v.impacts||[]).map(h=>({...h,at:now-h.at}));g._dragonPet=v.dragon;g._wb=v.wb;g._booms=v.booms;g.bhEnd=v.bh?now+v.bh:0;g.mfEnd=v.mf?now+v.mf:0;g._cardTsEnd=v.ts?now+v.ts:0;g._pulseWarnEnd=v.pulseWarn?now+v.pulseWarn:0;g._pooWarnAlpha=v.pooWarn;g._mfBurstAt=now-(v.mfBurstAge??1000);g.mfPx=v.mfPx;g.mfPy=v.mfPy;g.mfR=v.mfR;g.p.mfDur=v.mfDur;g._quakeRingT=now-v.quake;g._quakeRingSmall=v.small;g._thornFlash=now-v.thorn;}
 
 
 export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, aim, ULT_CHARGE_NEED) {
@@ -417,7 +418,7 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
     p2Wb: g._p2WbSwing || 0,
     // P2 數據（CLIENT 需要顯示自己的 HUD）
     p2Hp: g.p2 ? g.p2.hp : 0, p2Mhp: g.p2 ? g.p2.maxHp : 0,
-    p2Ultimate:g._p2Ultimate?{ultCharge:g._p2Ultimate.ultCharge,ultHold:g._p2Ultimate.ultHold,ultCdLeft:Math.max(0,(g._p2Ultimate.ultCdEnd||0)-performance.now()),bh:Math.max(0,(g._p2Ultimate.bhEnd||0)-performance.now()),mf:Math.max(0,(g._p2Ultimate.mfEnd||0)-performance.now()),ts:Math.max(0,(g._p2Ultimate._cardTsEnd||0)-performance.now()),mfPx:g._p2Ultimate.mfPx,mfPy:g._p2Ultimate.mfPy,mfR:g._p2Ultimate.mfR}:null,
+    p2Ultimate:g._p2Ultimate?{ultCharge:g._p2Ultimate.ultCharge,ultHold:g._p2Ultimate.ultHold,ultCdLeft:Math.max(0,(g._p2Ultimate.ultCdEnd||0)-performance.now()),bh:Math.max(0,(g._p2Ultimate.bhEnd||0)-performance.now()),mf:Math.max(0,(g._p2Ultimate.mfEnd||0)-performance.now()),ts:Math.max(0,(g._p2Ultimate._cardTsEnd||0)-performance.now()),mfBurstAge:g._p2Ultimate._mfBurstAt?performance.now()-g._p2Ultimate._mfBurstAt:1000,mfPx:g._p2Ultimate.mfPx,mfPy:g._p2Ultimate.mfPy,mfR:g._p2Ultimate.mfR}:null,
     p2Ult: g._p2Ultimate?.ultCharge || 0, p2UltNeed: ULT_CHARGE_NEED,
     p2SkillCd: Math.max(0, getP2SkillCdEnd() - performance.now()),
     p2Combo: g.p2._comboCount || 0,
@@ -474,7 +475,7 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   // P2 HUD 數據（CLIENT 用）
   if (data.p2Hp !== undefined) g._clientP2Hp = data.p2Hp;
   if (data.p2Mhp !== undefined) g._clientP2Mhp = data.p2Mhp;
-  if(data.p2Ultimate){const v=data.p2Ultimate,now=performance.now();g._p2Ultimate={...v,ultCdEnd:now+v.ultCdLeft,bhEnd:v.bh?now+v.bh:0,mfEnd:v.mf?now+v.mf:0,_cardTsEnd:v.ts?now+v.ts:0};}
+  if(data.p2Ultimate){const v=data.p2Ultimate,now=performance.now();g._p2Ultimate={...v,_mfBurstAt:now-(v.mfBurstAge??1000),ultCdEnd:now+v.ultCdLeft,bhEnd:v.bh?now+v.bh:0,mfEnd:v.mf?now+v.mf:0,_cardTsEnd:v.ts?now+v.ts:0};}
   if (data.p2Ult !== undefined) g._clientP2Ult = data.p2Ult;
   if (data.p2UltNeed !== undefined) g._clientP2UltNeed = data.p2UltNeed;
   if (data.p2SkillCd !== undefined) g._clientP2SkillCd = data.p2SkillCd;
@@ -592,15 +593,7 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   // damage numbers
   g.dn = g.dn.filter(d => { d.life -= .025; return d.life > 0; });
   g.dn.forEach(d => { cx.save(); cx.globalAlpha = Math.min(1, d.life); cx.font = (d.big ? "bold 15px" : "bold 11px") + " 'Nunito',sans-serif"; cx.textAlign = "center"; cx.fillStyle = d.color || "#fff"; cx.fillText(typeof d.d === "number" ? "-" + d.d : d.d, d.x, d.y); cx.restore(); });
-  // Host pause is a waiting state, never a loss.
-  if(g._remotePaused){cx.save();cx.fillStyle='#142337e8';cx.fillRect(16,55,Math.max(180,VW-32),34);cx.fillStyle='#e2c88f';cx.font='bold 13px sans-serif';cx.textAlign='center';cx.fillText('冒險暫停・等待主機繼續',VW/2,77);cx.restore();}
-  // 對方選卡中通知
-  if (g._remotePickOpen) {
-    cx.save(); cx.font = "bold 14px 'Nunito',sans-serif"; cx.textAlign = "center";
-    cx.fillStyle = "rgba(0,0,0,.6)"; cx.fillRect(VW / 2 - 80, VH / 2 - 15, 160, 30);
-    cx.fillStyle = "#FFD43B"; cx.fillText(" 對方選卡中...", VW / 2, VH / 2 + 5);
-    cx.restore();
-  }
+  // Screen notices are rendered by the shared HUD layout slots.
   cx.restore();
   // CLIENT HUD：顯示 P2（自己）的數據
   if (g.p2 && g._clientP2Hp !== undefined) {

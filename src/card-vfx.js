@@ -75,6 +75,7 @@ export function drawCardGun(c,p,muzzle,dir,scale,now,rigged=false){
  const group=mini||p._crossbow||barrage?'arsenal':'weapon-variants',frame=mini?Math.min(2,Math.max(0,mini-1)):barrage?2:p._crossbow?3:(weaponRows[k]||0)*4;
  const width=(mini?24:p._crossbow?22:18)*scale;
  if(!rigged)drawArt(c,group,frame,muzzle.x-Math.cos(a)*width*.46,muzzle.y-Math.sin(a)*width*.46,width,15*scale,{angle:a});
+ if(p.deathBoom>0&&p._pixelShotAt&&now-p._pixelShotAt<90){const q=(now-p._pixelShotAt)/90;drawArt(c,'fire',3,muzzle.x+Math.cos(a)*9,muzzle.y+Math.sin(a)*9,27,21,{angle:a,alpha:1-q});}
  if(p._pixelShotAt&&now-p._pixelShotAt<60&&k!=='lightning')drawArt(c,themes[k]||'fire',3,muzzle.x+Math.cos(a)*5,muzzle.y+Math.sin(a)*5,12,12,{alpha:1-(now-p._pixelShotAt)/60,angle:a});
 }
 export function drawCardBullet(c,b,p,now,r=3){
@@ -124,7 +125,30 @@ export function drawCardGround(c,g,now){
  for(const [p,state] of [[g.p,g],[g.p2,g._p2Ultimate]]){
   if(!p||!state)continue;
   if(state.bhEnd>now){c.save();c.translate(p.x,p.y+14);c.scale(1,.58);drawArt(c,'arcane',0,0,0,126,126,{angle:now/1300,alpha:.78});c.restore();}
-  if(state.mfEnd>now)drawArt(c,'arcane',1,p.x,p.y,(state.mfR||200)*1.7,(state.mfR||200)*1.1,{alpha:.65});
+  // 磁力場吸引視覺
+  if(state.mfEnd&&now<state.mfEnd){
+    const _mfDur2=p.mfDur||1500;
+    const mfP=Math.min(1,(now-(state.mfEnd-_mfDur2))/_mfDur2); // 0→1 進度
+    const mfR=(state.mfR||200)*(1-mfP*.3); // 範圍逐漸收縮
+    c.save();
+    // 外圈脈動
+    c.globalAlpha=.15+Math.sin(now/80)*.08;c.strokeStyle="#339AF0";c.lineWidth=3;
+    c.beginPath();c.arc(state.mfPx,state.mfPy,mfR,0,Math.PI*2);c.stroke();
+    // 內圈旋轉虛線
+    c.globalAlpha=.25;c.strokeStyle="#74C0FC";c.lineWidth=2;c.setLineDash([8,6]);
+    c.beginPath();c.arc(state.mfPx,state.mfPy,mfR*.6,now/200,now/200+Math.PI*1.6);c.stroke();
+    c.setLineDash([]);
+    // 中心光暈
+    const mg=c.createRadialGradient(state.mfPx,state.mfPy,0,state.mfPx,state.mfPy,40);
+    mg.addColorStop(0,"rgba(51,154,240,.3)");mg.addColorStop(1,"transparent");
+    c.globalAlpha=.5+Math.sin(now/100)*.2;c.fillStyle=mg;c.beginPath();c.arc(state.mfPx,state.mfPy,40,0,Math.PI*2);c.fill();
+    c.restore();
+  }
+  if(state._mfBurstAt&&now-state._mfBurstAt<650){
+   const q=Math.max(0,(now-state._mfBurstAt)/650),radius=(state.mfR||200)*(.7+q*.45);
+   c.save();c.strokeStyle='#74c0fc';c.lineWidth=2.5*(1-q)+.5;c.globalAlpha=(1-q)*.6;
+   for(let i=0;i<16;i++){const angle=TAU*i/16+q*.16,x=state.mfPx+Math.cos(angle)*radius,y=state.mfPy+Math.sin(angle)*radius;c.save();c.translate(x,y);c.rotate(angle+q*(i%2?1:-1));c.beginPath();c.moveTo(-7,-7);c.lineTo(7,-2);c.lineTo(2,9);c.stroke();c.restore();}c.restore();
+  }
   if(state._cardTsEnd>now)drawArt(c,'arcane',2,p.x,p.y+10,145,105,{angle:Math.sin(now/600)*.04,alpha:.55});
  }
 
@@ -148,13 +172,18 @@ export function drawCardWorld(c,g,now,r=18,phoenix=0){
  const ga=g._ghostArc;if(ga){const q=(now-ga.t)/340;if(q>=0&&q<1)drawArt(c,'ghost-slash',Math.min(5,Math.floor(q*6)),ga.x+Math.cos(ga.ang)*r*.9,ga.y+Math.sin(ga.ang)*r*.9,r*4.5,r*4.5,{angle:ga.ang,alpha:Math.sin(q*Math.PI)});}
  if(g._thornFlash){const q=(now-g._thornFlash)/300;if(q>=0&&q<1)drawArt(c,'guardian',10,p.x,p.y,r*4,r*3,{alpha:1-q});}
  if(phoenix>0){const q=clamp(1-phoenix/1.2);drawArt(c,'phoenix',Math.min(5,Math.floor(q*6)),p.x,p.y-12-q*35,90,90,{fullCell:true,alpha:Math.sin(q*Math.PI)});}
- for(const hit of g._cardImpacts||[]){const q=(now-hit.at)/320;if(q<0||q>=1)continue;const legendary=['genesis','star-sword','infinity-blade'].includes(hit.kind),group=legendary?hit.kind:themes[hit.kind]||'fire',frame=legendary?8+Math.min(3,Math.floor(q*4)):hit.kind==='explosion'?6:3,size=legendary?48:hit.kind==='explosion'?80:32;drawArt(c,group,frame,hit.x,hit.y,size*(.7+q*.4),size*(.7+q*.4),{alpha:1-q});}
+ for(const hit of g._cardImpacts||[]){const q=(now-hit.at)/320;if(q<0||q>=1)continue;if(hit.kind==='explosion'){
+ const fade=1-q;drawArt(c,'fire',6,hit.x,hit.y,72+q*32,72+q*32,{alpha:fade*.9});drawArt(c,'star',3,hit.x,hit.y,28+q*22,28+q*22,{alpha:fade*.8});
+ for(let i=0;i<7;i++){const a=TAU*i/7+hit.x*.01,reach=14+q*38;drawArt(c,'fire',0,hit.x+Math.cos(a)*reach,hit.y+Math.sin(a)*reach,22*(1-q)+6,8,{angle:a,stretch:true,alpha:fade*.8});}continue;
+ }const legendary=['genesis','star-sword','infinity-blade'].includes(hit.kind),group=legendary?hit.kind:themes[hit.kind]||'fire',frame=legendary?8+Math.min(3,Math.floor(q*4)):hit.kind==='explosion'?6:3,size=legendary?48:hit.kind==='explosion'?80:32;drawArt(c,group,frame,hit.x,hit.y,size*(.7+q*.4),size*(.7+q*.4),{alpha:1-q});}
 }
 export function revealCard(player,card){if(player)player._cardReveal={at:performance.now(),name:card.n,color:card.c||'#dfc08b'};}
 export function drawCardStrike(c,p,animation,now,r=18){
  if(drawLegendStrike(c,p,animation,now,r))return;
  if(!animation?.active||!p)return;const role=p.charType||'swordsman',duration=role==='assassin'?150:role==='tank'?280:320,q=(now-animation.startT)/duration;
- if(q<.18||q>.8||role==='tank')return;const key=pick(p);if(!key||key==='lightning')return;
+ if(q<.18||q>.8)return;
+ if(p.deathBoom>0){const a=animation.angle??Math.atan2(p._ad?.y??1,p._ad?.x??0),fade=Math.sin((q-.18)/.62*Math.PI);const reach=role==='tank'?25:20;drawArt(c,'fire',3,p.x+Math.cos(a)*reach,p.y+Math.sin(a)*reach,35,29,{angle:a,alpha:fade*.85});for(const side of [-1,1])drawArt(c,'fire',0,p.x+Math.cos(a)*reach-Math.sin(a)*side*10,p.y+Math.sin(a)*reach+Math.cos(a)*side*10,27,9,{angle:a,stretch:true,alpha:fade*.6});}
+ if(role==='tank')return;const key=pick(p);if(!key||key==='lightning')return;
  const d=p._ad||{x:0,y:1},a=Number.isFinite(animation.angle)?animation.angle:Math.atan2(d.y,d.x),alpha=Math.sin((q-.18)/.62*Math.PI)*.85;
  drawArt(c,themes[key],2,p.x+Math.cos(a)*r,p.y+Math.sin(a)*r,r*3.5,r*3.5,{angle:a,alpha});
  if(role==='assassin')drawArt(c,themes[key],2,p.x+Math.cos(a)*r*.5,p.y+Math.sin(a)*r*.5,r*2.2,r*2.2,{angle:a+.2,flip:true,alpha:alpha*.7});

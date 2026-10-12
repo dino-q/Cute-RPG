@@ -2,7 +2,7 @@ import {weaponPoseFor} from './weapon-rig.js';
 import {drawArt} from './generated-art.js';
 const TAU=Math.PI*2,clamp=v=>Math.max(0,Math.min(1,v));
 export function recordRoleEffect(game,kind,x,y,angle=0,data={}){
- if(!game)return;const now=performance.now(),life=kind==='qi'?400:kind==='draw'?280:kind==='quake'?700:kind==='shieldwave'?190:kind==='knockhit'?170:360;
+ if(!game)return;const now=performance.now(),life=kind==='qi'?400:kind==='draw'?280:kind==='quake'?700:kind==='shieldwave'?220:kind==='knockhit'?190:360;
  const follow=data.follow??['quake','qi','draw','shieldwave','ironwill','chainkill','sonic','shadow'].includes(kind),owner=data.owner||'p1',p=owner==='p2'?game.p2:game.p;
  const active=(game._roleEffects||[]).filter(e=>now-e.at<e.life&&!(follow&&e.owner===owner&&e.kind===kind&&['quake','qi','draw','shieldwave'].includes(kind)));
  if(active.some(e=>e.kind===kind&&e.owner===owner&&Math.hypot(e.x-x,e.y-y)<6&&now-e.at<80))return;
@@ -59,8 +59,9 @@ export function drawRoleEvents(c,game,now,ground=false){
    if(e.kind==='ultimate-target'){
     if(!ground)for(const sign of [-1,1])drawArt(c,'sword-draw',Math.min(3,Math.floor(q*4)),x,y,105,105,{angle:e.angle+sign*Math.PI/4,alpha:fade});
    }else if(e.role==='tank'){
-    if(ground){drawArt(c,'quake-radial',0,x,y,range*2*(.35+.65*q),range*2*(.35+.65*q),{alpha:fade*.85});
-     for(let i=0;i<8;i++){const a=TAU*i/8;drawArt(c,'guardian',6,x+Math.cos(a)*range*.7,y+Math.sin(a)*range*.7,65,75,{angle:a,alpha:fade*.75});}}
+    const visualRange=range*.85;
+    if(ground){drawArt(c,'quake-radial',0,x,y,visualRange*2*(.35+.65*q),visualRange*2*(.35+.65*q),{alpha:fade*.85});
+     for(let i=0;i<8;i++){const a=TAU*i/8;drawArt(c,'guardian',6,x+Math.cos(a)*visualRange*.7,y+Math.sin(a)*visualRange*.7,55,64,{angle:a,alpha:fade*.75});}}
    }else if(e.role==='gunner'){
     if(!ground){const extension=clamp((q-.12)/.22),width=18+Math.sin(q*Math.PI)*42;
      for(const offset of [-16,0,16])drawArt(c,'sword-beam',Math.min(3,Math.floor(q*4)),x+Math.cos(e.angle)*24-Math.sin(e.angle)*offset,y+Math.sin(e.angle)*24+Math.cos(e.angle)*offset,range*extension,width*(offset===0?1:.35),{angle:e.angle,stretch:true,anchorX:0,alpha:fade*(offset===0?1:.65)});
@@ -85,13 +86,16 @@ export function drawRoleEvents(c,game,now,ground=false){
      drawArt(c,'quake-radial',0,x,y,diameter,diameter,{alpha:fade*.88});
     }else{
      const radius=16+Math.min(limit-16,68)*expand;
-     c.save();c.globalAlpha*=.43*(1-q);c.strokeStyle='#a7c4b1';c.lineWidth=1.5;
+     c.save();c.globalAlpha*=.58*(1-q);c.strokeStyle='#c5dfce';c.lineWidth=2; 
      c.beginPath();c.arc(x,y,radius,e.angle-.7,e.angle+.7);c.stroke();c.restore();
     }
+   }else if(e.kind==='shieldwave'){
+    const reach=20+q*20;drawArt(c,'guardian',5,x+Math.cos(e.angle)*reach,y+Math.sin(e.angle)*reach,38,22,{angle:e.angle,stretch:true,alpha:.75*(1-q)});
+    if(q<.5)drawArt(c,'star',3,x+Math.cos(e.angle)*29,y+Math.sin(e.angle)*29,22,22,{alpha:.7*(1-q/.5)});
    }continue;
   }
   if(e.kind==='knockhit'){
-   if(!ground){const distance=q*16;drawArt(c,'wind',4,x+Math.cos(e.angle)*distance,y+Math.sin(e.angle)*distance,27,11,{angle:e.angle,stretch:true,alpha:.48*(1-q)});if(q<.45)drawArt(c,'star',3,x,y,17,17,{alpha:.5*(1-q/.45)});}continue;
+   if(!ground){const distance=q*16;drawArt(c,'wind',4,x+Math.cos(e.angle)*distance,y+Math.sin(e.angle)*distance,32,12,{angle:e.angle,stretch:true,alpha:.65*(1-q)});if(q<.45)drawArt(c,'star',3,x,y,23,23,{alpha:.8*(1-q/.45)});}continue;
   }
   if(ground)continue;
 

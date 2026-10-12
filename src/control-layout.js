@@ -9,6 +9,7 @@ try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved?.version=
 const registry=[
  ['jzL','移動搖桿','play',140,140],['jzR','攻擊搖桿','play',120,120],['skillBtn','職業技能','play',52,52],['dodgeBtn','閃避','play',52,52],['ultW','大招與集氣','play',86,86],
  ['minimap','小地圖','play',80,80],['layoutHealth','生命值','play',300,12],['layoutLevel','等級與經驗','play',300,10],['layoutUltCharge','大招能量','play',300,10],['hud2','分數與擊殺','play',300,14],['p2hud','隊友資訊','play',300,25],['combo','連擊提示','play',100,18],['huntBanner','追獵提示','play',180,42],['settingsBtn','設定按鈕','play',68,32],
+ ['gameHint','教學與升級提示','play',340,48],['chaosNotice','混沌核心能力提示','play',290,190],['bossNotice','Boss危險提示','play',340,72],['coopNotice','隊友選卡／暫停提示','play',280,44],['coopAwaitingLabel','雙人出發提示','play',300,44],
  ['pracCards','練習卡片清單','practice',220,360],['pracEnemies','練習敵人清單','practice',200,360],['pracStats','練習能力清單','practice',360,200]
 ];
 function profile(){return editing?drafts[mode()]:profiles[mode()];}
@@ -16,7 +17,18 @@ function numeric(value,fallback,min,max){return Number.isFinite(value)?clamp(val
 export function getLayoutViewport(rect){
  baseRect={...rect};const screen=profile().screen;
  const width=rect.width*numeric(screen.w,1,.35,1),height=rect.height*numeric(screen.h,1,.3,1);
- return {width,height,left:rect.left+clamp(numeric(screen.x,.5,0,1)*rect.width-width/2,0,rect.width-width),top:rect.top+clamp(numeric(screen.y,.5,0,1)*rect.height-height/2,0,rect.height-height)};
+ const viewport={width,height,left:rect.left+clamp(numeric(screen.x,.5,0,1)*rect.width-width/2,0,rect.width-width),top:rect.top+clamp(numeric(screen.y,.5,0,1)*rect.height-height/2,0,rect.height-height)};
+ const masks=document.getElementById('gameBlackBars')?.children;
+ if(masks){const v=viewport;const boxes=[[0,0,innerWidth,v.top],[0,v.top+v.height,innerWidth,Math.max(0,innerHeight-v.top-v.height)],[0,v.top,v.left,v.height],[v.left+v.width,v.top,Math.max(0,innerWidth-v.left-v.width),v.height]];for(let i=0;i<4;i++){const [x,y,w,h]=boxes[i];masks[i].style.cssText='left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px';}}
+ return viewport;
+}
+// Stable slots remain present when hidden, so every notice can be edited before it appears.
+export function setLayoutNotice(id,text,visible=true){
+ const el=document.getElementById(id);if(!el)return;
+ const next=text||(!visible?el.textContent:text);
+ const changed=el.hidden===visible||el.textContent!==next;
+ if(el.textContent!==next)el.textContent=next;el.hidden=!visible;
+ if(changed)applyControlLayout();
 }
 function dimensions(target){
  const r=target.el.getBoundingClientRect();
@@ -92,19 +104,23 @@ export function openLayoutEditor(){
 }
 export function initControlLayout(deps){
  callbacks=deps;
- const bars=document.querySelectorAll('#hud > .hbar');['layoutHealth','layoutLevel','layoutUltCharge'].forEach((id,i)=>{if(bars[i])bars[i].id=id;});
+ for(const [id,text]of [['gameHint','擊殺敵人會掉經驗球，靠近自動吸取！'],['chaosNotice','混沌核心 · 能力提升清單'],['bossNotice','靠近 Boss！\n圈外衝擊波無處閃避・進入安全圈'],['coopNotice','隊友選卡中…'],['coopAwaitingLabel','等待隊友選好職業，再一起出發']]){
+  const el=document.createElement('section');el.id=id;el.className='layout-notice';el.textContent=text;el.hidden=true;el.setAttribute('role','status');el.setAttribute('aria-live','polite');document.getElementById('app').append(el);
+ }
+ const bars=document.createElement('div');bars.id='gameBlackBars';bars.setAttribute('aria-hidden','true');for(let i=0;i<4;i++)bars.append(document.createElement('div'));document.getElementById('app').append(bars);
+ const hudBars=document.querySelectorAll('#hud > .hbar');['layoutHealth','layoutLevel','layoutUltCharge'].forEach((id,i)=>{if(hudBars[i])hudBars[i].id=id;});
  document.querySelectorAll('#pracToolbar > button').forEach((el,i)=>{if(!el.id)el.id='layoutPractice'+i;registry.push([el.id,el.textContent.trim(),'practice',80,28]);});
  targets=registry.map(([id,label,group,w,h])=>({id,label,group,w,h,el:document.getElementById(id)})).filter(t=>t.el);
  for(const t of targets)if(t.el.parentElement?.id==='pracToolbar'){t.marker=document.createComment('layout home: '+t.id);t.el.before(t.marker);t.el.classList.add('layout-practice-button');}
  overlay=document.createElement('div');overlay.id='layoutOverlay';overlay.hidden=true;overlay.setAttribute('aria-label','版面編輯區');document.body.append(overlay);
  toolbar=document.createElement('section');toolbar.id='layoutEditor';toolbar.hidden=true;toolbar.setAttribute('aria-label','版面編輯工具');
- toolbar.innerHTML='<header><div><small>裝置專屬配置</small><strong>版面編輯</strong></div><button type="button" data-layout-action="dock">移到下方</button></header><p id="layoutNotice"></p><div class="layout-picker"><select id="layoutTarget" aria-label="選擇調整項目"></select><button type="button" data-layout-action="resetItem">還原此項</button></div><div class="layout-sliders"><label>左右 <input type="range" data-setting="x" min="0" max="100"><output></output></label><label>上下 <input type="range" data-setting="y" min="0" max="100"><output></output></label><label class="layout-size-row">大小 <input type="range" data-setting="s" min="45" max="250"><output></output></label><div class="layout-screen-rows"><label>畫面寬 <input type="range" data-setting="w" min="35" max="100"><output></output></label><label>畫面高 <input type="range" data-setting="h" min="30" max="100"><output></output></label><small>縮小畫面後，空出的區域顯示黑邊。按鍵可放在黑邊。</small></div></div><footer><button type="button" data-layout-action="resetAll">還原版面</button><button type="button" data-layout-action="cancel">取消</button><button type="button" class="primary" data-layout-action="save">儲存完成</button></footer>';
+ toolbar.innerHTML='<header><div><small>裝置專屬配置</small><strong>版面編輯</strong></div><button type="button" data-layout-action="dock">移到下方</button></header><p id="layoutNotice"></p><div class="layout-picker"><select id="layoutTarget" aria-label="選擇調整項目"></select><button type="button" data-layout-action="resetItem">還原此項</button></div><div class="layout-sliders"><label>左右 <input type="range" data-setting="x" min="0" max="100"><output></output></label><label>上下 <input type="range" data-setting="y" min="0" max="100"><output></output></label><label class="layout-size-row">大小 <input type="range" data-setting="s" min="45" max="250"><output></output></label><div class="layout-screen-rows"><label>畫面寬 <input type="range" data-setting="w" min="35" max="100"><output></output></label><label>畫面高 <input type="range" data-setting="h" min="30" max="100"><output></output></label><div class="layout-black-presets"><button type="button" data-black-bars="0">全畫面</button><button type="button" data-black-bars="10">上下各10%</button><button type="button" data-black-bars="20">上下各20%</button></div><small>黑邊會遮住遊戲畫面，按鍵仍可放在黑邊。儲存後套用；直式與橫式分別儲存。</small></div></div><footer><button type="button" data-layout-action="resetAll">還原版面</button><button type="button" data-layout-action="cancel">取消</button><button type="button" class="primary" data-layout-action="save">儲存完成</button></footer>';
  const selectEl=toolbar.querySelector('select');for(const [label,list]of [['畫面',[{id:'screen',label:'遊戲畫面／黑邊'}]],['戰鬥介面',targets.filter(t=>t.group==='play')],['練習模式',targets.filter(t=>t.group==='practice')]]){const optgroup=document.createElement('optgroup');optgroup.label=label;for(const t of list){const option=document.createElement('option');option.value=t.id;option.textContent=t.label;optgroup.append(option);}selectEl.append(optgroup);}
  document.body.append(toolbar);
  document.getElementById('editLayoutBtn').addEventListener('click',openLayoutEditor);
  selectEl.addEventListener('change',e=>select(e.target.value));
  toolbar.addEventListener('input',e=>{const key=e.target.dataset.setting;if(!key)return;const s=itemState(selected);if(['w','h'].includes(key))draft.screen[key]=Number(e.target.value)/100;else s[key]=Number(e.target.value)/100;requestApply();});
- toolbar.addEventListener('click',e=>{const action=e.target.closest('[data-layout-action]')?.dataset.layoutAction;if(!action)return;
+ toolbar.addEventListener('click',e=>{const preset=e.target.closest('[data-black-bars]');if(preset){draft.screen={x:.5,y:.5,w:1,h:1-Number(preset.dataset.blackBars)/50};requestApply();return;}const action=e.target.closest('[data-layout-action]')?.dataset.layoutAction;if(!action)return;
   if(action==='save')finish(true);if(action==='cancel')finish(false);
   if(action==='dock'){toolbar.classList.toggle('dock-bottom');e.target.textContent=toolbar.classList.contains('dock-bottom')?'移到上方':'移到下方';}
   if(action==='resetItem'){if(selected==='screen')draft.screen=empty().screen;else delete draft.items[selected];requestApply();}

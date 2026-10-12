@@ -2,7 +2,7 @@ import {endingArtReady,drawBossEndingFrame,bossName} from './boss-art.js';
 import {drawPixelGunner} from './gunner-sprite.js';
 import {drawPixelMelee} from './melee-sprite.js';
 import { drawPixelPhoenix, drawCardWorld } from './card-vfx.js';
-import { getLayoutViewport, applyControlLayout } from './control-layout.js';
+import { getLayoutViewport, applyControlLayout, setLayoutNotice } from './control-layout.js';
 import { cardEmblem, pixelEmblem } from "./button-art.js";
 /**
  * ui.js — 選單、設定、結果畫面、cutscene、鳳凰復活動畫
@@ -159,18 +159,18 @@ export function resumeGame(cb) {
 let chaosNoticeTimer;
 export function showChaosNotice(notice,session=_getG()){
  if(!notice?.gains?.length||!session||session._shownChaosNotice===notice.id)return;
- session._shownChaosNotice=notice.id;clearTimeout(chaosNoticeTimer);document.getElementById('chaosNotice')?.remove();
- const panel=document.createElement('section');panel.id='chaosNotice';panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');
+ session._shownChaosNotice=notice.id;clearTimeout(chaosNoticeTimer);setLayoutNotice('chaosNotice','',false);
+ const panel=document.getElementById('chaosNotice');if(!panel)return;panel.replaceChildren();panel.hidden=false;
  panel.style.cssText='position:fixed;top:max(76px,env(safe-area-inset-top));right:12px;z-index:10000;max-width:calc(100vw - 24px);width:290px;box-sizing:border-box;padding:14px 16px;border:1px solid #bda063;border-radius:12px;background:rgba(16,20,35,.97);color:#e4dfd2;box-shadow:0 8px 26px rgba(0,0,0,.3);pointer-events:auto';
  const title=document.createElement('strong');title.textContent='混沌核心 · Lv'+notice.level;title.style.cssText='display:block;color:#e6c78a;font-size:15px;margin-bottom:7px';panel.appendChild(title);
  const summary=document.createElement('div');summary.textContent='本次增加 '+notice.gains.length+' 項能力'+(notice.level>1?' · 累計 '+notice.total+' 項':'');summary.style.cssText='font-size:11px;color:#acb2bf;margin-bottom:8px';panel.appendChild(summary);
  for(const gain of notice.gains){const line=document.createElement('div');line.textContent=gain;line.style.cssText='font-size:13px;line-height:1.8';panel.appendChild(line);}
- const close=document.createElement('button');close.textContent='知道了';close.className='menu-control quiet';close.style.cssText='margin-top:10px;padding:5px 12px;font-size:11px';close.onclick=()=>panel.remove();panel.appendChild(close);document.body.appendChild(panel);
- chaosNoticeTimer=setTimeout(()=>panel.remove(),12000);
+ const close=document.createElement('button');close.textContent='知道了';close.className='menu-control quiet';close.style.cssText='margin-top:10px;padding:5px 12px;font-size:11px';close.onclick=()=>{panel.hidden=true;};panel.appendChild(close);applyControlLayout();
+ chaosNoticeTimer=setTimeout(()=>{panel.hidden=true;},12000);
 }
 
 export function resetSessionUi() {
-  clearTimeout(chaosNoticeTimer);document.getElementById("chaosNotice")?.remove();
+  clearTimeout(chaosNoticeTimer);setLayoutNotice("chaosNotice","",false);
   $("combo").textContent = "";
   const ct = _getCTimer();
   if (ct) { clearTimeout(ct); _setCTimer(null); }

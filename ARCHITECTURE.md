@@ -726,3 +726,11 @@ graph LR
 - ui新增export showChaosNotice。cards-ui→ui新增直接依賴；coop→ui沿用已有依賴新增showChaosNotice。cards.rndBuff現在回傳當次實際增益文字；applyCardLevel的混沌核心保存_chaosNotice{ id, level, total, gains }，升級仍只增3／2／3次。P1取卡立即顯示，CLIENT由cardP2快照補發自己提示，以session內notice.id去重。非阻塞提示12秒、自行關閉、不暂停隊友；換局resetSessionUi移除提示。
 - 攻速增益提示顯示真實次數倍率，生命增益列額外回血量，機率／護甲列增加值。此处不新增其他平衡變更。
 - 依Dino要求只執行發布打包，不跑遊玩或自動操作測試。
+
+## 2026-10-13 提示版面、黑邊與坦克／磁力修正
+
+- control-layout.js 新增 export setLayoutNotice，hud／coop／ui 共用。新增五個穩定提示容器：教學、混沌能力、Boss危險、隊友選卡／暫停、雙人出發。隱藏時在編輯器仍預覽；保存位置不依賴提示發生時間。世界傷害數字／敵人預告仍隨實際位置。
+- getLayoutViewport 同時更新四邊獨立黑色遮罩；保留可放按鍵的黑邊，增加全畫面／上下各10%／上下各20%預設，沿用直橫別保存。
+- 磁力場不再逐幀更新施放位置，恢复經典的脈動收縮圈／旋轉虛線／中心光暈。結束650ms碎裂弧片與原爆發粒子，P1／P2相對時間同步。爆發傷害距離以固定場心判斷，Boss亦同。
+- 坦克原生大招圖像尺度縮15%，傷害半徑維持280。普通盾擊改集中盾紋亮痕及命中碎光，無大面積光圈。毀滅之手沿用drawCardGun／drawCardStrike的火焰圖片出力、addCardImpact死亡爆炸增加白熱核及七道碎焰；數值沿用。
+- 只進行發布必要建置，遊戲操作／手機與雙人由Dino自行驗證。

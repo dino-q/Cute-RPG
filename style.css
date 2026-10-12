@@ -124,7 +124,7 @@ button:focus-visible,[onclick]:focus-visible{outline:3px solid #fff0c7;outline-o
 
 /* Formal game: device-local control layout workshop. */
 #app{background:#000}
-#app .layout-positioned,#settingsBtn.layout-positioned{position:fixed!important;left:var(--layout-x)!important;top:var(--layout-y)!important;right:auto!important;bottom:auto!important;margin:0!important;width:var(--layout-w)!important;height:var(--layout-h)!important;max-width:none!important;max-height:none!important;transform:translate(-50%,-50%) scale(var(--layout-scale))!important;transform-origin:center!important;transition:none!important}
+.layout-positioned{position:fixed!important;left:var(--layout-x)!important;top:var(--layout-y)!important;right:auto!important;bottom:auto!important;margin:0!important;width:var(--layout-w)!important;height:var(--layout-h)!important;max-width:none!important;max-height:none!important;transform:translate(-50%,-50%) scale(var(--layout-scale))!important;transform-origin:center!important;transition:none!important}
 #layoutOverlay[hidden],#layoutEditor[hidden]{display:none!important}
 #layoutOverlay{position:fixed;inset:0;z-index:100010;pointer-events:auto;touch-action:none}
 .layout-handle{position:absolute;border:1px dashed #b7c4c9;border-radius:4px;pointer-events:auto;touch-action:none;cursor:grab;background:#83c2dc12;min-width:8px;min-height:8px}
@@ -182,3 +182,17 @@ body.ending-playing #settingsBtn,body.ending-playing #ctl,body.ending-playing #r
 .coin-overlay{position:fixed;inset:0;z-index:300;background:#080e20d9;display:grid;place-items:center;padding:18px;overflow:auto}.coin-panel{width:min(340px,100%);text-align:center;background:#172337;border:2px solid #9b7744;border-radius:5px;box-shadow:0 8px 0 #070e1e;padding:24px 22px 20px;color:#eadcc3}.coin-kicker{font-size:11px;letter-spacing:3px;color:#c2b39a}.coin-panel h2{font-size:24px;font-weight:900;font-family:inherit;margin:9px 0;color:#ffe4a6}.coin-odds{font-size:11px;color:#afbbcc;margin:0}.coin-stage{display:block;width:230px;max-width:100%;height:auto;margin:-8px auto -18px;image-rendering:pixelated}.coin-result strong{font-size:18px;color:#eadcc3}.coin-result p{font-size:12px;line-height:1.7;margin:9px 0 16px;color:#afbbcc}.coin-panel button{width:100%;min-height:42px}.coin-panel button:disabled{opacity:.45}.coin-win .coin-result strong{color:#ffdf8d}.coin-reward:empty{display:none}
 
 .practice-card-section{display:flex;justify-content:space-between;align-items:center;margin:14px 2px 6px;padding:6px 2px;border-bottom:1px solid #8f80584d;color:#e5cf9d;font-size:11px;font-weight:800}.practice-card-section span{font-size:8px;color:#96a8b6;font-weight:400}
+
+/* Registered notices share the same layout controls as buttons. */
+.layout-notice{position:fixed;z-index:30;pointer-events:none;box-sizing:border-box;color:#ead4a3;background:#142337ec;border:1px solid #95835f;border-radius:6px;padding:10px 14px;font-size:13px;font-weight:700;text-align:center;white-space:pre-line;max-width:calc(100vw - 24px)}
+.layout-notice[hidden]{display:none}
+#gameHint{top:60px;left:50%;transform:translateX(-50%);width:340px;color:#ffd43b;transition:opacity .4s}
+#bossNotice{top:18%;left:50%;transform:translateX(-50%);width:340px;color:#ffcb9a;border-color:#a87872;line-height:1.7}
+#coopNotice{top:40%;left:50%;transform:translateX(-50%);width:280px}
+#coopAwaitingLabel{top:60px;left:50%;transform:translateX(-50%);width:300px}
+#chaosNotice{top:max(76px,env(safe-area-inset-top));right:12px;width:290px;pointer-events:auto;text-align:left;padding:14px 16px;background:rgba(16,20,35,.97);border-color:#bda063;color:#e4dfd2}
+.layout-editing .layout-notice{display:block!important;opacity:1!important;min-height:44px;pointer-events:none!important}
+#gameBlackBars{position:fixed;inset:0;pointer-events:none;z-index:2}
+#gameBlackBars>div{position:absolute;background:#000;pointer-events:none}
+.layout-black-presets{display:flex;gap:5px;margin:6px 0}
+.layout-black-presets button{flex:1;padding:4px!important;font-size:10px!important}

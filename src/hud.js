@@ -1,3 +1,4 @@
+import {setLayoutNotice} from './control-layout.js';
 import {C} from './cards.js';
 import {RC,LVC} from './config.js';
 import {drawCardIcon} from './card-vfx.js';
@@ -37,6 +38,10 @@ export function showPlayerDmg(dmg, p) {
 
 /* ═══ HUD ═══ */
 export function hud() {
+  const now=performance.now();
+  const pulse=g?._pulseWarnEnd>now,poo=g?._pooWarnAlpha>0;
+  setLayoutNotice('bossNotice',pulse?'靠近 Boss！\n圈外衝擊波無處閃避・進入安全圈':poo?'便便軍團來襲！\n無法破壞！只能閃避！':'',!!(pulse||poo));
+  setLayoutNotice('coopNotice',g?._remotePaused?'冒險暫停・等待主機繼續':'隊友選卡中…',!!(g?._remotePaused||g?._remotePickOpen));
   if (!g) return;
   const roleArt = {gunner:["gun","狙擊"],swordsman:["sword","鬼斬"],tank:["shield","嘲諷"],assassin:["dagger","影襲"]};
   const currentRole = (_isCoopMode && _net?.role === "client" ? g.p2?.charType : g.charType) || "gunner";
@@ -125,13 +130,11 @@ export function showHint(text) {
   const run = () => {
     const msg = hintQueue.shift();
     if (!msg) { hintShowing = false; return; }
-    const el = document.createElement("div");
-    el.textContent = msg;
-    el.style.cssText = "position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:15;color:#FFD43B;font-size:13px;font-weight:700;font-family:Nunito,sans-serif;text-shadow:0 0 10px rgba(255,215,75,.5);pointer-events:none;opacity:0;transition:opacity .4s,top .4s;white-space:nowrap;";
-    document.getElementById("app").appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = "1"; el.style.top = "60px"; });
-    setTimeout(() => { el.style.opacity = "0"; el.style.top = "50px"; }, 2800);
-    setTimeout(() => { el.remove(); run(); }, 3300);
+    const el=document.getElementById('gameHint');if(!el){run();return;}
+    setLayoutNotice('gameHint',msg);el.style.opacity='0';
+    requestAnimationFrame(()=>{el.style.opacity='1';});
+    setTimeout(()=>{el.style.opacity='0';},2800);
+    setTimeout(()=>{setLayoutNotice('gameHint','',false);run();},3300);
   };
   run();
 }
