@@ -1,3 +1,4 @@
+import {getGunnerMuzzle} from './gunner-sprite.js';
 import {recordRoleEffect} from './role-card-art.js';
 // Character skills, ultimates, dodge
 import {
@@ -68,7 +69,7 @@ function _castSkill(ct, now, pp, isP2) {
 
 /* ═══ P2 skill (AI auto-cast) ═══ */
 export function p2UseSkill() {
-  if (!g || !g.run || !g.p2 || g.p2._bladeRush) return;
+  if (!g || !g.run || !g.p2 || g.p2._pickPending || g.p2._bladeRush) return;
   const now = performance.now();
   if (now < _p2SkillCdEnd) return;
   const ct = g.p2.charType || "gunner";
@@ -89,23 +90,37 @@ export function useCharSkill() {
   const _cdI = setInterval(() => { const left = Math.max(0, _skillCdEnd - performance.now()); if (left <= 0) { if (cdEl) cdEl.style.display = "none"; clearInterval(_cdI); } else if (cdEl) cdEl.textContent = (left / 1000).toFixed(1); }, 100);
 }
 
+function skillAimDirection(player,isP2,range=650,origin=player){
+ const fallback=(isP2?player._ad:g.ad)||player._moveDir||{x:0,y:1};
+ const target=g.ene.filter(e=>e.hp>0&&!e.ragePoo&&!e._bossCore&&di(player,e)<=range+e.r).sort((a,b)=>di(player,a)-di(player,b))[0];
+ if(!target)return fallback;
+ const dx=target.x-origin.x,dy=target.y-origin.y,d=Math.hypot(dx,dy)||1;
+ const dir={x:dx/d,y:dy/d};player._ad=dir;if(!isP2)g.ad=dir;return dir;
+}
+
 /* ═══ gunner: snipe ═══ */
 export function skillSnipe(now, _pp, _isP2) {
   if (!_pp) _pp = g.p;
   var _pad = _isP2 ? (_pp._ad || { x: _pp.face || 1, y: 0 }) : (g.ad || { x: _pp.face || 1, y: 0 });
   _pp._snipeT = now;
   _pp._iFrameEnd = now + 600;
+  const session=g;
+  _pad=skillAimDirection(_pp,!!_isP2,650);
   const ba = Math.atan2(_pad.y, _pad.x);
   setTimeout(() => {
-    if (!g || !g.run) return;
+    if (g!==session || !g?.run || _pp._downed || _pp._pickPending) return;
     const bm = (_pp.berserk && _pp.hp / _pp.maxHp < _pp.berserk) ? 2 : 1;
     const ohBonus = (g._heatWarn || g.heatCD) ? 2.5 : 1;
     const dmg = (3.5 + _pp.atk) * 4 * bm * ohBonus * (_pp.ultDmgMul || 1);
     sfxShoot(); sfx("ult");
-    const ba2 = Math.atan2(_pad.y, _pad.x);
-    g.bul.push({ x: _pp.x, y: _pp.y - PR * .4, vx: Math.cos(ba2) * 12, vy: Math.sin(ba2) * 12, dmg: dmg * PLAYER_DMG_SCALE, life: 1, crit: true, bc: ohBonus > 1 ? { f: "#FF4500", g: "#FF0000", t: "#FFD43B" } : { f: "#FFD43B", g: "#FF922B", t: "#FFD43B" }, trail: [], _tw: 0, pierce: 999, hm: 0, _minigun: 0, _armorPen: 0, _isP2: !!_isP2 });
+    const initialAim=skillAimDirection(_pp,!!_isP2,650);_pp._pixelShotAt=performance.now();
+    const muzzle=getGunnerMuzzle(_pp.x,_pp.y,PR,initialAim,_pp._pixelShotAt,_pp)||{x:_pp.x,y:_pp.y-PR*.4};
+    const fireAim=skillAimDirection(_pp,!!_isP2,650,muzzle);
+    const ba2 = Math.atan2(fireAim.y,fireAim.x);
+    g.bul.push({ x: muzzle.x, y: muzzle.y, vx: Math.cos(ba2) * 12, vy: Math.sin(ba2) * 12, dmg: dmg * PLAYER_DMG_SCALE, life: 1, crit: true, bc: ohBonus > 1 ? { f: "#FF4500", g: "#FF0000", t: "#FFD43B" } : { f: "#FFD43B", g: "#FF922B", t: "#FFD43B" }, trail: [], _tw: 0, pierce: 999, hm: 0, _minigun: 0, _armorPen: 0, _isP2: !!_isP2 });
     _pp._snipeBeamT = performance.now(); _pp._snipeBeamAng = ba2;
-    const mzX = _pp.x + Math.cos(ba2) * PR, mzY = _pp.y + Math.sin(ba2) * PR;
+    recordRoleEffect(g,'snipe',_pp.x,_pp.y,ba2,{owner:_isP2?'p2':'p1',follow:true,ox:muzzle.x-_pp.x,oy:muzzle.y-_pp.y,life:180,range:420});
+    const mzX=muzzle.x,mzY=muzzle.y;
     burst(mzX, mzY, ohBonus > 1 ? "#FF4500" : "#FFD43B", 12); burst(mzX, mzY, "#fff", 6);
     setShake(ohBonus > 1 ? .5 : .3, ohBonus > 1 ? 8 : 5);
     g.dn.push({ x: _pp.x, y: _pp.y - 30, d: ohBonus > 1 ? " 過熱狙擊！！" : " 狙擊！", life: 1.5, color: ohBonus > 1 ? "#FF4500" : "#FFD43B", big: 1 });
@@ -194,19 +209,20 @@ export function skillShadowStrike(now, _pp, _isP2) {
 }
 
 /* ═══ dash (lightning step) ═══ */
-export function _startDash(now) {
-  if (!g) return;
-  const hasJoy = joy.a && (Math.abs(joy.dx) > .2 || Math.abs(joy.dy) > .2);
-  const ldx = hasJoy ? joy.dx : g.ad.x, ldy = hasJoy ? joy.dy : g.ad.y;
+export function _startDash(now,player=g?.p,isP2=false) {
+  if (!g||!player) return;
+  const input=isP2?null:joy,ad=isP2?(player._ad||{x:0,y:1}):g.ad;
+  const hasJoy = input?.a && (Math.abs(input.dx) > .2 || Math.abs(input.dy) > .2);
+  const ldx = hasJoy ? input.dx : ad.x, ldy = hasJoy ? input.dy : ad.y;
   const ld = Math.sqrt(ldx * ldx + ldy * ldy) || 1;
-  g.p._dashEnd = now + (g.p.lStepDur || 200);
-  g.p._dashDx = ldx / ld; g.p._dashDy = ldy / ld;
-  g.p._dashSpd = g.p.lStepSpd || 8;
-  g.p._inv = true;
-  burst(g.p.x, g.p.y, "#FFE066", 6);
-  g.dn.push({ x: g.p.x, y: g.p.y - 20, d: "衝刺", life: 1, color: "#FFE066" });
-  g.ene.forEach(e => { if ((e.boss || e.stageBoss) && e.hp > 0 && di(e, g.p) < 80) {
-    const ld2 = Math.min(g.p.atk * 3, e.mhp * .05); e.hp -= ld2;
+  player._dashEnd = now + (player.lStepDur || 200);
+  player._dashDx = ldx / ld; player._dashDy = ldy / ld;
+  player._dashSpd = player.lStepSpd || 8;
+  player._inv = true;
+  burst(player.x, player.y, "#FFE066", 6);
+  g.dn.push({ x: player.x, y: player.y - 20, d: "衝刺", life: 1, color: "#FFE066" });
+  g.ene.forEach(e => { if ((e.boss || e.stageBoss) && e.hp > 0 && di(e, player) < 80) {
+    const ld2 = Math.min(player.atk * 3, e.mhp * .05); e.hp -= ld2;
     burst(e.x, e.y, "#FFE066", 8); g.dn.push({ x: e.x, y: e.y - e.r, d: "" + Math.floor(ld2), life: 1, color: "#FFE066", big: 1 });
   } });
 }
@@ -216,10 +232,10 @@ export function _startDash(now) {
 // Shared by both players. Card-based black hole/time-stop/magnet still use their own rules.
 export function castRoleUltimate(player,now,damage,isP2=false){
  if(!g||!player||player._bladeRush)return;
- const ct=player.charType||(isP2?'gunner':g.charType),dir=(isP2?player._ad:g.ad)||player._moveDir||{x:0,y:1},angle=Math.atan2(dir.y,dir.x),owner=isP2?'p2':'p1';
+ const ct=player.charType||(isP2?'gunner':g.charType),dir=ct==='gunner'?skillAimDirection(player,isP2,650):((isP2?player._ad:g.ad)||player._moveDir||{x:0,y:1}),angle=Math.atan2(dir.y,dir.x),owner=isP2?'p2':'p1';
  if(ct==='assassin'){
   const viewW=document.getElementById('cv')?.width||window.innerWidth,viewH=document.getElementById('cv')?.height||window.innerHeight;
-  const targets=g.ene.filter(e=>e.hp>0&&!e.ragePoo&&!e._bossCore&&Math.abs(e.x-player.x)<Math.min(520,viewW*.48)&&Math.abs(e.y-player.y)<Math.min(520,viewH*.48)).sort((a,b)=>di(player,a)-di(player,b)).slice(0,8);
+  const targets=g.ene.filter(e=>e.hp>0&&!e.ragePoo&&!e._bossCore&&Math.abs(e.x-player.x)<Math.min(650,viewW*.58)&&Math.abs(e.y-player.y)<Math.min(650,viewH*.58)).sort((a,b)=>di(player,a)-di(player,b)).slice(0,8);
   player._gsDash=null;player._dashEnd=0;if(!isP2)g._shadowReturn=null;
   player._bladeRush={elapsed:0,leg:-1,targets,damage,isP2,angle,origin:{x:player.x,y:player.y},hits:new Map(),lastGhost:0};
   player._iFrameEnd=Math.max(player._iFrameEnd||0,now+1450);
@@ -227,7 +243,7 @@ export function castRoleUltimate(player,now,damage,isP2=false){
   sfx('ult');g.dn.push({x:player.x,y:player.y-40,d:'八閃・雙刃影殺',life:1.4,color:'#d6c3f5',big:1});return;
  }
  const names={gunner:'天穹貫穿砲',swordsman:'八方破天斬',tank:'不破盾陣',assassin:'雙刃影殺'};
- recordRoleEffect(g,'ultimate',player.x,player.y,angle,{role:ct,owner,follow:ct!=='tank',life:950,range:ct==='gunner'?650:ct==='tank'?280:ct==='assassin'?320:300});
+ recordRoleEffect(g,'ultimate',player.x,player.y,angle,{role:ct,owner,follow:true,life:950,range:ct==='gunner'?650:ct==='tank'?280:ct==='assassin'?320:300});
  player._iFrameEnd=Math.max(player._iFrameEnd||0,now+700);
  const animKey=isP2?'_p2AtkAnim':'_atkAnim';
  g[animKey]={...(g[animKey]||{}),active:true,startT:now,angle,_qiSpin:ct==='swordsman'};
@@ -255,13 +271,19 @@ export function updateAssassinUltimates(now,elapsedMs){
  for(const player of [g.p,g.p2].filter(Boolean)){
   const rush=player._bladeRush;if(!rush)continue;
   if((player.charType||(rush.isP2?'assassin':g.charType))!=='assassin'||player.hp<=0||player._downed||player._pickPending){player._bladeRush=null;continue;}
+  if(rush.retreat){
+   rush.retreat.age+=elapsedMs;const q=Math.min(1,rush.retreat.age/220),t=1-Math.pow(1-q,2),r=rush.retreat;
+   player.x=r.x+(r.tx-r.x)*t;player.y=r.y+(r.ty-r.y)*t;player._travelFacing={x:r.tx-r.x,y:r.ty-r.y,until:now+100};player._iFrameEnd=now+800;
+   if(q>=1){player._bladeRush=null;recordRoleEffect(g,'rush-finish',player.x,player.y,rush.angle,{owner:rush.isP2?'p2':'p1',follow:true,life:330});}
+   continue;
+  }
   rush.elapsed+=elapsedMs;const leg=Math.min(7,Math.floor(rush.elapsed/170)),q=Math.min(1,(rush.elapsed-leg*170)/170),owner=rush.isP2?'p2':'p1';
   if(leg!==rush.leg){
-   rush.leg=leg;rush.from={x:player.x,y:player.y};rush.legHits=new Set();
+   rush.leg=leg;rush.legCuts=0;rush.legVictim=null;rush.from={x:player.x,y:player.y};rush.legHits=new Set();
    const living=rush.targets.filter(e=>e.hp>0),target=living.length?living[leg%living.length]:null;
    const a=target?Math.atan2(target.y-player.y,target.x-player.x):rush.angle+leg*TAU/8;
-   const tx=target?target.x+Math.cos(a)*55:rush.origin.x+Math.cos(a)*100,ty=target?target.y+Math.sin(a)*55:rush.origin.y+Math.sin(a)*100;
-   const distance=Math.hypot(tx-player.x,ty-player.y),limit=Math.min(1,350/(distance||1));
+   const tx=target?target.x+Math.cos(a)*55:rush.origin.x+Math.cos(a)*170,ty=target?target.y+Math.sin(a)*55:rush.origin.y+Math.sin(a)*170;
+   const distance=Math.hypot(tx-player.x,ty-player.y),limit=Math.min(1,620/(distance||1));
    rush.to={x:cl(player.x+(tx-player.x)*limit,PR+4,mapW()-PR-4),y:cl(player.y+(ty-player.y)*limit,PR+4,mapH()-PR-4)};
    rush.angle=Math.atan2(rush.to.y-player.y,rush.to.x-player.x);
    const anim=rush.isP2?'_p2AtkAnim':'_atkAnim';g[anim]={active:true,startT:now,angle:rush.angle};
@@ -273,85 +295,140 @@ export function updateAssassinUltimates(now,elapsedMs){
   player.face=Math.cos(rush.angle)>=0?1:-1;
   if(now-rush.lastGhost>45){rush.lastGhost=now;_dashGhosts.push({x:player.x,y:player.y,face:player.face,charType:'assassin',fx:{...player.fx},direction:{x:Math.cos(rush.angle),y:Math.sin(rush.angle)},life:.65});if(_dashGhosts.length>16)_dashGhosts.shift();}
   const dx=player.x-old.x,dy=player.y-old.y,length=dx*dx+dy*dy;
-  for(const enemy of rush.targets){
-   if(enemy.hp<=0||enemy._coopShield||rush.legHits.has(enemy)||(rush.hits.get(enemy)||0)>=3)continue;
-   const along=length?cl(((enemy.x-old.x)*dx+(enemy.y-old.y)*dy)/length,0,1):0;
-   if(Math.hypot(enemy.x-old.x-dx*along,enemy.y-old.y-dy*along)>enemy.r+42)continue;
-   rush.legHits.add(enemy);rush.hits.set(enemy,(rush.hits.get(enemy)||0)+1);
-   const dmg=_isElite()&&enemy.stageBoss?Math.min(rush.damage/3,enemy.mhp*.05/3):rush.damage/3;
-   enemy.hp-=dmg;recordRoleEffect(g,'ultimate-target',enemy.x,enemy.y,rush.angle,{owner,follow:false,life:240});
-   g.dn.push({x:enemy.x,y:enemy.y-enemy.r,d:Math.floor(dmg),life:.6,color:'#d3bbf4'});burst(enemy.x,enemy.y,'#c1a7ea',4);
+  if(!rush.legVictim||rush.legVictim.hp<=0){
+   rush.legVictim=rush.targets.find(enemy=>{
+    if(enemy.hp<=0||enemy._coopShield)return false;
+    const along=length?cl(((enemy.x-old.x)*dx+(enemy.y-old.y)*dy)/length,0,1):0;
+    return Math.hypot(enemy.x-old.x-dx*along,enemy.y-old.y-dy*along)<=enemy.r+42;
+   })||null;
+  }
+  const enemy=rush.legVictim;
+  if(enemy&&enemy.hp>0&&!enemy._coopShield){
+   const due=Math.min(3,Math.floor(q*3)+1);
+   while(rush.legCuts<due&&enemy.hp>0){
+    rush.legCuts++;const dmg=_isElite()&&enemy.stageBoss?Math.min(rush.damage/24,enemy.mhp*.05/24):rush.damage/24;
+    enemy.hp-=dmg;recordRoleEffect(g,'ultimate-target',enemy.x,enemy.y,rush.angle+(rush.legCuts-2)*.25,{owner,follow:false,life:160});
+    g.dn.push({x:enemy.x+(rush.legCuts-2)*12,y:enemy.y-enemy.r,d:Math.round(dmg*10)/10,life:.6,color:'#d3bbf4'});burst(enemy.x,enemy.y,'#c1a7ea',2);
+   }
   }
   settleEnemyDeaths();
-  if(rush.elapsed>=1360){player._bladeRush=null;player._iFrameEnd=now+250;recordRoleEffect(g,'rush-finish',player.x,player.y,rush.angle,{owner,follow:true,life:330});setShake(.16,3);}
+  if(rush.elapsed>=1360){
+   const threats=g.ene.filter(e=>e.hp>0&&!e._bossCore&&di(player,e)<300);let best={x:player.x,y:player.y},score=-Infinity;
+   for(let i=0;i<12;i++){const a=rush.angle+Math.PI+TAU*i/12,point={x:cl(player.x+Math.cos(a)*155,PR+4,mapW()-PR-4),y:cl(player.y+Math.sin(a)*155,PR+4,mapH()-PR-4)};
+    const clearance=Math.min(500,...threats.map(e=>di(point,e)-e.r));if(clearance>score){score=clearance;best=point;}}
+   rush.retreat={x:player.x,y:player.y,tx:threats.length?best.x:player.x,ty:threats.length?best.y:player.y,age:0};player._iFrameEnd=now+1000;setShake(.16,3);
+  }
  }
 }
 
-export function doUlt() {
-  if (!g || !g.run || (_net?.role==='client'?g.p2:g.p)?._pickPending || (_net?.role==='client'?g.p2:g.p)?._bladeRush) return;
-  if (_net && _net.role === "client") { setClientUltReq(true); return; }
-  const isBH = !!g.p.hasBH;
-  const isTS = !!g.p.hasTS;
-  const isMF = !!g.p.hasMF;
-  const isCd = isBH || isTS || isMF;
-  const isLS = !!g.p.lStep;
-  const now = performance.now();
-  if (isCd && now < (g.ultCdEnd || 0)) return;
-  if (!isCd && g.ultCharge < ULT_CHARGE_NEED) return;
-  let _comboUlt = false;
-  if (_isCoopMode && g.p2 && !g.p2._downed) {
-    if (g._p2UltTime && now - g._p2UltTime < 1000) { _comboUlt = true; g._p2UltTime = 0; }
-    else { g._p1UltTime = now; }
+
+export function updateSummonOrbs(now,elapsedMs){
+ if(!g)return;
+ for(const [player,isP2] of [[g.p,false],[g.p2,true]]){
+  if(!player)continue;const count=Math.min(3,Math.max(0,player.orbiters||0));
+  if(!count){player._summonOrbs=[];continue;}
+  if(player._downed||player._pickPending)continue;
+  const balls=player._summonOrbs||(player._summonOrbs=[]);balls.length=count;
+  for(let i=0;i<count;i++){
+   const a=now/600+TAU*i/count,home={x:Math.cos(a)*44,y:Math.sin(a)*44};
+   const ball=balls[i]||(balls[i]={ox:home.x,oy:home.y,nextAt:now+i*140,age:0,target:null});
+   if(!ball.target&&now>=ball.nextAt){
+    const targets=g.ene.filter(e=>e.hp>0&&!e.ragePoo&&!e._bossCore&&!e._coopShield&&!(e._spawnShield>now)&&di(player,e)<(player._orbRange||300)+e.r).sort((a,b)=>di(player,a)-di(player,b));
+    if(targets.length){ball.target=targets[i%targets.length];ball.age=0;ball.start={x:ball.ox,y:ball.oy};ball.hit=false;}
+    else ball.nextAt=now+150;
+   }
+   if(!ball.target){ball.ox=home.x;ball.oy=home.y;continue;}
+   ball.age+=elapsedMs;const target=ball.target,tx=target.x-player.x,ty=target.y-player.y;
+   const q=ball.age<180?Math.min(1,ball.age/180):Math.max(0,1-(ball.age-180)/220),t=q*q*(3-2*q);
+   ball.ox=home.x+(tx-home.x)*t;ball.oy=home.y+(ty-home.y)*t;
+   if(!ball.hit&&ball.age>=180){
+    ball.hit=true;
+    if(target.hp>0&&!target._coopShield&&!(target._spawnShield>now)&&di(player,target)<(player._orbRange||300)+target.r){
+     let dmg=(player.atk*1.3+8)*(player._orbPower||1)*(player.elemBoost||1)*(player.levelDmgMul||1);
+     if(target.boss&&target.bossType==='armor')dmg*=.7;
+     dmg*=target.boss?(player.bossDmg||1):(player.mobDmg||1);target.hp-=dmg;
+     recordRoleEffect(g,'orb-impact',target.x,target.y,Math.atan2(ty,tx),{owner:isP2?'p2':'p1',follow:false,life:220});
+     g.dn.push({x:target.x,y:target.y-target.r,d:Math.floor(dmg),life:.7,color:'#f1daa2'});
+    }
+   }
+   if(ball.age>=400){ball.target=null;ball.nextAt=now+Math.max(0,(player._orbCD||500)-400);}
   }
-  const ultLv = g.p.ultLv || 0;
+ }
+ settleEnemyDeaths();
+}
+
+export function doUlt(){
+ if(_net?.role==='client'){setClientUltReq(true);return false;}
+ return castPlayerUltimate(g?.p,false);
+}
+export function doP2Ult(){return castPlayerUltimate(g?.p2,true);}
+function castPlayerUltimate(player,isP2){
+ if(!g||!g.run||!player||player._downed||player._pickPending||player._bladeRush)return false;
+ const state=isP2?(g._p2Ultimate||(g._p2Ultimate={ultCharge:0,ultCdEnd:0,ultHold:false})):g;
+ const level=isP2?(g.p2Level||1):g.level;
+  const isBH = !!player.hasBH;
+  const isTS = !!player.hasTS;
+  const isMF = !!player.hasMF;
+  const isCd = isBH || isTS || isMF;
+  const isLS = !!player.lStep;
+  const now = performance.now();
+  if (isCd && now < (state.ultCdEnd || 0)) return;
+  if (!isCd && state.ultCharge < ULT_CHARGE_NEED) return;
+  let _comboUlt=false;
+  if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p._downed){
+   const other=isP2?'_p1UltTime':'_p2UltTime',own=isP2?'_p2UltTime':'_p1UltTime';
+   if(g[other]&&now-g[other]<1000){_comboUlt=true;g[other]=0;g[own]=0;}else g[own]=now;
+  }
+  const ultLv = player.ultLv || 0;
   const _comboMul = _comboUlt ? 3 : 1;
-  const baseDmg = (ULT_D + g.p.atk * 6 + g.level * 5) * (g.p.ultDmgMul || 1) * (1 + ultLv * .35) * _comboMul;
-  const cdVal = (isBH ? BH_COOLDOWN_MS : isMF ? (g.p.mfCd || 12e3) : (g.p.tsCd || 15e3)) / (g.p.ultRate || 1) * (1 - (g.p.ultCdReduce || 0));
+  const baseDmg = (ULT_D + player.atk * 6 + level * 5) * (player.ultDmgMul || 1) * (1 + ultLv * .35) * _comboMul;
+  const cdVal = (isBH ? BH_COOLDOWN_MS : isMF ? (player.mfCd || 12e3) : (player.tsCd || 15e3)) / (player.ultRate || 1) * (1 - (player.ultCdReduce || 0));
   if (isBH) {
-    g.bhEnd = now + BH_DURATION_MS;
-    g.bhPow = 1 + ultLv * .45;
-    g.p.bhSafeEnd = now + BH_DURATION_MS + 800;
+    state.bhEnd = now + BH_DURATION_MS;
+    state.bhPow = 1 + ultLv * .45;
+    player.bhSafeEnd = now + BH_DURATION_MS + 800;
   }
   if (isTS) {
-    const frzDur = g.p.tsFrzDur || 2e3;
-    g._cardTsEnd=now+frzDur; // visual timer only
+    const frzDur = player.tsFrzDur || 2e3;
+    state._cardTsEnd=now+frzDur; // visual timer only
     const tsDmg = baseDmg * .5;
-    g.ene.forEach(e => { e.frozen = Math.max(e.frozen || 0, frzDur); const td = (_isElite() && e.stageBoss) ? Math.min(tsDmg, e.mhp * .05) : tsDmg; e.hp -= td; g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(td), life: 1.3, color: "#74C0FC" }); if (e.hp <= 0) burst(e.x, e.y, e.color, 10); });
+    g.ene.forEach(e => { if(!e.boss&&!e.stageBoss)e.frozen = Math.max(e.frozen || 0, frzDur); const td = (_isElite() && e.stageBoss) ? Math.min(tsDmg, e.mhp * .05) : tsDmg; e.hp -= td; g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(td), life: 1.3, color: "#74C0FC" }); if (e.hp <= 0) burst(e.x, e.y, e.color, 10); });
     settleEnemyDeaths();
-    burst(g.p.x, g.p.y, "#74C0FC", 25);
-    g.dn.push({ x: g.p.x, y: g.p.y - 30, d: isBH ? "黑洞+時停" : "時間停止+凍結傷害", life: 1.5, color: "#74C0FC", big: 1 });
+    burst(player.x, player.y, "#74C0FC", 25);
+    g.dn.push({ x: player.x, y: player.y - 30, d: isBH ? "黑洞+時停" : "時間停止+凍結傷害", life: 1.5, color: "#74C0FC", big: 1 });
     const cols = ["#74C0FC", "#4DABF7", "#339AF0", "#fff"];
-    for (let i = 0; i < 30 && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / 30, v = rn(3, 8); par.push({ x: g.p.x + Math.cos(a) * 15, y: g.p.y + Math.sin(a) * 15, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.2, color: cols[i % cols.length], sz: rn(3, 7) }); }
+    for (let i = 0; i < 30 && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / 30, v = rn(3, 8); par.push({ x: player.x + Math.cos(a) * 15, y: player.y + Math.sin(a) * 15, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.2, color: cols[i % cols.length], sz: rn(3, 7) }); }
   }
   if (isMF) {
-    const _mfDur = g.p.mfDur || 1500;
-    g.mfEnd = now + _mfDur;
-    g.mfPx = g.p.x; g.mfPy = g.p.y;
-    g.mfR = g.p.mfR || 200;
-    g.mfDmgMul = g.p.mfDmgMul || 1;
-    g.mfSlow = g.p.mfSlow || 0;
-    g.p._iFrameEnd = Math.max(g.p._iFrameEnd || 0, now + 1500);
-    burst(g.p.x, g.p.y, "#339AF0", 20);
-    g.dn.push({ x: g.p.x, y: g.p.y - 30, d: " 磁力場！", life: 2, color: "#339AF0", big: 1 });
+    const _mfDur = player.mfDur || 1500;
+    state.mfEnd = now + _mfDur;
+    state.mfPx = player.x; state.mfPy = player.y;
+    state.mfR = player.mfR || 200;
+    state.mfDmgMul = player.mfDmgMul || 1;
+    state.mfSlow = player.mfSlow || 0;
+    player._iFrameEnd = Math.max(player._iFrameEnd || 0, now + 1500);
+    burst(player.x, player.y, "#339AF0", 20);
+    g.dn.push({ x: player.x, y: player.y - 30, d: " 磁力場！", life: 2, color: "#339AF0", big: 1 });
     for (let i = 0; i < 24 && par.length < MAX_PARTICLES; i++) {
-      const a = TAU * i / 24; par.push({ x: g.p.x + Math.cos(a) * 80, y: g.p.y + Math.sin(a) * 80, vx: -Math.cos(a) * rn(2, 4), vy: -Math.sin(a) * rn(2, 4), life: 1, color: i % 2 ? "#339AF0" : "#74C0FC", sz: rn(3, 6) });
+      const a = TAU * i / 24; par.push({ x: player.x + Math.cos(a) * 80, y: player.y + Math.sin(a) * 80, vx: -Math.cos(a) * rn(2, 4), vy: -Math.sin(a) * rn(2, 4), life: 1, color: i % 2 ? "#339AF0" : "#74C0FC", sz: rn(3, 6) });
     }
   }
-  if (isCd) g.ultCdEnd = now + cdVal;
-  if(!isCd)castRoleUltimate(g.p,now,baseDmg,false);
+  if (isCd) state.ultCdEnd = now + cdVal;
+  if(!isCd)castRoleUltimate(player,now,baseDmg,isP2);
   if (isBH) {
     g.ene.forEach(e => { const ud = (_isElite() && e.stageBoss) ? Math.min(baseDmg, e.mhp * .05) : baseDmg; e.hp -= ud; g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(ud), life: 1.3, color: isBH ? "#868E96" : "#FFD43B", big: 1 }); if (e.hp <= 0) burst(e.x, e.y, e.color, 14); });
     settleEnemyDeaths();
   }
   const cols = isBH ? ["#495057", "#868E96", "#CED4DA", "#fff"] : isTS ? ["#74C0FC", "#4DABF7", "#339AF0", "#fff"] : ["#BE4BDB", "#FFD43B", "#FF6B6B", "#74C0FC", "#fff"];
   const burstCount = 40 + ultLv * 12;
-  if(!(g.charType==='assassin'&&!isCd))for (let i = 0; i < burstCount && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / burstCount, v = rn(2, 7 + ultLv); par.push({ x: g.p.x + Math.cos(a) * 20, y: g.p.y + Math.sin(a) * 20, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.3 + ultLv * .15, color: cols[i % cols.length], sz: rn(3, 8 + ultLv) }); }
-  g.ultFlash = isBH ? 1 : isTS ? .6 : (isMF?.3:.18); g.ultType = isBH ? "bh" : "n"; if (!isCd) g.ultCharge = 0; sfx("ult");
-  if (isLS&&!g.p._bladeRush) _startDash(now);
+  if(!((player.charType||g.charType)==='assassin'&&!isCd))for (let i = 0; i < burstCount && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / burstCount, v = rn(2, 7 + ultLv); par.push({ x: player.x + Math.cos(a) * 20, y: player.y + Math.sin(a) * 20, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.3 + ultLv * .15, color: cols[i % cols.length], sz: rn(3, 8 + ultLv) }); }
+  g.ultFlash = isBH ? 1 : isTS ? .6 : (isMF?.3:.18); g.ultType = isBH ? "bh" : "n"; if (!isCd) state.ultCharge = 0; sfx("ult");
+  if (isLS&&!player._bladeRush) _startDash(now,player,isP2);
   if (_comboUlt) {
     g.dn.push({ x: g.p.x, y: g.p.y - 50, d: " 合體大招！×3 傷害！", life: 3, color: "#FFD43B", big: 1 });
     g.dn.push({ x: g.p2.x, y: g.p2.y - 50, d: " 合體大招！", life: 3, color: "#F06595", big: 1 });
     if(g.charType!=='assassin')burst(g.p.x,g.p.y,'#FFD43B',25);if(g.p2.charType!=='assassin')burst(g.p2.x,g.p2.y,'#F06595',25);
     sfx("phoenix");
   }
+ return true;
 }

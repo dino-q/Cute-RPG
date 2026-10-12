@@ -145,3 +145,10 @@
 | drawHuntWindRoute | src/render.js | 低亮度連貫雙道地面風痕與方向尖端，代替五枚重複風圖。 |
 
 ♻️ 沿用 drawEnemy、drawArt、drawRoleEvents、castRoleUltimate 與八閃位移。🆕 drawHuntWindRoute（原逐個貼圖形成不連貫路線）。
+
+| applyCardLevel | src/cards.js | 每張卡本級總貢獻、升級差額與倍率替換，保留其他卡及動態加成。 |
+| doP2Ult / castPlayerUltimate | src/skills.js | 與doUlt同一判定、卡片替換、獨立集氣／冷卻。 |
+| updateSummonOrbs | src/skills.js | 每位持有者的守護球出擊、傷害與回收。 |
+| skillAimDirection | src/skills.js | 技能真正發射當下重新找敵，狙擊從實際槍口瞄準。 |
+
+♻️ 沿用card、doUlt、recordRoleEffect、drawRoleEvents、drawArt、getGunnerMuzzle、drawPlayer、drawShadowClones、continueAdventure、generate2dsprite處理器。🆕 上述共用函式（原升級逐級堆疊、P2通用爆炸、只有P1召喚球、狙擊舊方向）。

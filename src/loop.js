@@ -51,7 +51,7 @@ import {
   initSkills, setSkillsG, setSkillsCoopState, setSkillsClientSkillReq, getSkillsClientSkillReq,
   getDashGhosts, setDashGhosts, resetDashGhosts, SKILL_CDS,
   getSkillCdEnd, setSkillCdEnd, getP2SkillCdEnd, setP2SkillCdEnd,
-  p2UseSkill, useCharSkill, skillSnipe, skillGhostSlash, skillTaunt, _startDash, doUlt, castRoleUltimate, updateAssassinUltimates
+  p2UseSkill, useCharSkill, skillSnipe, skillGhostSlash, skillTaunt, _startDash, doUlt, doP2Ult, castRoleUltimate, updateAssassinUltimates, updateSummonOrbs
 } from "./skills.js";
 import {
   initCardsUi, setCardsUiG, setCardsUiInv, getCardLv, addCard, pks,
@@ -216,7 +216,7 @@ export function loop(){
       if(_net.conn?.open&&(t-(_net._lastInputSent||0)>=33||action)&&(_net.conn.dataChannel?.bufferedAmount||0)<131072){
        const blocked=g._remotePaused||g.p2?._pickPending||!!window._p2OfferId;
        _net._inputSeq=(_net._inputSeq||0)+1;
-       _net.conn.send({t:'inp',sessionId:g._coopSessionId,seq:_net._inputSeq,jx:blocked?0:joy.dx,jy:blocked?0:joy.dy,ja:blocked?0:joy.a,aa:blocked?0:aim.a,ax:blocked?0:aim.dx,ay:blocked?0:aim.dy,ult:!blocked&&!!getClientUltReq(),dodge:!blocked&&!!getClientDodgeReq(),skill:!blocked&&!!getSkillsClientSkillReq()});
+       _net.conn.send({t:'inp',sessionId:g._coopSessionId,seq:_net._inputSeq,jx:blocked?0:joy.dx,jy:blocked?0:joy.dy,ja:blocked?0:joy.a,aa:blocked?0:aim.a,ax:blocked?0:aim.dx,ay:blocked?0:aim.dy,ult:!blocked&&!!getClientUltReq(),dodge:!blocked&&!!getClientDodgeReq(),skill:!blocked&&!!getSkillsClientSkillReq(),ultHold:!blocked&&!!g._clientUltHold});
        _net._lastInputSent=t;setClientUltReq(false);setClientDodgeReq(false);setSkillsClientSkillReq(false);
       }
     }catch(e){console.error("CLIENT input error:",e);}
@@ -224,7 +224,7 @@ export function loop(){
   }
   const now=performance.now(),frameMs=Math.min(now-g.lf,33),dt=frameMs/16.67;g.lf=now;g.time=now;
   if(!_isClientMode){ // ═══ 以下遊戲邏輯只在 HOST 端執行 ═══
-  if(_net?.role==='host'&&now-(_net._lastInputAt||0)>800)Object.assign(_p2Input,{dx:0,dy:0,a:0,aimA:0,ult:false,dodge:false,skill:false});
+  if(_net?.role==='host'&&now-(_net._lastInputAt||0)>800)Object.assign(_p2Input,{dx:0,dy:0,a:0,aimA:0,ult:false,ultHold:false,dodge:false,skill:false});
   if(g.p._pickPending)g.p._inv=true;if(g.p2?._pickPending)g.p2._inv=true;
   if(g.p2?._dodgeInvEnd&&now>=g.p2._dodgeInvEnd){g.p2._dodgeInvEnd=0;if(!g.p2._pickPending&&!g.p2._invEnd)g.p2._inv=false;}
   const moveStart=[g.p,g.p2].map(p=>p?{p,x:p.x,y:p.y}:null);
@@ -361,6 +361,14 @@ export function loop(){
   }
   // ult charge — hold to charge, tap when full to detonate (non-black-hole)
   else if(g._huntComboShown){g._huntComboShown=false;$("huntBanner").style.display="none";$("huntBanner").innerHTML="";}
+  if(g.p2){
+   const u2=g._p2Ultimate||(g._p2Ultimate={ultCharge:0,ultCdEnd:0,ultHold:false});
+   const hold=!g.p2._downed&&!g.p2._pickPending&&!g.p2._bladeRush&&(_p2AI||!!_p2Input?.ultHold);u2.ultHold=hold;
+   if(!g.p2.hasBH&&!g.p2.hasTS&&!g.p2.hasMF){
+    if(hold)u2.ultCharge=Math.min(ULT_CHARGE_NEED,(u2.ultCharge||0)+(g.p2.ultRate||1)*dt*1.2);
+    else if(u2.ultCharge<ULT_CHARGE_NEED)u2.ultCharge=Math.max(0,(u2.ultCharge||0)-dt*.4);
+   }else u2.ultHold=false;
+  }
   if(!g.p.hasBH&&!g.p.hasTS&&!g.p.hasMF){
     if(g.ultHold&&g.ultCharge<ULT_CHARGE_NEED){var _pu=g.ultCharge;g.ultCharge=Math.min(g.ultCharge+(g.p.ultRate||1)*dt*1.2,ULT_CHARGE_NEED);if(_pu<ULT_CHARGE_NEED&&g.ultCharge>=ULT_CHARGE_NEED)g._ultReadyUntil=performance.now()+1500;}
     if(!g.ultHold&&g.ultCharge>0&&g.ultCharge<ULT_CHARGE_NEED){g.ultCharge=Math.max(0,g.ultCharge-dt*.4);}// slowly drain if released early
@@ -371,48 +379,54 @@ export function loop(){
   // 快過熱預警：標記給繪圖階段在主角頭上顯示
   g._heatWarn=(!g.heatCD&&g.heat/HOLD_COOLDOWN_NEED>.75&&!g.p._noOverheat);
 
+  for(const player of [g.p,g.p2].filter(Boolean)){
   // 閃電步 dash movement + afterimage
-  if(g.p._dashEnd&&now<g.p._dashEnd){
-    var ds=g.p._dashSpd||8;
-    g.p.x+=g.p._dashDx*ds*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);
-    g.p.y+=g.p._dashDy*ds*g.p.speed*dt*(g.p._mudSlowEnd>now?.65:1);
-    g.p.x=cl(g.p.x,PR+4,mapW()-PR-4);g.p.y=cl(g.p.y,PR+4,mapH()-PR-4);
+  if(player._dashEnd&&now<player._dashEnd){
+    var ds=player._dashSpd||8;
+    player.x+=player._dashDx*ds*player.speed*dt*(player._mudSlowEnd>now?.65:1);
+    player.y+=player._dashDy*ds*player.speed*dt*(player._mudSlowEnd>now?.65:1);
+    player.x=cl(player.x,PR+4,mapW()-PR-4);player.y=cl(player.y,PR+4,mapH()-PR-4);
     // 閃電步：吸取路過的經驗球
-    g.orbs.forEach(o=>{if(di(o,g.p)<80){o.x=g.p.x;o.y=g.p.y;}});
+    g.orbs.forEach(o=>{if(di(o,player)<80){o.x=player.x;o.y=player.y;}});
     // spawn afterimage every ~40ms
-    if(!g.p._dashGT||now-g.p._dashGT>40){
-      g.p._dashGT=now;
-      getDashGhosts().push({x:g.p.x,y:g.p.y,face:g.p.face,charType:g.charType,fx:{...g.p.fx},direction:{x:g.p._dashDx,y:g.p._dashDy},life:1});
+    if(!player._dashGT||now-player._dashGT>40){
+      player._dashGT=now;
+      getDashGhosts().push({x:player.x,y:player.y,face:player.face,charType:player.charType||g.charType,fx:{...player.fx},direction:{x:player._dashDx,y:player._dashDy},life:1});
       if(getDashGhosts().length>8)getDashGhosts().shift();
     }
-  }else if(g.p._dashEnd&&now>=g.p._dashEnd){
-    g.p._dashEnd=0;g.p._inv=!!g.p._pickPending;
-    burst(g.p.x,g.p.y,"#FFE066",6);
+  }else if(player._dashEnd&&now>=player._dashEnd){
+    player._dashEnd=0;player._inv=!!player._pickPending;
+    burst(player.x,player.y,"#FFE066",6);
+  }
+
   }
   // decay afterimages
   for(var i=getDashGhosts().length-1;i>=0;i--){getDashGhosts()[i].life-=.06*dt;if(getDashGhosts()[i].life<=0)getDashGhosts().splice(i,1);}
 
+  for(const [player,state,level] of [[g.p,g,g.level],[g.p2,g._p2Ultimate,g.p2Level||1]]){
+   if(!player||!state)continue;
+   if(state.mfEnd){state.mfPx=player.x;state.mfPy=player.y;}
   // black-hole ult field: 3s duration, pull + stylish execute for non-boss enemies
-  if(g.bhEnd&&now<g.bhEnd){
-    var bhLv=(g.p.ultLv||0),bhR=170+bhLv*30;
+  if(state.bhEnd&&now<state.bhEnd){
+    var bhLv=(player.ultLv||0),bhR=170+bhLv*30;
     g.ene.forEach(e=>{
       if(e.stageBoss||(e.boss&&!e.miniPoo&&!e.miniDemon))return; // 真Boss免疫吸引，召喚怪可被吸
-      var dx=g.p.x-e.x,dy=g.p.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+      var dx=player.x-e.x,dy=player.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
       if(d>bhR)return;
       var pull=(1-d/bhR)*(4+bhLv*1.2)*dt*16.67;
       e.x+=dx/d*pull;e.y+=dy/d*pull;
       if(!e.bhExeAt)e.bhExeAt=now+260; // brief vortex animation, then execute
     });
-  }else if(g.bhEnd){
-    g.p.bhSafeEnd=Math.max(g.p.bhSafeEnd||0,now+800);
-    g.bhEnd=0;g.bhPow=1;
+  }else if(state.bhEnd){
+    player.bhSafeEnd=Math.max(player.bhSafeEnd||0,now+800);
+    state.bhEnd=0;state.bhPow=1;
   }
   // 磁力場：1.5秒吸引 → 結束時爆發推開+傷害
-  if(g.mfEnd&&now<g.mfEnd){
-    var mfR=g.mfR||200;
+  if(state.mfEnd&&now<state.mfEnd){
+    var mfR=state.mfR||200;
     g.ene.forEach(e=>{
       if(e.stageBoss)return;
-      var dx=g.mfPx-e.x,dy=g.mfPy-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+      var dx=state.mfPx-e.x,dy=state.mfPy-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;
       if(d>mfR)return;
       var pull=(1-d/mfR)*5*dt*16.67;
       e.x+=dx/d*pull;e.y+=dy/d*pull;
@@ -421,26 +435,30 @@ export function loop(){
     // 吸引粒子特效
     if(Math.random()<.5&&par.length<MAX_PARTICLES){
       var pa=Math.random()*Math.PI*2,pd=rn(80,mfR);
-      par.push({x:g.mfPx+Math.cos(pa)*pd,y:g.mfPy+Math.sin(pa)*pd,vx:-Math.cos(pa)*rn(2,4),vy:-Math.sin(pa)*rn(2,4),life:.5,color:Math.random()>.5?"#339AF0":"#74C0FC",sz:rn(2,4)});
+      par.push({x:state.mfPx+Math.cos(pa)*pd,y:state.mfPy+Math.sin(pa)*pd,vx:-Math.cos(pa)*rn(2,4),vy:-Math.sin(pa)*rn(2,4),life:.5,color:Math.random()>.5?"#339AF0":"#74C0FC",sz:rn(2,4)});
     }
-  }else if(g.mfEnd){
+  }else if(state.mfEnd){
     // 磁力爆發！推開+傷害（先清 flag 防止重複觸發）
-    var _mfPx=g.mfPx,_mfPy=g.mfPy;g.mfEnd=0;
-    var mfDmg=(ULT_D+g.p.atk*4+g.level*3)*(g.p.ultDmgMul||1)*(g.p.elemBoost||1)*(g.mfDmgMul||1);
+    var _mfPx=state.mfPx,_mfPy=state.mfPy;state.mfEnd=0;
+    var mfDmg=(ULT_D+player.atk*4+level*3)*(player.ultDmgMul||1)*(player.elemBoost||1)*(state.mfDmgMul||1);
     g.ene.forEach(e=>{
+      if(e.stageBoss&&di(e,player)>(state.mfR||200)+e.r)return;
       if(e.stageBoss){var sd2=Math.min(mfDmg,e.mhp*.05);e.hp-=sd2;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(sd2),life:1.2,color:"#339AF0",big:1});return;}
       var dx=e.x-_mfPx,dy=e.y-_mfPy,d=Math.sqrt(dx*dx+dy*dy)||1;
+      if(d>(state.mfR||200)+e.r)return;
       e.hp-=mfDmg;
       e.x+=dx/d*60;e.y+=dy/d*60;
       e.x=cl(e.x,ER,mapW()-ER);e.y=cl(e.y,ER,mapH()-ER);
-      e.st=Math.max(e.st||0,1500+(g.mfSlow||0));
-      if(g.mfSlow>0)e._magSlowT=Math.max(e._magSlowT||0,g.mfSlow);
+      e.st=Math.max(e.st||0,1500+(state.mfSlow||0));
+      if(state.mfSlow>0)e._magSlowT=Math.max(e._magSlowT||0,state.mfSlow);
       burst(e.x,e.y,"#339AF0",6);
       g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(mfDmg),life:1.2,color:"#339AF0",big:1});
     });
     for(var mi=0;mi<30&&par.length<MAX_PARTICLES;mi++){var ma=Math.PI*2*mi/30,mv=rn(4,9);par.push({x:_mfPx,y:_mfPy,vx:Math.cos(ma)*mv,vy:Math.sin(ma)*mv,life:1,color:mi%3===0?"#fff":mi%3===1?"#339AF0":"#74C0FC",sz:rn(3,7)});}
     burst(_mfPx,_mfPy,"#339AF0",25);
     sfx("ult");_shakeT=.4;_shakePow=8;
+  }
+
   }
   settleEnemyDeaths();
 
@@ -499,12 +517,17 @@ export function loop(){
     var p2ct=g.p2.charType||"gunner";
     var _p2Cfg=charCfg(p2ct);
     var _p2AtkCD=_p2Cfg.atkCD?Math.round(_p2Cfg.atkCD*(g.p2.fr||1)):HOLD_CD*(g.p2.fr||1);
-    if(p2aim&&!g.p2._bladeRush&&now-g.p2._lhF>_p2AtkCD){
+    if(p2aim&&!g.p2._pickPending&&!g.p2._bladeRush&&now-g.p2._lhF>_p2AtkCD){
       if(p2ct==="swordsman"){swordSwing(g.p2,true);}
       else if(p2ct==="tank"){shieldBash(g.p2,true);}
       else if(p2ct==="assassin"){daggerStrike(g.p2,true);}
       else{var ad2=g.p2._ad||{x:0,y:1};fire((2.2+g.p2.atk*.7),ad2.x,ad2.y,g.p2._minigun?.12:.07,g.p2);g._p2AtkAnim={active:true,startT:now};g._p2WbSwing=1;}
       g.p2._lhF=now;
+      if(!g.p2.hasBH&&!g.p2.hasTS&&!g.p2.hasMF){
+       const u2=g._p2Ultimate||(g._p2Ultimate={ultCharge:0,ultCdEnd:0,ultHold:false});
+       g.p2._comboCount=now-(g.p2._comboAt||0)>700?1:(g.p2._comboCount||0)+1;g.p2._comboAt=now;
+       u2.ultCharge=Math.max(u2.ultCharge||0,(g.p2._comboCount%50)/50*ULT_CHARGE_NEED);if(g.p2._comboCount%50===0)u2.ultCharge=ULT_CHARGE_NEED;
+      }
     }
     // P2 技能：AI 自動施放 / 真人透過 _p2Input.skill
     if(_p2AI&&now>=getP2SkillCdEnd()){p2UseSkill();}
@@ -521,20 +544,12 @@ export function loop(){
         burst(g.p2.x,g.p2.y,"#F06595",8);
       }
     }
-    // P2 ult: AI 每 8 秒自動放一次，連線時用 _p2Input
-    var p2ult=_p2AI?(now-(g.p2._aiUltT||0)>8000):(_p2Input&&_p2Input.ult);
-    if(_p2Input&&_p2Input.ult)_p2Input.ult=false; // 消耗一次性 flag
-    if(p2ult&&!g.p2._bladeRush&&!g.p2._ultCooldown){
-      if(_p2AI)g.p2._aiUltT=now;
-      g.p2._ultCooldown=now+3000; // 3s cooldown for P2 ult
-      g._p2UltTime=now;
-      const combo=g._p1UltTime&&now-g._p1UltTime<1000;
-      const p2Dmg=(ULT_D+g.p2.atk*6+g.p2Level*5)*(g.p2.ultDmgMul||1)*(1+(g.p2.ultLv||0)*.35)*(combo?3:1);
-      castRoleUltimate(g.p2,now,p2Dmg,true);
-      if(combo){g._p1UltTime=0;g._p2UltTime=0;}
+    // Identical charge/cooldown/card rules for both participants.
+    const u2=g._p2Ultimate||(g._p2Ultimate={ultCharge:0,ultCdEnd:0,ultHold:false});
+    u2.ultHold=!g.p2._pickPending&&!g.p2._bladeRush&&(_p2AI||!!_p2Input?.ultHold);
+    if(_p2Input?.ult){_p2Input.ult=false;doP2Ult();}
+    if(_p2AI&&!g.p2._pickPending&&!g.p2._bladeRush&&(g.p2.hasBH||g.p2.hasTS||g.p2.hasMF||u2.ultCharge>=ULT_CHARGE_NEED))doP2Ult();
 
-    }
-    if(g.p2._ultCooldown&&now>=g.p2._ultCooldown)g.p2._ultCooldown=0;
   }
 
   // co-op link aura（連攜光環：靠近 120px 內雙方攻擊 +30%）
@@ -1076,7 +1091,7 @@ export function loop(){
         return false;
       }
       // hit P2? (co-op)
-      if(b._targetPlayer!=='p1'&&_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd)&&di(b,g.p2)<PR+4){
+      if(b._targetPlayer!=='p1'&&_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&(!(g.p2.bhSafeEnd>now)||b._absoluteBossDamage)&&!(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd)&&di(b,g.p2)<PR+4){
         if(!b._absoluteBossDamage&&Math.random()<(g.p2.dodge||0)){g.dn.push({x:g.p2.x,y:g.p2.y-25,d:"MISS",life:1,color:"#B197FC"});return false;}
         var lm2=1+Math.max(0,g.wave-10)*.07;
         var _p2TankMit=(!b._groundHit&&g.p2.charType==="tank")?.5:1;
@@ -1316,7 +1331,7 @@ export function loop(){
     else{g.p._iFrameEnd=now+500;if(e.hp>0)e._retreatEnd=now+1500;return e.hp>0||(awardEnemyKill(e),false);}
     }
     // P2 contact damage (co-op)
-    if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd)&&!e.ragePoo&&!e.stageBoss&&di(e,g.p2)<PR+e.r-4){
+    if(_isCoopMode&&g.p2&&!g.p2._downed&&!g.p2._inv&&!(g.p2.bhSafeEnd>now)&&!(g.p2._iFrameEnd>0&&now<g.p2._iFrameEnd)&&!e.ragePoo&&!e.stageBoss&&di(e,g.p2)<PR+e.r-4){
       var lm2=1+Math.max(0,g.wave-10)*.07;
       var dm2=Math.min(g.p2.contactCap||100,(8+g.wave*2)*(e.dmgMul||1)*lm2)*(1-(g.p2.armor||0));
       // P2 坦克被動：接觸反彈15%
@@ -1495,34 +1510,7 @@ export function loop(){
     });
   }
 
-  // orbiters（召喚球）
-  var passiveCnt=g.p.orbiters||0,totalOrb=passiveCnt,passiveOrbPos=[];
-  if(totalOrb>0){for(var i=0;i<totalOrb;i++){
-    var orbR=42;
-    var a=now/600+Math.PI*2*i/totalOrb;
-    var ox=g.p.x+Math.cos(a)*orbR,oy=g.p.y+Math.sin(a)*orbR;
-    passiveOrbPos.push({x:ox,y:oy});
-    g.ene.forEach(e=>{if(di({x:ox,y:oy},e)<e.r+12){var dmg=(g.p.atk*.4+2)*dt;e.hp-=dmg;}});
-  }}
-  // summoned orbs actively zap nearby enemies
-  if(passiveCnt>0&&g.ene.length){
-    g.p.orbShotT=(g.p.orbShotT||0)-dt*16.67;
-    if(g.p.orbShotT<=0){
-      g.p.orbShotT=420/Math.max(1,passiveCnt);
-      passiveOrbPos.forEach(o=>{
-        var t=null,nd=260;
-        g.ene.forEach(e=>{var d=di(o,e);if(e.hp>0&&d<nd){nd=d;t=e;}});
-        if(t){
-          var od=(g.p.atk*1.0+3.5);
-          t.hp-=od;
-          addLtn(o.x,o.y,t.x,t.y,.5);
-          burst(t.x,t.y,"#FCC419",4); // zap impact burst on enemy
-          burst(t.x,t.y,"#FFE066",2);
-          g.dn.push({x:t.x,y:t.y-t.r,d:Math.floor(od),life:.7,color:"#FCC419"});
-        }
-      });
-    }
-  }
+  updateSummonOrbs(now,frameMs);
   // co-op boss shield update
   if(_isCoopMode&&g.p2){
     g.ene.forEach(e=>{
@@ -1987,15 +1975,6 @@ export function loop(){
     cx.restore();
   }
   // 狙擊穿透光束（更粗更亮）
-  if(g.p._snipeBeamT&&now-g.p._snipeBeamT<400){
-    const bp=(now-g.p._snipeBeamT)/400;
-    const ba=g.p._snipeBeamAng||0;
-    cx.save();cx.globalAlpha=(1-bp)*.8;cx.strokeStyle="#74C0FC";cx.lineWidth=5*(1-bp);
-    cx.shadowColor="#74C0FC";cx.shadowBlur=15;
-    cx.beginPath();cx.moveTo(g.p.x,g.p.y);
-    cx.lineTo(g.p.x+Math.cos(ba)*VW,g.p.y+Math.sin(ba)*VW);cx.stroke();
-    cx.shadowBlur=0;cx.restore();
-  }
   g._lightBeams=(g._lightBeams||[]).filter(b=>now-b.t<(b.life||180));
   g._cardImpacts=(g._cardImpacts||[]).filter(h=>now-h.at<320);
   drawCardWorld(cx,g,now,PR,getPhoenixT());

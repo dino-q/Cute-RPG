@@ -1,3 +1,4 @@
+import {recordRoleEffect,drawRoleEvents} from './role-card-art.js';
 import {drawArt} from './generated-art.js';
 import {drawEnemyCreature} from './creature-art.js';
 import {drawBossRoute} from './boss-telegraph-art.js';
@@ -687,73 +688,26 @@ export function drawEnemy(e) {
 }
 
 /* ═══ title hero ═══ */
-let _titlePar = [], _titleSlash = 0, _titleSlashX = 0, _titleSlashFace = 1;
-(function drawTitleHero() {
-  const hc = $("heroCanvas"); if (!hc) return;
-  try {
-    const hctx = hc.getContext("2d");
-    const _origCx = cx; cx = hctx;
-    const _origG = g;
-    const t = performance.now() / 1000;
-    const now = performance.now();
-    const walkX = 80 + Math.sin(t * .8) * 55;
-    const face = Math.cos(t * .8) > 0 ? 1 : -1;
-    g = { charType: "swordsman", p: { fx: {}, _sh: false }, ad: { x: face, y: 0 }, _wbSwing: 0, _atkAnim: { active: false, startT: 0 } };
-    hctx.clearRect(0, 0, 160, 60);
-
-    _titlePar = _titlePar.filter(p => {
-      p.x += p.vx; p.y += p.vy; p.vy += p.g || 0; p.life -= .02;
-      if (p.life <= 0) return false;
-      hctx.globalAlpha = p.life * p.a; hctx.fillStyle = p.c;
-      hctx.beginPath(); hctx.arc(p.x, p.y, p.s, 0, Math.PI * 2); hctx.fill();
-      return true;
-    });
-    hctx.globalAlpha = 1;
-
-    if (Math.random() < .4) {
-      _titlePar.push({ x: walkX + rn(-4, 4), y: 42 + rn(0, 3), vx: -Math.cos(t * .8) * .3 + rn(-.2, .2), vy: rn(-.3, -.1), life: 1, a: .3, c: "rgba(116,192,252,.5)", s: rn(1, 2.5), g: .01 });
-    }
-
-    if (Math.random() < .08) {
-      _titlePar.push({ x: rn(10, 150), y: rn(5, 50), vx: 0, vy: rn(-.1, .1), life: 1, a: .6, c: "#fff", s: rn(.5, 1.5), g: 0 });
-    }
-
-    if (_titleSlash <= 0 && Math.random() < .008) {
-      _titleSlash = 1; _titleSlashX = walkX; _titleSlashFace = face;
-      g._atkAnim = { active: true, startT: now }; g.ad = { x: face, y: 0 };
-      for (let i = 0; i < 8; i++) {
-        const a = -Math.PI * .3 + Math.PI * .6 * i / 8;
-        _titlePar.push({ x: walkX + face * 12, y: 28, vx: Math.cos(a) * face * rn(1.5, 3), vy: Math.sin(a) * rn(1, 2), life: 1, a: .7, c: i % 2 ? "#74C0FC" : "#fff", s: rn(1, 3), g: 0 });
-      }
-    }
-
-    if (_titleSlash > 0) {
-      const sp = 1 - _titleSlash;
-      hctx.save();
-      hctx.globalAlpha = _titleSlash * .8;
-      hctx.strokeStyle = "#74C0FC"; hctx.lineWidth = 2.5;
-      hctx.shadowColor = "#74C0FC"; hctx.shadowBlur = 8;
-      hctx.beginPath();
-      const cx2 = _titleSlashX + _titleSlashFace * 12;
-      hctx.arc(cx2, 30, 14 + sp * 18, -Math.PI * .6 + sp * .3, -Math.PI * .6 + Math.PI * .8 * sp);
-      hctx.stroke();
-      hctx.globalAlpha = _titleSlash * .5; hctx.strokeStyle = "#fff"; hctx.lineWidth = 1; hctx.shadowBlur = 0;
-      hctx.beginPath();
-      hctx.arc(cx2, 30, 10 + sp * 14, -Math.PI * .5 + sp * .2, -Math.PI * .5 + Math.PI * .7 * sp);
-      hctx.stroke();
-      hctx.restore();
-      _titleSlash = Math.max(0, _titleSlash - .025);
-    }
-
-    drawPlayer(walkX, 35, 16, t, "#74C0FC", face);
-
-    hctx.save(); hctx.globalAlpha = .08 + Math.sin(t * 2) * .04;
-    hctx.fillStyle = "#74C0FC"; hctx.beginPath(); hctx.arc(walkX, 35, 22, 0, Math.PI * 2); hctx.fill();
-    hctx.restore();
-
-    g = _origG; cx = _origCx;
-  } catch (e) {}
-  requestAnimationFrame(drawTitleHero);
+const titleScene={charType:'swordsman',p:{x:120,y:54,charType:'swordsman',fx:{},_moveDir:{x:1,y:0}},ad:{x:1,y:0},_atkAnim:{active:false,startT:0},_roleEffects:[]};
+let titleClock=0,titleLastTick=0,titleAttack=-1;
+(function drawTitleHero(){
+ const hc=$('heroCanvas');if(!hc)return;const now=performance.now();
+ const visible=$('titleOv')?.style.display!=='none';
+ const elapsed=titleLastTick?Math.min(33,now-titleLastTick):16;titleLastTick=now;
+ if(visible){
+  titleClock+=elapsed;const hctx=hc.getContext('2d'),originalCx=cx,originalG=g;
+  try{
+   cx=hctx;g=titleScene;const p=titleScene.p,face=Math.cos(titleClock/1100)>=0?1:-1;
+   p.x=120+Math.sin(titleClock/1100)*38;p.y=54;p.face=face;p._moveDir={x:face,y:0};titleScene.ad={x:face,y:0};
+   const attack=Math.floor(titleClock/520),age=titleClock%520;
+   if(attack!==titleAttack){titleAttack=attack;titleScene._atkAnim={active:true,startT:now-age,angle:face>0?0:Math.PI,_qiSpin:(attack+1)%4===0};
+    if((attack+1)%4===0)recordRoleEffect(titleScene,'qi',p.x,p.y,face>0?0:Math.PI,{owner:'p1',follow:true,life:400,range:62,level:1});}
+   titleScene._atkAnim.active=age<320;hctx.clearRect(0,0,hc.width,hc.height);
+   drawPlayer(p.x,p.y,16,titleClock/1000,'#ffe1b1',face,p,{animation:titleScene._atkAnim,aiming:true});
+   hctx.save();hctx.translate(p.x,p.y);hctx.scale(.55,.55);hctx.translate(-p.x,-p.y);drawRoleEvents(hctx,titleScene,now,false);hctx.restore();
+  }catch(error){console.error("Title hero draw error:",error);}finally{cx=originalCx;g=originalG;}
+ }
+ requestAnimationFrame(drawTitleHero);
 })();
 
 // Clone body is independent of the owner's invisibility, facing and attack clock.
@@ -766,11 +720,11 @@ export function drawShadowClones(now,r=PR){
   const actor={...clone,charType:'assassin',fx:{},_ad:direction},animation={active:age>=0&&age<240,startT:clone._attackAt||0,angle:Math.atan2(direction.y,direction.x)};
   const world=cx,body=cloneCanvas.getContext('2d');body.clearRect(0,0,128,128);
   try{cx=body;drawPlayer(64,68,r,now/1000,'#b996ee',clone.face,actor,{effects:false,animation,aiming:true,travelDirection:direction});}finally{cx=world;}
-  const outline=cloneOutline.getContext('2d');outline.clearRect(0,0,128,128);outline.globalCompositeOperation='source-over';outline.drawImage(cloneCanvas,0,0);outline.globalCompositeOperation='source-in';outline.fillStyle='#d9bcff';outline.fillRect(0,0,128,128);outline.globalCompositeOperation='source-over';
-  world.save();world.globalAlpha=.9*appearing*fading;
+  const outline=cloneOutline.getContext('2d');outline.clearRect(0,0,128,128);outline.globalCompositeOperation='source-over';for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]])outline.drawImage(cloneCanvas,dx,dy);outline.globalCompositeOperation='source-in';outline.fillStyle='#c8b4df';outline.fillRect(0,0,128,128);outline.globalCompositeOperation='destination-out';outline.drawImage(cloneCanvas,0,0);outline.globalCompositeOperation='source-over';
+  world.save();world.globalAlpha=.35*appearing*fading;
   drawArt(world,'arcane',5,clone.x,clone.y+r*.6,44,19,{stretch:true,alpha:.6});
-  for(const [dx,dy] of [[-1.5,0],[1.5,0],[0,-1.5],[0,1.5]])world.drawImage(cloneOutline,clone.x-64+dx,clone.y-68+dy);
-  world.globalAlpha=.82*appearing*fading;world.drawImage(cloneCanvas,clone.x-64,clone.y-68);
+  world.drawImage(cloneOutline,clone.x-64,clone.y-68);
+  world.globalAlpha=.7*appearing*fading;world.drawImage(cloneCanvas,clone.x-64,clone.y-68);
   if(age>=0&&age<240){const a=animation.angle,q=age/240;for(const side of [-1,1])drawArt(world,'arcane',7,clone.x+Math.cos(a+side*.35)*(18+q*16),clone.y+Math.sin(a+side*.35)*(18+q*16),36,25,{angle:a+side*.35,alpha:1-q});}
   if(appearing<1)drawArt(world,'arcane',5,clone.x,clone.y,55,55,{alpha:1-appearing});
   world.restore();

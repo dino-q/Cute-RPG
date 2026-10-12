@@ -73,7 +73,7 @@ function buildCard(cd, w, i, wrap) {
   const _bGetLv = function(id) { const c = _binv.find(x => x.id === id); return c ? c.lv : -1; };
   const _bAddCard = function(id) { const ex = _binv.find(x => x.id === id); if (ex) { if (ex.lv < 2) { ex.lv++; return ex.lv; } return -1; } _binv.push({ id, lv: 0 }); return 0; };
   const clv = _bGetLv(cd.id), nLv = clv + 1, isUp = clv >= 0, dLv = nLv + 1;
-  let desc = cd.d[Math.min(nLv, 2)];
+  let desc = "本級總效果："+cd.d[Math.min(nLv, 2)];
   // 影分身：依角色顯示不同說明
   if (cd.n === "影分身") {
     const _ct = _currentPickCtx ? _currentPickCtx.charType : (g ? g.charType : "gunner");

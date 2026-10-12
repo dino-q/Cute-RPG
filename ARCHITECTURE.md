@@ -704,3 +704,16 @@ graph LR
 - drawEnemy的獵殺蓄力預告改用内部drawHuntWindRoute，兩道曲線收尖帶與細前緣，18%／36%可見度，長度沿用220／射手145；方向仍與真正出招相同。移除五枚間隔風圖與脚下arcane紋；衝刺本體風痕沿用。
 - 原生刺客大招在doUlt跳過舊通用40+粒彩色爆散，合體時刺客那一側亦不疊金色／粉色爆散；卡片黑洞／時停／磁力入口保留。rush-start／finish改以十道白灰淡紫收束速度線，後段短雙刀亮刃，沿實際方向與持有者位置。八閃的傷害、移動、時間均沿用。
 - 加入正在bladeRush時doUlt的重複觸發防護。僅執行發布建置，遊戲由Dino實測。
+
+## 2026-10-12 卡片總加成、雙人大招與跟身整批修正
+
+詳細規則與盤點清單：docs/卡片與雙人大招整批修正.md。
+
+- skills.js新增export doP2Ult、updateSummonOrbs；doUlt／doP2Ult→內部castPlayerUltimate。_startDash(now,player=g.p,isP2=false)新增可選持有者。loop沿用skills依賴，沒有新模組。
+- cards.js内部applyCardLevel由card統一包裝ap。每人_cardStatLevels保存每卡總貢獻；升級加差值／乘新舊比例／同類定值取較強，機率及攻擊下限保留溢出。7張攻速卡用1/(1+加速比例)，不再用1-比例，亦移除連弩精英隱藏倍率。練習重建清空貢獻資料。
+- coop新增ultHold输入、p2Ultimate狀態（集氣／冷卻／黑洞／磁力／時停剩餘時間），cardP2補送實際大招卡旗標與倍率，按各自時鐘解碼。HUD使用自己大招狀態，clientRenderLoop呼叫共用hud。_resetUlt清持有者集氣／冷卻。
+- loop兩位持有者各跑黑洞／磁力／閃電步，磁力傷害加上距離判斷；地震／盾波／坦克大招跟持有者，狙擊共享roleEffects。召喚球改共享updateSummonOrbs，單次命中／400ms回收，cardP2同步限量偏移，不序列化敵人物件引用。
+- 刺客8段170ms／每段3刀、每刀总傷害/24，距離上限620；收招220ms退155＋结束800ms保護。槍手大招及狙擊重新找敵；狙擊出彈／出光同一真槍口。
+- 分身本體70%，外緣輪廓35%，以destination-out去掉輪廓内側重疊。首頁drawTitleHero改穩定左右移動攻擊／每4次劍氣，try/finally還原cx與g；continueAdventureSlot在練習下方。
+- mob-jelly來源四格去腳，既有圖集重包與武器定位重套；仍421格48組1024×6784，ART_REVISION=card-coop-jelly-20261012-v9。
+- 僅做發布必要建置，Dino負責遊玩與雙人驗證。

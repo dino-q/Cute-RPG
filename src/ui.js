@@ -124,8 +124,8 @@ export function show(n) {
   if (n === "title") {
     $('titleOv').style.display='flex';
     let button=$('continueAdventureBtn');
-    if(!button){button=document.createElement('button');button.id='continueAdventureBtn';button.className='btn btn-g';button.style.cssText='width:210px;padding:12px;font-size:14px;margin:0 auto 12px;display:none';button.onclick=continueAdventure;$('titleOv').querySelector('.panel').insertBefore(button,$('titleOv').querySelector('.panel>div'));}
-    const session=_getG();button.style.display=session?._homeSuspended?'block':'none';button.textContent='繼續冒險 · Lv'+(session?.level||1);
+    if(!button){button=document.createElement('button');button.id='continueAdventureBtn';button.className='btn btn-g';button.style.cssText='width:210px;padding:12px;font-size:14px;margin:0 auto;display:none';button.onclick=continueAdventure;$('continueAdventureSlot').appendChild(button);}
+    const session=_getG();button.style.display=session?._homeSuspended?'block':'none';button.textContent='繼續冒險 · Lv'+(session?.level||1);$('continueAdventureSlot').style.display=session?._homeSuspended?'block':'none';
   }
   else if (n === "tut") $("tutOv").style.display = "flex";
   else if (n === "pick") $("pickOv").style.display = "flex";

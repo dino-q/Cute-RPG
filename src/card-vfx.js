@@ -121,16 +121,27 @@ function drawDragon(c,g,now,lv){
 // Ground effects are drawn before any actor. The world-front pass never repeats them.
 export function drawCardGround(c,g,now){
  if(!g?.p)return;const p=g.p;drawRoleEvents(c,g,now,true);
- if(g.bhEnd>now){c.save();c.translate(p.x,p.y+14);c.scale(1,.58);drawArt(c,'arcane',0,0,0,126,126,{angle:now/1300,alpha:.78});c.restore();}
- if(g.mfEnd>now)drawArt(c,'arcane',1,g.mfPx,g.mfPy,(g.mfR||200)*1.7,(g.mfR||200)*1.1,{alpha:.65});
- if(g._cardTsEnd>now)drawArt(c,'arcane',2,p.x,p.y+10,145,105,{angle:Math.sin(now/600)*.04,alpha:.55});
+ for(const [p,state] of [[g.p,g],[g.p2,g._p2Ultimate]]){
+  if(!p||!state)continue;
+  if(state.bhEnd>now){c.save();c.translate(p.x,p.y+14);c.scale(1,.58);drawArt(c,'arcane',0,0,0,126,126,{angle:now/1300,alpha:.78});c.restore();}
+  if(state.mfEnd>now)drawArt(c,'arcane',1,p.x,p.y,(state.mfR||200)*1.7,(state.mfR||200)*1.1,{alpha:.65});
+  if(state._cardTsEnd>now)drawArt(c,'arcane',2,p.x,p.y+10,145,105,{angle:Math.sin(now/600)*.04,alpha:.55});
+ }
+
 }
 export function drawCardWorld(c,g,now,r=18,phoenix=0){
  if(!g?.p)return;const p=g.p;drawRoleEvents(c,g,now,false);
  if(g._dragonPet)drawDragon(c,g,now,p._dragonBreath||p.fx?.dragon||1);
  for(const w of g._wb||[])drawArt(c,'wind',1,w.x,w.y,32,32,{angle:now/380,alpha:Math.min(1,w.life/700)});
  for(const b of g._booms||[])drawArt(c,'wind',2,b.x,b.y,28,28,{angle:b.rot||0});
- for(let i=0;i<(p.orbiters||0);i++){const a=now/600+TAU*i/p.orbiters;drawArt(c,'star',0,p.x+Math.cos(a)*42,p.y+Math.sin(a)*42,17,17,{angle:a});}
+ for(const actor of [g.p,g.p2].filter(Boolean)){
+  const count=Math.min(3,actor.orbiters||0),balls=actor._summonOrbs||[];
+  for(let i=0;i<count;i++){
+   const a=now/600+TAU*i/count,ball=balls[i],ox=ball?.ox??Math.cos(a)*44,oy=ball?.oy??Math.sin(a)*44,x=actor.x+ox,y=actor.y+oy,attacking=!!(ball?.target||ball?.attacking);
+   if(attacking){c.save();c.globalAlpha=.4;c.lineWidth=1.4;c.strokeStyle='#cbb787';c.beginPath();c.moveTo(actor.x+Math.cos(a)*44,actor.y+Math.sin(a)*44);c.quadraticCurveTo(actor.x+ox*.5-oy*.1,actor.y+oy*.5+ox*.1,x,y);c.stroke();c.restore();}
+   drawArt(c,'arcane',5,x,y,27,27,{angle:now/1000+i,alpha:.6});drawArt(c,'star',0,x,y,attacking?19:16,attacking?19:16,{angle:a,brightness:1.15});
+  }
+ }
  for(const b of g._lightBeams||[]){const q=(now-b.t)/(b.life||180);if(q<0||q>=1)continue;
  const origin=roleEffectOrigin(g,b),len=b.len*Math.min(1,.35+q*5),x=origin.x+Math.cos(b.ang)*10,y=origin.y+Math.sin(b.ang)*10;
  drawArt(c,'sword-beam',Math.min(3,Math.floor(q*4)),x,y,len,12,{stretch:true,angle:b.ang,anchorX:0,alpha:q<.65?1:(1-q)/.35});}

@@ -19,6 +19,7 @@ export function drawEnemyCreature(c,e,now){
  const knock=e._knock,progress=knock?Math.max(0,Math.min(1,(now-knock.start)/knock.duration)):1;
  const lean=knock?Math.sign(knock.dx)*.2*Math.sin(progress*Math.PI):charging?(e.face||1)*-.12:dashing?(e.face||1)*.18:0;
  c.save();c.translate(e.x,e.y+e.r);c.rotate(lean);
+ if(group==='mob-jelly'){const bounce=Math.sin(now/170+(e.t||0));c.translate(0,-Math.max(0,bounce)*2);c.scale(1+bounce*.025,1-bounce*.025);}
  drawArt(c,group,phase,0,-Math.sin(progress*Math.PI)*(knock?5:0),size,size,{fullCell:true,anchorY:.875,flip:e.face<0,brightness:hit?2.3:1});
  c.restore();
  if(e.mega)drawArt(c,'guardian',5,e.x,e.y+e.r+3,e.r*3.2,e.r*.8,{stretch:true,alpha:.65});

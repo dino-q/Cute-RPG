@@ -12,7 +12,7 @@ import {resetControls} from "./input.js";
 import { CHAR } from "./config.js";
 import { C } from "./cards.js";
 import { par, filterPar, setPar, drawPlayer, drawEnemy,drawShadowClones } from "./render.js";
-import { drawMinimap,drawAbilitySidebar } from "./hud.js";
+import { drawMinimap,drawAbilitySidebar, hud } from "./hud.js";
 import { setEnemiesCoopMode } from "./enemies.js";
 import { setCombatCoopState } from "./combat.js";
 import { setSkillsCoopState, getP2SkillCdEnd, getDashGhosts, setDashGhosts } from "./skills.js";
@@ -80,7 +80,7 @@ function receiveCoopInput(data,net){
  if(Number.isFinite(data.seq))net._lastInputSeq=data.seq;net._lastInputAt=performance.now();
  const input=_getP2Input(),number=v=>Number.isFinite(v)?Math.max(-1,Math.min(1,v)):0;
  input.dx=number(data.jx);input.dy=number(data.jy);input.a=!!data.ja;input.aimA=!!data.aa;input.aimDx=number(data.ax);input.aimDy=number(data.ay);
- input.ult=input.ult||!!data.ult;input.dodge=input.dodge||!!data.dodge;input.skill=input.skill||!!data.skill;
+ input.ultHold=!!data.ultHold;input.ult=input.ult||!!data.ult;input.dodge=input.dodge||!!data.dodge;input.skill=input.skill||!!data.skill;
 }
 function receiveP2Character(data,net){
  if(!CHAR[data.charType])return;net.p2Character=data.charType;
@@ -279,7 +279,7 @@ export function resetCoopSession(){
  _p2BigChestLeft=0;_p2LastPicks=[];window._p2OfferId=null;window._p2OfferRevision=null;window._p2PickSending=false;
  document.getElementById('_p2PickOv')?.remove();document.getElementById('coopAwaitingLabel')?.remove();
  const net=_getNet?.();if(net){net._stateSeq=0;net._inputSeq=0;net._lastInputSeq=-1;net._lastInputAt=performance.now();net._lastStateSent=0;}
- const input=_getP2Input?.();if(input)Object.assign(input,{dx:0,dy:0,a:0,aimA:0,ult:false,dodge:false,skill:false});
+ const input=_getP2Input?.();if(input)Object.assign(input,{dx:0,dy:0,a:0,aimA:0,ult:false,ultHold:false,dodge:false,skill:false});
 }
 function publishP2Offer(){
  const game=_g();if(!game?.p2||game._p2Offer)return;
@@ -325,7 +325,7 @@ export function _applyP2Card(cardId,offerId){
  }
  if(game.p2._luckyPick){game.p2._luckyPick=false;game._p2RewardQueue.unshift({source:'lucky',big:false,remaining:1});}
  if(game.p2._coinFlip){game.p2._coinFlip=false;const win=Math.random()<.5;resolveExplorationCoin(game.p2,win);game.p2._coinProtectUntil=performance.now()+4500;if(net?.conn?.open)net.conn.send({t:'coinResult',win});}
- if(game.p2._resetUlt){game.p2._resetUlt=false;game.p2._ultCooldown=0;}
+ if(game.p2._resetUlt){game.p2._resetUlt=false;game._p2Ultimate={...(game._p2Ultimate||{}),ultCharge:0,ultCdEnd:0,ultHold:false};}
  game.p2.hp=Math.min(game.p2.hp+15,game.p2.maxHp);_burst?.(game.p2.x,game.p2.y,'#DA77F2',12);
  game.dn.push({x:game.p2.x,y:game.p2.y-30,d:card.n+' Lv'+(lv+1),life:2,color:'#DA77F2',big:1});
  game._p2RewardQueue=game._p2RewardQueue.filter(q=>q.remaining>0);
@@ -372,7 +372,7 @@ export function showCoopPick(data) {
 
 /* ═══ Co-op Network Sync ═══ */
 // Visual state uses ages/remaining time so two browser clocks never need to match.
-function packCardPlayer(p){const now=performance.now(),v={_bladeRush:p._bladeRush?true:null};for(const k of ['_legendCards','_moveDir','_roleCards','_swordQiCount','_qiEvery','_qiMul','_drawSlash','_ironWill','_quake','_chainKill','_atkDodge','fx','_lightSaber','_poisonBlade','_minigun','_crossbow','invCD','_inv','_sh','projImmune','_iwActive','thorns','_guardAura','revive','orbiters','berserk','regen','_dashDx','_dashDy'])v[k]=p[k];for(const k of ['_tauntVisualEnd','_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])v[k]=Math.max(0,(p[k]||0)-now);if(p._travelFacing)v.travel={...p._travelFacing,until:Math.max(0,p._travelFacing.until-now)};if(p._healFlash)v.healAge=now-p._healFlash;if(p._cardReveal)v.reveal={...p._cardReveal,at:now-p._cardReveal.at};return v;}
+function packCardPlayer(p){const now=performance.now(),v={_bladeRush:p._bladeRush?true:null};for(const k of ['_legendCards','_moveDir','_roleCards','_swordQiCount','_qiEvery','_qiMul','_drawSlash','_ironWill','_quake','_chainKill','_atkDodge','fx','_lightSaber','_poisonBlade','_minigun','_crossbow','invCD','_inv','_sh','projImmune','_iwActive','thorns','_guardAura','revive','orbiters','berserk','regen','_dashDx','_dashDy','hasBH','hasTS','hasMF','ultRate','ultCdReduce','mfCd','tsCd','mfDur','ultLv','lStep','atk','fr','armor','dodge','crit','_orbLevel','_orbPower','_orbRange','_orbCD'])v[k]=p[k];for(const k of ['_tauntVisualEnd','_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])v[k]=Math.max(0,(p[k]||0)-now);v._summonOrbs=(p._summonOrbs||[]).map(b=>({ox:b.ox,oy:b.oy,attacking:!!b.target}));if(p._travelFacing)v.travel={...p._travelFacing,until:Math.max(0,p._travelFacing.until-now)};if(p._healFlash)v.healAge=now-p._healFlash;if(p._cardReveal)v.reveal={...p._cardReveal,at:now-p._cardReveal.at};return v;}
 function unpackCardPlayer(p,v){if(!v)return;const now=performance.now();Object.assign(p,v);for(const k of ['_tauntVisualEnd','_shadowStepEnd','_shadowStrikeEnd','_killSpeedEnd','_mgBerserkEnd','_dashEnd'])p[k]=v[k]?now+v[k]:0;p._travelFacing=v.travel?{...v.travel,until:now+v.travel.until}:null;p._healFlash=v.healAge===undefined?0:now-v.healAge;p._cardReveal=v.reveal?{...v.reveal,at:now-v.reveal.at}:null;}
 function packCardScene(g){const now=performance.now();return {hazards:(g._bossHazards||[]).map(h=>({...h,startAt:now-h.startAt,endAt:h.endAt-now})),roleEffects:(g._roleEffects||[]).filter(e=>now-e.at<e.life).map(e=>({...e,at:now-e.at})),defeats:(g._bossDefeats||[]).filter(d=>now-d.at<1500).map(d=>({...d,at:now-d.at})),impacts:(g._cardImpacts||[]).map(h=>({...h,at:now-h.at})),dragon:g._dragonPet?{x:g._dragonPet.x,y:g._dragonPet.y,face:g._dragonPet.face,breathCycle:g._dragonPet.breathCycle}:null,wb:(g._wb||[]).map(w=>({x:w.x,y:w.y,life:w.life})),booms:(g._booms||[]).map(b=>({x:b.x,y:b.y,rot:b.rot,phase:b.phase})),bh:Math.max(0,(g.bhEnd||0)-now),mf:Math.max(0,(g.mfEnd||0)-now),ts:Math.max(0,(g._cardTsEnd||0)-now),mfPx:g.mfPx,mfPy:g.mfPy,mfR:g.mfR,mfDur:g.p.mfDur,quake:g._quakeRingT?now-g._quakeRingT:1000,small:g._quakeRingSmall,thorn:g._thornFlash?now-g._thornFlash:1000};}
 function unpackCardScene(g,v){if(!v)return;const now=performance.now();g._bossHazards=(v.hazards||[]).map(h=>({...h,startAt:now-h.startAt,endAt:now+h.endAt}));g._roleEffects=(v.roleEffects||[]).map(e=>({...e,at:now-e.at}));g._bossDefeats=(v.defeats||[]).map(d=>({...d,at:now-d.at}));g._cardImpacts=(v.impacts||[]).map(h=>({...h,at:now-h.at}));g._dragonPet=v.dragon;g._wb=v.wb;g._booms=v.booms;g.bhEnd=v.bh?now+v.bh:0;g.mfEnd=v.mf?now+v.mf:0;g._cardTsEnd=v.ts?now+v.ts:0;g.mfPx=v.mfPx;g.mfPy=v.mfPy;g.mfR=v.mfR;g.p.mfDur=v.mfDur;g._quakeRingT=now-v.quake;g._quakeRingSmall=v.small;g._thornFlash=now-v.thorn;}
@@ -417,9 +417,10 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
     p2Wb: g._p2WbSwing || 0,
     // P2 數據（CLIENT 需要顯示自己的 HUD）
     p2Hp: g.p2 ? g.p2.hp : 0, p2Mhp: g.p2 ? g.p2.maxHp : 0,
-    p2Ult: g.ultCharge || 0, p2UltNeed: ULT_CHARGE_NEED,
+    p2Ultimate:g._p2Ultimate?{ultCharge:g._p2Ultimate.ultCharge,ultHold:g._p2Ultimate.ultHold,ultCdLeft:Math.max(0,(g._p2Ultimate.ultCdEnd||0)-performance.now()),bh:Math.max(0,(g._p2Ultimate.bhEnd||0)-performance.now()),mf:Math.max(0,(g._p2Ultimate.mfEnd||0)-performance.now()),ts:Math.max(0,(g._p2Ultimate._cardTsEnd||0)-performance.now()),mfPx:g._p2Ultimate.mfPx,mfPy:g._p2Ultimate.mfPy,mfR:g._p2Ultimate.mfR}:null,
+    p2Ult: g._p2Ultimate?.ultCharge || 0, p2UltNeed: ULT_CHARGE_NEED,
     p2SkillCd: Math.max(0, getP2SkillCdEnd() - performance.now()),
-    p2Combo: aim.tn || 0,
+    p2Combo: g.p2._comboCount || 0,
     victory:g._victoryPending?g._finalBoss:null,
     run: g.run
   };
@@ -473,6 +474,7 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   // P2 HUD 數據（CLIENT 用）
   if (data.p2Hp !== undefined) g._clientP2Hp = data.p2Hp;
   if (data.p2Mhp !== undefined) g._clientP2Mhp = data.p2Mhp;
+  if(data.p2Ultimate){const v=data.p2Ultimate,now=performance.now();g._p2Ultimate={...v,ultCdEnd:now+v.ultCdLeft,bhEnd:v.bh?now+v.bh:0,mfEnd:v.mf?now+v.mf:0,_cardTsEnd:v.ts?now+v.ts:0};}
   if (data.p2Ult !== undefined) g._clientP2Ult = data.p2Ult;
   if (data.p2UltNeed !== undefined) g._clientP2UltNeed = data.p2UltNeed;
   if (data.p2SkillCd !== undefined) g._clientP2SkillCd = data.p2SkillCd;
@@ -618,6 +620,7 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   const _skCd = g._clientP2SkillCd || 0;
   const _skEl = $("skillCd");
   if (_skEl) { if (_skCd > 0) { _skEl.style.display = "flex"; _skEl.textContent = (_skCd / 1000).toFixed(1); } else { _skEl.style.display = "none"; } }
+  hud();
   // 波次/分數/擊殺
   const _sl = $("sl"), _kl = $("kl");
   if (_sl) _sl.textContent = "分數 " + (g.score || 0);

@@ -3,8 +3,8 @@ import {drawArt} from './generated-art.js';
 const TAU=Math.PI*2,clamp=v=>Math.max(0,Math.min(1,v));
 export function recordRoleEffect(game,kind,x,y,angle=0,data={}){
  if(!game)return;const now=performance.now(),life=kind==='qi'?400:kind==='draw'?280:kind==='quake'?700:kind==='shieldwave'?190:kind==='knockhit'?170:360;
- const follow=data.follow??['qi','draw','shieldwave','ironwill','chainkill','sonic','shadow'].includes(kind),owner=data.owner||'p1',p=owner==='p2'?game.p2:game.p;
- const active=(game._roleEffects||[]).filter(e=>now-e.at<e.life&&!(follow&&e.owner===owner&&e.kind===kind&&['qi','draw','shieldwave'].includes(kind)));
+ const follow=data.follow??['quake','qi','draw','shieldwave','ironwill','chainkill','sonic','shadow'].includes(kind),owner=data.owner||'p1',p=owner==='p2'?game.p2:game.p;
+ const active=(game._roleEffects||[]).filter(e=>now-e.at<e.life&&!(follow&&e.owner===owner&&e.kind===kind&&['quake','qi','draw','shieldwave'].includes(kind)));
  if(active.some(e=>e.kind===kind&&e.owner===owner&&Math.hypot(e.x-x,e.y-y)<6&&now-e.at<80))return;
  game._roleEffects=active.slice(-15);game._roleEffects.push({kind,x,y,angle,life,at:now,follow,owner,ox:follow&&p?x-p.x:0,oy:follow&&p?y-p.y:0,...data});
 }
@@ -19,7 +19,14 @@ export function roleEffectOrigin(game,e){
 export function drawRoleEvents(c,game,now,ground=false){
  for(const e of game?._roleEffects||[]){
   const {x,y}=roleEffectOrigin(game,e);const q=clamp((now-e.at)/e.life);if(q<=0||q>=1)continue;const alpha=Math.sin(q*Math.PI);
+  if(e.kind==='orb-impact'){
+   if(!ground){drawArt(c,'star',3,x,y,38+q*14,38+q*14,{alpha:1-q});drawArt(c,'arcane',5,x,y,28+q*24,28+q*24,{alpha:.5*(1-q)});}continue;
+  }
+  if(e.kind==='snipe'){
+   if(!ground)drawArt(c,'sword-beam',Math.min(3,Math.floor(q*4)),x,y,e.range||420,13,{angle:e.angle,anchorX:0,stretch:true,alpha:1-q});continue;
+  }
   if(e.kind==='taunt'){
+
    if(ground){const radius=28+(e.range||145)*(1-Math.pow(1-q,3));
     for(let i=0;i<8;i++){const a=TAU*i/8;drawArt(c,'guardian',5,x+Math.cos(a)*radius,y+Math.sin(a)*radius,34,20,{angle:a,alpha:.6*(1-q)});}}
    else drawArt(c,'guardian',6,x,y+12,48,42,{alpha:alpha*.65});

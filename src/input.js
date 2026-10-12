@@ -32,6 +32,7 @@ export function setStick(el,dx=0,dy=0){
   el.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
 }
 export function resetControls(){
+ const game=_getG?.();if(game){game.ultHold=false;game._clientUltHold=false;}
   joy.a=0;joy.dx=0;joy.dy=0;joy.id=null;joy.sx=null;joy.sy=null;
   aim.a=0;aim.dx=0;aim.dy=0;aim.id=null;aim.sx=null;aim.sy=null;
   setStick($("jkL"));setStick($("jkR"));
@@ -78,12 +79,12 @@ function startUltPress(){
   if(!g)return;
   const _net=_getNet();
   if((_net?.role==='client'?g.p2:g.p)?._pickPending||(_net?.role==='client'?g.p2:g.p)?._bladeRush||g._remotePaused)return;
-  if(_net&&_net.role==="client"){_clientUltReq=true;return;} // CLIENT 直接發 flag
+  if(_net&&_net.role==="client"){g._clientUltHold=true;_clientUltReq=true;return;}
   if(g.p.hasBH||g.p.hasTS||g.p.hasMF){if(performance.now()>=(g.ultCdEnd||0))_doUlt();}
   else if(g.ultCharge>=ULT_CHARGE_NEED)_doUlt();
   else g.ultHold=true;
 }
-function endUltPress(){const g=_getG();const _net=_getNet();if(g&&!(_net&&_net.role==="client"))g.ultHold=false;}
+function endUltPress(){const g=_getG();if(g){g.ultHold=false;g._clientUltHold=false;}}
 // 短距離閃避位移
 function doDodge(){
   const g=_getG();

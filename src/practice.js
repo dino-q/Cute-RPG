@@ -223,12 +223,13 @@ export function pracUpdateCardUI(cid) {
 export function pracRebuildCards() {
   const g = _deps.getG(); const inv = _deps.getInv();
   inv.length = 0;
+  g.p._cardStatLevels={};g.p._cardStatOverflow={};g.p._cardMaxBase={};g.p._summonOrbs=[];
   const _mode = _deps.getMode();
   const MC = MODE[_mode]; const CC = CHAR[g.charType] || CHAR.gunner;
   g.p.charType=g.charType;g.p.speed=CC.startSpeed;
   g.p.atk = CC.startAtk; g.p.fr = CC.fr; g.p.armor = CC.armor; g.p.crit = CC.crit; g.p.dodge = CC.dodge;
   g.p.chain = 0; g.p.ls = 0; g.p.slow = 1; g.p.split = 1; g.p.revive = 0; g.p.fx = {}; g.p.regen = 0;
-  g.p.thorns = 0; g.p.dblAtk = 0; g.p.windBlades = 0; g.p.orbiters = 0; g.p.poison = 0; g.p.pierce = 0;
+  g.p._orbLevel=0;g.p._orbPower=0;g.p._orbRange=0;g.p._orbCD=0;g.p.ultCdReduce=0;g.p.burnBossMul=1;g.p.iceFrag=0;g.p.thorns = 0; g.p.dblAtk = 0; g.p.windBlades = 0; g.p.orbiters = 0; g.p.poison = 0; g.p.pierce = 0;
   g.p.homing = 0; g.p.homingR = 200; g.p.splash = 0; g.p.berserk = 0; g.p.deathBoom = 0; g.p.dodgeAtk = 0;
   g.p.elemBoost = 1; g.p.ultDmgMul = 1; g.p.ultRate = 1; g.p.bulletHeal = 0; g.p.bossDmg = 1; g.p.mobDmg = 1;
   g.p.hasBH = false; g.p.hasTS = false; g.p.projImmune = false; g.p.boomerang = 0;
@@ -338,7 +339,7 @@ export function pracSwitchChar(){
  pracCloseOnBlank();resetControls();window.__lastTouchSnapshot=[];for(const key of Object.keys(ks))ks[key]=false;
  _deps.setCharType(next);g.charType=next;g.p.charType=next;
  g.p._dashEnd=0;g.p._shadowStrikeEnd=0;g.p._shadowStepEnd=0;g.p._travelFacing=null;g.p._downed=false;g.p._pickPending=false;
- g.p._tauntAtkEnd=0;g.p._tauntAtkBonus=0;g.p._iwActive=false;g.p._quakeCD=0;g.p._moveDir={x:0,y:1};
+ g.p._bladeRush=null;g.p._tauntAtkEnd=0;g.p._tauntAtkBonus=0;g.p._iwActive=false;g.p._quakeCD=0;g.p._moveDir={x:0,y:1};
  g._shadowReturn=null;g._ghostShadow=null;g._ghostArc=null;g._roleEffects=[];g._lightBeams=[];g._atkAnim={active:false,startT:0};g._wbSwing=0;
  g.ultHold=false;g.heat=0;g.heatCD=0;g.laF=performance.now();g.lhF=g.laF;
  setSkillCdEnd(0);resetDashGhosts();const cd=$('skillCd');if(cd)cd.style.display='none';

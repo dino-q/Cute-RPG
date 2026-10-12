@@ -233,7 +233,7 @@ export function swordSwing(_pp, _isP2) {
     if (e._coopShield) { fd = 0; }
     e.hp -= fd; addCardImpact(g,e.x,e.y,_pp);
     e.st = Math.max(e.st || 0, 800);
-    if (_pp.bulletHeal > 0) { const mheal = Math.max(5, _pp.bulletHeal); _pp.hp = Math.min(_pp.hp + mheal, _pp.maxHp); _pp._healFlash = now; }
+    if (_pp.bulletHeal > 0) { const mheal = _pp.bulletHeal; _pp.hp = Math.min(_pp.hp + mheal, _pp.maxHp); _pp._healFlash = now; }
     const fx = _pp.fx;
     if (fx.fire) { e.burnT = Math.max(e.burnT || 0, 1400 + Math.max(fx.fire || 0, 1) * 600); e.burnLv = Math.max(fx.fire || 0, 1); }
     if (fx.poison && _pp.poison > 0) { e.poisonT = _pp.poison * 1000 * (_pp.elemBoost || 1); e.poisonLv = Math.max(fx.poison || 0, 1); }
@@ -373,7 +373,7 @@ export function shieldBash(_pp, _isP2) {
     if (e.eliteEnemy) { const hasEl = !!(_pp.fx.fire || _pp.fx.ice || _pp.fx.lightning || _pp.fx.poison || _pp.fx.dragon); if (hasEl) fd *= 1.2; else { fd *= .5; fd = Math.max(fd, 1); } }
     if (e._coopShield) { fd = 0; }
     e.hp -= fd; addCardImpact(g,e.x,e.y,_pp);
-    if (_pp.bulletHeal > 0) { const mheal2 = Math.max(5, _pp.bulletHeal); _pp.hp = Math.min(_pp.hp + mheal2, _pp.maxHp); _pp._healFlash = now; }
+    if (_pp.bulletHeal > 0) { const mheal2 = _pp.bulletHeal; _pp.hp = Math.min(_pp.hp + mheal2, _pp.maxHp); _pp._healFlash = now; }
     startEnemyKnockback(e,_pp,now,e.boss?45:65);
     recordRoleEffect(g,'knockhit',e.x,e.y,Math.atan2(dy,dx),{follow:false});
     e.st = Math.max(e.st || 0, 1000);
@@ -417,7 +417,7 @@ export function shieldBash(_pp, _isP2) {
     }
   });
   g._quakeRingT = now; g._quakeRingSmall = true;
-  recordRoleEffect(g,"shieldwave",_pp.x,_pp.y,atkAngle,{owner:_isP2?'p2':'p1',range:baseQuakeR,follow:false});
+  recordRoleEffect(g,"shieldwave",_pp.x,_pp.y,atkAngle,{owner:_isP2?'p2':'p1',range:baseQuakeR,follow:true});
   if (_pp._quake && (!_pp._quakeCD || now >= _pp._quakeCD)) {
     _pp._quakeCD = now + 3000;
     const qMul = [0, 1, 1.5, 2][_pp._quake] || 1;
@@ -482,7 +482,7 @@ export function daggerStrike(_pp, _isP2) {
     e.hp -= fd; addCardImpact(g,e.x,e.y,_pp);
     if(fd>0&&_assCrit&&_pp._roleCards?.["致命打擊"])recordRoleEffect(g,"critical",e.x,e.y,atkAngle);
     e.st = Math.max(e.st || 0, 600);
-    if (_pp.bulletHeal > 0) { const mheal = Math.max(5, _pp.bulletHeal); _pp.hp = Math.min(_pp.hp + mheal, _pp.maxHp); _pp._healFlash = now; }
+    if (_pp.bulletHeal > 0) { const mheal = _pp.bulletHeal; _pp.hp = Math.min(_pp.hp + mheal, _pp.maxHp); _pp._healFlash = now; }
     // 近戰回血（比劍士少一些）
     const _meleeHeal = 2 + (_pp.ls > 0 ? _pp.ls * .2 : 0);
     if (_pp.hp < _pp.maxHp) { _pp.hp = Math.min(_pp.hp + _meleeHeal, _pp.maxHp); }

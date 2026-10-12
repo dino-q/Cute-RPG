@@ -5,23 +5,63 @@ let CID = 0;
 let _isEliteFn = null;
 export function setCardsIsElite(fn) { _isEliteFn = fn; }
 function _isElite() { return _isEliteFn ? _isEliteFn() : false; }
+
+// Upgrade numbers describe this card's current total, not another full copy.
+const CARD_ADDITIVE={atk:100,maxHp:100,regen:0,ls:0,crit:.05,dodge:0,split:1,orbiters:0,deathBoom:0,pierce:0,armorCapBonus:0,bulletHeal:0,_critDmgMul:1,_atkDodge:0,dodgeAtk:0,thorns:0};
+const CARD_MULTIPLIERS={fr:1,expMul:1,ultRate:1,elemBoost:1,ultDmgMul:1,burnBoost:1,bossDmg:1,chainDmg:1,mobDmg:1};
+const CARD_MAX={splash:0,homingR:200,poison:0,poisonDmg:0,poisonBossMul:1,iceFrag:0,burnBossMul:1,chain:0,homing:0};
+const CARD_SPEED={'連弩':[.12,.25,.4],'機關槍':[.3,.6,1],'彈幕之王':[.08,.15,.25],'時光沙':[.4,.6,.8],'暗影步':[.2,.3,.5],'音速投擲':[.1,.2,.3],'創世神力':[.3,.45,.6]};
+function applyCardLevel(entry,apply,level,player){
+ const ledger=player._cardStatLevels||(player._cardStatLevels={}),previous=ledger[entry.id];
+ if(previous&&previous.level>=level)return;
+ if(entry.n==='混沌核心'){
+  const count=[3,5,8][level]-[0,3,5,8][previous?previous.level+1:0];
+  for(let i=0;i<count;i++)rndBuff(player);ledger[entry.id]={level,add:{},mul:{},max:{},armor:1,cooldown:1};return;
+ }
+ const seed={...CARD_ADDITIVE,...CARD_MULTIPLIERS,...CARD_MAX,armor:0,hp:50,fx:{}},sample={...seed,fx:{}};
+ apply(sample);
+ const next={level,add:{},mul:{},max:{},armor:1-(sample.armor||0),cooldown:1-(sample.ultCdReduce||0)};
+ for(const [key,base] of Object.entries(CARD_ADDITIVE))next.add[key]=(sample[key]??base)-base;
+ for(const [key,base] of Object.entries(CARD_MULTIPLIERS))next.mul[key]=(sample[key]??base)/base;
+ for(const [key,base] of Object.entries(CARD_MAX))next.max[key]=sample[key]??base;
+ if(CARD_SPEED[entry.n])next.mul.fr=1/(1+CARD_SPEED[entry.n][level]);
+ const tracked=new Set([...Object.keys(CARD_ADDITIVE),...Object.keys(CARD_MULTIPLIERS),...Object.keys(CARD_MAX),'armor','ultCdReduce','hp']);
+ // Let equipment flags and on-acquisition actions run, while numbers use deltas below.
+ apply(new Proxy(player,{set(target,key,value){if(!tracked.has(key))target[key]=value;return true;}}));
+ const overflow=player._cardStatOverflow||(player._cardStatOverflow={});
+ for(const [key,value] of Object.entries(next.add)){
+  const delta=value-(previous?.add[key]||0);if(!delta)continue;
+  const raw=(player[key]??CARD_ADDITIVE[key])+(overflow[key]||0)+delta;
+  const bounded=['crit','dodge','_atkDodge'].includes(key)?Math.max(0,Math.min(1,raw)):key==='atk'||key==='maxHp'?Math.max(1,raw):raw;
+  player[key]=bounded;overflow[key]=raw-bounded;
+ }
+ for(const [key,value] of Object.entries(next.mul))player[key]=(player[key]??CARD_MULTIPLIERS[key])*value/(previous?.mul[key]||1);
+ player.armor=1-(1-(player.armor||0))*next.armor/(previous?.armor||1);
+ player.ultCdReduce=1-(1-(player.ultCdReduce||0))*next.cooldown/(previous?.cooldown||1);
+ const maxBase=player._cardMaxBase||(player._cardMaxBase={});ledger[entry.id]=next;
+ for(const key of Object.keys(CARD_MAX)){
+  if(maxBase[key]===undefined)maxBase[key]=player[key]??CARD_MAX[key];
+  player[key]=Math.max(maxBase[key],...Object.values(ledger).map(v=>v.max[key]??CARD_MAX[key]));
+ }
+ const healthGain=next.add.maxHp-(previous?.add.maxHp||0);
+ if(healthGain>0)player.hp=Math.min(player.maxHp,player.hp+healthGain);
+ if((entry.n==='龍之心'||entry.n==='不死鳥')&&level===2)player.hp=player.maxHp;
+}
+
 function card(n,e,r,tp,d,ap,c,fx,once){
  const entry={id:++CID,n,e,r,tp,d,ap:[],c,fx:fx||null,once:!!once};
- entry.ap=ap.map((apply,level)=>player=>{apply(player);if(["星辰劍","無盡之刃","創世神力"].includes(entry.n))player._legendCards={...(player._legendCards||{}),[entry.n]:level+1};if(entry.charReq){player._roleCards={...(player._roleCards||{}),[entry.n]:level+1};}});
+ entry.ap=ap.map((apply,level)=>player=>{if(entry.once)apply(player);else applyCardLevel(entry,apply,level,player);if(["星辰劍","無盡之刃","創世神力"].includes(entry.n))player._legendCards={...(player._legendCards||{}),[entry.n]:level+1};if(entry.charReq){player._roleCards={...(player._roleCards||{}),[entry.n]:level+1};}});
  C.push(entry);
 }
 // once=1 的卡片只能拿一次、不能升級（拿過後不再出現在選卡池）。
 // 它們的 3 個等級定義相同是因為 card() 固定吃 [Lv1,Lv2,Lv3] 陣列，並非設計失誤。
 // once 卡：幸運幣、磁力場、自癒術、鐵壁金身、守護星、影分身、閃電步、命運轉輪、時間停止。
 // --- R: 17 cards ---
-// NOTE: 以下卡牌升級時數值為「疊加」而非「替換」，屬暫時設計降低難度。
-// 若主角太強可改為直接賦值(如毒刺)：閃避斗篷/虛空步(疊加可超100%無敵)、
-// 回血斬/吸血領主(吸血疊加)、分裂彈(子彈數疊加)、自癒術(回血疊加)、
-// 星辰劍(暴擊可超100%)、召喚球、連鎖爆破/毀滅之手(deathBoom雙重觸發+疊加)。
+// All upgrade descriptions are the current total contributed by this card.
 card("火焰彈","","R","atk",["攻+4 火焰 燒傷+20% 王燃+40%","攻+8 烈焰 燒傷+35% 王燃+70%","攻+14 獄火 燒傷+50% 王燃+100%"],[s=>{s.atk+=4;s.burnBoost=(s.burnBoost||1)*1.2;s.burnBossMul=Math.max(s.burnBossMul||1,1.4);s.fx.fire=1},s=>{s.atk+=8;s.burnBoost=(s.burnBoost||1)*1.35;s.burnBossMul=Math.max(s.burnBossMul||1,1.7);s.fx.fire=2},s=>{s.atk+=14;s.burnBoost=(s.burnBoost||1)*1.5;s.burnBossMul=Math.max(s.burnBossMul||1,2);s.fx.fire=3}],"#FF6B6B","fire");
 card("冰錐","","R","atk",["攻+2 減速30% 冰脆+15%","攻+5 減速40% 冰脆+25%","攻+8 減速50%+短凍結 冰脆+35%"],[s=>{s.atk+=2;s.slow=.7;s.iceFrag=Math.max(s.iceFrag||0,.15);s.fx.ice=1},s=>{s.atk+=5;s.slow=.6;s.iceFrag=Math.max(s.iceFrag||0,.25);s.fx.ice=2},s=>{s.atk+=8;s.slow=.5;s.iceFrag=Math.max(s.iceFrag||0,.35);s.fx.ice=3}],"#66D9E8","ice");
 card("生命果","","R","pas",["HP+75","HP+150","HP+200 防禦+10%"],[s=>{s.maxHp+=75;s.hp=Math.min(s.hp+75,s.maxHp)},s=>{s.maxHp+=150;s.hp=Math.min(s.hp+150,s.maxHp)},s=>{s.maxHp+=200;s.hp=Math.min(s.hp+200,s.maxHp);s.armor=1-(1-s.armor)*.9}],"#51CF66");
-card("疾風靴","","R","pas",["閃避+5% 位移CD-15%","閃避+10% 位移CD-30%","閃避+18% 位移CD-50%"],[s=>{s.dodge=Math.min(1,(s.dodge||0)+.05);s.ultCdReduce=1-(1-(s.ultCdReduce||0))*.85},s=>{s.dodge=Math.min(1,(s.dodge||0)+.1);s.ultCdReduce=1-(1-(s.ultCdReduce||0))*.7},s=>{s.dodge=Math.min(1,(s.dodge||0)+.18);s.ultCdReduce=1-(1-(s.ultCdReduce||0))*.5}],"#74C0FC");
+card("疾風靴","","R","pas",["閃避+5% 卡片大招CD-15%","閃避+10% 卡片大招CD-30%","閃避+18% 卡片大招CD-50%"],[s=>{s.dodge=Math.min(1,(s.dodge||0)+.05);s.ultCdReduce=1-(1-(s.ultCdReduce||0))*.85},s=>{s.dodge=Math.min(1,(s.dodge||0)+.1);s.ultCdReduce=1-(1-(s.ultCdReduce||0))*.7},s=>{s.dodge=Math.min(1,(s.dodge||0)+.18);s.ultCdReduce=1-(1-(s.ultCdReduce||0))*.5}],"#74C0FC");
 card("連弩","","R","atk",["攻速+12%","攻速+25%","攻速+40%"],[s=>{s._crossbow=true;s.fr*=_isElite()?.76:.88},s=>{s._crossbow=true;s.fr*=_isElite()?.5:.75},s=>{s._crossbow=true;s.fr*=_isElite()?.3:.6}],"#FFA94D");
 card("鏡盾","","R","pas",["受傷-10%","受傷-22%","受傷-35%"],[s=>{s.armor=1-(1-s.armor)*.9},s=>{s.armor=1-(1-s.armor)*.78},s=>{s.armor=1-(1-s.armor)*.65}],"#B2F2BB");
 card("自癒術","","R","pas",["每0.5秒回10HP","每0.5秒回10HP","每0.5秒回10HP"],[s=>{s.regen=(s.regen||0)+20},s=>{s.regen=(s.regen||0)+20},s=>{s.regen=(s.regen||0)+20}],"#FFC9C9",null,1);
@@ -47,11 +87,11 @@ card("烈焰風暴","","SR","atk",["攻+4 濺射 王燃+50%","攻+8 大濺射 �
 card("暴風雪","","SR","atk",["攻+3 減速40%+短凍結 冰脆+20%","攻+6 減速50%+短凍結 冰脆+30%","攻+10 減速50%+短凍結 冰脆+40%"],[s=>{s.atk+=3;s.slow=.6;s.iceFrag=Math.max(s.iceFrag||0,.2);s.fx.ice=2},s=>{s.atk+=6;s.slow=.5;s.iceFrag=Math.max(s.iceFrag||0,.3);s.fx.ice=3},s=>{s.atk+=10;s.slow=.5;s.iceFrag=Math.max(s.iceFrag||0,.4);s.fx.ice=3}],"#339AF0","ice");
 card("追蹤彈","","SR","atk",["微追蹤","強追蹤 範圍↑ 攻+3","完美追蹤 攻+6 穿透1"],[s=>{s.homing=.03;s.homingR=200},s=>{s.homing=.06;s.homingR=320;s.atk+=3},s=>{s.homing=.1;s.homingR=400;s.atk+=6;s.pierce=(s.pierce||0)+1}],"#F06595");C[C.length-1].charReq="gunner";
 card("吸血領主","","SR","pas",["擊殺回12HP","回25HP","回40HP+攻+5"],[s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+25},s=>{s.ls=(s.ls||0)+40;s.atk+=5}],"#C2255C");
-card("召喚球","","SR","atk",["1顆環繞守護球","2顆環繞守護球","3顆環繞守護球"],[s=>{s.orbiters=(s.orbiters||0)+1},s=>{s.orbiters=(s.orbiters||0)+2},s=>{s.orbiters=(s.orbiters||0)+3}],"#FCC419");
+card("召喚球","","SR","atk",["1顆守護球・自動出擊 範圍300","2顆守護球・傷害+35% 範圍340","3顆守護球・傷害+70% 範圍380"],[s=>{s.orbiters=1;s._orbLevel=1;s._orbPower=1;s._orbRange=300;s._orbCD=500},s=>{s.orbiters=2;s._orbLevel=2;s._orbPower=1.35;s._orbRange=340;s._orbCD=450},s=>{s.orbiters=3;s._orbLevel=3;s._orbPower=1.7;s._orbRange=380;s._orbCD=400}],"#FCC419");
 card("旋風斬","","SR","atk",["風刃追擊3秒","2道風刃追擊","3道風刃追擊"],[s=>{s.windBlades=1;s.fx.whirl=1},s=>{s.windBlades=2;s.fx.whirl=2},s=>{s.windBlades=3;s.fx.whirl=3}],"#99E9F2");
 card("狂暴之力","","SR","pas",["HP<30%時 攻擊翻倍","HP<40%時 攻擊翻倍","HP<50%時 攻擊翻倍"],[s=>{s.berserk=.3},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
 card("連鎖爆破","","SR","atk",["敵人死亡後爆炸 周圍傷8","敵人死亡 周圍傷18","敵人死亡 周圍傷30"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
-card("破甲箭","","SR","atk",["攻+3 armor cap+25%","攻+4 armor cap+35%","攻+5 armor cap+50% 穿透+1"],[s=>{s.atk+=3;s.armorCapBonus=(s.armorCapBonus||0)+.25},s=>{s.atk+=4;s.armorCapBonus=(s.armorCapBonus||0)+.35},s=>{s.atk+=5;s.armorCapBonus=(s.armorCapBonus||0)+.5;s.pierce=(s.pierce||0)+1}],"#D4A017");
+card("破甲箭","","SR","atk",["攻+3 護甲Boss每秒傷害上限+25%","攻+4 護甲Boss每秒傷害上限+35%","攻+5 護甲Boss每秒傷害上限+50% 穿透+1"],[s=>{s.atk+=3;s.armorCapBonus=(s.armorCapBonus||0)+.25},s=>{s.atk+=4;s.armorCapBonus=(s.armorCapBonus||0)+.35},s=>{s.atk+=5;s.armorCapBonus=(s.armorCapBonus||0)+.5;s.pierce=(s.pierce||0)+1}],"#D4A017");
 card("迴力鏢","","SR","atk",["攻+2 1個迴力鏢","攻+5 2個迴力鏢","攻+8 3個迴力鏢 穿透+1"],[s=>{s.atk+=2;s.boomerang=1},s=>{s.atk+=5;s.boomerang=2;s.homingR=(s.homingR||200)+40},s=>{s.atk+=8;s.boomerang=3;s.pierce=(s.pierce||0)+1}],"#20C997");
 card("機關槍","","SR","atk",["攻速+30% 攻-3","攻速+60% 攻-5 無過熱","攻速+100% 攻-8 狂暴模式"],[s=>{s.fr*=.7;s.atk=Math.max(1,s.atk-3);s._minigun=1},s=>{s.fr*=.4;s.atk=Math.max(1,s.atk-5);s._minigun=2;s._noOverheat=true},s=>{s.fr*=.5*.4;s.atk=Math.max(1,s.atk-8);s._minigun=3;s._noOverheat=true;s._minigunBerserk=true}],"#FF8C00");C[C.length-1].charReq="gunner";
 card("閃電步","","SR","pas",["大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招"],[s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8}],"#FFE066",null,1);
@@ -63,14 +103,14 @@ card("龍之心","","SSR","atk",["攻+8 龍息錐形+濺射30","攻+16 龍息強
 card("星辰劍","","SSR","atk",["攻+8 暴擊+20%","攻+16 暴擊+35%","攻+28 暴擊+50%"],[s=>{s.atk+=8;s.crit=(s.crit||.05)+.2;s.fx.star=1},s=>{s.atk+=16;s.crit=(s.crit||.05)+.35;s.fx.star=2},s=>{s.atk+=28;s.crit=(s.crit||.05)+.5;s.fx.star=3}],"#F06595","star");
 card("時光沙","","SSR","atk",["攻速+40%集氣+30%","攻速+60%集氣+50%","攻速+80%集氣+80%"],[s=>{s.fr*=.6;s.ultRate=(s.ultRate||1)*1.3},s=>{s.fr*=.4;s.ultRate=(s.ultRate||1)*1.5},s=>{s.fr*=.2;s.ultRate=(s.ultRate||1)*1.8}],"#20C997");
 card("不死鳥","","SSR","pas",["復活1次+怪物撤退","復活2次+怪物撤退","復活3次+滿血+怪物撤退"],[s=>{s.revive=Math.max(s.revive||0,1);s.fx.phoenix=1},s=>{s.revive=Math.max(s.revive||0,2);s.fx.phoenix=2},s=>{s.revive=Math.max(s.revive||0,3);s.hp=s.maxHp;s.fx.phoenix=3}],"#BE4BDB");
-card("黑洞","","SSR","atk",["大招變黑洞","大招黑洞 傷害+35%","大招黑洞 傷害+70%"],[s=>{s.hasBH=true;s.ultLv=1;s._resetUlt=true},s=>{s.hasBH=true;s.ultLv=2;s._resetUlt=true},s=>{s.hasBH=true;s.ultLv=3;s._resetUlt=true}],"#495057");
+card("黑洞","","SSR","atk",["大招變黑洞","大招黑洞 傷害+35%","大招黑洞 傷害+70%"],[s=>{s.hasBH=true;s.ultLv=0;s._resetUlt=true},s=>{s.hasBH=true;s.ultLv=1;s._resetUlt=true},s=>{s.hasBH=true;s.ultLv=2;s._resetUlt=true}],"#495057");
 card("天使之翼","","SSR","pas",["每10秒無敵3秒","每5秒無敵3秒","每3秒無敵2秒"],[s=>{s.invCD=10e3;s.invDur=3e3},s=>{s.invCD=5e3;s.invDur=3e3},s=>{s.invCD=3e3;s.invDur=2e3}],"#FFF3BF");
 card("毀滅之手","","SSR","atk",["攻+12 死亡爆炸傷20","攻+22 死亡爆炸傷35","攻+35 死亡爆炸傷50"],[s=>{s.atk+=12;s.deathBoom=(s.deathBoom||0)+20;s.fx.fire=Math.max(s.fx.fire||0,2)},s=>{s.atk+=22;s.deathBoom=(s.deathBoom||0)+35;s.fx.fire=3},s=>{s.atk+=35;s.deathBoom=(s.deathBoom||0)+50;s.fx.fire=3}],"#E03131","fire");
 card("無盡之刃","","SSR","atk",["攻+10 穿透全部","攻+20 穿透全部","攻+35 穿透全部+連鎖"],[s=>{s.atk+=10;s.pierce=99;s.fx.star=1},s=>{s.atk+=20;s.pierce=99;s.fx.star=2},s=>{s.atk+=35;s.pierce=99;s.chain=(s.chain||0)+2;s.fx.star=3}],"#FFD43B","star");
 card("虛空步","","SSR","pas",["35%閃避+反擊傷10","50%閃避+反擊傷15","65%閃避+反擊傷30"],[s=>{s.dodge=(s.dodge||0)+.35;s.dodgeAtk=(s.dodgeAtk||0)+10},s=>{s.dodge=(s.dodge||0)+.5;s.dodgeAtk=(s.dodgeAtk||0)+15},s=>{s.dodge=(s.dodge||0)+.65;s.dodgeAtk=(s.dodgeAtk||0)+30}],"#343A40");
 card("命運轉輪","","SSR","pas",["重抽所有能力+強化","重抽所有能力+強化","重抽所有能力+強化"],[s=>{s._fateWheel=true},s=>{s._fateWheel=true},s=>{s._fateWheel=true}],"#F59F00",null,1);
 card("混沌核心","","SSR","atk",["隨機3項能力提升","隨機5項能力提升","隨機8項能力提升"],[s=>{for(let i=0;i<3;i++)rndBuff(s)},s=>{for(let i=0;i<5;i++)rndBuff(s)},s=>{for(let i=0;i<8;i++)rndBuff(s)}],"#E599F7");
-card("時間停止","","SSR","pas",["大招：凍結全敵2秒 CD15秒","大招：凍結全敵2秒 CD15秒","大招：凍結全敵2秒 CD15秒"],[s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true},s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true},s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true}],"#74C0FC",null,1);
+card("時間停止","","SSR","pas",["大招：凍結普通敵人2秒（Boss免疫） CD15秒","大招：凍結普通敵人2秒（Boss免疫） CD15秒","大招：凍結普通敵人2秒（Boss免疫） CD15秒"],[s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true},s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true},s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true}],"#74C0FC",null,1);
 // ═══ 劍士專屬卡 ═══
 card("殘影斬","","SR","atk",["攻擊留殘影(50%傷害)","殘影傷害75%","殘影傷害100%"],[s=>{s._ghostSlash=.5},s=>{s._ghostSlash=.75},s=>{s._ghostSlash=1}],"#DA77F2");C[C.length-1].charReq="swordsman";
 card("劍氣強化","","R","atk",["劍氣每4次觸發","劍氣每3次+250%傷害","劍氣每2次+400%傷害"],[s=>{s._qiEvery=4;s._qiMul=2},s=>{s._qiEvery=3;s._qiMul=2.5},s=>{s._qiEvery=2;s._qiMul=4}],"#74C0FC");C[C.length-1].charReq="swordsman";
@@ -88,7 +128,7 @@ card("毒刃","","SR","atk",["攻擊30%機率施毒+攻+3","50%施毒+攻+5","70
 card("連環殺戮","","SSR","atk",["擊殺回15%HP+攻+10","擊殺回15%HP+攻+10","擊殺回15%HP+攻+10"],[s=>{s.atk+=10;s._chainKill=true;s.ls=(s.ls||0)+10},s=>{s.atk+=10;s._chainKill=true;s.ls=(s.ls||0)+10},s=>{s.atk+=10;s._chainKill=true;s.ls=(s.ls||0)+10}],"#FF4040",null,1);C[C.length-1].charReq="assassin";
 card("音速投擲","","SSR","atk",["攻+10 攻速+10% 攻擊閃避20%","攻+10 攻速+20% 攻擊閃避20%","攻+10 攻速+30% 攻擊閃避20%"],[s=>{s.atk+=10;s.fr*=.9;s._atkDodge=(s._atkDodge||0)+.2},s=>{s.atk+=10;s.fr*=.8;s._atkDodge=(s._atkDodge||0)+.2},s=>{s.atk+=10;s.fr*=.7;s._atkDodge=(s._atkDodge||0)+.2}],"#74C0FC");C[C.length-1].charReq="assassin";
 card("萬物吞噬","","SSR","atk",["攻+8 命中回0.5HP","攻+15 命中回1HP","攻+25 命中回2HP"],[s=>{s.atk+=8;s.bulletHeal=(s.bulletHeal||0)+.5},s=>{s.atk+=15;s.bulletHeal=(s.bulletHeal||0)+1},s=>{s.atk+=25;s.bulletHeal=(s.bulletHeal||0)+2}],"#845EF7");
-card("創世神力","","SSR","atk",["攻+15 速+30% 暴+15%","攻+25 速+45% 暴+30% 閃避+6%","攻+40 速+60% 暴+45% HP+50 閃避+10%"],[s=>{s.atk+=15;s.fr*=.7;s.crit=(s.crit||.05)+.15;s.fx.star=Math.max(s.fx.star||0,2)},s=>{s.atk+=25;s.fr*=.55;s.crit=(s.crit||.05)+.3;s.dodge=Math.min(1,(s.dodge||0)+.06);s.fx.star=3},s=>{s.atk+=40;s.fr*=.4;s.crit=(s.crit||.05)+.45;s.dodge=Math.min(1,(s.dodge||0)+.1);s.maxHp+=50;s.hp=Math.min(s.hp+50,s.maxHp);s.fx.star=3}],"#FFD43B","star");
+card("創世神力","","SSR","atk",["攻+15 攻速+30% 暴+15%","攻+25 攻速+45% 暴+30% 閃避+6%","攻+40 攻速+60% 暴+45% HP+50 閃避+10%"],[s=>{s.atk+=15;s.fr*=.7;s.crit=(s.crit||.05)+.15;s.fx.star=Math.max(s.fx.star||0,2)},s=>{s.atk+=25;s.fr*=.55;s.crit=(s.crit||.05)+.3;s.dodge=Math.min(1,(s.dodge||0)+.06);s.fx.star=3},s=>{s.atk+=40;s.fr*=.4;s.crit=(s.crit||.05)+.45;s.dodge=Math.min(1,(s.dodge||0)+.1);s.maxHp+=50;s.hp=Math.min(s.hp+50,s.maxHp);s.fx.star=3}],"#FFD43B","star");
 
 
 

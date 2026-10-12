@@ -72,11 +72,11 @@ export function hud() {
   const _hasBH = !!_hudP.hasBH, _hasTS = !!_hudP.hasTS, _hasMF = !!_hudP.hasMF, _hasLS = !!_hudP.lStep, _hasCd = _hasBH || _hasTS || _hasMF;
   const _ultCount = (_hasBH ? 1 : 0) + (_hasTS ? 1 : 0) + (_hasMF ? 1 : 0) + (_hasLS ? 1 : 0);
   if (_hasCd) {
-    const cdMs = (_hasBH ? BH_COOLDOWN_MS : _hasMF ? (_hudP.mfCd || 12e3) : (_hasTS ? (_hudP.tsCd || 15e3) : 15e3)) / (_hudP.ultRate || 1);
+    const cdMs = (1-(_hudP.ultCdReduce||0))*(_hasBH ? BH_COOLDOWN_MS : _hasMF ? (_hudP.mfCd || 12e3) : (_hasTS ? (_hudP.tsCd || 15e3) : 15e3)) / (_hudP.ultRate || 1);
     const icon = _ultCount >= 2 ? "" : _hasBH ? "" : _hasMF ? "" : "";
     const label = [_hasBH ? "黑洞" : null, _hasMF ? "磁力場" : null, _hasTS ? "時停" : null, _hasLS ? "閃電步" : null].filter(Boolean).join("+");
     const cdColor = _hasBH ? "#495057" : _hasMF ? "#339AF0" : "#74C0FC";
-    const now = performance.now(), cdLeft = Math.max(0, (g.ultCdEnd || 0) - now), ready = cdLeft <= 0;
+    const now = performance.now(), cdLeft = Math.max(0, ((_hudIsClient?g._p2Ultimate?.ultCdEnd:g.ultCdEnd) || 0) - now), ready = cdLeft <= 0;
     const pct = ready ? 1 : 1 - cdLeft / cdMs;
     $("ultR").style.background = "conic-gradient(" + cdColor + " " + (pct * 360) + "deg,rgba(190,78,219,.1) " + (pct * 360) + "deg)";
     setActionEmblem("ultI", ready ? (_hasBH ? "orb" : _hasMF ? "target" : "hourglass") : "hourglass", ready ? "大招" : "冷卻", "E");
@@ -92,7 +92,7 @@ export function hud() {
     $("ultR").style.background = "conic-gradient(#BE4BDB " + (pct * 360) + "deg,rgba(190,78,219,.1) " + (pct * 360) + "deg)";
     const _lsReady = pct >= 1 && _hudP.lStep;
     setActionEmblem("ultI", pct >= 1 ? (_lsReady ? "bolt" : "burst") : "gem", pct >= 1 ? "發動" : "集氣", "E");
-    $("ultL").textContent = pct >= 1 ? (_lsReady ? " 閃電步 " : " 發動 ") : (g.ultHold || (_hudIsClient && aim.a)) ? "集氣中..." : "長壓集氣";
+    $("ultL").textContent = pct >= 1 ? (_lsReady ? " 閃電步 " : " 發動 ") : (_hudIsClient?g._p2Ultimate?.ultHold:g.ultHold) ? "集氣中..." : "長壓集氣";
     $("ub").style.width = (pct * 100) + "%";
     $("ulbl").textContent = pct >= 1 ? "MAX" : `${Math.floor(pct * 100)}%`;
     $("ulr").textContent = pct >= 1 ? " READY" : "" + Math.floor(pct * 100) + "%";
