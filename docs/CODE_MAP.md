@@ -141,3 +141,7 @@
 | updateAssassinUltimates | src/skills.js | 主機逐幀處理八段高速位移、沿路命中及每敵人最多三次傷害，P1/P2共用。 |
 
 ♻️ 沿用 castRoleUltimate、recordRoleEffect、drawRoleEvents、getDashGhosts、drawPlayer、triggerHuntPressure、drawEnemyCreature。🆕 updateAssassinUltimates（原刺客大招只有一次範圍扣血，沒有真正人物移動）。
+
+| drawHuntWindRoute | src/render.js | 低亮度連貫雙道地面風痕與方向尖端，代替五枚重複風圖。 |
+
+♻️ 沿用 drawEnemy、drawArt、drawRoleEvents、castRoleUltimate 與八閃位移。🆕 drawHuntWindRoute（原逐個貼圖形成不連貫路線）。

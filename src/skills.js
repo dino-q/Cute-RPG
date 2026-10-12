@@ -288,7 +288,7 @@ export function updateAssassinUltimates(now,elapsedMs){
 }
 
 export function doUlt() {
-  if (!g || !g.run || (_net?.role==='client'?g.p2:g.p)?._pickPending) return;
+  if (!g || !g.run || (_net?.role==='client'?g.p2:g.p)?._pickPending || (_net?.role==='client'?g.p2:g.p)?._bladeRush) return;
   if (_net && _net.role === "client") { setClientUltReq(true); return; }
   const isBH = !!g.p.hasBH;
   const isTS = !!g.p.hasTS;
@@ -345,13 +345,13 @@ export function doUlt() {
   }
   const cols = isBH ? ["#495057", "#868E96", "#CED4DA", "#fff"] : isTS ? ["#74C0FC", "#4DABF7", "#339AF0", "#fff"] : ["#BE4BDB", "#FFD43B", "#FF6B6B", "#74C0FC", "#fff"];
   const burstCount = 40 + ultLv * 12;
-  for (let i = 0; i < burstCount && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / burstCount, v = rn(2, 7 + ultLv); par.push({ x: g.p.x + Math.cos(a) * 20, y: g.p.y + Math.sin(a) * 20, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.3 + ultLv * .15, color: cols[i % cols.length], sz: rn(3, 8 + ultLv) }); }
+  if(!(g.charType==='assassin'&&!isCd))for (let i = 0; i < burstCount && par.length < MAX_PARTICLES; i++) { const a = Math.PI * 2 * i / burstCount, v = rn(2, 7 + ultLv); par.push({ x: g.p.x + Math.cos(a) * 20, y: g.p.y + Math.sin(a) * 20, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1.3 + ultLv * .15, color: cols[i % cols.length], sz: rn(3, 8 + ultLv) }); }
   g.ultFlash = isBH ? 1 : isTS ? .6 : (isMF?.3:.18); g.ultType = isBH ? "bh" : "n"; if (!isCd) g.ultCharge = 0; sfx("ult");
   if (isLS&&!g.p._bladeRush) _startDash(now);
   if (_comboUlt) {
     g.dn.push({ x: g.p.x, y: g.p.y - 50, d: " 合體大招！×3 傷害！", life: 3, color: "#FFD43B", big: 1 });
     g.dn.push({ x: g.p2.x, y: g.p2.y - 50, d: " 合體大招！", life: 3, color: "#F06595", big: 1 });
-    burst(g.p.x, g.p.y, "#FFD43B", 25); burst(g.p2.x, g.p2.y, "#F06595", 25);
+    if(g.charType!=='assassin')burst(g.p.x,g.p.y,'#FFD43B',25);if(g.p2.charType!=='assassin')burst(g.p2.x,g.p2.y,'#F06595',25);
     sfx("phoenix");
   }
 }

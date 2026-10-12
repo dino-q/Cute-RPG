@@ -31,7 +31,19 @@ export function drawRoleEvents(c,game,now,ground=false){
    continue;
   }
   if(e.kind==='rush-start'||e.kind==='rush-finish'){
-   if(!ground)for(const side of [-1,1])drawArt(c,'sword-draw',Math.min(3,Math.floor(q*4)),x,y,e.kind==='rush-finish'?110:65,e.kind==='rush-finish'?110:65,{angle:e.angle+side*.6,alpha:alpha*.85});
+   if(!ground){
+    c.save();c.translate(x,y);c.rotate(e.angle);
+    const starting=e.kind==='rush-start',travel=starting?(1-q)*65:q*35;
+    c.lineCap='round';
+    for(let i=0;i<10;i++){
+     const side=(i%2?1:-1)*(7+Math.floor(i/2)*6),tail=-45-travel-(i%3)*13;
+ c.strokeStyle=i%3?'#b4bad6':'#e2eafa';c.lineWidth=i%3?1:1.6;
+     c.globalAlpha=alpha*(i%3?.35:.65);
+     c.beginPath();c.moveTo(tail,side);c.quadraticCurveTo(-18-travel*.3,side*.72,12+q*20,side*.4);c.stroke();
+    }
+    c.restore();
+    if(q>.35)for(const side of [-1,1])drawArt(c,'sword-draw',Math.min(3,Math.floor(q*4)),x,y,starting?45:72,starting?45:72,{angle:e.angle+side*.45,alpha:alpha*.65});
+   }
    continue;
   }
   if(e.kind==='ultimate'||e.kind==='ultimate-target'){

@@ -575,6 +575,21 @@ export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
 }
 
 /* ═══ draw enemy ═══ */
+// Continuous ground airflow: muted edges, a bright narrow direction tip.
+function drawHuntWindRoute(c,x,y,angle,length,now){
+ c.save();c.translate(x,y+4);c.rotate(angle);
+ const pulse=.85+Math.sin(now/140)*.08;
+ for(const side of [-1,1]){
+  c.globalAlpha=.18*pulse;c.fillStyle='#a78a97';
+  c.beginPath();c.moveTo(12,side*9);c.bezierCurveTo(length*.3,side*11,length*.7,side*5,length,0);
+  c.bezierCurveTo(length*.68,side*2,length*.3,side*5,12,side*6);c.closePath();c.fill();
+  c.globalAlpha=.36*pulse;c.strokeStyle='#c5a5b0';c.lineWidth=1;c.lineCap='round';
+  c.beginPath();c.moveTo(18,side*7);c.bezierCurveTo(length*.35,side*8,length*.76,side*3,length-7,0);c.stroke();
+ }
+ c.restore();
+ drawArt(c,'wind',4,x+Math.cos(angle)*(length-10),y+4+Math.sin(angle)*(length-10),27,11,{angle,stretch:true,alpha:.48});
+}
+
 export function drawEnemy(e) {
   if(e._bossCore){drawBossPatternCore(cx,e,performance.now());return;}
   drawCardStatus(cx,e,performance.now());
@@ -644,8 +659,7 @@ export function drawEnemy(e) {
   if(e._rage&&e._rageDashes<3){
    if(e._rageState==='charge'){
     const angle=Math.atan2(e._rageDy||0,e._rageDx||1),distance=e.role===ROLE_SHOOTER?145:220;
-    for(let i=1;i<=5;i++)drawArt(cx,'wind',4,x+Math.cos(angle)*distance*i/5,cy+Math.sin(angle)*distance*i/5,23,10,{angle,stretch:true,alpha:.25+i*.06});
-    drawArt(cx,'arcane',5,x,cy+r,35,18,{stretch:true,alpha:.5});
+    drawHuntWindRoute(cx,x,cy,angle,distance,performance.now());
    }else if(e._rageState==='dash')drawArt(cx,'wind',4,x-(e._rageDx||0)*25,cy-(e._rageDy||0)*25,43,17,{angle:Math.atan2(e._rageDy||0,e._rageDx||1),stretch:true,alpha:.5});
   }
   // co-op shield bubble + circles
