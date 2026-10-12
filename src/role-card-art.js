@@ -1,23 +1,42 @@
+import {weaponPoseFor} from './weapon-rig.js';
 import {drawArt} from './generated-art.js';
 const TAU=Math.PI*2,clamp=v=>Math.max(0,Math.min(1,v));
 export function recordRoleEffect(game,kind,x,y,angle=0,data={}){
- if(!game)return;const now=performance.now(),life=kind==='qi'?520:kind==='draw'?280:kind==='quake'?650:360;
- const active=(game._roleEffects||[]).filter(e=>now-e.at<e.life);
- if(active.some(e=>e.kind===kind&&Math.hypot(e.x-x,e.y-y)<6&&now-e.at<80))return;
- game._roleEffects=active.slice(-15);game._roleEffects.push({kind,x,y,angle,life,at:now,...data});
+ if(!game)return;const now=performance.now(),life=kind==='qi'?400:kind==='draw'?280:kind==='quake'?650:360;
+ const follow=data.follow??['qi','draw','shieldwave','ironwill','chainkill','sonic','shadow'].includes(kind),owner=data.owner||'p1',p=owner==='p2'?game.p2:game.p;
+ const active=(game._roleEffects||[]).filter(e=>now-e.at<e.life&&!(follow&&e.owner===owner&&e.kind===kind&&['qi','draw','shieldwave'].includes(kind)));
+ if(active.some(e=>e.kind===kind&&e.owner===owner&&Math.hypot(e.x-x,e.y-y)<6&&now-e.at<80))return;
+ game._roleEffects=active.slice(-15);game._roleEffects.push({kind,x,y,angle,life,at:now,follow,owner,ox:follow&&p?x-p.x:0,oy:follow&&p?y-p.y:0,...data});
 }
+
+export function roleEffectOrigin(game,e){
+ const p=e.owner==='p2'?game?.p2:e.owner==='p1'?game?.p:null;
+ if(!e.follow||!p)return {x:e.x,y:e.y};
+ const hand=e.bindHand?weaponPoseFor(p):null;
+ return hand?{x:hand.x+(p.x-hand.ownerX)+(e.ox||0),y:hand.y+(p.y-hand.ownerY)+(e.oy||0)}:{x:p.x+(e.ox||0),y:p.y+(e.oy||0)};
+}
+
 export function drawRoleEvents(c,game,now,ground=false){
  for(const e of game?._roleEffects||[]){
-  const q=clamp((now-e.at)/e.life);if(q<=0||q>=1)continue;const alpha=Math.sin(q*Math.PI);
-  if(e.kind==='quake'||e.kind==='shieldwave'){if(ground){const big=e.kind==='quake';drawArt(c,'guardian',8,e.x,e.y+12,big?180+q*120:65+q*25,big?90+q*35:28+q*12,{stretch:true,alpha:1-q});}continue;}
+  const {x,y}=roleEffectOrigin(game,e);const q=clamp((now-e.at)/e.life);if(q<=0||q>=1)continue;const alpha=Math.sin(q*Math.PI);
+  if(e.kind==='quake'||e.kind==='shieldwave'){if(ground){const big=e.kind==='quake';drawArt(c,'guardian',8,x,y+12,big?180+q*120:65+q*25,big?90+q*35:28+q*12,{stretch:true,alpha:1-q});}continue;}
   if(ground)continue;
-  if(e.kind==='qi'){const dist=30+q*Math.max(30,(e.range||125)-30);
-   for(let i=0;i<8;i++){const a=e.angle+TAU*i/8;drawArt(c,'sword-qi',Math.min(3,Math.floor(q*4)),e.x+Math.cos(a)*dist,e.y+Math.sin(a)*dist,26+(e.level||1)*5,42+(e.level||1)*5,{angle:a+Math.PI,alpha});}
+
+  if(e.kind==='qi'){
+   const age=now-e.at,bodyProgress=clamp(age/320),v=clamp((bodyProgress-.12)/.72),turn=TAU*v*v*(3-2*v),level=e.level||1;
+   if(q<.16){drawArt(c,'sword-qi-v2',Math.min(1,Math.floor(q/.16*2)),x+Math.cos(e.angle)*16,y+Math.sin(e.angle)*16,40,55,{angle:e.angle,alpha:.55+q*2});}
+   else if(q<.72){
+    const phase=Math.min(5,2+Math.floor((q-.16)/.56*4)),dist=22+level*2;
+    for(let i=0;i<3;i++){const a=e.angle+turn+TAU*i/3;drawArt(c,'sword-qi-v2',phase,x+Math.cos(a)*dist,y+Math.sin(a)*dist,45+level*5,65+level*6,{angle:a,alpha:.88});}
+   }else{
+    const release=(q-.72)/.28,dist=30+release*Math.max(30,(e.range||90)-30);
+    for(let i=0;i<8;i++){const a=e.angle+TAU*i/8;drawArt(c,'sword-qi-v2',release<.6?6:7,x+Math.cos(a)*dist,y+Math.sin(a)*dist,25+level*4,38+level*4,{angle:a,alpha:1-release});}
+   }
   }else if(e.kind==='draw'){
-   drawArt(c,'sword-draw',Math.min(3,Math.floor(q*4)),e.x+Math.cos(e.angle)*24,e.y+Math.sin(e.angle)*24,(e.range||110)*1.25,(e.range||110)*1.25,{angle:e.angle,alpha:Math.max(.2,1-q)});
+   drawArt(c,'sword-draw',Math.min(3,Math.floor(q*4)),x+Math.cos(e.angle)*24,y+Math.sin(e.angle)*24,(e.range||110)*1.25,(e.range||110)*1.25,{angle:e.angle,alpha:Math.max(.2,1-q)});
   }else{
    const map={critical:['star',3,38],poison:['poison',3,30],shadow:['arcane',5,45],chainkill:['vital',7,44],sonic:['wind',4,42],thorns:['guardian',10,45],ironwill:['guardian',6,44]};
-   const f=map[e.kind];if(f)drawArt(c,f[0],f[1],e.x,e.y,f[2]*(.85+q*.2),f[2]*(.85+q*.2),{angle:e.angle,alpha});
+   const f=map[e.kind];if(f)drawArt(c,f[0],f[1],x,y,f[2]*(.85+q*.2),f[2]*(.85+q*.2),{angle:e.angle,alpha});
   }
  }
 }

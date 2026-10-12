@@ -1,6 +1,6 @@
 import {weaponStyle} from './weapon-rig.js';
 import {legendProfile,drawLegendPlayerLayer,drawLegendBullet,drawLegendStrike} from './legend-card-art.js';
-import {drawRoleEvents,drawRolePlayerLayer,drawRoleGun,drawRoleBullet} from './role-card-art.js';
+import {roleEffectOrigin,drawRoleEvents,drawRolePlayerLayer,drawRoleGun,drawRoleBullet} from './role-card-art.js';
 import {drawArt,artFrame,artThumbnail,directionIndex} from './generated-art.js';
 const TAU=Math.PI*2;
 export const CARD_PALETTES={fire:['#713231','#df6045','#ffd080'],ice:['#365b83','#78bddc','#e0fbff'],lightning:['#735224','#e9b649','#fff0b5'],poison:['#43522d','#94be59','#e0ef91'],dragon:['#73352d','#de8144','#ffe2a1'],star:['#544778','#b397d9','#fff2d2'],whirl:['#365f70','#86c7c6','#e0f5e4']};
@@ -131,8 +131,8 @@ export function drawCardWorld(c,g,now,r=18,phoenix=0){
  for(const w of g._wb||[])drawArt(c,'wind',1,w.x,w.y,32,32,{angle:now/380,alpha:Math.min(1,w.life/700)});
  for(const b of g._booms||[])drawArt(c,'wind',2,b.x,b.y,28,28,{angle:b.rot||0});
  for(let i=0;i<(p.orbiters||0);i++){const a=now/600+TAU*i/p.orbiters;drawArt(c,'star',0,p.x+Math.cos(a)*42,p.y+Math.sin(a)*42,17,17,{angle:a});}
- for(const b of g._lightBeams||[]){const q=(now-b.t)/300;if(q<0||q>=1)continue;
- const len=b.len*Math.min(1,.35+q*5),x=(b.x??p.x)+Math.cos(b.ang)*15,y=(b.y??p.y)+Math.sin(b.ang)*15;
+ for(const b of g._lightBeams||[]){const q=(now-b.t)/(b.life||180);if(q<0||q>=1)continue;
+ const origin=roleEffectOrigin(g,b),len=b.len*Math.min(1,.35+q*5),x=origin.x+Math.cos(b.ang)*10,y=origin.y+Math.sin(b.ang)*10;
  drawArt(c,'sword-beam',Math.min(3,Math.floor(q*4)),x,y,len,12,{stretch:true,angle:b.ang,anchorX:0,alpha:q<.65?1:(1-q)/.35});}
  const ga=g._ghostArc;if(ga){const q=(now-ga.t)/340;if(q>=0&&q<1)drawArt(c,'ghost-slash',Math.min(5,Math.floor(q*6)),ga.x+Math.cos(ga.ang)*r*.9,ga.y+Math.sin(ga.ang)*r*.9,r*4.5,r*4.5,{angle:ga.ang,alpha:Math.sin(q*Math.PI)});}
  if(g._thornFlash){const q=(now-g._thornFlash)/300;if(q>=0&&q<1)drawArt(c,'guardian',10,p.x,p.y,r*4,r*3,{alpha:1-q});}
@@ -161,7 +161,7 @@ function cardArtSlot(n){
  if(n==='無盡之刃')return ['infinity-blade',1];
  if(n==='創世神力')return ['genesis',2];
  if(/達摩/.test(n))return ['sword-beam',2];
- if(/劍氣/.test(n))return ['sword-qi',1];
+ if(/劍氣/.test(n))return ['sword-qi-v2',4];
  if(/拔刀/.test(n))return ['sword-draw',2];
  if(/殘影斬/.test(n))return ['ghost-slash',2];
  if(/龍之/.test(n))return ['dragon-flight',8];

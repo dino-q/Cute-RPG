@@ -2036,7 +2036,7 @@ export function loop(){
     cx.lineTo(g.p.x+Math.cos(ba)*VW,g.p.y+Math.sin(ba)*VW);cx.stroke();
     cx.shadowBlur=0;cx.restore();
   }
-  g._lightBeams=(g._lightBeams||[]).filter(b=>now-b.t<300);
+  g._lightBeams=(g._lightBeams||[]).filter(b=>now-b.t<(b.life||180));
   g._cardImpacts=(g._cardImpacts||[]).filter(h=>now-h.at<320);
   drawCardWorld(cx,g,now,PR,getPhoenixT());
 

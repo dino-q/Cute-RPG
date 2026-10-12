@@ -391,7 +391,7 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
     // 特效數據
     heat: g.heat || 0, heatCD: g.heatCD || 0, _heatWarn: g._heatWarn || false,
     coopLink: g._coopLink || false,
-    lightBeams: (g._lightBeams || []).slice(-3).map(b => ({ x: b.x, y: b.y, ang: b.ang, len: b.len, t: performance.now()-b.t })),
+    lightBeams: (g._lightBeams || []).slice(-6).map(b => ({...b,t: performance.now()-b.t })),
     dragonFx: g._dragonBreathFx ? { ang: g._dragonBreathFx.ang, range: g._dragonBreathFx.range, on: g._dragonBreathFx.on } : null,
     ghostShadow:g._ghostShadow&&performance.now()-g._ghostShadow.t<470?{...g._ghostShadow,t:performance.now()-g._ghostShadow.t}:null,
     ghostArc: g._ghostArc ? { x: g._ghostArc.x, y: g._ghostArc.y, ang: g._ghostArc.ang, t: performance.now()-g._ghostArc.t } : null,
@@ -553,7 +553,7 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
     cx.beginPath(); cx.moveTo(g.p.x, g.p.y); cx.lineTo(g.p2.x, g.p2.y); cx.stroke(); cx.setLineDash([]);
     cx.restore();
   }
-  g._lightBeams=(g._lightBeams||[]).filter(b=>performance.now()-b.t<300);
+  g._lightBeams=(g._lightBeams||[]).filter(b=>performance.now()-b.t<(b.life||180));
   drawCardWorld(cx,g,performance.now(),PR);
   drawCardStrike(cx,{...g.p,charType:g.charType},g._atkAnim,performance.now(),PR);
   if(g.p2)drawCardStrike(cx,g.p2,g._p2AtkAnim,performance.now(),PR);

@@ -298,6 +298,78 @@
       "rows": 4,
       "cols": 4,
       "kind": "fx"
+    },
+    {
+      "id": "mob-jelly",
+      "file": "角色預覽/mob-jelly-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-87be1a3f-ab0b-4a55-a421-d11c2c534309.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "body",
+      "brief": "A ROUND soft mint jelly monster, translucent faceted sugar-green body, two tiny equal dark eyes, small amber core in belly, two tiny feet, round silhouette remains instantly readable."
+    },
+    {
+      "id": "mob-fang",
+      "file": "角色預覽/mob-fang-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-68633bc8-016e-4a0c-8209-9edddda4ba76.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "body",
+      "brief": "A TRIANGULAR warm coral-orange fang monster, squat triangular jelly body with two ivory corner fangs, tiny feet, expressive narrow dark eyes, triangular silhouette remains instantly readable."
+    },
+    {
+      "id": "mob-crystal",
+      "file": "角色預覽/mob-crystal-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-03ae6b66-1962-44cc-809c-aa4ac0d37cab.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "body",
+      "brief": "A DIAMOND pale blue-violet floating crystal sentry, diamond crystalline body with ONE luminous gold pupil in dark eye socket and tiny blue crystal fins close to body; diamond silhouette remains clear, compact magical ranged creature."
+    },
+    {
+      "id": "mob-bastion",
+      "file": "角色預覽/mob-bastion-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-b09dfd33-ef64-4118-aca0-7952bbf852fe.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "body",
+      "brief": "A PENTAGON moss green stone-armored creature, five-sided body plates with ochre seams, tiny stub feet, two equal bright eyes, a fitted stone shield plate integrated into lower belly; pentagon silhouette clear and stout."
+    },
+    {
+      "id": "mob-spinner",
+      "file": "角色預覽/mob-spinner-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-6180f65a-d2b4-4086-a5c7-844999b1a503.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "body",
+      "brief": "A FIVE POINTED STAR dusty rose-violet thornwheel creature, star-shaped armored body, five blunt ivory-tipped spikes, small dark face center with two equal eyes, two very tiny feet, star silhouette unmistakable."
+    },
+    {
+      "id": "miniboss-armor",
+      "file": "角色預覽/miniboss-armor-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-18113020-9814-4a84-8181-e0a30d1e9fda.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "body",
+      "brief": "A stocky ARMORED GEOMETRIC GOLEM mini boss with heavy pentagonal dark slate stone torso, fitted bronze and teal plates, square stubby boots, oversized fitted tower shield at one side, tiny equal cyan eyes, a broken bronze crown growing from forehead; heroic dark-fantasy cute style, clear heavyweight silhouette, readable small boss."
+    },
+    {
+      "id": "miniboss-tough",
+      "file": "角色預覽/miniboss-tough-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-8398cd75-76c1-4f1b-870c-f59dcf0cac81.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "body",
+      "brief": "A RESILIENT CRYSTAL HORN mini boss with sturdy ruby-amber triangular faceted body, TWO short curved ivory horns forming distinctive top silhouette, rugged ochre collar, small thick claw feet, TWO equal bright eyes, small golden chest core, NO shield and NO crown; energetic savage cute golem, compact sturdy silhouette."
+    },
+    {
+      "id": "sword-qi-v2",
+      "file": "角色預覽/sword-qi-v2-source.png",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-ceb7a68a-17f6-4686-aed3-9740c7399251.png",
+      "rows": 2,
+      "cols": 4,
+      "kind": "fx",
+      "brief": "聚氣、全身旋斬、銳利白金青藍劍氣釋放，空心中心保留角色。"
     }
   ]
 }

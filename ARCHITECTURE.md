@@ -601,3 +601,41 @@ graph LR
 ```
 
 槍支左向（西／西北／西南）先鏡射垂直素材軸，再套朝向，保持握把朝下；槍口以同一鏡射推算，避免直接轉180度把槍拿倒。
+
+## 2026-10-12 跟身斬擊、新版劍氣與怪物族群
+
+- src/creature-art.js 新模組：enemyArtGroup、drawEnemyCreature。drawEnemy 先使用生成圖片，素材未就緒才沿用幾何備援。單人、主機、客戶端、練習與展示共用。
+- 普通怪五族：mob-jelly 圓形軟糖、mob-fang 三角尖牙、mob-crystal 菱形晶體、mob-bastion 五角石甲、mob-spinner 星形刺輪。射手／衝刺／護盾／包抄以行為對應族群；普通角色按 tier 保留原五種輪廓升階。各族四格呼吸／踏步動作。
+- 小王與精英使用 miniboss-armor 青金重甲盾冠、miniboss-tough 赤晶雙角。bossType/role 選造型，沿用原血量、碰撞半徑與 AI。mega 保留大小並加腳下王紋。原兩個最終 Boss 與召喚怪素材沿用。
+- generated-art.js fullCell 支援 anchorX/anchorY，怪物在真正腳底112/128定位，四格動作維持尺度；新增416格46組、1024×6656。生成原稿与 brief 在 docs/generated-art-sources.json，處理仍僅去底／分格／對齊。
+- weapon-rig.js 新增 weaponPoseFor，從實際人物當格握點取得出光位置。drawRiggedWeapons 在兩層繪圖時記錄手部位置與擁有者當下座標，無世界位置猜測。
+- role-card-art.js 新增 roleEffectOrigin。事件記錄 owner/follow/ox/oy/bindHand，單人與雙人都以擁有者最新座標計算。不序列化人物物件引用。
+- 光劍：180毫秒，每位玩家只保留最新三道，出光點跟著目前握點；原三道200範圍與傷害不變。
+- 劍氣：sword-qi-v2 八格白金青藍利刃；400毫秒聚氣／三刃旋斬／八向釋放。旋轉角度依同一320毫秒全身動作計算。中間留白，保留原360度傷害與卡牌數值。
+- 高攻速下同擁有者的新劍氣、拔刀、盾擊波會取代舊跟身斬擊，避免叠加滯後的姿勢；兩位玩家分別處理。
+- 聯機同步光劍擁有者、握點選項與生命周期，最多各三道；roleEffects 已以相對時間與 owner 同步。
+- 展示頁新增「移動中展示」，由使用者手動啟動；同頁有五族普通怪與兩種小王的實際圖片。
+
+跟隨掃描结果：
+| 效果 | 位置規則 |
+|---|---|
+| 光劍 | 跟隨擁有者的真正握點，短促出光。 |
+| 劍氣、拔刀、盾擊短波 | 跟隨人物，角度保留該次攻擊方向。 |
+| 暗影、擊殺徽記、音速閃避、鋼鐵意志啟動 | 跟隨擁有者及原偏移。 |
+| 一般元素斬、神兵斬、羽翼、胸甲、武器、槍口 | 原已使用當下人物／逐格手部位置，沿用。 |
+| 地震裂地、爆點、敵人中毒／暴擊 | 保留實際地面或命中位置。 |
+| 殘影、閃電步／鬼斬足跡 | 保留留影位置；它們代表已經经过的位置。 |
+| 子彈、迴力鏢、風刃、召喚物 | 沿用自身位置，已射出後不回貼人物。 |
+| 雷擊鏈 | 平滑折電沿用，不改成像素電擊。 |
+
+依賴：
+```mermaid
+graph LR
+ render --> creature_art[creature-art.js]
+ creature_art --> generated_art[generated-art.js]
+ creature_art --> config
+ role_card_art[role-card-art.js] --> weapon_rig[weapon-rig.js]
+ card_vfx[card-vfx.js] --> role_card_art
+```
+
+使用者自行驗證；未操作遊戲測試，只執行發布必要建置。

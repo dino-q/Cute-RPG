@@ -13,7 +13,7 @@ const actor=$('actor').getContext('2d'),bosses=$('bosses').getContext('2d'),endi
 let angle=Math.PI/2,bossAngle=Math.PI/2,attackAt=-1e5,bossAttackUntil=0,deathAt=-1e5,chestAt=-1e5,endAt=null,endType=30;
 const player={x:260,y:136,charType:'swordsman',face:1,fx:{},hp:100,maxHp:100};
 const scene={p:player};
-let selectedClass=null,previewFx={};
+let selectedClass=null,previewFx={},movingPreview=false,moveStart=0;
 let previewBoss=null,previewScene=null,previewTick=0;
 function selectClass(){
  const cards=C.filter(c=>c.charReq===$('role').value||['天使之翼','星辰劍','無盡之刃','創世神力','守護星','狂暴之力'].includes(c.n));$('classCard').innerHTML='<option value="">職業專用卡：無</option>'+cards.map(c=>'<option value="'+c.id+'">'+c.n+'</option>').join('');applyClass();
@@ -26,12 +26,13 @@ const dscene={p:{fx:{dragon:3},_dragonBreath:3},_dragonPet:{x:665,y:126,face:1,b
 const emptyWeapons={sword:()=>{},shield:()=>{}};
 function hero(c,x,y,r,role,dir,animation,p=player){if(role==='gunner')drawPixelGunner(c,x,y,r,dir,animation.active?animation.startT:0,p);else drawPixelMelee(c,role,x,y,r,dir,animation,p,p.fx,emptyWeapons,true,dir);}
 $('turn').onclick=()=>angle+=Math.PI/4;
+$('moveActor').onclick=()=>{movingPreview=!movingPreview;moveStart=performance.now();$('moveActor').textContent=movingPreview?'停止移動':'移動中展示';};
 $('attack').onclick=()=>{
  attackAt=performance.now();player._pixelShotAt=attackAt;player._swordQiCount=(player._swordQiCount||0)+1;
  const name=selectedClass?.n;
  if(name==='拔刀術')recordRoleEffect(scene,'draw',player.x,player.y,angle,{range:125});
  if(name==='劍氣強化')recordRoleEffect(scene,'qi',player.x,player.y,angle,{range:125,level:1});
- if(name==='達摩的光劍')scene._lightBeams=[-.25,0,.25].map(a=>({x:player.x,y:player.y,ang:angle+a,len:200,t:attackAt}));
+ if(name==='達摩的光劍')scene._lightBeams=[-.25,0,.25].map(a=>({x:player.x,y:player.y,ang:angle+a,len:200,life:180,owner:'p1',follow:true,bindHand:true,t:attackAt}));
  if(name==='殘影斬'){$('ghost').onclick();}
  const events={'大地震擊':'quake','荊棘之盾':'thorns','鋼鐵意志':'ironwill','致命打擊':'critical','毒刃':'poison','暗影步':'shadow','連環殺戮':'chainkill','音速投擲':'sonic'};
  if(events[name])recordRoleEffect(scene,events[name],player.x+Math.cos(angle)*45,player.y+Math.sin(angle)*45,angle);
@@ -58,6 +59,7 @@ $('patternPlay').onclick=()=>{
 $('breakCore').onclick=()=>{const core=previewScene?.ene.find(e=>e._bossCore);if(core)core.hp=0;};
 
 function frame(now){
+ player.x=260+(movingPreview?Math.sin((now-moveStart)/340)*90:0);
  const role=$('role').value,theme=$('theme').value;player.charType=role;player.fx={...previewFx,...(theme==='armor'?{}:theme?{[theme]:3}:{})};player.projImmune=theme==='armor';scene.bhEnd=theme==='blackhole'?now+1000:0;const dir={x:Math.cos(angle),y:Math.sin(angle)},anim={active:now-attackAt<320,startT:attackAt,angle,_qiSpin:selectedClass?.n==='劍氣強化'};
  actor.clearRect(0,0,960,230);actor.fillStyle='#27394c';actor.fillRect(0,178,960,1);drawCardGround(actor,scene,now);drawCardPlayerLayer(actor,player,player.x,player.y,23,now,false);hero(actor,player.x,player.y,23,role,dir,anim);
  drawGhostSlash(actor,scene,now,23,(x,y,r,t,col,face,p,opts)=>hero(actor,x,y,r,'swordsman',opts.travelDirection,opts.animation,p));
@@ -66,7 +68,8 @@ function frame(now){
  drawCardStrike(actor,player,anim,now,23);drawCardWorld(actor,scene,now,23);
  dscene._dragonPet.x=665+Math.cos(now/1600)*35;dscene._dragonPet.y=126+Math.sin(now/1600)*20;dscene._dragonPet.breathCycle=now%3500;dscene._dragonBreathFx.on=now%3500<2000;dscene._dragonBreathFx.ang=angle;drawCardWorld(actor,dscene,now,23);
  actor.fillStyle='#bac9ce';actor.font='14px sans-serif';actor.textAlign='center';actor.fillText('人物與武器',260,210);actor.fillText('龍之心：飛行、振翅、噴火',665,210);
- geometry.clearRect(0,0,960,180);setCx(geometry);setG({time:now});for(let tier=0;tier<5;tier++){const x=120+tier*180;drawEnemy({x,y:90,r:23,t:now/1000,tier,color:['#8dbb89','#e8b375','#89bdd0','#b4a1d0','#d78e91'][tier],face:1,hp:100,mhp:100,role:0,st:0,frozen:0});geometry.font='12px sans-serif';geometry.fillStyle='#d6d7c4';geometry.textAlign='center';geometry.fillText(['軟糖圓形','尖角三角','晶體菱形','五角怪','星形怪'][tier],x,155);}
+ geometry.clearRect(0,0,960,360);setCx(geometry);setG({time:now});for(let tier=0;tier<5;tier++){const x=120+tier*180;drawEnemy({x,y:90,r:23,t:now/1000,tier,color:['#8dbb89','#e8b375','#89bdd0','#b4a1d0','#d78e91'][tier],face:1,hp:100,mhp:100,role:0,st:0,frozen:0});geometry.font='12px sans-serif';geometry.fillStyle='#d6d7c4';geometry.textAlign='center';geometry.fillText(['軟糖圓形','尖角三角','晶體菱形','五角怪','星形怪'][tier],x,155);}
+ for(const [kind,x]of [['armor',330],['tough',630]]){drawEnemy({x,y:250,r:32,t:now/1000,tier:3,color:'#d9b677',face:1,hp:100,mhp:100,boss:true,bossType:kind,role:0,st:0,frozen:0});geometry.fillStyle='#e4d5b0';geometry.fillText(kind==='armor'?'重甲小王':'韌性小王',x,330);}
  directions.clearRect(0,0,960,210);
  for(let i=0;i<8;i++){const dir={x:Math.cos(i*Math.PI/4),y:Math.sin(i*Math.PI/4)},x=70+i*116,p={...player,x,y:110};hero(directions,x,110,18,role,dir,{...anim,angle:i*Math.PI/4},p);directions.fillStyle='#ccdadb';directions.font='12px sans-serif';directions.textAlign='center';directions.fillText(['東','東南','南','西南','西','西北','北','東北'][i],x,184);}
  encounter.clearRect(0,0,960,500);

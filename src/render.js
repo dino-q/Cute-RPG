@@ -1,3 +1,6 @@
+import {drawArt} from './generated-art.js';
+import {drawEnemyCreature} from './creature-art.js';
+import {drawBossRoute} from './boss-telegraph-art.js';
 import {drawBossPatternCore} from './boss-patterns.js';
 import { drawCardPlayerLayer, drawCardStatus } from './card-vfx.js';
 import { drawPixelMelee } from "./melee-sprite.js";
@@ -582,8 +585,7 @@ export function drawEnemy(e) {
   // 精英怪光環 + 物抗標示
   if (e.eliteEnemy) {
     const enow = performance.now();
-    cx.globalAlpha = .3 + Math.sin(enow / 200) * .1; cx.fillStyle = "#E74C3C";
-    cx.beginPath(); cx.arc(x, cy, r * 1.5, 0, Math.PI * 2); cx.fill(); cx.globalAlpha = 1;
+    drawArt(cx,'guardian',5,x,cy+r*.8,r*3,r,{stretch:true,alpha:.4});
     cx.globalAlpha = .6; cx.font = "8px 'Nunito',sans-serif"; cx.textAlign = "center";
     cx.fillStyle = "#ADB5BD"; cx.fillText("物理抗性", x, cy - r - 6); cx.globalAlpha = 1;
     if (e._eShieldEnd && enow < e._eShieldEnd) {
@@ -603,6 +605,8 @@ export function drawEnemy(e) {
     cx.beginPath(); cx.arc(x, cy, r * (1.55 - .45 * p), 0, Math.PI * 2); cx.stroke();
     cx.setLineDash([]); cx.restore();
   }
+  const creatureDrawn=drawEnemyCreature(cx,e,performance.now());
+  if(!creatureDrawn){
   // shape by tier — 幾何圖形（圓/三角/菱形/五角/星形）
   cx.fillStyle = e.color;
   if (tier === 0) { cx.beginPath(); cx.arc(x, cy, r, 0, Math.PI * 2); cx.fill(); }
@@ -623,37 +627,18 @@ export function drawEnemy(e) {
   cx.lineWidth = 1.3; cx.beginPath();
   if (tier >= 3) { cx.moveTo(x + pd - s * .5, cy + s * .6); cx.lineTo(x + pd + f * s * .1, cy + s * .95); cx.lineTo(x + pd + s * .5, cy + s * .6); cx.stroke(); }
   else { cx.arc(x + pd, cy + s * .7, s * .3, 1.15 * Math.PI, 1.85 * Math.PI); cx.stroke(); }
-  // tier badge
-  if (tier >= 2) { cx.fillStyle = tier >= 4 ? "#FF4444" : tier >= 3 ? "#BE4BDB" : "#FF922B"; cx.font = "bold " + (tier >= 4 ? 9 : 7) + "px Nunito"; cx.textAlign = "center"; cx.fillText(tier >= 4 ? "★★★" : tier >= 3 ? "★★" : "★", x, cy + r + 10); }
+  }
+  if(tier>=2)for(let i=0;i<Math.min(3,tier-1);i++)drawArt(cx,'star',0,x+(i-(Math.min(3,tier-1)-1)/2)*7,cy+r+9,5,5,{alpha:.8});
   // HP bar
   const hpR = e.hp / e.mhp;
   if (hpR < 1) { const bw = r * 2, bh = 3; cx.fillStyle = "rgba(0,0,0,.3)"; cx.fillRect(x - bw / 2, cy - r - (tier >= 2 ? 9 : 6), bw, bh); cx.fillStyle = hpR > .5 ? "#51CF66" : hpR > .25 ? "#FFA94D" : "#FF6B6B"; cx.fillRect(x - bw / 2, cy - r - (tier >= 2 ? 9 : 6), bw * hpR, bh); }
-  // role indicators
-  const role = e.role || ROLE_NORMAL;
-  if (role === ROLE_SHOOTER) {
-    cx.strokeStyle = "#FF6B6B"; cx.lineWidth = 1.2; cx.beginPath(); cx.arc(x, cy - r - 8, 3.5, 0, Math.PI * 2); cx.stroke();
-    cx.beginPath(); cx.moveTo(x - 5, cy - r - 8); cx.lineTo(x + 5, cy - r - 8); cx.moveTo(x, cy - r - 13); cx.lineTo(x, cy - r - 3); cx.stroke();
-  }
-  if (role === ROLE_DASHER) {
-    if (e.dashState === 1) { cx.save(); cx.globalAlpha = .35 + Math.sin(e.t * 12) * .2; cx.strokeStyle = "#FF4444"; cx.lineWidth = 2.5; cx.setLineDash([4, 3]); cx.beginPath();
-      cx.moveTo(x, cy); cx.lineTo(x + e.dashDx * 50, cy + e.dashDy * 50); cx.stroke(); cx.setLineDash([]); cx.restore(); }
-    if (e.dashState === 2) {
-      cx.save(); cx.globalAlpha = .15; cx.fillStyle = e.color; cx.beginPath(); cx.arc(x - e.dashDx * 12, cy - e.dashDy * 12, r * .8, 0, Math.PI * 2); cx.fill(); cx.restore(); }
-  }
-  if (role === ROLE_SHIELD) {
-    cx.save(); cx.strokeStyle = "rgba(77,171,247,.7)"; cx.lineWidth = 3; cx.beginPath();
-    const sa = e.shieldAng + Math.PI; cx.arc(x, cy, r + 3, sa - Math.PI * .55, sa + Math.PI * .55); cx.stroke();
-    cx.strokeStyle = "rgba(77,171,247,.25)"; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(x, cy, r + 6, sa - Math.PI * .45, sa + Math.PI * .45); cx.stroke(); cx.restore();
-  }
-  if (role === ROLE_FLANKER) {
-    cx.save(); cx.globalAlpha = .4; cx.strokeStyle = "#DA77F2"; cx.lineWidth = 1; cx.beginPath();
-    for (let i = 0; i < 12; i++) { const a = e.t * 2 + i * .52, rr = r + 2 + i * .5; cx.lineTo(x + Math.cos(a) * rr, cy + Math.sin(a) * rr); } cx.stroke(); cx.restore();
-  }
-  // boss ring
-  if (e.boss) {
-    cx.strokeStyle = e.mega ? "#FF6B6B" : "#FFD43B"; cx.lineWidth = e.mega ? 3 : 2; cx.setLineDash([3, 3]); cx.beginPath(); cx.arc(x, cy, r + 5, 0, Math.PI * 2); cx.stroke(); cx.setLineDash([]);
-    if (e.mega) { cx.globalAlpha = .6; cx.strokeStyle = "#fff"; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(x, cy, r + 12, 0, Math.PI * 2); cx.stroke(); }
-  }
+  // The body identifies the role; active moves use the same authored ground artwork.
+  const role=e.role||ROLE_NORMAL;
+  if(role===ROLE_DASHER&&e.dashState===1)drawBossRoute(cx,'devil-route',0,{x,y:cy},{x:x+e.dashDx*50,y:cy+e.dashDy*50},18,Math.floor(performance.now()/120)%4,.85);
+  if(role===ROLE_DASHER&&e.dashState===2)drawArt(cx,'wind',4,x-e.dashDx*12,cy-e.dashDy*12,r*2.8,r*1.3,{stretch:true,angle:Math.atan2(e.dashDy,e.dashDx),alpha:.45});
+  if(role===ROLE_SHIELD)drawArt(cx,'guardian',1,x,cy,r*2.3,r*2.2,{alpha:.25});
+  if(role===ROLE_FLANKER)drawArt(cx,'wind',4,x,cy+r,r*2,r*.7,{stretch:true,alpha:.35});
+  if(e.boss)drawArt(cx,'guardian',5,x,cy+r,r*3,r*.8,{stretch:true,alpha:e.mega?.8:.55});
   // 暴走視覺
   if (e._rage && e._rageDashes < 3) {
     const enow = performance.now();

@@ -11,6 +11,7 @@ const swordTips=[[108,12],[105,10],[105,11],[102,11],[106,12],[106,11],[106,11],
 const daggerGrips=[[49,94],[51,94],[51,95],[50,95],[52,94],[52,96],[51,94],[52,94]];
 const daggerTips=[[94,13],[92,13],[93,13],[94,13],[89,12],[90,13],[91,14],[103,15]];
 export function drawRiggedWeapons(c,p,frame,pose,front=false){
+ if(p&&frame?.weapons?.[0]){const m=frame.weapons[0];actorWeaponPoses.set(p,{x:pose.left+m.grip[0]*pose.scale,y:pose.top+m.grip[1]*pose.scale,ownerX:p.x,ownerY:p.y});}
  const style=weaponStyle(p),legend=legendProfile(p);if((!style&&!legend)||!frame?.weapons)return;
  for(const m of frame.weapons){
   if(m.back===front)continue;
@@ -48,3 +49,6 @@ export function drawRiggedHands(c,image,p,frame,pose){
   for(let y=0;y<pose.cell;y++)for(let x=0;x<pose.cell;x++){const i=(y*pose.cell+x)*4,r=data.data[i],g=data.data[i+1],b=data.data[i+2];if(!(r>155&&g>95&&b>55&&r>g*1.12&&g>b*1.05&&mounts.some(([gx,gy])=>Math.hypot(x-gx,y-gy)<=3)))data.data[i+3]=0;}mc.putImageData(data,0,0);frames.set(id,mask);}
  c.save();c.imageSmoothingEnabled=false;c.drawImage(mask,pose.left,pose.top,pose.cell*pose.scale,pose.cell*pose.scale);c.restore();
 }
+
+const actorWeaponPoses=new WeakMap();
+export function weaponPoseFor(player){return player&&actorWeaponPoses.get(player);}

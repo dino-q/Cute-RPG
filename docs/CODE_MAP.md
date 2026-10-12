@@ -104,3 +104,10 @@
 
 ♻️ 沿用 drawSpriteWithEyes、cardWeaponAtlas、drawPixelMelee、drawPixelGunner、getGunnerMuzzle、fire、drawEnemy 與原元素命中入口。
 🆕 weapon-rig（原固定45度與亮色推算無法分辨刀尖握柄）、enemy-control（原各職業各自刷新 frozen，無共用限制）、drawMountedArt（drawArt 只有外框尺寸，沒有握柄軸）。
+
+| enemyArtGroup / drawEnemyCreature | src/creature-art.js | 五個普通族群、兩種小王／精英，保留碰撞与AI。 |
+| roleEffectOrigin | src/role-card-art.js | 以 owner 最新人物／握點計算跟身特效，不留在發動位置。 |
+| weaponPoseFor | src/weapon-rig.js | 取得真正繪製的當格握點與當時擁有者座標。 |
+
+♻️ 沿用 drawEnemy、drawRiggedWeapons、drawArt、recordRoleEffect、drawRoleEvents、drawCardWorld、serializeCoopState、applyCoopState。
+🆕 creature-art（原幾何怪身體沒有角色圖片）、roleEffectOrigin（原事件只保存固定座標）、weaponPoseFor（原光束看不到實際繪製握點）。新素材416格46組；劍氣八段，光劍180毫秒，單人與雙人保持同樣位置規則。

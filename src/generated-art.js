@@ -1,4 +1,4 @@
-export const ART_REVISION='weapon-mounts-ice-20261012-v5';
+export const ART_REVISION='creatures-follow-qi-20261012-v6';
 // Approved raster art, packed offline. Drawing always restores canvas state.
 let atlas=null,contract=null;
 export const generatedArtReady=Promise.all([
@@ -24,7 +24,7 @@ export function drawArt(c,name,index,x,y,width,height=width,options={}){
  c.save();c.shadowBlur=0;c.imageSmoothingEnabled=false;c.translate(Math.round(x),Math.round(y));
  if(options.angle)c.rotate(options.angle);if(options.flip)c.scale(-1,1);
  if(options.alpha!==undefined)c.globalAlpha*=Math.max(0,Math.min(1,options.alpha));
- if(options.fullCell)c.drawImage(source,sx,sy,cell,cell,-width/2,-height/2,width,height);
+ if(options.fullCell)c.drawImage(source,sx,sy,cell,cell,-width*(options.anchorX??.5),-height*(options.anchorY??.5),width,height);
  else{const ratio=Math.min(width/sw,height/sh),dw=options.stretch?width:sw*ratio,dh=options.stretch?height:sh*ratio;
  c.drawImage(source,sx+b[0],sy+b[1],sw,sh,-dw*(options.anchorX??.5),-dh*(options.anchorY??.5),dw,dh);}
  c.restore();return true;

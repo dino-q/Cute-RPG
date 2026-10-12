@@ -207,7 +207,7 @@ export function swordSwing(_pp, _isP2) {
   const qiEvery = _pp._qiEvery || 5;
   const isQi = _pp._swordQiCount % qiEvery === 0;
   const qiMul = isQi ? (_pp._qiMul || 2) : 1;
-  if(_pp._drawSlash)recordRoleEffect(g,"draw",_pp.x,_pp.y,atkAngle,{range,level:_pp._drawSlash});
+  if(_pp._drawSlash)recordRoleEffect(g,"draw",_pp.x,_pp.y,atkAngle,{range,level:_pp._drawSlash,owner:_isP2?'p2':'p1'});
   const dmg = baseDmg; // capture for ghost slash closure
   g.ene.forEach(e => {
     if (e.hp <= 0 || e.ragePoo) return;
@@ -309,7 +309,8 @@ export function swordSwing(_pp, _isP2) {
   } });
   if (_pp._lightSaber) {
     const beamDmg = _pp.atk * 1.5 * (_pp.elemBoost || 1);
-    const beamRange = 200;
+    const beamRange = 200,beamOwner=_isP2?'p2':'p1';
+    g._lightBeams=(g._lightBeams||[]).filter(b=>b.owner!==beamOwner);
     for (let bi = 0; bi < 3; bi++) {
       const ba = atkAngle + (bi - 1) * .25;
       g.ene.forEach(e => {
@@ -326,7 +327,7 @@ export function swordSwing(_pp, _isP2) {
       });
       const bLen = beamRange;
       if (!g._lightBeams) g._lightBeams = [];
-      g._lightBeams.push({ x: _pp.x, y: _pp.y, ang: ba, len: bLen, t: performance.now() });
+      g._lightBeams.push({ x: _pp.x, y: _pp.y, ang: ba, len: bLen,life:180,owner:_isP2?'p2':'p1',follow:true,bindHand:true,ox:0,oy:0,t:performance.now() });
       for (let pi = 0; pi < 5; pi++) {
         const pd = rn(20, bLen);
         par.push({ x: _pp.x + Math.cos(ba) * pd + rn(-3, 3), y: _pp.y + Math.sin(ba) * pd + rn(-3, 3), vx: Math.cos(ba) * rn(1, 4), vy: Math.sin(ba) * rn(1, 4), life: .35, color: ["#FFD43B", "#fff", "#FFE066"][pi % 3], sz: rn(1.5, 3.5) });
@@ -337,7 +338,7 @@ export function swordSwing(_pp, _isP2) {
   g[_atkRef].active = true; g[_atkRef].startT = performance.now(); g[_atkRef].angle = atkAngle; g[_atkRef]._qiSpin = false;
   if (isQi) {
     g[_atkRef]._qiSpin = true;
-    recordRoleEffect(g,"qi",_pp.x,_pp.y,atkAngle,{range:range+40,level:_pp._roleCards?.["劍氣強化"]||0});
+    recordRoleEffect(g,"qi",_pp.x,_pp.y,atkAngle,{range:range+40,level:_pp._roleCards?.["劍氣強化"]||0,owner:_isP2?'p2':'p1'});
     g.dn.push({ x: _pp.x, y: _pp.y - 35, d: " 劍氣！", life: 1.5, color: "#FFD43B", big: 1 });
     setShake(.2, 4);
   }
@@ -439,7 +440,7 @@ export function shieldBash(_pp, _isP2) {
     }
   });
   g._quakeRingT = now; g._quakeRingSmall = true;
-  recordRoleEffect(g,"shieldwave",_pp.x,_pp.y,atkAngle);
+  recordRoleEffect(g,"shieldwave",_pp.x,_pp.y,atkAngle,{owner:_isP2?'p2':'p1'});
   if (_pp._quake && (!_pp._quakeCD || now >= _pp._quakeCD)) {
     _pp._quakeCD = now + 3000;
     const qMul = [0, 1, 1.5, 2][_pp._quake] || 1;
@@ -530,7 +531,7 @@ export function daggerStrike(_pp, _isP2) {
     // 擊殺加速被動
     if (e.hp <= 0 && !e.deadHandled) {
       _pp._killSpeedEnd = now + 2000;
-      if(_pp._chainKill)recordRoleEffect(g,"chainkill",_pp.x,_pp.y,atkAngle);
+      if(_pp._chainKill)recordRoleEffect(g,"chainkill",_pp.x,_pp.y,atkAngle,{owner:_isP2?'p2':'p1'});
     }
   });
   // 寶箱破壞
@@ -560,7 +561,7 @@ export function daggerStrike(_pp, _isP2) {
   // 音速投擲：攻擊時機率完全閃避
   if (_pp._atkDodge > 0 && Math.random() < _pp._atkDodge) {
     _pp._iFrameEnd = Math.max(_pp._iFrameEnd || 0, now + 300);
-    recordRoleEffect(g,"sonic",_pp.x,_pp.y,atkAngle);
+    recordRoleEffect(g,"sonic",_pp.x,_pp.y,atkAngle,{owner:_isP2?'p2':'p1'});
     burst(_pp.x, _pp.y, "#74C0FC", 4);
     g.dn.push({ x: _pp.x, y: _pp.y - 25, d: "閃!", life: .6, color: "#74C0FC" });
   }
