@@ -23,7 +23,7 @@ import {
   setCx, getCx, setG, getG, setFxQ, getFxQ,
   par, resetPar, setPar, filterPar, resetLtnRingIdx,
   burst, addLtn, bCol, drawPoly, drawStar, WP, getWpn,
-  drawPlayer, drawEnemy
+  drawPlayer,drawShadowClones, drawEnemy
 } from "./render.js";
 import {
   initHud, setHudG, setHudCoopState, setHudSkillCd, getHudSkillCd,
@@ -1204,7 +1204,7 @@ export function loop(){
   // bullet-crate hit (練習模式跳過)
   var c_=cam();
   var crateOpened=false;
-  if(!getPracticeMode())g.crates.forEach(cr=>{if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;
+  g.crates.forEach(cr=>{if(getPracticeMode()&&!cr.coinReward)return;if(crateOpened||!crateActive(cr))return;g.bul.forEach(b=>{if(crateOpened||b.life<=0)return;if(di(b,cr)<(cr.bigChest?20:16)){cr.hits++;b.life=0;burst(cr.x,cr.y,cr.bigChest?"#FFD43B":"#FFD43B",cr.bigChest?5:3);if(cr.hits>=cr.needed){cr.hp=0;burst(cr.x,cr.y,"#FFD43B",cr.bigChest?20:12);sfx("chest");crateOpened=true;
     if(b._isP2&&_isCoopMode&&g.p2){
       // P2 的子彈打開寶箱 → P2 選卡
       g.p2._inv=true;g.p2._pickPending=true;
@@ -1632,7 +1632,7 @@ export function loop(){
       g.ene.forEach(e=>{if(e.hp<=0||e.ragePoo)return;const d=di(e,c);if(d<nd){nd=d;tgt=e;}});
       if(tgt){
         const dx=tgt.x-c.x,dy=tgt.y-c.y,d=Math.sqrt(dx*dx+dy*dy)||1;
-        c.face=dx>0?1:-1;
+        c.face=dx>0?1:-1;c._ad={x:dx/d,y:dy/d};
         // 在安全距離外才移動（敵人半徑+緩衝），避免撞死
         const safeD=tgt.r+PR*1.5;
         if(d>safeD){
@@ -1641,7 +1641,7 @@ export function loop(){
         // 攻擊
         c.atkT+=dt*16.67;
         if(c.atkT>=400&&d<PR*5){
-          c.atkT=0;
+          c.atkT=0;c._attackAt=now;
           tgt.hp-=cloneDmg;tgt.st=Math.max(tgt.st||0,400);
           burst(tgt.x,tgt.y,"#ADB5BD",4);
           g.dn.push({x:tgt.x+rn(-6,6),y:tgt.y-tgt.r,d:Math.floor(cloneDmg),life:.8,color:"#ADB5BD"});
@@ -1804,15 +1804,7 @@ export function loop(){
     cx.fillText(""+remaining.toFixed(1)+"s",g.p.x,g.p.y-PR-12);
     cx.restore();
   }
-  // 影分身渲染（半透明 + 閃爍）
-  if(g._clones&&g._clones.length>0){
-    g._clones.forEach(c=>{
-      cx.save();cx.globalAlpha=.4+Math.sin(now/100+c.spawnT)*.1;
-      cx.shadowBlur=0;
-      drawPlayer(c.x,c.y,PR*.85,g.time/1000,"#868E96",c.face,undefined,{effects:false});
-      cx.restore();
-    });
-  }
+  drawShadowClones(now,PR);
   // player (blinks during i-frame)
   cx.save();
   if(g.p._iFrameEnd>0&&now<g.p._iFrameEnd){cx.globalAlpha=Math.sin(now/30)*0.35+0.55;}

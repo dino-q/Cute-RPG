@@ -12,7 +12,7 @@ import { EXP_BASE, EXP_SCALE, MAX_PARTICLES, SPAWN_R } from "./config.js";
 import { $ } from "./utils.js";
 import { C } from "./cards.js";
 import { RC, LVC, charCfg, PR } from "./config.js";
-import { sfx, bgmStop, getActx, getMuted } from "./audio.js";
+import { sfx, bgmStop, bgmPlay, getActx, getMuted } from "./audio.js";
 import { setHudVW, setHudVH } from "./hud.js";
 import { par, filterPar, burst } from "./render.js";
 import { rn } from "./utils.js";
@@ -121,7 +121,12 @@ export function show(n) {
   ["titleOv", "charSelectOv", "tutOv", "pickOv", "overOv", "victoryOv", "practiceOv", "coopOv"].forEach(id => {
     const el = $(id); if (el) el.style.display = "none";
   });
-  if (n === "title") $("titleOv").style.display = "flex";
+  if (n === "title") {
+    $('titleOv').style.display='flex';
+    let button=$('continueAdventureBtn');
+    if(!button){button=document.createElement('button');button.id='continueAdventureBtn';button.className='btn btn-g';button.style.cssText='width:210px;padding:12px;font-size:14px;margin:0 auto 12px;display:none';button.onclick=continueAdventure;$('titleOv').querySelector('.panel').insertBefore(button,$('titleOv').querySelector('.panel>div'));}
+    const session=_getG();button.style.display=session?._homeSuspended?'block':'none';button.textContent='繼續冒險 · Lv'+(session?.level||1);
+  }
   else if (n === "tut") $("tutOv").style.display = "flex";
   else if (n === "pick") $("pickOv").style.display = "flex";
   else if (n === "over") $("overOv").style.display = "flex";
@@ -339,13 +344,26 @@ export function closeSettings() {
   if (_wasRunning && g) { g.run = true; g.lf = performance.now(); }
 }
 
-export function settingsGoHome() {
-  closeSettings();
-  const g = _getG();
-  if (g) g.run = false;
-  bgmStop();
-  if (_bossBgmStop) _bossBgmStop();
-  show("title");
+export function settingsGoHome(){
+ const session=_getG();
+ // Never call closeSettings here: it would briefly resume the paused game.
+ _settingsOpen=false;_wasRunning=false;const ov=$('settingsOv');if(ov)ov.style.display='none';
+ const stats=$('settingsStats');if(stats)stats.style.display='none';resetControls();
+ if(session){session.run=false;if(!session._victoryPending&&(session.p.hp>0||session.p2?.hp>0))session._homeSuspended=true;}
+ show('title');
+}
+export function continueAdventure(){
+ const session=_getG();if(!session?._homeSuspended)return;
+ session._homeSuspended=false;session._homeRestartApproved=false;
+ if(session.pickOpen){show('pick');return;}
+ bgmPlay();resumeGame();
+}
+export function confirmAdventureRestart(proceed){
+ const session=_getG();if(!session?._homeSuspended||session._homeRestartApproved){proceed();return;}
+ if(document.getElementById('restartAdventureDialog'))return;
+ const ov=document.createElement('div');ov.id='restartAdventureDialog';ov.className='coin-overlay';ov.setAttribute('role','dialog');ov.setAttribute('aria-label','重新開始冒險');
+ ov.innerHTML='<section class="coin-panel"><div class="coin-kicker">你還有一場冒險</div><h2>要重新開始嗎？</h2><p class="coin-odds" style="line-height:1.8;margin-bottom:20px">重新開始會取代目前角色、卡片與關卡進度。</p><button class="menu-control primary" style="margin-bottom:10px">繼續原本冒險</button><button class="menu-control quiet">放棄進度，重新開始</button></section>';
+ document.body.appendChild(ov);const buttons=ov.querySelectorAll('button');buttons[0].onclick=()=>{ov.remove();continueAdventure();};buttons[1].onclick=()=>{ov.remove();session._homeRestartApproved=true;proceed();};buttons[0].focus();
 }
 
 export function toggleStatsPanel() {

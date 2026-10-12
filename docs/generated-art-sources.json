@@ -370,6 +370,16 @@
       "cols": 4,
       "kind": "fx",
       "brief": "聚氣、全身旋斬、銳利白金青藍劍氣釋放，空心中心保留角色。"
+    },
+    {
+      "id": "coin-adventure",
+      "file": "角色預覽/coin-flip-source.png",
+      "rows": 2,
+      "cols": 2,
+      "kind": "prop",
+      "brief": "Transparent 2x2 adventure coin: chest front, boot-compass reverse, each also narrow perspective. Chibi RPG pixel art, navy outline, brass gold cream and teal, generous margins, no text/emoji/particles/platform.",
+      "source": "C:/Users/AG_Di/.codex/generated_images/01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3/exec-52434554-84f6-4c7a-a97a-f9a616fd1034.png",
+      "prompt": "Use case: stylized-concept. Create ONE square transparent PNG game asset sheet arranged 2 columns by 2 rows, four equal square cells. Pixel art style for a cute chibi top-down RPG, dark navy crisp pixel outline, flat amber brass and cream highlights, small restrained teal accents. One thick ancient adventure coin, exactly same circular face diameter and centered location in every cell with generous blank transparent margins. Top-left: FRONT coin flat face, ornate embossed miniature treasure chest emblem, luminous gold. Top-right: BACK coin flat face, embossed short adventurer boot with small compass star, muted brass. Bottom-left: FRONT at narrow three-quarter perspective, same treasure emblem. Bottom-right: BACK at narrow three-quarter perspective, boot emblem. Clearly engraved image details, chunky hand-authored pixel-art clusters, no lettering, no currency numbers, no emoji, no text, no gradients or soft glows, no surrounding particles, no platform or floor, no labels or borders. Fully transparent background; coins occupy central 65% of each cell. Intended for real in-game toss animation."
     }
   ]
 }

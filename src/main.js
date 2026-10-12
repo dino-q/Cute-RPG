@@ -49,7 +49,7 @@ import {
   expForLevel, resize, show, resumeGame, resetSessionUi,
   sfxVictory, playEndCutscene,
   showVictoryScreen, triggerVictory, showOver,
-  openSettings, closeSettings, settingsGoHome, toggleStatsPanel,
+  openSettings, closeSettings, settingsGoHome,confirmAdventureRestart, toggleStatsPanel,
   drawPhoenixSprite, triggerPhoenixRevive, phoenixAnimLoop,
   getPhoenixAnim, setPhoenixAnim, getPhoenixT, setPhoenixT
 } from "./ui.js";
@@ -171,6 +171,7 @@ window.overGoHome=function(){
 /* ═══ 角色選擇 ═══ */
 let _pendingMode="classic";
 function showCharSelect(mode){
+  if(g?._homeSuspended&&!g._homeRestartApproved){confirmAdventureRestart(()=>showCharSelect(mode));return;}
   _pendingMode=mode;
   $("titleOv").style.display="none";
   $("charSelectOv").style.display="flex";
@@ -184,6 +185,7 @@ function pickChar(charType){
 }
 
 window.startGame=window.SG=function(mode){
+  if(g?._homeSuspended&&!g._homeRestartApproved){confirmAdventureRestart(()=>startGame(mode));return;}
   _mode=mode||_mode||"classic";const MC=MODE[_mode];
   _isCoopMode=(_mode==="coop"); // coop flag（非 coop 重設 false）
   const CC=CHAR[_charType]||CHAR.gunner; // 角色數值
@@ -261,7 +263,7 @@ document.addEventListener("click", function(ev) {
     case "toggleMute":      toggleMute(); break;
     case "toggleStatsPanel": toggleStatsPanel(); break;
     case "openSettings":    openSettings(); break;
-    case "showCoopLobby":   showCoopLobby(); break;
+    case "showCoopLobby":   confirmAdventureRestart(showCoopLobby); break;
     case "coopShowCreate":  coopShowCreate(); break;
     case "coopShowJoin":    coopShowJoin(); break;
     case "coopCreateRoom":  coopCreateRoom(); break;
@@ -297,7 +299,7 @@ window.closeSettings = closeSettings;
 window.settingsGoHome = settingsGoHome;
 window.toggleStatsPanel = toggleStatsPanel;
 window.showCardTip = showCardTip;
-window._showCoopLobby = showCoopLobby;
+window._showCoopLobby = ()=>confirmAdventureRestart(showCoopLobby);
 window.coopShowCreate = coopShowCreate;
 window.coopShowJoin = coopShowJoin;
 window.coopCreateRoom = coopCreateRoom;

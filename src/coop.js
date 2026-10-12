@@ -1,3 +1,4 @@
+import {resolveExplorationCoin,showCoinFlip} from './cards-ui.js';
 import {drawBossPatternGround} from './boss-patterns.js';
 import {drawTreasure,animateChestOpening} from './treasure-art.js';
 import {drawBossDefeats} from './boss-art.js';
@@ -9,7 +10,7 @@ import { Peer } from "peerjs";
 import { $ } from "./utils.js";
 import { CHAR } from "./config.js";
 import { C } from "./cards.js";
-import { par, filterPar, setPar, drawPlayer, drawEnemy } from "./render.js";
+import { par, filterPar, setPar, drawPlayer, drawEnemy,drawShadowClones } from "./render.js";
 import { drawMinimap,drawAbilitySidebar } from "./hud.js";
 import { setEnemiesCoopMode } from "./enemies.js";
 import { setCombatCoopState } from "./combat.js";
@@ -201,6 +202,7 @@ export function coopJoinRoom() {
           $("charSelectOv").style.display = "flex";
         }
         if (data.t === "state") { const g = _g(); if (g) applyCoopState(data, g, _showOver, setPar, setDashGhosts); }
+        if (data.t === "coinResult") showCoinFlip(_g()?.p2,()=>{},{win:data.win,award:false,pause:false});
         if (data.t === "p2pick") { const g = _g(); if (g) showCoopPick(data); }
         if (data.t === "over") { const g = _g(); if (g) { g.run = false; _showOver(); } }
       });
@@ -271,7 +273,7 @@ export function _sendP2Pick(cr) {
     _applyP2Card(picks[0].id);
     if (isBig) { _p2BigChestLeft--; if (_p2BigChestLeft > 0) { setTimeout(() => _sendP2Pick(null), 300); return; } }
     g.p2._inv = false; g.p2._pickPending = false;
-    g.p2._iFrameEnd = performance.now() + 1000; // AI 也給保護時間
+    g.p2._iFrameEnd = Math.max(performance.now() + 1000,g.p2._coinProtectUntil||0); // AI 也給保護時間
     return;
   }
   // 真人 P2：發送給 CLIENT
@@ -315,6 +317,7 @@ export function _applyP2Card(cardId) {
   if (ex) { if (ex.lv < 2) { ex.lv++; lv = ex.lv; } else return; }
   else { inv2.push({ id: cd.id, lv: 0 }); }
   cd.ap[lv](g.p2); revealCard(g.p2,cd);
+  if(g.p2._coinFlip){g.p2._coinFlip=false;const win=Math.random()<.5;resolveExplorationCoin(g.p2,win);g.p2._coinProtectUntil=performance.now()+4500;const net=_getNet();if(net?.conn?.open)net.conn.send({t:"coinResult",win});}
   g.p2.hp = Math.min(g.p2.hp + 15, g.p2.maxHp);
   if (_burst) _burst(g.p2.x, g.p2.y, "#DA77F2", 12);
   g.dn.push({ x: g.p2.x, y: g.p2.y - 30, d: cd.e + cd.n + " Lv" + (lv + 1), life: 2, color: "#DA77F2", big: 1 });
@@ -371,6 +374,7 @@ export function serializeCoopState(g, cam, par, getDashGhosts, getP2SkillCdEnd, 
   const cm = cam();
   return {
     t: "state",
+    clones:(g._clones||[]).map(c=>({...c,spawnT:performance.now()-c.spawnT,_attackAt:c._attackAt?performance.now()-c._attackAt:null})),
     cardP1:packCardPlayer(g.p),cardP2:packCardPlayer(g.p2),cardScene:packCardScene(g),
     p1: { x: g.p.x, y: g.p.y, hp: g.p.hp, mhp: g.p.maxHp, face: g.p.face, _downed: g.p._downed, _iFrameEnd: g.p._iFrameEnd, _rescueTimer: g.p._rescueTimer || 0, _pickPending: g.p._pickPending || false, charType: g.charType, _ad: g.ad, pixelShotAge: g.p._pixelShotAt ? Math.min(1000, performance.now() - g.p._pixelShotAt) : 1000 },
     p2: { x: g.p2.x, y: g.p2.y, hp: g.p2.hp, mhp: g.p2.maxHp, face: g.p2.face, _downed: g.p2._downed, _iFrameEnd: g.p2._iFrameEnd, _rescueTimer: g.p2._rescueTimer || 0, _pickPending: g.p2._pickPending || false, charType: g.p2.charType, _ad: g.p2._ad, pixelShotAge: g.p2._pixelShotAt ? Math.min(1000, performance.now() - g.p2._pixelShotAt) : 1000 },
@@ -420,6 +424,7 @@ export function applyCoopState(data, g, showOver, setPar, setDashGhosts) {
   unpackCardPlayer(g.p,data.cardP1); if(g.p2)unpackCardPlayer(g.p2,data.cardP2); unpackCardScene(g,data.cardScene);
   if(data.p2Inventory){g._clientInventory=data.p2Inventory;_setInv2?.(data.p2Inventory);}
   // 更新敵人
+  if(data.clones)g._clones=data.clones.map(c=>({...c,spawnT:performance.now()-c.spawnT,_attackAt:c._attackAt===null?0:performance.now()-c._attackAt}));
   if(data.ene)g.ene=data.ene.map(e=>({...e,_knock:e.knock?{...e.knock,start:performance.now()-e.knock.start}:null,_teleExe:e.teleRemaining?performance.now()+e.teleRemaining:0,_dashChargeEnd:e.dashChargeRemaining?performance.now()+e.dashChargeRemaining:0,_pattern:e.pattern?{...e.pattern,startAt:performance.now()-e.pattern.startAt,lockAt:e.pattern.lockAt?performance.now()+e.pattern.lockAt:0,executeAt:performance.now()+e.pattern.executeAt,endAt:performance.now()+e.pattern.endAt}:null,_patternRecoveryEnd:performance.now()+(e.recovery||0),_artHitUntil:performance.now()+(e.artHitRemaining||0),_artAttackUntil:performance.now()+(e.artAttackRemaining||0),_spawnShield:e.spawnShieldRemaining?performance.now()+e.spawnShieldRemaining:0,_p3t:e._p3cycle?performance.now()-(e.p3age||0):0}));
   // 更新子彈
   if (data.bul) g.bul = data.bul;
@@ -498,6 +503,7 @@ export function clientRenderLoop(g, cx, cam, VW, VH, BR, PR, par, filterPar, set
   g.ebul.forEach(b => {if(b._groundHit)return; cx.fillStyle = b.color || "#FF6B6B"; cx.beginPath(); cx.arc(b.x, b.y, 4, 0, Math.PI * 2); cx.fill(); });
   // orbs
   g.orbs.forEach(o => { cx.fillStyle = "#74C0FC"; cx.globalAlpha = .7; cx.beginPath(); cx.arc(o.x, o.y, 4, 0, Math.PI * 2); cx.fill(); cx.globalAlpha = 1; });
+  drawShadowClones(now,PR);
   // P1
   const _p1Col = (CHAR[g.charType] || CHAR.gunner).col;
   cx.save(); if (g.p._downed) cx.globalAlpha = .35;
@@ -673,6 +679,7 @@ export function pracCoopJoin(opts) {
       conn.on("data", data => {
         const g2 = getG();
         if (data && data.t === "state" && g2) applyCoopState(data, g2, _showOver, setPar, setDashGhosts);
+        if (data && data.t === "coinResult") showCoinFlip(_g()?.p2,()=>{},{win:data.win,award:false,pause:false});
         if (data && data.t === "p2pick") showCoopPick(data);
       });
       conn.on("close", () => { netObj.connected = false; const g3 = getG(); g3.dn.push({ x: g3.p.x, y: g3.p.y - 40, d: " 已斷線", life: 3, color: "#FF6B6B", big: 1 }); });

@@ -8,7 +8,7 @@ import { drawPixelMelee } from "./melee-sprite.js";
 import S from "./state.js";
 import { drawPixelGunner } from "./gunner-sprite.js";
 import {
-  PI, TAU, MAX_PARTICLES, LIGHTNING_CAP,
+  PI, TAU, PR, MAX_PARTICLES, LIGHTNING_CAP,
   CHAR, ROLE_NORMAL, ROLE_FLANKER, ROLE_SHOOTER, ROLE_DASHER, ROLE_SHIELD
 } from "./config.js";
 import { rn, di, $, getSkillTravelDirection } from "./utils.js";
@@ -742,3 +742,24 @@ let _titlePar = [], _titleSlash = 0, _titleSlashX = 0, _titleSlashFace = 1;
   } catch (e) {}
   requestAnimationFrame(drawTitleHero);
 })();
+
+// Clone body is independent of the owner's invisibility, facing and attack clock.
+let cloneCanvas=null,cloneOutline=null;
+export function drawShadowClones(now,r=PR){
+ if(!g?._clones?.length)return;
+ if(!cloneCanvas){cloneCanvas=document.createElement('canvas');cloneOutline=document.createElement('canvas');cloneCanvas.width=cloneCanvas.height=cloneOutline.width=cloneOutline.height=128;}
+ for(const clone of g._clones){
+  const direction=clone._ad||{x:Math.cos(clone.wandAng||0),y:Math.sin(clone.wandAng||0)},age=now-(clone._attackAt||0),appearing=Math.min(1,(now-clone.spawnT)/220),fading=clone.life<700?Math.max(.2,clone.life/700):1;
+  const actor={...clone,charType:'assassin',fx:{},_ad:direction},animation={active:age>=0&&age<240,startT:clone._attackAt||0,angle:Math.atan2(direction.y,direction.x)};
+  const world=cx,body=cloneCanvas.getContext('2d');body.clearRect(0,0,128,128);
+  try{cx=body;drawPlayer(64,68,r,now/1000,'#b996ee',clone.face,actor,{effects:false,animation,aiming:true,travelDirection:direction});}finally{cx=world;}
+  const outline=cloneOutline.getContext('2d');outline.clearRect(0,0,128,128);outline.globalCompositeOperation='source-over';outline.drawImage(cloneCanvas,0,0);outline.globalCompositeOperation='source-in';outline.fillStyle='#d9bcff';outline.fillRect(0,0,128,128);outline.globalCompositeOperation='source-over';
+  world.save();world.globalAlpha=.9*appearing*fading;
+  drawArt(world,'arcane',5,clone.x,clone.y+r*.6,44,19,{stretch:true,alpha:.6});
+  for(const [dx,dy] of [[-1.5,0],[1.5,0],[0,-1.5],[0,1.5]])world.drawImage(cloneOutline,clone.x-64+dx,clone.y-68+dy);
+  world.globalAlpha=.82*appearing*fading;world.drawImage(cloneCanvas,clone.x-64,clone.y-68);
+  if(age>=0&&age<240){const a=animation.angle,q=age/240;for(const side of [-1,1])drawArt(world,'arcane',7,clone.x+Math.cos(a+side*.35)*(18+q*16),clone.y+Math.sin(a+side*.35)*(18+q*16),36,25,{angle:a+side*.35,alpha:1-q});}
+  if(appearing<1)drawArt(world,'arcane',5,clone.x,clone.y,55,55,{alpha:1-appearing});
+  world.restore();
+ }
+}

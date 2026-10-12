@@ -1,4 +1,4 @@
-export const ART_REVISION='creatures-follow-qi-20261012-v6';
+export const ART_REVISION='coin-clone-boss-20261012-v7';
 // Approved raster art, packed offline. Drawing always restores canvas state.
 let atlas=null,contract=null;
 export const generatedArtReady=Promise.all([

@@ -1,3 +1,4 @@
+import {drawArt} from './generated-art.js';
 import {animateChestOpening} from './treasure-art.js';
 import { revealCard } from './card-vfx.js';
 import { cardEmblem } from "./button-art.js";
@@ -132,8 +133,8 @@ function pickCard(cd, _bAddCard, _bpp, _binv) {
       // 擲幣結束後恢復剩餘流程
       g._bigChestLeft = _savedBig2;
       g._fateQueue = _savedFate;
-      if (g._fateQueue > 0) { g._bigChestLeft = 0; setTimeout(() => showPick("fate"), 300); }
-      else if (g._bigChestLeft > 0) { g._bigChestLeft--; if (g._bigChestLeft > 0) setTimeout(() => showPick("bigchest"), 300); else resumeGame(); }
+      if (g._fateQueue > 0) { g._bigChestLeft = 0; setTimeout(() => showPick("fate",null,_savedCtx), 300); }
+      else if (g._bigChestLeft > 0) { g._bigChestLeft--; if (g._bigChestLeft > 0) setTimeout(() => showPick("bigchest",null,_savedCtx), 300); else resumeGame(); }
       else resumeGame();
     });
     return;
@@ -157,100 +158,41 @@ function pickCard(cd, _bAddCard, _bpp, _binv) {
   resumeGame();
 }
 
-/* ═══ coin flip animation ═══ */
-export function showCoinFlip(_bpp, _onDone) {
-  const win = Math.random() < .5;
-  const ov = document.createElement("div");
-  ov.style.cssText = "position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0);transition:background .3s;display:flex;align-items:center;justify-content:center;flex-direction:column";
-  document.body.appendChild(ov);
-  requestAnimationFrame(() => ov.style.background = "rgba(0,0,0,.6)");
-  // coin canvas
-  const cc = document.createElement("canvas");
-  cc.width = 200; cc.height = 200;
-  cc.style.cssText = "margin-bottom:20px";
-  ov.appendChild(cc);
-  const ctx = cc.getContext("2d");
-  // result text
-  const txt = document.createElement("div");
-  txt.style.cssText = "font-size:20px;font-weight:900;color:#fff;text-align:center;opacity:0;transition:opacity .5s";
-  ov.appendChild(txt);
-  // animation
-  let t = 0, speed = 20, done = false;
-  const dur = 2000; // 2 seconds
-  function frame() {
-    t += 16;
-    ctx.clearRect(0, 0, 200, 200);
-    const cx = 100, cy = 90, r = 50;
-    // slow down over time
-    const progress = Math.min(t / dur, 1);
-    speed = 20 * (1 - progress * .85);
-    const angle = t * speed * .001;
-    const scaleX = Math.cos(angle); // -1 to 1 simulates flip
-    const absScale = Math.abs(scaleX);
-    const showFront = scaleX > 0;
-    // shadow
-    ctx.fillStyle = "rgba(0,0,0,.2)";
-    ctx.beginPath(); ctx.ellipse(cx, cy + r + 10, r * absScale * .8, 6, 0, 0, Math.PI * 2); ctx.fill();
-    // coin body
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(absScale, 1);
-    // edge (3D effect)
-    const grad = ctx.createLinearGradient(-r, 0, r, 0);
-    grad.addColorStop(0, "#B8860B"); grad.addColorStop(.3, "#FFD700"); grad.addColorStop(.5, "#FFF8DC"); grad.addColorStop(.7, "#FFD700"); grad.addColorStop(1, "#B8860B");
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#B8860B"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
-    // inner circle
-    ctx.strokeStyle = "#DAA520"; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, r - 8, 0, Math.PI * 2); ctx.stroke();
-    // face
-    if (absScale > .15) {
-      ctx.font = "bold 36px 'Nunito',sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      if (!done) {
-        ctx.fillStyle = "#8B6914"; ctx.fillText(showFront ? "" : "", 0, 2);
-      } else {
-        ctx.fillStyle = "#8B6914"; ctx.fillText(win ? "" : "", 0, 2);
-      }
-    }
-    ctx.restore();
-    if (t < dur) {
-      requestAnimationFrame(frame);
-    } else if (!done) {
-      done = true;
-      // final face
-      requestAnimationFrame(frame);
-      // show result
-      setTimeout(() => {
-        if (win) {
-          txt.innerHTML = '<div style="color:#FFD43B;font-size:24px;text-shadow:0 0 20px #FFD43B"> 幸運！獲得寶箱！</div>';
-          txt.style.opacity = "1";
-          // spawn chest
-          if (g) {
-            const mw = _mapWFn ? _mapWFn() : 2400, mh = _mapHFn ? _mapHFn() : 2400;
-            let cx2, cy2;
-            for (let a = 0; a < 50; a++) {
-              cx2 = rn(100, mw - 100); cy2 = rn(100, mh - 100);
-              if (Math.sqrt((cx2 - g.p.x) ** 2 + (cy2 - g.p.y) ** 2) >= 300) break;
-            }
-            g.crates.push({ x: cx2, y: cy2, hp: 30, mhp: 30, card: null, hits: 0, needed: rn(5, 8) | 0, unlockLv: 0, bigChest: false });
-            g.dn.push({ x: g.p.x, y: g.p.y - 50, d: " 寶箱出現！", life: 2.5, color: "#FFD43B", big: 1 });
-          }
-        } else {
-          txt.innerHTML = '<div style="color:#ADB5BD;font-size:20px"> 可惜！下次好運</div>';
-          txt.style.opacity = "1";
-        }
-        // close after 1.5s
-        setTimeout(() => {
-          ov.style.background = "rgba(0,0,0,0)"; ov.style.pointerEvents = "none";
-          setTimeout(() => { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 400);
-          if (_onDone) _onDone(); else resumeGame();
-        }, 1500);
-      }, 300);
-    }
-  }
-  frame();
+/* ═══ adventure coin: one authoritative reward per toss ═══ */
+export function resolveExplorationCoin(player,win){
+ if(!win||!g||!player)return null;
+ const mw=mapW(),mh=mapH();let point=null,best=-Infinity;
+ for(let i=0;i<24;i++){
+  const a=Math.PI*2*i/24,r=100+(i%3)*24;
+  const x=Math.max(35,Math.min(mw-35,player.x+Math.cos(a)*r)),y=Math.max(35,Math.min(mh-35,player.y+Math.sin(a)*r));
+  const spacing=Math.min(200,...g.crates.filter(c=>c.hp>0).map(c=>Math.hypot(x-c.x,y-c.y)));
+  if(spacing>best){best=spacing;point={x,y};}
+ }
+ const chest={...point,hp:CRATE_HP,mhp:CRATE_HP,card:null,hits:0,needed:6,unlockLv:1,bigChest:false,coinReward:true};
+ g.crates.push(chest);g.dn.push({x:chest.x,y:chest.y-35,d:'幸運寶箱・擊破後選卡',life:4,color:'#ffe3a6',big:1});sfx('chest');return chest;
+}
+export function showCoinFlip(player,onDone,options={}){
+ const session=g,win=options.win??(Math.random()<.5);
+ if(options.pause!==false&&g)g.run=false;
+ resetControls();const ov=document.createElement('div');ov.className='coin-overlay';ov.setAttribute('role','dialog');ov.setAttribute('aria-label','探索靴擲幣');
+ ov.innerHTML='<section class="coin-panel"><div class="coin-kicker">探索靴 · 幸運試煉</div><h2>讓命運落定</h2><p class="coin-odds">寶箱面 50% · 探索面 50%</p><canvas width="280" height="240" class="coin-stage"></canvas><div class="coin-result" aria-live="polite"><strong>金幣翻轉中</strong><p>寶箱面朝上，就會在附近出現寶箱</p></div><div class="coin-reward"></div><button class="menu-control primary" disabled>等待結果</button></section>';
+ document.body.appendChild(ov);const c=ov.querySelector('canvas').getContext('2d'),txt=ov.querySelector('.coin-result'),button=ov.querySelector('button');
+ c.imageSmoothingEnabled=false;const start=performance.now(),duration=1800;let settled=false,closed=false,autoClose;
+ function finish(){if(closed)return;closed=true;clearTimeout(autoClose);ov.remove();if(g!==session)return;if(onDone)onDone();else if(options.pause!==false)resumeGame();}
+ button.onclick=finish;
+ function frame(now){
+  if(!ov.isConnected)return;if(g!==session){ov.remove();return;}
+  const q=Math.min(1,(now-start)/duration),ease=1-Math.pow(1-q,3),angle=(Math.PI*12+(win?0:Math.PI))*ease,face=Math.cos(angle)>=0?0:1,scale=Math.max(.08,Math.abs(Math.cos(angle))),height=Math.sin(q*Math.PI)*82;
+  c.clearRect(0,0,280,240);c.save();c.fillStyle='#070e1e';c.globalAlpha=.5;c.beginPath();c.ellipse(140,204,28+q*12,5,0,0,Math.PI*2);c.fill();c.restore();
+  c.save();c.translate(140,158-height);c.scale(scale,1);drawArt(c,'coin-adventure',face,0,0,112,112);c.restore();
+  if(q<1){requestAnimationFrame(frame);return;}
+  if(settled)return;settled=true;
+  const chest=options.award===false?null:resolveExplorationCoin(player,win);
+  txt.innerHTML=win?'<strong>寶箱面！幸運降臨</strong><p>寶箱已出現在角色附近，擊破後三選一</p>':'<strong>探索面 · 再接再厲</strong><p>這次沒有寶箱，探索靴的閃避提升仍然保留</p>';
+  if(win){ov.classList.add('coin-win');animateChestOpening(ov.querySelector('.coin-reward'));}
+  button.disabled=false;button.textContent='返回冒險';autoClose=setTimeout(finish,2500);
+ }
+ requestAnimationFrame(frame);
 }
 
 /* ═══ showAngelCard ═══ */

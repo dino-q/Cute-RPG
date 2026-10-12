@@ -203,7 +203,7 @@ export function pracCycleCard(cid) {
   pracUpdateCardUI(cid);
   // 探索靴擲幣（選卡時觸發）
   const g = _deps.getG();
-  if (g && g.p._coinFlip) { g.p._coinFlip = false; showCoinFlip(g.p); }
+  if(g){const toss=g.p._coinFlip&&C.find(c=>c.id===cid)?.n==='探索靴'&&_pracCardLvs[cid]!==undefined;g.p._coinFlip=false;if(toss)showCoinFlip(g.p);}
 }
 
 export function pracUpdateCardUI(cid) {

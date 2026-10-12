@@ -116,3 +116,9 @@
 | startEnemyKnockback / updateEnemyKnockback | src/enemy-control.js | 180毫秒快速滑退，抵銷追擊、保留受擊傾斜，Boss較小推力。 |
 
 ♻️ 沿用 recordRoleEffect、drawRoleEvents、drawArt、settleEnemyDeaths、awardEnemyKill、updateBossPattern。🆕 共用傷害預算／擊退函式（原秒末回血與直接改座標無法攔住提早死亡／表達受力）。
+
+| resolveExplorationCoin | src/cards-ui.js | 主機唯一擲幣寶箱結算，成功於持有者100～148附近生成可開箱獎勵。 |
+| drawShadowClones | src/render.js | 分身獨立雙刀動作，原人物圖的輪廓遮罩及紫色出刀，主機／連線共用。 |
+| continueAdventure / confirmAdventureRestart | src/ui.js | 同一頁面保留回首頁的冒險，恢復原選卡或戰場，重新開局前顯示進度取代提醒。 |
+
+♻️ 沿用 drawPlayer、drawPixelMelee、drawArt、animateChestOpening、showPick、resumeGame、原地圖寶箱碰撞與選卡入背包。🆕 上述函式（原擲幣嵌入動畫內、分身繪圖只在loop且共用主角狀態、首頁沒有保留進度入口）。
