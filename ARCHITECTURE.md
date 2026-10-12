@@ -546,3 +546,30 @@ graph LR
 - 新招基礎傷害最多 26，沿用原受傷／減傷／閃避／護盾／倒地與復活；地面命中不當作可彈開子彈。命中後 700 毫秒保護，避免同招重複傷害。
 - 泥地 3.5 秒，移速乘 .65，不持續扣血。重拳落空後反擊 3 秒、命中後 1.8 秒；其他新招後 2.6 秒。新招及反擊期間無 Boss 接觸傷害。
 - art-preview.html 可選全部 17 張職業卡，手動看外觀與觸發示意；主遊戲依既有條件。使用者自行測試，只執行發布必要 npm run build。
+
+## 2026-10-12 附著裝備、神兵與 Boss 預告
+
+模組總覽／匯出函式索引：
+- attached-card-art.js：drawAttachedCardLayer。由四職業圖片入口在真正逐格 torso、方向、後座、推進及傾斜的位置呼叫。天使之翼八方向32格，背向局部前層；尊重 effects:false 分身選項。
+- legend-card-art.js：legendProfile、drawLegendPlayerLayer、drawLegendBullet、drawLegendStrike。三張神兵分開識別，原 stats 不變。
+- boss-telegraph-art.js：drawBossRoute、drawBossPulseGround。新招／原衝刺／瞬移／黑暗脈衝共用生成地面美術。
+- boss-patterns.js：新增 queueBossGroundHit。新招及原脈衝共用角色受傷、倒地與復活入口；_absoluteBossDamage 保留原脈衝公式及命中規則。
+
+依賴圖：
+```mermaid
+graph LR
+ melee_sprite[melee-sprite.js] --> attached_card_art[attached-card-art.js]
+ gunner_sprite[gunner-sprite.js] --> attached_card_art
+ attached_card_art --> generated_art[generated-art.js]
+ card_vfx[card-vfx.js] --> legend_card_art[legend-card-art.js]
+ legend_card_art --> generated_art
+ boss_patterns[boss-patterns.js] --> boss_telegraph_art[boss-telegraph-art.js]
+ boss_telegraph_art --> generated_art
+ preview[art-preview.js] --> boss_patterns
+```
+
+新增來源9組，圖集380格38組、1024×6144；ART_REVISION=attached-epic-boss-20261012-v4。來源肩根 roots 保留固定軸，不用翅膀外框置中。詳細盘點與實作規則見 docs/附著與Boss視覺改版.md。
+
+無目標朝向規則已由固定向下改為最後移動面向；loop 記錄 _moveDir，近戰 idle 保留 model.angle，槍手 idle 用 _moveDir。新角色初始向下、手動瞄準與敵人優先。
+
+X 改成旋轉／鎖定／直線飛出，蓄力可破核心。新招 busy 判斷包含 _teleExe、_chargeEnd、_dashChargeEnd，避免預告瞬移後被中斷。聯機同步鎖定時間、瞬移落點／剩餘時間、衝刺角度／剩餘時間、各神兵旗標。原瞬移、pulse 純幾何預告移除，改地面共享繪圖。

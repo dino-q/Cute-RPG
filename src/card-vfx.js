@@ -1,3 +1,4 @@
+import {legendProfile,drawLegendPlayerLayer,drawLegendBullet,drawLegendStrike} from './legend-card-art.js';
 import {drawRoleEvents,drawRolePlayerLayer,drawRoleGun,drawRoleBullet} from './role-card-art.js';
 import {drawArt,artFrame,artThumbnail,directionIndex} from './generated-art.js';
 const TAU=Math.PI*2;
@@ -9,17 +10,12 @@ const clamp=v=>Math.max(0,Math.min(1,v));
 const weaponRows={steel:0,fire:1,ice:2,lightning:3,poison:4,dragon:5,star:6,whirl:7};
 export function drawPixelPhoenix(c,x,y,size,time=0,flap=0){drawArt(c,'phoenix',2+(Math.floor((time+flap*100)/130)%3),x,y,size,size,{fullCell:true});}
 export function drawCardPlayerLayer(c,p,x,y,r,now,front=false){
- if(!p)return;const f=p.fx||{},s=r/18;drawRolePlayerLayer(c,p,x,y,r,now,front);
+ if(!p)return;const f=p.fx||{},s=r/18;drawRolePlayerLayer(c,p,x,y,r,now,front);drawLegendPlayerLayer(c,p,x,y,r,now,front);
  if(!front){
-  if(p.invCD&&p._inv)drawArt(c,'angel-wings',Math.floor(now/160)%6,x,y-8*s,72*s,52*s,{fullCell:true});
 
-  if(p._shadowStepEnd>now||p._shadowStrikeEnd>now)drawArt(c,'arcane',7,x,y+7*s,36*s,18*s,{alpha:.4,angle:Math.atan2(p._ad?.y||0,p._ad?.x||1)});
  }else{
-  if(p._sh)drawArt(c,'guardian',1,x,y+12*s,32*s,22*s,{alpha:.45});
-  if(p.thorns)drawArt(c,'guardian',4,x,y+12*s,24*s,17*s,{alpha:.65});
   if(p.regen&&p.hp<p.maxHp&&Math.floor(now/200)%8<3)drawArt(c,'vital',0,x-r-3,y+3-(now%1600)/80,12*s,14*s,{alpha:.7});
   if(p._healFlash&&now-p._healFlash<220){const q=(now-p._healFlash)/220;drawArt(c,'vital',0,x,y-q*16,35*s,35*s,{alpha:1-q});}
-  if(p._mgBerserkEnd>now||p.berserk&&p.hp<p.maxHp*p.berserk)drawArt(c,'vital',3,x,y+15*s,30*s,19*s,{alpha:.8});
   if(f.phoenix&&p.revive>0)drawArt(c,'phoenix',0,x+r+4,y-r+7,12*s,15*s);
   const reveal=p._cardReveal;if(reveal&&now-reveal.at<850){const q=(now-reveal.at)/850;drawArt(c,'vital',4,x,y-r-13-q*8,32*s,26*s,{alpha:Math.sin(q*Math.PI)});c.save();c.font='bold 10px sans-serif';c.textAlign='center';c.fillStyle='#ffe5b0';c.globalAlpha*=Math.sin(q*Math.PI);c.fillText(reveal.name,x,y-r-30-q*8);c.restore();}
  }
@@ -32,7 +28,8 @@ export function cardWeaponAtlas(image,key,p,poseContract){
  if(!image||(!theme&&!armored)||!artFrame('weapon-variants')||(armored&&!artFrame('fitted-armor')))return image;
  if(key==='gunner-pixel'&&!armored)return image;
  let cache=variants.get(image);if(!cache){cache=new Map();variants.set(image,cache);}
- const id=key+':'+theme+':'+armored;if(cache.has(id))return cache.get(id);
+ const legendary=legendProfile(p);
+ const id=(legendary?.key||'')+':'+key+':'+theme+':'+armored;if(cache.has(id))return cache.get(id);
  const cv=document.createElement('canvas');cv.width=image.width;cv.height=image.height;
  const c=cv.getContext('2d',{willReadFrequently:true});c.drawImage(image,0,0);
  const cell=key.includes('action')?96:64,data=c.getImageData(0,0,cv.width,cv.height),attachments=[],plates=[];
@@ -75,6 +72,7 @@ export function cardWeaponAtlas(image,key,p,poseContract){
  }
  for(const a of attachments){
   if(a.shield){const [x,y,w,h]=a.shield;c.clearRect(a.sx,a.sy,cell,cell);drawArt(c,theme==='thorn'?'guardian':'weapon-variants',theme==='thorn'?4:weaponRows[theme]*4+2,a.sx+x+w/2,a.sy+y+h/2,w,h);continue;}
+  if(legendary&&!a.shield){if(a.hands){for(const [x,y,angle]of a.hands)drawArt(c,legendary.group,legendary.blade,a.sx+x,a.sy+y,18,5,{stretch:true,angle,anchorX:0});}else drawArt(c,legendary.group,legendary.blade,a.sx+a.x,a.sy+a.y,a.size,8,{stretch:true,angle:a.angle,anchorX:0});continue;}
   if(a.hands){for(const [x,y,angle]of a.hands)drawArt(c,'dagger-single',weaponRows[theme],a.sx+x,a.sy+y,16,16,{angle:angle+Math.PI/4,anchorX:.22,anchorY:.85});continue;}
   drawArt(c,'weapon-variants',weaponRows[theme]*4+1,a.sx+a.x,a.sy+a.y,a.size,a.size,{angle:a.angle+Math.PI/4,anchorX:.2,anchorY:.85});
  }
@@ -90,7 +88,7 @@ export function drawCardGun(c,p,muzzle,dir,scale,now){
  if(p._pixelShotAt&&now-p._pixelShotAt<60&&k!=='lightning')drawArt(c,themes[k]||'fire',3,muzzle.x+Math.cos(a)*5,muzzle.y+Math.sin(a)*5,12,12,{alpha:1-(now-p._pixelShotAt)/60,angle:a});
 }
 export function drawCardBullet(c,b,p,now,r=3){
- p=b.cardFx||p;if(drawRoleBullet(c,b,p,now,r))return;const k=pick(p),a=Math.atan2(b.vy||0,b.vx||1);
+ p=b.cardFx||p;if(drawLegendBullet(c,b,p,now,r))return;if(drawRoleBullet(c,b,p,now,r))return;const k=pick(p),a=Math.atan2(b.vy||0,b.vx||1);
  c.save();c.shadowBlur=0;const trails=b.trail||[];for(let i=Math.max(0,trails.length-4);i<trails.length;i++){const q=trails[i];c.globalAlpha=clamp(q.life||0)*.3;c.fillStyle=k==='lightning'?'#FAB005':(CARD_PALETTES[k]?.[1]||'#d4b471');c.beginPath();c.arc(q.x,q.y,1.2,0,TAU);c.fill();}c.globalAlpha=1;
  if(k==='lightning'){c.translate(b.x,b.y);c.rotate(a);c.fillStyle=b.crit?'#FFD43B':'#FAB005';c.beginPath();c.moveTo(r*1.2,0);c.lineTo(r*.2,r*.5);c.lineTo(r*.5,0);c.lineTo(-r*.2,-r*.5);c.lineTo(r*.2,0);c.closePath();c.fill();c.fillStyle='#fff';c.beginPath();c.arc(0,0,r*.25,0,TAU);c.fill();}
  else if(k)drawArt(c,themes[k],0,b.x,b.y,r*(k==='ice'?5:4),r*3,{angle:a});
@@ -148,10 +146,11 @@ export function drawCardWorld(c,g,now,r=18,phoenix=0){
  const ga=g._ghostArc;if(ga){const q=(now-ga.t)/340;if(q>=0&&q<1)drawArt(c,'ghost-slash',Math.min(5,Math.floor(q*6)),ga.x+Math.cos(ga.ang)*r*.9,ga.y+Math.sin(ga.ang)*r*.9,r*4.5,r*4.5,{angle:ga.ang,alpha:Math.sin(q*Math.PI)});}
  if(g._thornFlash){const q=(now-g._thornFlash)/300;if(q>=0&&q<1)drawArt(c,'guardian',10,p.x,p.y,r*4,r*3,{alpha:1-q});}
  if(phoenix>0){const q=clamp(1-phoenix/1.2);drawArt(c,'phoenix',Math.min(5,Math.floor(q*6)),p.x,p.y-12-q*35,90,90,{fullCell:true,alpha:Math.sin(q*Math.PI)});}
- for(const hit of g._cardImpacts||[]){const q=(now-hit.at)/320;if(q<0||q>=1)continue;const group=themes[hit.kind]||'fire',frame=hit.kind==='explosion'?6:3,size=hit.kind==='explosion'?80:32;drawArt(c,group,frame,hit.x,hit.y,size*(.7+q*.4),size*(.7+q*.4),{alpha:1-q});}
+ for(const hit of g._cardImpacts||[]){const q=(now-hit.at)/320;if(q<0||q>=1)continue;const legendary=['genesis','star-sword','infinity-blade'].includes(hit.kind),group=legendary?hit.kind:themes[hit.kind]||'fire',frame=legendary?8+Math.min(3,Math.floor(q*4)):hit.kind==='explosion'?6:3,size=legendary?48:hit.kind==='explosion'?80:32;drawArt(c,group,frame,hit.x,hit.y,size*(.7+q*.4),size*(.7+q*.4),{alpha:1-q});}
 }
 export function revealCard(player,card){if(player)player._cardReveal={at:performance.now(),name:card.n,color:card.c||'#dfc08b'};}
 export function drawCardStrike(c,p,animation,now,r=18){
+ if(drawLegendStrike(c,p,animation,now,r))return;
  if(!animation?.active||!p)return;const role=p.charType||'swordsman',duration=role==='assassin'?150:role==='tank'?280:320,q=(now-animation.startT)/duration;
  if(q<.18||q>.8||role==='tank')return;const key=pick(p);if(!key||key==='lightning')return;
  const d=p._ad||{x:0,y:1},a=Number.isFinite(animation.angle)?animation.angle:Math.atan2(d.y,d.x),alpha=Math.sin((q-.18)/.62*Math.PI)*.85;
@@ -167,6 +166,9 @@ export function drawGhostSlash(c,g,now,r,drawPlayer){
  c.restore();
 }
 function cardArtSlot(n){
+ if(n==='星辰劍')return ['star-sword',1];
+ if(n==='無盡之刃')return ['infinity-blade',1];
+ if(n==='創世神力')return ['genesis',2];
  if(/達摩/.test(n))return ['sword-beam',2];
  if(/劍氣/.test(n))return ['sword-qi',1];
  if(/拔刀/.test(n))return ['sword-draw',2];
@@ -218,7 +220,7 @@ export function cardIllustration(card){
  const url=artThumbnail(group,frame);if(url){cardPictures.set(key,url);return url;}
  return 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="64"><rect width="96" height="64" fill="#182333"/></svg>');
 }
-export function addCardImpact(g,x,y,source){if(!g)return;const kind=typeof source==='string'?source:pick(source);if(!kind||kind==='lightning')return;const now=performance.now();g._cardImpacts=(g._cardImpacts||[]).filter(h=>now-h.at<320).slice(-23);g._cardImpacts.push({x,y,kind,at:now});}
+export function addCardImpact(g,x,y,source){if(!g)return;const kind=typeof source==='string'?source:legendProfile(source)?.key||pick(source);if(!kind||kind==='lightning')return;const now=performance.now();g._cardImpacts=(g._cardImpacts||[]).filter(h=>now-h.at<320).slice(-23);g._cardImpacts.push({x,y,kind,at:now});}
 
 export function drawCardIcon(c,card,x,y,size=22){
  const [group,frame]=cardArtSlot(card.n);return drawArt(c,group,frame,x,y,size,size);

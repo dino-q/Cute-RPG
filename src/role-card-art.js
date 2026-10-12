@@ -25,7 +25,6 @@ export function drawRolePlayerLayer(c,p,x,y,r,now,front){
  if(!p)return;const cards=p._roleCards||{},s=r/18;
  if(!front){
   if(p._guardAura)drawArt(c,'guardian',5,x,y+13*s,110+20*p._guardAura,44+8*p._guardAura,{stretch:true,alpha:.65});
-  if(p._shadowStepEnd>now)drawArt(c,'arcane',5,x,y+8*s,43*s,29*s,{alpha:.5});
   if(p._chainKill&&p._killSpeedEnd>now)drawArt(c,'vital',7,x,y+14*s,42*s,21*s,{alpha:.7});
  }else{
   if(p._iwActive)drawArt(c,'guardian',6,x,y+18*s,36*s,20*s,{alpha:.9});

@@ -6,6 +6,7 @@ export function drawBossArt(c,e,now,x=e.x,y=e.y,size=e.r*2.3){
  const a=Number.isFinite(e._artAngle)?e._artAngle:(e.face<0?Math.PI:Math.PI/2);
  const casting=(e._artAttackUntil||0)>now||['pulse_warn','pulse_boom','dash'].includes(e._p3cycle);
  const dir=directionIndex(a),group=type+(casting?'-attack':'-idle');
+ if(e.ragePoo){drawArt(c,'sludge-spirit',dir,x,y+Math.sin(now/240)*2,size,size*1.25,{outline:'#9eeedc',brightness:1.1,alpha:.78});c.save();c.textAlign='center';c.fillStyle='#baf8ec';c.font='bold 9px sans-serif';c.fillText('不可破壞',x,y-size*.68-4);c.restore();return;}
  const minion=!!(e.miniPoo||e.miniDemon||e.ragePoo);
  if(minion){if(e._artLastHp!==undefined&&e.hp<e._artLastHp)e._artHitUntil=now+110;e._artLastHp=e.hp;}
  const bounce=e.miniPoo||e.miniDemon?Math.sin(now/180+(e.t||0))*1:Math.sin(now/320)*.8;

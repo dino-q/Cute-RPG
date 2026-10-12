@@ -234,7 +234,7 @@ export function pracRebuildCards() {
   g.p.armorCapBonus = 0; g.p.burnBoost = 1; g.p.chainDmg = 1; g.p.poisonDmg = 0; g.p.poisonBossMul = 1;
   g.p.shieldCD = 0; g.p._sh = false; g.p.lStep = false;
   g.p.invCD = 0; g.p.invDur = 0; g.p._inv = false; g.p._invEnd = 0; g.p.contactCap = 100;
-  g.p._roleCards={};g.p._crossbow=false;
+  g.p._legendCards={};g.p._roleCards={};g.p._crossbow=false;
   g.p._ghostSlash = 0; g.p._qiEvery = 0; g.p._qiMul = 0; g.p._drawSlash = 0; g.p._bleedChance = 0;
   g.p._quake = 0; g.p._ironWill = 0; g.p._guardAura = 0; g.p._lightSaber = false; g.p._dragonBreath = 0;
   g.p._shadowStep = 0; g.p._shadowStepEnd = 0; g.p._critDmgMul = 1; g.p._poisonBlade = 0; g.p._chainKill = false; g.p._atkDodge = 0;

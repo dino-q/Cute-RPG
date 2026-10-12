@@ -1,4 +1,4 @@
-export const ART_REVISION='role-boss-20261012-v3';
+export const ART_REVISION='attached-epic-boss-20261012-v4';
 // Approved raster art, packed offline. Drawing always restores canvas state.
 let atlas=null,contract=null;
 export const generatedArtReady=Promise.all([

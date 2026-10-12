@@ -88,3 +88,11 @@
 
 ♻️ 沿用 swordSwing、shieldBash、daggerStrike、awardEnemyKill、drawCardWorld、drawPixelMelee、drawArt、serializeCoopState、applyCoopState 及原受傷結算。
 🆕 新寫 role-card-art（既有元素入口沒有職業條件事件）、boss-patterns（既有 Boss 沒有可中斷核心及分時預告）。drawArt 增加 stretch，解決光束等比例縮短；龍圖與龍息共用 b.ang。
+
+| drawAttachedCardLayer | src/attached-card-art.js | 每格肩背／胸部、方向及前後遮擋。 |
+| legendProfile / drawLegendPlayerLayer / drawLegendBullet / drawLegendStrike | src/legend-card-art.js | 三張神兵識別、地面神紋、彈體與斬痕。 |
+| drawBossRoute / drawBossPulseGround | src/boss-telegraph-art.js | 裝飾路線、瞬移落點、脈衝與真正安全區遮罩。 |
+| queueBossGroundHit | src/boss-patterns.js | 原脈衝與新招共用既有受傷／倒地／復活。 |
+
+♻️ 沿用 drawPixelMelee、drawPixelGunner、drawSpriteWithEyes、cardWeaponAtlas、drawArt、updateBossPattern、serializeCoopState、applyCoopState。
+🆕 drawAttachedCardLayer（原外層不知道实际圖片姿勢）、legend-card-art（三卡原共用 fx.star 無辨識）、boss-telegraph-art（原純幾何提示無專用美術）。

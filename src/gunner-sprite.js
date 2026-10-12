@@ -1,3 +1,4 @@
+import {drawAttachedCardLayer} from './attached-card-art.js';
 import {ART_REVISION} from './generated-art.js';
 import { cardWeaponAtlas, drawCardGun } from './card-vfx.js';
 import { drawSpriteWithEyes } from './sprite-eyes.js';
@@ -22,7 +23,7 @@ export const gunnerSpriteReady = Promise.all([
   atlas = image; contract = data; return true;
 }).catch(error => { console.error('Pixel gunner unavailable; using original appearance.', error); return false; });
 
-export function getGunnerPose(direction = { x: 0, y: -1 }) {
+export function getGunnerPose(direction = { x: 0, y: 1 }) {
   const x = Number.isFinite(direction?.x) ? direction.x : 0;
   const y = Number.isFinite(direction?.y) ? direction.y : 1;
   const angle = x || y ? Math.atan2(y, x) : Math.PI / 2;
@@ -44,11 +45,14 @@ export function getGunnerMuzzle(x, y, radius, direction, shotAt) {
   return { x: pose.left + pose.frame.muzzle[0] * pose.scale, y: pose.top + pose.frame.muzzle[1] * pose.scale };
 }
 
-export function drawPixelGunner(context, x, y, radius, direction, shotAt, player) {
+export function drawPixelGunner(context, x, y, radius, direction, shotAt, player, effects=true) {
   if (!atlas || !contract) return false;
   const pose = spritePlacement(x, y, radius, direction, shotAt);
   context.save(); context.imageSmoothingEnabled = false; context.shadowBlur = 0;
+  const attachment={left:pose.left,top:pose.top,scale:pose.scale,cell:64,torso:pose.frame.torso,direction:pose.index,effects};
+  drawAttachedCardLayer(context,player,attachment,performance.now(),false);
   drawSpriteWithEyes(context, cardWeaponAtlas(atlas,'gunner-pixel',player,contract), 'gunner-pixel', pose.frame.x, pose.frame.y, 64, Math.round(pose.left), Math.round(pose.top), 64 * pose.scale);
+  drawAttachedCardLayer(context,player,attachment,performance.now(),true);
   drawCardGun(context,player,getGunnerMuzzle(x,y,radius,direction,shotAt),{x:Math.cos(pose.index*Math.PI/4),y:Math.sin(pose.index*Math.PI/4)},pose.scale,performance.now());
   if (pose.elapsed >= 0 && pose.elapsed < 60) {
     const muzzle = getGunnerMuzzle(x, y, radius, direction, shotAt);

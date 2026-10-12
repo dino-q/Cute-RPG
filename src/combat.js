@@ -174,7 +174,7 @@ export function fire(dmg, dx, dy, sp, p) {
         var _cyc = (_nt - pp._hmCycleT) % 3500;
         _hmOn = _cyc < 500;
       }
-      g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, cardFx:{fx:{...pp.fx},_lightSaber:pp._lightSaber,_poisonBlade:pp._poisonBlade,_roleCards:{...pp._roleCards}}, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
+      g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, cardFx:{_legendCards:{...pp._legendCards},fx:{...pp.fx},_lightSaber:pp._lightSaber,_poisonBlade:pp._poisonBlade,_roleCards:{...pp._roleCards}}, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
     }
   });
 }

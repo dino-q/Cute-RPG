@@ -274,13 +274,13 @@ export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
   const _wbS = g && g._wbSwing || 0;
 
   const meleeDirection=player?._ad||(g&&g.ad)||{x:0,y:1};
-  const pixelMelee=ct!=='gunner'&&drawPixelMelee(cx,ct,x,cy,r,meleeDirection,renderOptions?.animation||g?._atkAnim,player,fx,{sword:()=>_drawSword(cx,r*.7,fx),shield:()=>_drawMiniShield(cx,fx)},renderOptions?.aiming,travelDirection);
+  const pixelMelee=ct!=='gunner'&&drawPixelMelee(cx,ct,x,cy,r,meleeDirection,renderOptions?.animation||g?._atkAnim,player,fx,{sword:()=>_drawSword(cx,r*.7,fx),shield:()=>_drawMiniShield(cx,fx)},renderOptions?.aiming,travelDirection,renderOptions?.effects!==false);
   if (pixelMelee) {
     // Continuous weapon animation already drawn; common card shields follow below.
   } else if (ct === "gunner") {
     const attacking = renderOptions?.aiming || (Number.isFinite(player?._pixelShotAt) && performance.now() - player._pixelShotAt < 550);
-    const direction = travelDirection || (attacking ? (player?._ad || (g && g.ad) || { x: f, y: 0 }) : { x: 0, y: 1 });
-    if (!drawPixelGunner(cx, x, cy, r, direction, player?._pixelShotAt, player)) {
+    const direction = travelDirection || (attacking ? (player?._ad || (g && g.ad) || { x: f, y: 0 }) : (player?._moveDir||{ x: 0, y: 1 }));
+    if (!drawPixelGunner(cx, x, cy, r, direction, player?._pixelShotAt, player,renderOptions?.effects!==false)) {
     // ─── 槍手：身體 + 槍（含後座力動畫）───
     const bg = cx.createRadialGradient(x - f * r * .1, cy - r * .3, r * .1, x, cy, r);
     bg.addColorStop(0, "#fff"); bg.addColorStop(.3, cc.colMid); bg.addColorStop(1, cc.col);

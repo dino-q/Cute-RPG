@@ -96,6 +96,208 @@
       "rows": 2,
       "cols": 2,
       "kind": "fx"
+    },
+    {
+      "id": "angel-attached",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-a7aec024-6d3e-4ffb-a625-2b0742795858.png",
+      "file": "角色預覽/angel-attached-source.png",
+      "rows": 4,
+      "cols": 8,
+      "kind": "fx",
+      "roots": [
+        [
+          0.6,
+          0.7
+        ],
+        [
+          0.58,
+          0.7
+        ],
+        [
+          0.5,
+          0.7
+        ],
+        [
+          0.4,
+          0.7
+        ],
+        [
+          0.4,
+          0.7
+        ],
+        [
+          0.58,
+          0.7
+        ],
+        [
+          0.52,
+          0.7
+        ],
+        [
+          0.48,
+          0.7
+        ],
+        [
+          0.6,
+          0.66
+        ],
+        [
+          0.58,
+          0.66
+        ],
+        [
+          0.5,
+          0.66
+        ],
+        [
+          0.4,
+          0.66
+        ],
+        [
+          0.4,
+          0.66
+        ],
+        [
+          0.58,
+          0.66
+        ],
+        [
+          0.52,
+          0.66
+        ],
+        [
+          0.48,
+          0.66
+        ],
+        [
+          0.6,
+          0.57
+        ],
+        [
+          0.58,
+          0.57
+        ],
+        [
+          0.5,
+          0.57
+        ],
+        [
+          0.4,
+          0.57
+        ],
+        [
+          0.4,
+          0.57
+        ],
+        [
+          0.58,
+          0.57
+        ],
+        [
+          0.52,
+          0.57
+        ],
+        [
+          0.48,
+          0.57
+        ],
+        [
+          0.6,
+          0.31
+        ],
+        [
+          0.58,
+          0.31
+        ],
+        [
+          0.5,
+          0.31
+        ],
+        [
+          0.4,
+          0.31
+        ],
+        [
+          0.4,
+          0.31
+        ],
+        [
+          0.58,
+          0.31
+        ],
+        [
+          0.52,
+          0.31
+        ],
+        [
+          0.48,
+          0.31
+        ]
+      ]
+    },
+    {
+      "id": "star-sword",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-c0c477b1-f944-4f7e-be50-c682360d7572.png",
+      "file": "角色預覽/star-sword-source.png",
+      "rows": 3,
+      "cols": 4,
+      "kind": "fx"
+    },
+    {
+      "id": "genesis",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-630561ca-131e-4b1b-b358-b311f42b68cb.png",
+      "file": "角色預覽/genesis-source.png",
+      "rows": 3,
+      "cols": 4,
+      "kind": "fx"
+    },
+    {
+      "id": "infinity-blade",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-379cb98a-8c08-405b-a3bb-3d984300bc84.png",
+      "file": "角色預覽/infinity-blade-source.png",
+      "rows": 3,
+      "cols": 4,
+      "kind": "fx"
+    },
+    {
+      "id": "mud-geyser",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-6eed55ab-835b-4a2f-b4cd-fd5c64437dd5.png",
+      "file": "角色預覽/mud-geyser-source.png",
+      "rows": 3,
+      "cols": 4,
+      "kind": "fx"
+    },
+    {
+      "id": "sludge-spirit",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-2885d733-9e20-4c14-89a2-034f78755a7b.png",
+      "file": "角色預覽/sludge-spirit-source.png",
+      "rows": 2,
+      "cols": 4,
+      "kind": "body"
+    },
+    {
+      "id": "devil-route",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-fa5e1cad-1a8c-401f-a7cc-6a458b9456ea.png",
+      "file": "角色預覽/devil-route-source.png",
+      "rows": 3,
+      "cols": 4,
+      "kind": "fx"
+    },
+    {
+      "id": "mud-route",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-5066b7a9-a2ce-47a7-8f79-25287e457f31.png",
+      "file": "角色預覽/mud-route-source.png",
+      "rows": 2,
+      "cols": 4,
+      "kind": "fx"
+    },
+    {
+      "id": "dark-pulse",
+      "raw": "C:\\Users\\AG_Di\\.codex\\generated_images\\01a12b25-21fa-7ed2-a6cf-fcccf9cb9cb3\\exec-f7359e01-987f-4068-bba3-79539ec8e203.png",
+      "file": "角色預覽/dark-pulse-source.png",
+      "rows": 4,
+      "cols": 4,
+      "kind": "fx"
     }
   ]
 }

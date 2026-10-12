@@ -7,7 +7,7 @@ export function setCardsIsElite(fn) { _isEliteFn = fn; }
 function _isElite() { return _isEliteFn ? _isEliteFn() : false; }
 function card(n,e,r,tp,d,ap,c,fx,once){
  const entry={id:++CID,n,e,r,tp,d,ap:[],c,fx:fx||null,once:!!once};
- entry.ap=ap.map((apply,level)=>player=>{apply(player);if(entry.charReq){player._roleCards={...(player._roleCards||{}),[entry.n]:level+1};}});
+ entry.ap=ap.map((apply,level)=>player=>{apply(player);if(["星辰劍","無盡之刃","創世神力"].includes(entry.n))player._legendCards={...(player._legendCards||{}),[entry.n]:level+1};if(entry.charReq){player._roleCards={...(player._roleCards||{}),[entry.n]:level+1};}});
  C.push(entry);
 }
 // once=1 的卡片只能拿一次、不能升級（拿過後不再出現在選卡池）。

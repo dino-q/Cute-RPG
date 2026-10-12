@@ -18,7 +18,20 @@ for a in json.loads((ROOT/'docs/generated-art-sources.json').read_text(encoding=
            '--rows',str(a['rows']),'--cols',str(a['cols']),'--output-dir',str(out),
            '--cell-size','128','--fit-scale','.72','--align','center' if a['kind'] in ('fx','prop') else 'feet',
            '--scale-strategy','preserve','--component-mode','all' if a['kind']=='fx' or 'defeat' in a['id'] or a['id']=='chest-art' else 'largest'],check=True,capture_output=True)
-    items.append((a['id'],Image.open(out/'sheet-transparent.png').convert('RGBA'),a['rows'],a['cols'],'pack' if a['kind']=='prop' else 'sequence' if a['kind']=='fx' else 'body'))
+    if a.get('roots'):
+        # Translate the authored shoulder roots, never the changing wing bounding boxes.
+        clean=Image.open(out/'raw-sheet-clean.png').convert('RGBA')
+        cw,ch=clean.width/a['cols'],clean.height/a['rows']
+        rooted=Image.new('RGBA',(CELL*a['cols'],CELL*a['rows']))
+        for index,(rx,ry) in enumerate(a['roots']):
+            col,row=index%a['cols'],index//a['cols']
+            frame=clean.crop((round(col*cw),round(row*ch),round((col+1)*cw),round((row+1)*ch)))
+            factor=.55*CELL/max(cw,ch)
+            frame=frame.resize((round(frame.width*factor),round(frame.height*factor)),Image.Resampling.NEAREST)
+            rooted.alpha_composite(frame,(col*CELL+round(64-rx*frame.width),row*CELL+round(64-ry*frame.height)))
+        items.append((a['id'],rooted,a['rows'],a['cols'],'sequence'))
+    else:
+        items.append((a['id'],Image.open(out/'sheet-transparent.png').convert('RGBA'),a['rows'],a['cols'],'pack' if a['kind']=='prop' else 'sequence' if a['kind']=='fx' else 'body'))
 # Extract one actual dagger from each previously approved paired-dagger prop.
 # Connected alpha components keep the blade and grip together; no new artwork is drawn.
 daggers=Image.new('RGBA',(CELL*4,CELL*2))

@@ -1,4 +1,4 @@
-import {updateBossPattern,clearBossPattern} from './boss-patterns.js';
+import {updateBossPattern,clearBossPattern,queueBossGroundHit} from './boss-patterns.js';
 import {drawBossArt,bossName} from './boss-art.js';
 // Stage Boss system — Lv20  / Lv30 
 import { MAX_PARTICLES, ROLE_NORMAL, PR } from "./config.js";
@@ -393,7 +393,8 @@ export function updateStageBoss(e,now,dt){
 
   // Move（撞擊後退開）
   e.t+=.02*dt;
-  if(e._retreatEnd&&now<e._retreatEnd){
+  if(e._teleExe||e._dashChargeEnd||e._chargeEnd||['pulse_warn','pulse_boom'].includes(e._p3cycle)){/* locked casting position */}
+  else if(e._retreatEnd&&now<e._retreatEnd){
     e.x+=(-dx/d*.8)*dt;e.y+=(-dy/d*.8)*dt;
     e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
   }else{
@@ -447,14 +448,15 @@ export function updateStageBoss(e,now,dt){
       for(let i=0;i<n;i++){const a=baseA-spread/2+spread*i/(n-1),sp=3+phase*.5;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:12+g.wave*1.5+phase*5,life:1.5,color:"#9B59B6"});}}
     if(!p3inCycle&&phase>=2&&now>e.sbSpawnCD){e.sbSpawnCD=now+6000;sfxBossAtk("crosswave");
       [0,Math.PI/2,Math.PI,Math.PI*1.5].forEach(a=>{for(let j=0;j<5;j++){const sp=2+j*.6;g.ebul.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:18+g.wave*1.5,life:2,color:"#E74C3C"});}});burst(e.x,e.y,"#E74C3C",20);}
-    // === Phase 2 瞬移（獨立，不走循環）===
-    if(phase===2&&now>e.sbTeleCD&&!e._p3cycle){
+    // Phase 2: pending teleport cannot be interrupted by a new pattern.
+    if(phase===2&&now>e.sbTeleCD&&(!e._p3cycle||e._p3cycle==='idle')){
       e.sbTeleCD=now+8000;
-      g.dn.push({x:g.p.x,y:g.p.y-50,d:" 惡魔在身邊！",life:1.5,color:"#9B59B6",big:1});
-      const tr=120+rn(0,40),ta=Math.random()*Math.PI*2;
-      e._teleLandX=cl(g.p.x+Math.cos(ta)*tr,e.r,mapW()-e.r);
-      e._teleLandY=cl(g.p.y+Math.sin(ta)*tr,e.r,mapH()-e.r);
-      e._teleLandShow=now+300;e._teleExe=now+1000;e._teleShake=now+1000;
+      if(di(e,_sbt)>e.r+PR+55){
+        const tr=Math.max(e.r+PR+40,120),ta=Math.atan2(e.y-_sbt.y,e.x-_sbt.x);
+        e._teleLandX=cl(_sbt.x+Math.cos(ta)*tr,e.r,mapW()-e.r);e._teleLandY=cl(_sbt.y+Math.sin(ta)*tr,e.r,mapH()-e.r);
+        e._teleLandShow=now;e._teleExe=now+1000;e._teleShake=now+1000;
+        g.dn.push({x:e._teleLandX,y:e._teleLandY-e.r-25,d:'惡魔迫近・落點已標記',life:1,color:'#dec5ef',big:1});
+      }
     }
     // === Phase 3 攻擊循環狀態機 ===
     // 狀態：idle → tele_warn → tele_land → dash(×3) → pulse_warn → pulse_boom → free → idle
@@ -462,11 +464,13 @@ export function updateStageBoss(e,now,dt){
       if(!e._p3cycle)e._p3cycle="idle";
       if(e._p3cycle==="idle"&&now>e.sbTeleCD){
         e._p3cycle="tele_warn";e._p3t=now;
-        g.dn.push({x:g.p.x,y:g.p.y-50,d:" 惡魔在身邊！",life:1.5,color:"#9B59B6",big:1});
-        const tr=90+rn(0,30),ta=Math.random()*Math.PI*2;
-        e._teleLandX=cl(g.p.x+Math.cos(ta)*tr,e.r,mapW()-e.r);
-        e._teleLandY=cl(g.p.y+Math.sin(ta)*tr,e.r,mapH()-e.r);
-        e._teleLandShow=now+300;e._teleExe=now+1000;
+        if(di(e,_sbt)<=e.r+PR+55){e._p3cycle='dash';e._dashChargeEnd=now+650;e._dashAimAngle=Math.atan2(_sbt.y-e.y,_sbt.x-e.x);}
+        else{
+          const tr=Math.max(e.r+PR+40,110),ta=Math.atan2(e.y-_sbt.y,e.x-_sbt.x);
+          e._teleLandX=cl(_sbt.x+Math.cos(ta)*tr,e.r,mapW()-e.r);e._teleLandY=cl(_sbt.y+Math.sin(ta)*tr,e.r,mapH()-e.r);
+          e._teleLandShow=now;e._teleExe=now+1000;
+          g.dn.push({x:e._teleLandX,y:e._teleLandY-e.r-25,d:'瞬移落點・稍後連續衝刺',life:1,color:'#dec5ef',big:1});
+        }
       }
       // 衝刺子循環
       if(e._p3cycle==="dash"){
@@ -478,7 +482,7 @@ export function updateStageBoss(e,now,dt){
           e._dashChargeEnd=0;
           const _ct=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p;
           const cdx=_ct.x-e.x,cdy=_ct.y-e.y,cd=Math.sqrt(cdx*cdx+cdy*cdy)||1;
-          e._chargeDx=cdx/cd;e._chargeDy=cdy/cd;e._chargeEnd=now+350;
+          e._chargeDx=Math.cos(e._dashAimAngle);e._chargeDy=Math.sin(e._dashAimAngle);e._chargeEnd=now+350;
           sfxBossAtk("slam");
         }
         // 衝刺中
@@ -508,7 +512,7 @@ export function updateStageBoss(e,now,dt){
             sfxBossAtk("darkpulse");
           }else{
             // 下一次衝刺
-            e._dashChargeEnd=now+400;
+            e._dashChargeEnd=now+650;e._dashAimAngle=Math.atan2(_sbt.y-e.y,_sbt.x-e.x);
             g.dn.push({x:e.x,y:e.y-e.r-10,d:"",life:0.5,color:"#FF4040"});
           }
         }
@@ -526,12 +530,10 @@ export function updateStageBoss(e,now,dt){
           // 脈衝爆發！
           e._p3cycle="pulse_boom";e._p3t=now;
           setHitFlash(.8);setShake(.6,10);sfxBossAtk("slam");
-          const pulseDist=di(e,g.p),safe=pulseDist<150;
-          if(!safe&&!g.p._inv&&!(g.p._iFrameEnd>0&&now<g.p._iFrameEnd)){
-            // 撞擊傷害（非遠距），走接觸傷害邏輯
-            const dmg=(40+g.wave*3)*e.dmgMul;
-            g.p.hp-=dmg;burst(g.p.x,g.p.y,"#9B59B6",10);sfx("hurt");setHitFlash(1);setShake(.5,8);showPlayerDmg(dmg);g.p._iFrameEnd=performance.now()+800;
-          }else if(safe){g.dn.push({x:g.p.x,y:g.p.y-30,d:"安全！",life:1.5,color:"#51CF66",big:1});}
+          for(const player of [g.p,g.p2].filter(p=>p&&p.hp>0&&!p._downed)){
+            if(di(e,player)<150)g.dn.push({x:player.x,y:player.y-30,d:'安全！',life:1.5,color:'#51CF66',big:1});
+            else queueBossGroundHit(g,player,(40+g.wave*3)*e.dmgMul,'#c080ee',true);
+          }
           // 華麗爆炸特效
           for(let r=0;r<3;r++){
             const delay=r*80;
@@ -554,21 +556,6 @@ export function updateStageBoss(e,now,dt){
         e.sbTeleCD=now+2000; // 2秒後可再次進入循環
       }
     }
-    // === 通用：落點預告標記（紫色脈動圈）===
-    if(e._teleLandShow&&now<(e._teleExe||0)){
-      const lx=e._teleLandX,ly=e._teleLandY;
-      const prog=1-(e._teleExe-now)/700;
-      const mr=e.r*2*(1-prog*.3);
-      const cx=getCx();
-      cx.save();cx.globalAlpha=.3+prog*.3;
-      cx.strokeStyle="#9B59B6";cx.lineWidth=2.5;cx.setLineDash([6,4]);
-      cx.beginPath();cx.arc(lx,ly,mr,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
-      cx.globalAlpha=.15+prog*.15;cx.fillStyle="#9B59B6";
-      cx.beginPath();cx.arc(lx,ly,mr*.6,0,Math.PI*2);cx.fill();
-      cx.restore();
-      // 不再每幀 push damage number — 改用低頻閃爍
-      if(Math.random()<.1)g.dn.push({x:lx,y:ly-mr-5,d:"",life:0.3,color:"#9B59B6"});
-    }
     // === 通用：執行瞬移 ===
     if(e._teleExe&&now>=e._teleExe){e._teleExe=0;e._teleLandShow=0;sfxBossAtk("teleport");
       for(let gi=0;gi<4;gi++){par.push({x:e.x+rn(-5,5),y:e.y+rn(-5,5),vx:0,vy:0,life:.5,color:"rgba(155,89,182,.5)",sz:e.r*1.2});}
@@ -584,7 +571,7 @@ export function updateStageBoss(e,now,dt){
       // Phase 3: 瞬移後進入衝刺
       if(phase===3&&e._p3cycle==="tele_warn"){
         e._p3cycle="dash";e._p3dashN=0;
-        e._dashChargeEnd=now+400;
+        e._dashChargeEnd=now+650;e._dashAimAngle=Math.atan2(_sbt.y-e.y,_sbt.x-e.x);
         g.dn.push({x:e.x,y:e.y-e.r-10,d:"",life:0.5,color:"#FF4040"});
       }
     }
@@ -622,30 +609,6 @@ export function drawStageBoss(e,now){
   const hpCol=lv===20?"#8B6914":(e.sbPhase===1?"#9B59B6":e.sbPhase===2?"#E74C3C":"#C0392B");
   cx.fillStyle=hpCol;cx.fillRect(bx2,by2,barW*Math.max(0,e.hp/e.mhp),barH);
   cx.globalAlpha=.8;cx.strokeStyle="#fff";cx.lineWidth=.5;cx.strokeRect(bx2,by2,barW,barH);
-  // 暗黑脈衝蓄力視覺（Phase 3 循環中）
-  if(e._p3cycle==="pulse_warn"&&e._p3t){
-    const elapsed=now-e._p3t,prog=Math.min(1,elapsed/2000);
-    const pulseR=100+prog*80;
-    // 內圈收縮（暗能量匯聚）
-    cx.globalAlpha=.1+prog*.25;cx.fillStyle="#9B59B6";
-    cx.beginPath();cx.arc(e.x,e.y,pulseR*(1-prog*.5),0,Math.PI*2);cx.fill();
-    // 外圈擴張（衝擊波預告）
-    cx.globalAlpha=.15+prog*.2;cx.strokeStyle="#E74C3C";cx.lineWidth=3+prog*4;
-    cx.beginPath();cx.arc(e.x,e.y,pulseR,0,Math.PI*2);cx.stroke();
-    // 能量線條匯聚
-    for(let i=0;i<8;i++){
-      const la=Math.PI*2*i/8+now/300,lr=pulseR*(1.2-prog*.4);
-      cx.globalAlpha=.3*prog;cx.strokeStyle="#DA77F2";cx.lineWidth=1.5;
-      cx.beginPath();cx.moveTo(e.x+Math.cos(la)*lr,e.y+Math.sin(la)*lr);
-      cx.lineTo(e.x+Math.cos(la)*20,e.y+Math.sin(la)*20);cx.stroke();
-    }
-    // 安全區提示圈（綠色虛線 + 文字）
-    cx.globalAlpha=.3+Math.sin(now/100)*.15;cx.strokeStyle="#51CF66";cx.lineWidth=2.5;cx.setLineDash([5,4]);
-    cx.beginPath();cx.arc(e.x,e.y,150,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
-    cx.globalAlpha=.08;cx.fillStyle="#51CF66";cx.beginPath();cx.arc(e.x,e.y,150,0,Math.PI*2);cx.fill();
-    cx.globalAlpha=.7;cx.font="bold 10px 'Nunito',sans-serif";cx.textAlign="center";cx.fillStyle="#51CF66";
-    cx.fillText("← 安全區 →",e.x,e.y+150+14);
-  }
   cx.restore();
 }
 

@@ -1,3 +1,4 @@
+import {drawAttachedCardLayer} from './attached-card-art.js';
 import {ART_REVISION} from './generated-art.js';
 import { cardWeaponAtlas } from './card-vfx.js';
 import { drawSpriteWithEyes } from './sprite-eyes.js';
@@ -16,7 +17,7 @@ export const meleeSpritesReady=Promise.all([
 const clamp=v=>Math.max(0,Math.min(1,v));
 const ease=v=>{v=clamp(v);return v*v*(3-2*v);};
 const angleDelta=(a,b)=>Math.atan2(Math.sin(b-a),Math.cos(b-a));
-export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weapons,forceAim=false,travelDirection=null){
+export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weapons,forceAim=false,travelDirection=null,effects=true){
  if(!atlas||!contract?.roles[role])return false;
  const now=performance.now(),scale=r/18*1.25;
  const duration=role==='assassin'?150:role==='tank'?280:320;
@@ -29,7 +30,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const dt=Math.max(0,Math.min(.05,(now-model.time)/1000));
  const actualX=player?.x??x,actualY=player?.y??y;
  const dx=actualX-model.x,dy=actualY-model.y,moving=Math.hypot(dx,dy)>.08;
- const target=travelDirection?Math.atan2(travelDirection.y,travelDirection.x):active||forceAim?attackAngle:moving?Math.atan2(dy,dx):Math.PI/2;
+ const target=travelDirection?Math.atan2(travelDirection.y,travelDirection.x):active||forceAim?attackAngle:moving?Math.atan2(dy,dx):model.angle;
  if(travelDirection)model.angle=target;
  model.angle+=angleDelta(model.angle,target)*Math.min(1,dt*(active?32:16));model.time=now;model.x=actualX;model.y=actualY;
  const index=((Math.round(model.angle/(Math.PI/4))%8)+8)%8;
@@ -44,7 +45,10 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
   const stride=active?Math.sin(progress*Math.PI)*2.5*scale:0;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;
   if(role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now))ctx.globalAlpha*=.4;
+  const attachment={left:Math.round(x-48*scale+Math.cos(attackAngle)*stride),top:Math.round(y-56*scale+Math.sin(attackAngle)*stride),scale,cell:96,torso:frame.torso,direction:lockedIndex,effects};
+  drawAttachedCardLayer(ctx,player,attachment,now,false);
   drawSpriteWithEyes(ctx,cardWeaponAtlas(actionAtlas,role+'-action',player,actionContract),role==='swordsman'?'swordsman-action':'assassin-action',frame.x,frame.y,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale);
+  drawAttachedCardLayer(ctx,player,attachment,now,true);
   ctx.restore();return true;
  }
  const frame=contract.roles[role][index];
@@ -63,7 +67,7 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
  const weaponAngle=(active?attackAngle:model.angle)+(role==='swordsman'?swing:0);
  const hidden=role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now);
  ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;if(hidden)ctx.globalAlpha*=.4;
- const drawBody=()=>{ctx.save();ctx.translate(bx,by);ctx.rotate(lean);drawSpriteWithEyes(ctx,cardWeaponAtlas(atlas,'melee-pixel',player,contract),'melee-pixel',frame.x,frame.y,64,-32*scale,-40*scale,64*scale);ctx.restore();};
+ const drawBody=()=>{ctx.save();ctx.translate(bx,by);ctx.rotate(lean);const attachment={left:-32*scale,top:-40*scale,scale,cell:64,torso:frame.torso,direction:index,effects};drawAttachedCardLayer(ctx,player,attachment,now,false);drawSpriteWithEyes(ctx,cardWeaponAtlas(atlas,'melee-pixel',player,contract),'melee-pixel',frame.x,frame.y,64,-32*scale,-40*scale,64*scale);drawAttachedCardLayer(ctx,player,attachment,now,true);ctx.restore();};
  const drawArm=()=>{ctx.save();ctx.strokeStyle='#efb789';ctx.lineWidth=(role==='tank'?1.5:3)*scale;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(handX,handY);ctx.lineTo(pivotX,pivotY);ctx.stroke();ctx.restore();};
  const drawWeapon=()=>{
   // Tank forearm is short and sits BEHIND the shield, including south-facing attacks.
