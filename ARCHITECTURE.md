@@ -717,3 +717,12 @@ graph LR
 - 分身本體70%，外緣輪廓35%，以destination-out去掉輪廓内側重疊。首頁drawTitleHero改穩定左右移動攻擊／每4次劍氣，try/finally還原cx與g；continueAdventureSlot在練習下方。
 - mob-jelly來源四格去腳，既有圖集重包與武器定位重套；仍421格48組1024×6784，ART_REVISION=card-coop-jelly-20261012-v9。
 - 僅做發布必要建置，Dino負責遊玩與雙人驗證。
+
+## 2026-10-12 小怪路線移除、設定長按與混沌提示
+
+- render移除drawHuntWindRoute及其繪圖；小怪普通衝刺的路線亦移除，防止暴走結束還有旧預告線。Stage Boss的招式提示仍由boss-patterns／boss-telegraph-art處理，沒有改動。
+- ui→practice沿用既有依賴新增showCardTip import。showCardTip(cid,options={})可顯示指定持有等級、指定職業；原練習不帶options仍列全部等級。bindSettingsCardDetails内部用pointer事件450ms長按、10px移動取消、離開／放開／取消清理，Enter／Space可直接查看；關設定亦清提示及長按計時。CLIENT設定能力與卡片改讀自己的P2及_clientInventory。
+- settings-actions互換為返回首頁在前／繼續冒險在後；按鈕原行為沿用。首頁continueAdventureSlot及按鈕使用210寬容器、100% border-box，同練習按鈕切齊。heroCanvas增300寬，劍士x=190+sin(t/1100)*65，右側延長；每四次劍氣沿用。
+- ui新增export showChaosNotice。cards-ui→ui新增直接依賴；coop→ui沿用已有依賴新增showChaosNotice。cards.rndBuff現在回傳當次實際增益文字；applyCardLevel的混沌核心保存_chaosNotice{ id, level, total, gains }，升級仍只增3／2／3次。P1取卡立即顯示，CLIENT由cardP2快照補發自己提示，以session內notice.id去重。非阻塞提示12秒、自行關閉、不暂停隊友；換局resetSessionUi移除提示。
+- 攻速增益提示顯示真實次數倍率，生命增益列額外回血量，機率／護甲列增加值。此处不新增其他平衡變更。
+- 依Dino要求只執行發布打包，不跑遊玩或自動操作測試。

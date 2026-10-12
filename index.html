@@ -56,7 +56,7 @@
 <!-- Title -->
 <div id="titleOv" class="ov" style="background:linear-gradient(140deg,#141428,#1a1a35 40%,#0f1a2e)">
 <div class="panel" style="background:transparent;border:none">
-  <canvas id="heroCanvas" width="240" height="96" style="margin:0 auto;display:block;max-width:100%"></canvas>
+  <canvas id="heroCanvas" width="300" height="96" style="margin:0 auto;display:block;max-width:100%"></canvas>
   <h1 style="font-size:30px;font-weight:900;color:#fff;margin:4px 0 0;text-shadow:0 0 25px rgba(116,192,252,.3)">Dino真是個小天才</h1>
   <p style="color:rgba(255,255,255,.35);font-size:12px;margin:0 0 20px;letter-spacing:2px">Cute Dungeon Adventure</p>
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:10px">
@@ -67,7 +67,7 @@
     <button class="btn btn-p" onclick="window._showCoopLobby()" style="width:210px;padding:12px;font-size:14px"> 雙人通關</button>
     <div style="color:rgba(255,255,255,.35);font-size:9px;margin:-4px 0">兩人連線合作打Boss</div>
     <button class="btn btn-d" onclick="showCharSelect('practice')" style="width:210px;padding:12px;font-size:14px"> 練習模式</button>
-    <div id="continueAdventureSlot" style="display:none;width:210px;margin-top:10px;padding-top:14px;border-top:1px solid rgba(172,185,207,.2)"></div>
+    <div id="continueAdventureSlot" style="display:none;width:210px;box-sizing:border-box;align-self:center;margin:10px auto 0;padding-top:14px;border-top:1px solid rgba(172,185,207,.2)"></div>
   </div>
   <div style="color:rgba(255,255,255,.55);font-size:10px;line-height:1.6">
     左搖桿/方向鍵 移動，右搖桿/Space 射擊，E集氣 Q閃避 W技能
@@ -201,7 +201,7 @@
    <button id="editLayoutBtn" type="button" class="menu-control settings-inventory"><span data-emblem="target"></span><span><strong>手機按鍵與畫面配置</strong><small>拖曳位置、兩指縮放、設定畫面大小與黑邊</small></span></button>
    <div id="settingsStats" style="display:none"></div>
   </div>
-  <footer class="settings-actions"><button class="menu-control primary" onclick="closeSettings()">繼續冒險</button><button class="menu-control quiet" onclick="settingsGoHome()">返回首頁</button></footer>
+  <footer class="settings-actions"><button class="menu-control quiet" onclick="settingsGoHome()">返回首頁</button><button class="menu-control primary" onclick="closeSettings()">繼續冒險</button></footer>
  </section>
 </div>
 

@@ -17,7 +17,7 @@ import { setHudVW, setHudVH } from "./hud.js";
 import { par, filterPar, burst } from "./render.js";
 import { rn } from "./utils.js";
 import { rebindActiveTouches, resetControls } from "./input.js";
-import { getPracticeMode } from "./practice.js";
+import { getPracticeMode, showCardTip } from "./practice.js";
 
 // ── 依注入的 deps (由 initUi 設定) ─────────────────────────────────────────
 let _getG = () => null;
@@ -124,7 +124,7 @@ export function show(n) {
   if (n === "title") {
     $('titleOv').style.display='flex';
     let button=$('continueAdventureBtn');
-    if(!button){button=document.createElement('button');button.id='continueAdventureBtn';button.className='btn btn-g';button.style.cssText='width:210px;padding:12px;font-size:14px;margin:0 auto;display:none';button.onclick=continueAdventure;$('continueAdventureSlot').appendChild(button);}
+    if(!button){button=document.createElement('button');button.id='continueAdventureBtn';button.className='menu-control primary';button.style.cssText='width:100%;box-sizing:border-box;padding:12px;font-size:14px;margin:0;display:none';button.onclick=continueAdventure;$('continueAdventureSlot').appendChild(button);}
     const session=_getG();button.style.display=session?._homeSuspended?'block':'none';button.textContent='繼續冒險 · Lv'+(session?.level||1);$('continueAdventureSlot').style.display=session?._homeSuspended?'block':'none';
   }
   else if (n === "tut") $("tutOv").style.display = "flex";
@@ -156,7 +156,21 @@ export function resumeGame(cb) {
 }
 
 // ── resetSessionUi ────────────────────────────────────────────────────────────
+let chaosNoticeTimer;
+export function showChaosNotice(notice,session=_getG()){
+ if(!notice?.gains?.length||!session||session._shownChaosNotice===notice.id)return;
+ session._shownChaosNotice=notice.id;clearTimeout(chaosNoticeTimer);document.getElementById('chaosNotice')?.remove();
+ const panel=document.createElement('section');panel.id='chaosNotice';panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');
+ panel.style.cssText='position:fixed;top:max(76px,env(safe-area-inset-top));right:12px;z-index:10000;max-width:calc(100vw - 24px);width:290px;box-sizing:border-box;padding:14px 16px;border:1px solid #bda063;border-radius:12px;background:rgba(16,20,35,.97);color:#e4dfd2;box-shadow:0 8px 26px rgba(0,0,0,.3);pointer-events:auto';
+ const title=document.createElement('strong');title.textContent='混沌核心 · Lv'+notice.level;title.style.cssText='display:block;color:#e6c78a;font-size:15px;margin-bottom:7px';panel.appendChild(title);
+ const summary=document.createElement('div');summary.textContent='本次增加 '+notice.gains.length+' 項能力'+(notice.level>1?' · 累計 '+notice.total+' 項':'');summary.style.cssText='font-size:11px;color:#acb2bf;margin-bottom:8px';panel.appendChild(summary);
+ for(const gain of notice.gains){const line=document.createElement('div');line.textContent=gain;line.style.cssText='font-size:13px;line-height:1.8';panel.appendChild(line);}
+ const close=document.createElement('button');close.textContent='知道了';close.className='menu-control quiet';close.style.cssText='margin-top:10px;padding:5px 12px;font-size:11px';close.onclick=()=>panel.remove();panel.appendChild(close);document.body.appendChild(panel);
+ chaosNoticeTimer=setTimeout(()=>panel.remove(),12000);
+}
+
 export function resetSessionUi() {
+  clearTimeout(chaosNoticeTimer);document.getElementById("chaosNotice")?.remove();
   $("combo").textContent = "";
   const ct = _getCTimer();
   if (ct) { clearTimeout(ct); _setCTimer(null); }
@@ -335,6 +349,7 @@ export function openSettings() {
 }
 
 export function closeSettings() {
+  cancelSettingsCardPress();const tip=$("cardTip");if(tip)tip.style.display="none";
   _settingsOpen = false;
   const ov = document.getElementById("settingsOv");
   if (ov) ov.style.display = "none";
@@ -367,9 +382,26 @@ export function confirmAdventureRestart(proceed){
  document.body.appendChild(ov);const buttons=ov.querySelectorAll('button');buttons[0].onclick=()=>{ov.remove();continueAdventure();};buttons[1].onclick=()=>{ov.remove();session._homeRestartApproved=true;proceed();};buttons[0].focus();
 }
 
+let cancelSettingsCardPress=()=>{};
+function bindSettingsCardDetails(container,session,player){
+ cancelSettingsCardPress();
+ for(const row of container.querySelectorAll('[data-card-id]')){
+  let timer=null,start=null;
+  const cancel=()=>{clearTimeout(timer);timer=null;start=null;};
+  const open=()=>{if(!_settingsOpen||_getG()!==session||!row.isConnected||container.style.display==='none')return;
+   showCardTip(Number(row.dataset.cardId),{level:Number(row.dataset.cardLevel),charType:player.charType||session.charType});};
+  row.addEventListener('pointerdown',e=>{if(!e.isPrimary||e.button!==0)return;cancelSettingsCardPress();cancelSettingsCardPress=cancel;start={x:e.clientX,y:e.clientY,id:e.pointerId};timer=setTimeout(()=>{timer=null;open();},450);});
+  row.addEventListener('pointermove',e=>{if(start&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>10)cancel();});
+  for(const event of ['pointerup','pointercancel','pointerleave'])row.addEventListener(event,cancel);
+  row.addEventListener('contextmenu',e=>e.preventDefault());
+  row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();cancel();open();}});
+ }
+}
+
 export function toggleStatsPanel() {
   const g = _getG();
-  const inv = _getInv();
+  const client=!!(g?.p2&&g._remoteStateSeq!==undefined&&_getIsCoopMode());
+  const inv=client?(g._clientInventory||[]):_getInv();
   const ss = document.getElementById("settingsStats");
   if (!ss) return;
   const isOpen = ss.style.display !== "none";
@@ -378,15 +410,15 @@ export function toggleStatsPanel() {
   } else {
     ss.style.display = "block";
     if (!g) { ss.innerHTML = '<div style="color:rgba(255,255,255,.4)">遊戲未開始</div>'; return; }
-    const p = g.p;
+    const p=client?g.p2:g.p;
     let h = '<h3 class="settings-section-title">'+pixelEmblem('shield')+'角色能力</h3>';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-bottom:8px">';
-    const _cc = charCfg(g.charType);
+    const _cc=charCfg(p.charType||g.charType);
     const _atkSpd = _cc.atkType === "melee" && _cc.atkCD > 0
       ? (1000 / (_cc.atkCD * (p.fr || 1))).toFixed(1) + "次/秒"
       : Math.round(1000 / (115 * (p.fr || 1))) + "發/秒";
     const ps = [
-      ["等級", g.level], ["攻擊力", Math.round(p.atk)],
+      ["等級", client?g.p2Level:g.level], ["攻擊力", Math.round(p.atk)],
       ["攻速", _atkSpd], ["攻擊距離", _cc.atkType === "ranged" ? "遠程" : Math.round(PR * 5)],
       ["移速", p.speed?.toFixed(1)],
       ["暴擊率", Math.round((p.crit || .05) * 100) + "%"], ["護甲", Math.round((p.armor || 0) * 100) + "%"],
@@ -401,15 +433,15 @@ export function toggleStatsPanel() {
     ps.forEach(([k, v]) => { h += `<div class="settings-stat-row"><span style="color:rgba(255,255,255,.5)">${k}</span><span style="color:#fff;font-weight:700">${v}</span></div>`; });
     h += '</div>';
     if (inv.length) {
-      h += '<div style="color:rgba(255,255,255,.4);font-size:10px;margin-bottom:4px">卡牌（' + inv.length + '/52）</div>';
+      h += '<div style="color:rgba(255,255,255,.4);font-size:10px;margin-bottom:4px">卡牌（' + inv.length + '/'+C.length+'）· 長按查看效果</div>';
       h += '<div class="settings-card-list">';
       inv.forEach(ci => {
         const cd = C.find(c => c.id === ci.id);
-        if (cd) h += `<div class="settings-card-row" style="--card-color:${RC[cd.r]}">${cardEmblem(cd,true)}<span>${cd.n}</span><b>${cd.r} · Lv${ci.lv+1}</b></div>`;
+        if (cd) h += `<div class="settings-card-row" data-card-id="${ci.id}" data-card-level="${ci.lv}" role="button" tabindex="0" aria-label="${cd.n} Lv${ci.lv+1}，長按查看效果" style="--card-color:${RC[cd.r]};user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y;cursor:pointer">${cardEmblem(cd,true)}<span>${cd.n}</span><b>${cd.r} · Lv${ci.lv+1}</b></div>`;
       });
       h += '</div>';
     }
-    ss.innerHTML = h;
+    ss.innerHTML=h;bindSettingsCardDetails(ss,g,p);
   }
 }
 

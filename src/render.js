@@ -1,7 +1,6 @@
 import {recordRoleEffect,drawRoleEvents} from './role-card-art.js';
 import {drawArt} from './generated-art.js';
 import {drawEnemyCreature} from './creature-art.js';
-import {drawBossRoute} from './boss-telegraph-art.js';
 import {drawBossPatternCore} from './boss-patterns.js';
 import { drawCardPlayerLayer, drawCardStatus } from './card-vfx.js';
 import { drawPixelMelee } from "./melee-sprite.js";
@@ -576,21 +575,6 @@ export function drawPlayer(x, y, r, t, col, face, playerState, renderOptions) {
 }
 
 /* ═══ draw enemy ═══ */
-// Continuous ground airflow: muted edges, a bright narrow direction tip.
-function drawHuntWindRoute(c,x,y,angle,length,now){
- c.save();c.translate(x,y+4);c.rotate(angle);
- const pulse=.85+Math.sin(now/140)*.08;
- for(const side of [-1,1]){
-  c.globalAlpha=.18*pulse;c.fillStyle='#a78a97';
-  c.beginPath();c.moveTo(12,side*9);c.bezierCurveTo(length*.3,side*11,length*.7,side*5,length,0);
-  c.bezierCurveTo(length*.68,side*2,length*.3,side*5,12,side*6);c.closePath();c.fill();
-  c.globalAlpha=.36*pulse;c.strokeStyle='#c5a5b0';c.lineWidth=1;c.lineCap='round';
-  c.beginPath();c.moveTo(18,side*7);c.bezierCurveTo(length*.35,side*8,length*.76,side*3,length-7,0);c.stroke();
- }
- c.restore();
- drawArt(c,'wind',4,x+Math.cos(angle)*(length-10),y+4+Math.sin(angle)*(length-10),27,11,{angle,stretch:true,alpha:.48});
-}
-
 export function drawEnemy(e) {
   if(e._bossCore){drawBossPatternCore(cx,e,performance.now());return;}
   drawCardStatus(cx,e,performance.now());
@@ -650,7 +634,6 @@ export function drawEnemy(e) {
   if (hpR < 1) { const bw = r * 2, bh = 3; cx.fillStyle = "rgba(0,0,0,.3)"; cx.fillRect(x - bw / 2, cy - r - (tier >= 2 ? 9 : 6), bw, bh); cx.fillStyle = hpR > .5 ? "#51CF66" : hpR > .25 ? "#FFA94D" : "#FF6B6B"; cx.fillRect(x - bw / 2, cy - r - (tier >= 2 ? 9 : 6), bw * hpR, bh); }
   // The body identifies the role; active moves use the same authored ground artwork.
   const role=e.role||ROLE_NORMAL;
-  if(role===ROLE_DASHER&&e.dashState===1)drawBossRoute(cx,'devil-route',0,{x,y:cy},{x:x+e.dashDx*50,y:cy+e.dashDy*50},18,Math.floor(performance.now()/120)%4,.85);
   if(role===ROLE_DASHER&&e.dashState===2)drawArt(cx,'wind',4,x-e.dashDx*12,cy-e.dashDy*12,r*2.8,r*1.3,{stretch:true,angle:Math.atan2(e.dashDy,e.dashDx),alpha:.45});
   if(role===ROLE_SHIELD)drawArt(cx,'guardian',1,x,cy,r*2.3,r*2.2,{alpha:.25});
   if(role===ROLE_FLANKER)drawArt(cx,'wind',4,x,cy+r,r*2,r*.7,{stretch:true,alpha:.35});
@@ -658,10 +641,7 @@ export function drawEnemy(e) {
   // 暴走視覺
   if(e._tauntEnd>performance.now())drawArt(cx,'guardian',6,x,cy-r-13,17,17,{alpha:.75});
   if(e._rage&&e._rageDashes<3){
-   if(e._rageState==='charge'){
-    const angle=Math.atan2(e._rageDy||0,e._rageDx||1),distance=e.role===ROLE_SHOOTER?145:220;
-    drawHuntWindRoute(cx,x,cy,angle,distance,performance.now());
-   }else if(e._rageState==='dash')drawArt(cx,'wind',4,x-(e._rageDx||0)*25,cy-(e._rageDy||0)*25,43,17,{angle:Math.atan2(e._rageDy||0,e._rageDx||1),stretch:true,alpha:.5});
+   if(e._rageState==='dash')drawArt(cx,'wind',4,x-(e._rageDx||0)*25,cy-(e._rageDy||0)*25,43,17,{angle:Math.atan2(e._rageDy||0,e._rageDx||1),stretch:true,alpha:.5});
   }
   // co-op shield bubble + circles
   if (e._coopShield && e._coopCircles) {
@@ -698,7 +678,7 @@ let titleClock=0,titleLastTick=0,titleAttack=-1;
   titleClock+=elapsed;const hctx=hc.getContext('2d'),originalCx=cx,originalG=g;
   try{
    cx=hctx;g=titleScene;const p=titleScene.p,face=Math.cos(titleClock/1100)>=0?1:-1;
-   p.x=120+Math.sin(titleClock/1100)*38;p.y=54;p.face=face;p._moveDir={x:face,y:0};titleScene.ad={x:face,y:0};
+   p.x=190+Math.sin(titleClock/1100)*65;p.y=54;p.face=face;p._moveDir={x:face,y:0};titleScene.ad={x:face,y:0};
    const attack=Math.floor(titleClock/520),age=titleClock%520;
    if(attack!==titleAttack){titleAttack=attack;titleScene._atkAnim={active:true,startT:now-age,angle:face>0?0:Math.PI,_qiSpin:(attack+1)%4===0};
     if((attack+1)%4===0)recordRoleEffect(titleScene,'qi',p.x,p.y,face>0?0:Math.PI,{owner:'p1',follow:true,life:400,range:62,level:1});}

@@ -152,3 +152,10 @@
 | skillAimDirection | src/skills.js | 技能真正發射當下重新找敵，狙擊從實際槍口瞄準。 |
 
 ♻️ 沿用card、doUlt、recordRoleEffect、drawRoleEvents、drawArt、getGunnerMuzzle、drawPlayer、drawShadowClones、continueAdventure、generate2dsprite處理器。🆕 上述共用函式（原升級逐級堆疊、P2通用爆炸、只有P1召喚球、狙擊舊方向）。
+
+♻️ 沿用 drawEnemy 與 drawEnemyCreature：移除小怪獵殺／普通衝刺預告路線，蓄力與衝刺動作沿用。drawHuntWindRoute已移除，前方歷史表列不再為現有函式。
+
+| bindSettingsCardDetails | src/ui.js | 設定卡片450ms長按，滑動10px取消，沿用showCardTip顯示持有等級。 |
+| showChaosNotice | src/ui.js | 顯示混沌核心實際增益清單、12秒提示及去重，雙人各自接收。 |
+
+♻️ 沿用 showCardTip、rndBuff、applyCardLevel、drawTitleHero、continueAdventure。🆕 上述函式（設定卡列沒有互動、混沌隨機增益沒有玩家通知）。showCardTip(cid,options={})新增level及charType選項，原練習入口仍列所有等級。rndBuff回傳實際增益文字。

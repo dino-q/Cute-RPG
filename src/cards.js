@@ -16,7 +16,8 @@ function applyCardLevel(entry,apply,level,player){
  if(previous&&previous.level>=level)return;
  if(entry.n==='混沌核心'){
   const count=[3,5,8][level]-[0,3,5,8][previous?previous.level+1:0];
-  for(let i=0;i<count;i++)rndBuff(player);ledger[entry.id]={level,add:{},mul:{},max:{},armor:1,cooldown:1};return;
+  const gains=[];for(let i=0;i<count;i++)gains.push(rndBuff(player));
+  player._chaosNotice={id:Date.now()+':'+Math.random(),level:level+1,total:[3,5,8][level],gains};ledger[entry.id]={level,add:{},mul:{},max:{},armor:1,cooldown:1};return;
  }
  const seed={...CARD_ADDITIVE,...CARD_MULTIPLIERS,...CARD_MAX,armor:0,hp:50,fx:{}},sample={...seed,fx:{}};
  apply(sample);
@@ -133,4 +134,17 @@ card("創世神力","","SSR","atk",["攻+15 攻速+30% 暴+15%","攻+25 攻速+4
 
 
 
-export function rndBuff(s){const buffs=[()=>s.atk+=rn(3,8)|0,()=>{s.maxHp+=rn(50,100)|0;s.hp=Math.min(s.hp+50,s.maxHp)},()=>s.dodge=Math.min(1,(s.dodge||0)+rn(.08,.15)),()=>s.fr*=rn(.8,.92),()=>s.crit=(s.crit||.05)+rn(.05,.15),()=>s.ls=(s.ls||0)+(rn(5,15)|0),()=>s.armor=1-(1-s.armor)*rn(.8,.92)];buffs[buffs.length*Math.random()|0]();}
+export function rndBuff(s){
+ const before={atk:s.atk,maxHp:s.maxHp,hp:s.hp,dodge:s.dodge||0,fr:s.fr,crit:s.crit??.05,ls:s.ls||0,armor:s.armor||0};
+ const buffs=[()=>s.atk+=rn(3,8)|0,()=>{s.maxHp+=rn(50,100)|0;s.hp=Math.min(s.hp+50,s.maxHp)},()=>s.dodge=Math.min(1,(s.dodge||0)+rn(.08,.15)),()=>s.fr*=rn(.8,.92),()=>s.crit=Math.min(1,(s.crit??.05)+rn(.05,.15)),()=>s.ls=(s.ls||0)+(rn(5,15)|0),()=>s.armor=1-(1-s.armor)*rn(.8,.92)];
+ const kind=buffs.length*Math.random()|0;buffs[kind]();const percent=n=>(n*100).toFixed(1).replace(/\.0$/,'');
+ return [
+  '攻擊力＋'+(s.atk-before.atk),
+  '生命上限＋'+(s.maxHp-before.maxHp)+'（回復'+Math.round(s.hp-before.hp)+'HP）',
+  '閃避率＋'+percent(s.dodge-before.dodge)+'%',
+  '攻速＋'+percent(before.fr/s.fr-1)+'%',
+  '暴擊率＋'+percent(s.crit-before.crit)+'%',
+  '擊殺回血＋'+(s.ls-before.ls)+'HP',
+  '護甲＋'+percent(s.armor-before.armor)+'%'
+ ][kind];
+}

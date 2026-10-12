@@ -81,26 +81,28 @@ export const PRAC_ENEMIES = [
 ];
 
 // ─── showCardTip ──────────────────────────────────────────────────────────────
-export function showCardTip(cid) {
+export function showCardTip(cid,options={}) {
   const c = C.find(x => x.id === cid); if (!c) return;
   const RC2 = { R: "#74C0FC", SR: "#DA77F2", SSR: "#FFD43B" };
   const tp2 = c.tp === "atk" ? "攻擊" : "被動";
-  const charLabel = c.charReq ? ({ gunner: "槍手專屬", swordsman: "劍士專屬", tank: "坦克專屬" }[c.charReq] || "") : "通用";
+  const charLabel = c.charReq ? ({ gunner: "槍手專屬", swordsman: "劍士專屬", tank: "坦克專屬", assassin:"刺客專屬" }[c.charReq] || "") : "通用";
   $("ctEmoji").innerHTML = cardEmblem(c);
   $("ctName").style.color = RC2[c.r] || "#fff";
   $("ctName").textContent = c.n;
   $("ctMeta").innerHTML = `<span style="color:${RC2[c.r]}">${c.r}</span> · ${tp2} · ${charLabel}${c.once ? " · 限定一次" : ""}`;
   let lvHtml = "";
   // 影分身：依角色顯示不同說明
-  const _tipCt = _deps.getG() ? _deps.getG().charType : (_deps.getCharType() || "gunner");
+  const _tipCt = options.charType || (_deps.getG() ? _deps.getG().charType : (_deps.getCharType() || "gunner"));
   const _cloneDescs = c.n === "影分身" ? c.d.map(() => _tipCt === "assassin" ? "每3秒召喚分身攻擊敵人" : _tipCt === "gunner" ? "100%前後攻擊" : "100%全方位攻擊") : null;
   c.d.forEach((desc, i) => {
+    if(Number.isInteger(options.level)&&i!==options.level)return;
     if (_cloneDescs) desc = _cloneDescs[i];
     const lvCol = i === 0 ? "#74C0FC" : i === 1 ? "#DA77F2" : "#FFD43B";
     lvHtml += `<div style="padding:4px 8px;margin:3px 0;border-radius:6px;background:rgba(255,255,255,.04);border-left:3px solid ${lvCol}">
       <span style="color:${lvCol};font-weight:900;font-size:10px">Lv.${i + 1}</span>
       <span style="color:rgba(255,255,255,.7);margin-left:6px">${desc}</span></div>`;
   });
+  if(Number.isInteger(options.level))lvHtml='<div style="color:#c3c8d4;font-size:10px;margin-bottom:6px">目前持有等級的總效果</div>'+lvHtml;
   $("ctLevels").innerHTML = lvHtml;
   $("cardTip").style.display = "flex";
 }

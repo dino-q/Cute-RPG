@@ -1,3 +1,4 @@
+import {showChaosNotice} from './ui.js';
 import {drawArt} from './generated-art.js';
 import {animateChestOpening} from './treasure-art.js';
 import { revealCard } from './card-vfx.js';
@@ -116,7 +117,7 @@ function pickCard(cd,add,player,inventory){
  if(!g.pickOpen||g._localPickTransition)return;
  const lv=add(cd.id);if(lv<0)return;
  const ctx=_currentPickCtx;g.pickOpen=false;g._localPickTransition=true;_currentPickCtx=null;
- cd.ap[lv](player);revealCard(player,cd);sfx('levelup');
+ cd.ap[lv](player);revealCard(player,cd);if(cd.n==='混沌核心')showChaosNotice(player._chaosNotice,g);sfx('levelup');
  if(player._resetUlt){player._resetUlt=false;g.ultCharge=0;g.ultCdEnd=0;}
  if(cd.n==='命運轉輪'){
   const count=Math.max(1,inventory.length-1),entry=inventory.find(x=>x.id===cd.id);
