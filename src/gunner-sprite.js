@@ -1,3 +1,4 @@
+import {gunRigPlacement,drawRiggedGun,drawRiggedHands} from './weapon-rig.js';
 import {drawAttachedCardLayer} from './attached-card-art.js';
 import {ART_REVISION} from './generated-art.js';
 import { cardWeaponAtlas, drawCardGun } from './card-vfx.js';
@@ -39,9 +40,10 @@ function spritePlacement(x, y, radius, direction, shotAt) {
   return { ...pose, scale, elapsed, left: x - 32 * scale - pose.x * recoil, top: y - 40 * scale - pose.y * recoil };
 }
 
-export function getGunnerMuzzle(x, y, radius, direction, shotAt) {
+export function getGunnerMuzzle(x, y, radius, direction, shotAt,player) {
   if (!atlas || !contract) return null;
   const pose = spritePlacement(x, y, radius, direction, shotAt);
+  const rig=gunRigPlacement(player,pose.frame,pose.left,pose.top,pose.scale,pose.index);if(rig)return rig.muzzle;
   return { x: pose.left + pose.frame.muzzle[0] * pose.scale, y: pose.top + pose.frame.muzzle[1] * pose.scale };
 }
 
@@ -50,12 +52,13 @@ export function drawPixelGunner(context, x, y, radius, direction, shotAt, player
   const pose = spritePlacement(x, y, radius, direction, shotAt);
   context.save(); context.imageSmoothingEnabled = false; context.shadowBlur = 0;
   const attachment={left:pose.left,top:pose.top,scale:pose.scale,cell:64,torso:pose.frame.torso,direction:pose.index,effects};
-  drawAttachedCardLayer(context,player,attachment,performance.now(),false);
+  const rig=gunRigPlacement(player,pose.frame,pose.left,pose.top,pose.scale,pose.index);
+  drawAttachedCardLayer(context,player,attachment,performance.now(),false);if(rig?.back)drawRiggedGun(context,rig);
   drawSpriteWithEyes(context, cardWeaponAtlas(atlas,'gunner-pixel',player,contract), 'gunner-pixel', pose.frame.x, pose.frame.y, 64, Math.round(pose.left), Math.round(pose.top), 64 * pose.scale);
-  drawAttachedCardLayer(context,player,attachment,performance.now(),true);
-  drawCardGun(context,player,getGunnerMuzzle(x,y,radius,direction,shotAt),{x:Math.cos(pose.index*Math.PI/4),y:Math.sin(pose.index*Math.PI/4)},pose.scale,performance.now());
+  if(rig&&!rig.back)drawRiggedGun(context,rig);if(rig)drawRiggedHands(context,atlas,player,pose.frame,attachment);drawAttachedCardLayer(context,player,attachment,performance.now(),true);
+  drawCardGun(context,player,getGunnerMuzzle(x,y,radius,direction,shotAt,player),{x:Math.cos(pose.index*Math.PI/4),y:Math.sin(pose.index*Math.PI/4)},pose.scale,performance.now(),!!rig);
   if (pose.elapsed >= 0 && pose.elapsed < 60) {
-    const muzzle = getGunnerMuzzle(x, y, radius, direction, shotAt);
+    const muzzle = getGunnerMuzzle(x, y, radius, direction, shotAt,player);
     context.fillStyle = '#ffe066';
     context.fillRect(Math.round(muzzle.x - 2), Math.round(muzzle.y - 2), 4, 4);
     context.fillStyle = '#fff'; context.fillRect(Math.round(muzzle.x - 1), Math.round(muzzle.y - 1), 2, 2);

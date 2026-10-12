@@ -1,3 +1,4 @@
+import {weaponStyle} from './weapon-rig.js';
 import {legendProfile,drawLegendPlayerLayer,drawLegendBullet,drawLegendStrike} from './legend-card-art.js';
 import {drawRoleEvents,drawRolePlayerLayer,drawRoleGun,drawRoleBullet} from './role-card-art.js';
 import {drawArt,artFrame,artThumbnail,directionIndex} from './generated-art.js';
@@ -23,68 +24,57 @@ export function drawCardPlayerLayer(c,p,x,y,r,now,front=false){
 // Replace only weapon pixels outside the protected head/body, then attach approved props.
 // Work is cached once per source/tier, never performed per frame.
 const variants=new WeakMap();
+
 export function cardWeaponAtlas(image,key,p,poseContract){
- const theme=pick(p)||(key==='tank-shield'&&(p?.thorns>0)?'thorn':p?._guardAura?'star':p?._qiEvery?'ice':p?._drawSlash||p?._ironWill?'steel':p?._roleCards?.['致命打擊']?'star':p?._atkDodge?'whirl':null),armored=!!(p?.projImmune||p?._iwActive)&&key!=='tank-shield';
- if(!image||(!theme&&!armored)||!artFrame('weapon-variants')||(armored&&!artFrame('fitted-armor')))return image;
- if(key==='gunner-pixel'&&!armored)return image;
+ const theme=weaponStyle(p),legend=legendProfile(p),armored=!!(p?.projImmune||p?._iwActive)&&key!=='tank-shield';
+ if(!image||(!theme&&!legend&&!armored)||!artFrame('weapon-variants')||(armored&&!artFrame('fitted-armor')))return image;
  let cache=variants.get(image);if(!cache){cache=new Map();variants.set(image,cache);}
- const legendary=legendProfile(p);
- const id=(legendary?.key||'')+':'+key+':'+theme+':'+armored;if(cache.has(id))return cache.get(id);
+ const id=key+':'+theme+':'+legend?.key+':'+armored;if(cache.has(id))return cache.get(id);
  const cv=document.createElement('canvas');cv.width=image.width;cv.height=image.height;
  const c=cv.getContext('2d',{willReadFrequently:true});c.drawImage(image,0,0);
- const cell=key.includes('action')?96:64,data=c.getImageData(0,0,cv.width,cv.height),attachments=[],plates=[];
+ const cell=key.includes('action')?96:64,data=c.getImageData(0,0,cv.width,cv.height),plates=[];
  for(let sy=0;sy<cv.height;sy+=cell)for(let sx=0;sx<cv.width;sx+=cell){
-  const role=key==='melee-pixel'?['swordsman','tank','assassin'][sy/64]:null;
-  const frames=role?poseContract?.roles[role]:poseContract?.frames;
-  const pose=frames?.find(f=>f.x===sx&&f.y===sy);
+  const role=key==='melee-pixel'?['swordsman','tank','assassin'][sy/64]:null,frames=role?poseContract?.roles[role]:poseContract?.frames,pose=frames?.find(f=>f.x===sx&&f.y===sy);
   const direction=role?sx/cell:frames?.indexOf(pose)%8;
   if(armored&&pose?.torso)plates.push({sx,sy,torso:pose.torso,direction});
-  if(!theme||key==='gunner-pixel'||key==='melee-pixel')continue;
   if(key==='tank-shield'){
-   const dir=sx/64,bounds=[[26,20,5,24],[23,20,10,24],[25,20,13,24],[26,20,12,24],[26,20,4,24],[23,20,11,24],[24,20,15,24],[26,20,11,24]][dir%8];attachments.push({sx,sy,shield:bounds});continue;
+   const palette=legend?.key==='genesis'?['#795323','#efc464','#fff2c4']:legend?.key==='infinity-blade'?['#254b4b','#75d2b9','#e4fff5']:CARD_PALETTES[theme]||['#294632','#83b965','#e5f3bc'];
+   for(let yy=0;yy<cell;yy++)for(let xx=0;xx<cell;xx++){const at=((sy+yy)*cv.width+sx+xx)*4;if(data.data[at+3]<128)continue;const light=Math.max(data.data[at],data.data[at+1],data.data[at+2]);if(light<45)continue;const col=palette[light<110?0:light<205?1:2];for(let k=0;k<3;k++)data.data[at+k]=parseInt(col.slice(1+k*2,3+k*2),16);}
+   continue;
   }
-  const assassin=key==='assassin-action',points=[];
-  for(let yy=0;yy<cell;yy++)for(let xx=0;xx<cell;xx++){
-   const at=((sy+yy)*cv.width+sx+xx)*4;if(data.data[at+3]<128)continue;
-   const face=assassin?yy<65&&xx>=35&&xx<=61:xx>=30&&xx<=66&&yy>=30&&yy<=68;
-   const body=assassin?xx>=42&&xx<=53&&yy>=70&&yy<=85:xx>=40&&xx<=58&&yy>=69&&yy<=91;
-   if(face||body)continue;
-   const red=data.data[at],green=data.data[at+1],blue=data.data[at+2],hi=Math.max(red,green,blue),lo=Math.min(red,green,blue);
-   if(hi<135||hi-lo>75)continue;points.push([xx,yy]);data.data[at+3]=0;
+  if(!theme&&!legend)continue;
+  const mask=pose?.weaponMask||(pose?.gun?{rects:pose.gun.mask,protect:pose.gun.protect}:null);if(!mask)continue;
+  const inside=(x,y,r)=>x>=r[0]&&y>=r[1]&&x<r[0]+r[2]&&y<r[1]+r[3];
+  for(const rect of mask.rects)for(let yy=rect[1];yy<rect[1]+rect[3];yy++)for(let xx=rect[0];xx<rect[0]+rect[2];xx++){
+   const at=((sy+yy)*cv.width+sx+xx)*4;if(!data.data[at+3])continue;
+   const red=data.data[at],green=data.data[at+1],blue=data.data[at+2];
+   const skin=red>155&&green>95&&blue>55&&red>green*1.12&&green>blue*1.05;
+   if(skin)continue;
+   if((mask.protect||[]).some(r=>inside(xx,yy,r))){
+    // An authored stencil may include a blade behind the hair. Keep the face and clothing.
+    const metal=Math.max(red,green,blue)>110&&Math.max(red,green,blue)-Math.min(red,green,blue)<45;
+    if(!metal||yy>=69||(xx>=39&&xx<=59&&yy>=54&&yy<=67))continue;
+   }
+   data.data[at+3]=0;
   }
-  if(assassin&&pose?.hands){attachments.push({sx,sy,hands:pose.hands});continue;}
-  if(!points.length)continue;
-  const hand=[48,77],near=points.reduce((a,b)=>Math.hypot(b[0]-hand[0],b[1]-hand[1])<Math.hypot(a[0]-hand[0],a[1]-hand[1])?b:a);
-  const tip=points.reduce((a,b)=>Math.hypot(b[0]-near[0],b[1]-near[1])>Math.hypot(a[0]-near[0],a[1]-near[1])?b:a);
-  attachments.push({sx,sy,x:near[0],y:near[1],angle:Math.atan2(tip[1]-near[1],tip[0]-near[0]),size:Math.min(36,Math.max(20,Math.hypot(tip[0]-near[0],tip[1]-near[1])+7))});
  }
  c.putImageData(data,0,0);
  for(const plate of plates){
-  const [x,y,w,h]=plate.torso;
-  drawArt(c,'fitted-armor',plate.direction,plate.sx+x,plate.sy+y,w,h);
-  // Restore the original visible skin over the fitted chest plate: face and hands stay readable.
+  const [x,y,w,h]=plate.torso;drawArt(c,'fitted-armor',plate.direction,plate.sx+x,plate.sy+y,w,h);
   for(let yy=Math.floor(y-h/2);yy<=Math.ceil(y+h/2);yy++)for(let xx=Math.floor(x-w/2);xx<=Math.ceil(x+w/2);xx++){
    const at=((plate.sy+yy)*cv.width+plate.sx+xx)*4,red=data.data[at],green=data.data[at+1],blue=data.data[at+2];
-   if(data.data[at+3]>128&&red>155&&green>95&&blue>55&&red>green*1.12&&green>blue*1.05){
-    c.fillStyle='rgb('+red+','+green+','+blue+')';c.fillRect(plate.sx+xx,plate.sy+yy,1,1);
-   }
+   if(data.data[at+3]>128&&red>155&&green>95&&blue>55&&red>green*1.12&&green>blue*1.05){c.fillStyle='rgb('+red+','+green+','+blue+')';c.fillRect(plate.sx+xx,plate.sy+yy,1,1);}
   }
- }
- for(const a of attachments){
-  if(a.shield){const [x,y,w,h]=a.shield;c.clearRect(a.sx,a.sy,cell,cell);drawArt(c,theme==='thorn'?'guardian':'weapon-variants',theme==='thorn'?4:weaponRows[theme]*4+2,a.sx+x+w/2,a.sy+y+h/2,w,h);continue;}
-  if(legendary&&!a.shield){if(a.hands){for(const [x,y,angle]of a.hands)drawArt(c,legendary.group,legendary.blade,a.sx+x,a.sy+y,18,5,{stretch:true,angle,anchorX:0});}else drawArt(c,legendary.group,legendary.blade,a.sx+a.x,a.sy+a.y,a.size,8,{stretch:true,angle:a.angle,anchorX:0});continue;}
-  if(a.hands){for(const [x,y,angle]of a.hands)drawArt(c,'dagger-single',weaponRows[theme],a.sx+x,a.sy+y,16,16,{angle:angle+Math.PI/4,anchorX:.22,anchorY:.85});continue;}
-  drawArt(c,'weapon-variants',weaponRows[theme]*4+1,a.sx+a.x,a.sy+a.y,a.size,a.size,{angle:a.angle+Math.PI/4,anchorX:.2,anchorY:.85});
  }
  cache.set(id,cv);return cv;
 }
-export function drawCardGun(c,p,muzzle,dir,scale,now){
+export function drawCardGun(c,p,muzzle,dir,scale,now,rigged=false){
  if(!p||!muzzle)return;drawRoleGun(c,p,muzzle,dir,scale,now);const k=pick(p);if(!k&&!p._minigun&&!p._crossbow&&!Object.keys(p._roleCards||{}).length)return;
  const a=Math.atan2(dir.y,dir.x),mini=p._minigun;
  const barrage=!!p._roleCards?.['彈幕之王'];
  const group=mini||p._crossbow||barrage?'arsenal':'weapon-variants',frame=mini?Math.min(2,Math.max(0,mini-1)):barrage?2:p._crossbow?3:(weaponRows[k]||0)*4;
  const width=(mini?24:p._crossbow?22:18)*scale;
- drawArt(c,group,frame,muzzle.x-Math.cos(a)*width*.46,muzzle.y-Math.sin(a)*width*.46,width,15*scale,{angle:a});
+ if(!rigged)drawArt(c,group,frame,muzzle.x-Math.cos(a)*width*.46,muzzle.y-Math.sin(a)*width*.46,width,15*scale,{angle:a});
  if(p._pixelShotAt&&now-p._pixelShotAt<60&&k!=='lightning')drawArt(c,themes[k]||'fire',3,muzzle.x+Math.cos(a)*5,muzzle.y+Math.sin(a)*5,12,12,{alpha:1-(now-p._pixelShotAt)/60,angle:a});
 }
 export function drawCardBullet(c,b,p,now,r=3){
@@ -97,6 +87,7 @@ export function drawCardBullet(c,b,p,now,r=3){
 }
 export function drawCardStatus(c,e,now){
  if(e.burnT>0)drawArt(c,'fire',4,e.x,e.y+e.r*.55,e.r*1.7,e.r*1.5,{alpha:.78});
+ if(e._iceChill>0&&!(e.frozen>0))drawArt(c,'ice',4,e.x,e.y+e.r*.6,e.r*1.5,e.r*.65,{stretch:true,alpha:.5});
  if(e.frozen>0)drawArt(c,'ice',4,e.x,e.y,e.r*2.5,e.r*2.6,{alpha:.8});
  
  if(e._bleedEnd>now)drawArt(c,'vital',1,e.x+e.r*.65,e.y-3,10,15,{alpha:.7});

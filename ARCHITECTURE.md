@@ -573,3 +573,31 @@ graph LR
 無目標朝向規則已由固定向下改為最後移動面向；loop 記錄 _moveDir，近戰 idle 保留 model.angle，槍手 idle 用 _moveDir。新角色初始向下、手動瞄準與敵人優先。
 
 X 改成旋轉／鎖定／直線飛出，蓄力可破核心。新招 busy 判斷包含 _teleExe、_chargeEnd、_dashChargeEnd，避免預告瞬移後被中斷。聯機同步鎖定時間、瞬移落點／剩餘時間、衝刺角度／剩餘時間、各神兵旗標。原瞬移、pulse 純幾何預告移除，改地面共享繪圖。
+
+## 2026-10-12 武器定位、冰凍與幾何怪
+
+模組總覽與匯出函式：
+- weapon-rig.js：weaponStyle、drawRiggedWeapons、gunRigSpec、gunRigPlacement、drawRiggedGun、drawRiggedHands。原素材握柄／刀尖軸與人物每格握點／刀尖軸直接對齊，替代「找亮色像素、猜最近手部、固定加45度」。前後分層與原生手掌遮擋；武器資料在 docs/weapon-mounts.json，可經 scripts/apply-weapon-mounts.py 重套。
+- generated-art.js：新增 drawMountedArt。按兩點計算軸向旋轉及共用比例，保留來源握柄，不以外框置中。
+- enemy-control.js：applyIceControl、tickEnemyControl、enemySlowFactor。四職業共用短冰凍、解凍保護、Boss 冰系減速；磁力使用 _magSlowT，不混入 frozen。
+- 槍口使用 gunRigPlacement.muzzle；native gun、fire 與展示頁同一座標。盾牌只改原素材色階，八方向輪廓與本體留存。
+- 原逐格臉部／眼睛沿用 drawSpriteWithEyes；遮罩只清除已記錄武器區域，並保留皮膚與身體；新武器後重繪來源手掌。素材未就緒時沿用原圖，不快取缺失的胸甲。
+- 一般冰凍最多400毫秒，1900毫秒锁定自施加起算＝凍400＋解凍後1500不可再凍；不可刷新。冰系普通移速倍率 .7/.6/.5，Boss／精英 .7。經典普通怪可短凍；精英／雙人維持原本冰系不定身規則。時間停止的 frozen 入口不修改。
+- 卡片文字與 slow 值已對齐，原冰脆比例保留。磁力减速 .6，不再定身。
+- 几何怪保留圓、三角、菱形、五角、星形，移除漸層等級光暈／圓形高光，改深色外框、平面切面與等大像素眼；仍保留原色、角色标記与血條。
+- art-preview.html 新增幾何怪比較；八方向與攻擊示意使用相同武器定位。不操作遊戲測試，由 Dino 驗證。
+
+依賴：
+```mermaid
+graph LR
+ card_vfx[card-vfx.js] --> weapon_rig[weapon-rig.js]
+ melee_sprite[melee-sprite.js] --> weapon_rig
+ gunner_sprite[gunner-sprite.js] --> weapon_rig
+ weapon_rig --> generated_art[generated-art.js]
+ weapon_rig --> legend_card_art[legend-card-art.js]
+ combat --> enemy_control[enemy-control.js]
+ loop --> enemy_control
+ boss --> enemy_control
+```
+
+槍支左向（西／西北／西南）先鏡射垂直素材軸，再套朝向，保持握把朝下；槍口以同一鏡射推算，避免直接轉180度把槍拿倒。

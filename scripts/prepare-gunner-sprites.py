@@ -72,3 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--processor',type=Path,required=True)
     args=parser.parse_args()
     prepare(args.input,args.processor)
+
+# Restore authored weapon mounts after regenerating the sprite contract.
+import subprocess, sys
+subprocess.run([sys.executable,str(Path(__file__).resolve().parents[1]/"scripts/apply-weapon-mounts.py")],check=True)

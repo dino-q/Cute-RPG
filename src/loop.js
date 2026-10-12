@@ -1,3 +1,4 @@
+import {applyIceControl,tickEnemyControl,enemySlowFactor} from './enemy-control.js';
 import {updateBossHazards,drawBossPatternGround} from './boss-patterns.js';
 import {recordRoleEffect} from './role-card-art.js';
 import {drawTreasure} from './treasure-art.js';
@@ -417,7 +418,7 @@ export function loop(){
       e.x+=dx/d*60;e.y+=dy/d*60;
       e.x=cl(e.x,ER,mapW()-ER);e.y=cl(e.y,ER,mapH()-ER);
       e.st=Math.max(e.st||0,1500+(g.mfSlow||0));
-      if(g.mfSlow>0)e.frozen=Math.max(e.frozen||0,g.mfSlow);
+      if(g.mfSlow>0)e._magSlowT=Math.max(e._magSlowT||0,g.mfSlow);
       burst(e.x,e.y,"#339AF0",6);
       g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(mfDmg),life:1.2,color:"#339AF0",big:1});
     });
@@ -743,7 +744,7 @@ export function loop(){
 
   // enemies chase — role-aware AI
   g.ene.forEach(e=>{if(e._bossCore)return;
-    e.t+=.03*dt;e.st=Math.max(0,e.st-dt*16.67);e.frozen=Math.max(0,e.frozen-dt*16.67);
+    e.t+=.03*dt;e.st=Math.max(0,e.st-dt*16.67);e.frozen=Math.max(0,e.frozen-dt*16.67);tickEnemyControl(e,dt*16.67);
     // 精英怪特殊能力
     if(e.eliteEnemy&&e.hp>0&&e.frozen<=0){
       var _elt=(_isCoopMode&&g.p2)?nearestPlayer(e):g.p;
@@ -833,6 +834,7 @@ export function loop(){
     }
     var rawSlow=g.p.slow||1;
     var cs=e.st>0?(_isElite()?1-(1-rawSlow)*.35:rawSlow):1; // 精英/coop模式緩速效果僅35%
+    cs=enemySlowFactor(e,cs);
     var ts=e.frozen>0?0:1;
     var hs=(g.huntModeUntil&&now<g.huntModeUntil&&e._huntStart&&now>=e._huntStart&&now<e._huntEnd)?2.1:1;
     // 嘲諷：強制追擊玩家 + 加速 1.5 倍
@@ -1117,16 +1119,7 @@ export function loop(){
     var toughImmune=bType==="tough";
     if(!toughImmune||fx.poison){
       if(fx.fire&&!toughImmune){e.burnT=Math.max(e.burnT||0,(1400+fxLv*600)*(g.p.elemBoost||1));e.burnLv=fxLv;}
-      if(fx.ice&&!toughImmune){
-        var iceMul=g.p.elemBoost||1;
-        if(_isElite()){
-          // 精英/coop模式：冰只緩速，不凍結
-          e.st=Math.max(e.st||0,(800+fxLv*450)*iceMul);
-        }else{
-          if(Math.random()<Math.min(.95,(.12+.08*fxLv)*iceMul))e.frozen=Math.max(e.frozen||0,(350+fxLv*260)*iceMul);
-          else e.st=Math.max(e.st||0,(800+fxLv*450)*iceMul);
-        }
-      }
+      if(fx.ice&&!toughImmune)applyIceControl(e,b.cardFx||g.p,now,{chance:.12+.08*fxLv,allowFreeze:!_isElite()});
       if(g.p.poison>0){e.poisonT=g.p.poison*1e3*(g.p.elemBoost||1);e.poisonLv=fxLv;} // 毒永遠有效
     }
     if(g.p.bulletHeal>0){g.p.hp=Math.min(g.p.hp+g.p.bulletHeal,g.p.maxHp);g.p._healFlash=now;}

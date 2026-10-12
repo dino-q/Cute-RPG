@@ -593,12 +593,6 @@ export function drawEnemy(e) {
   }
   // shadow
   cx.fillStyle = "rgba(0,0,0,.12)"; cx.beginPath(); cx.ellipse(x, y + r + 2, r * .65, 2.5, 0, 0, Math.PI * 2); cx.fill();
-  // tier glow
-  if (tier >= 2) {
-    const gr = cx.createRadialGradient(x, cy, r * .5, x, cy, r + 5);
-    const gc = tier >= 4 ? "rgba(255,50,50,.18)" : tier >= 3 ? "rgba(190,78,219,.15)" : "rgba(255,165,0,.12)";
-    gr.addColorStop(0, gc); gr.addColorStop(1, "transparent"); cx.fillStyle = gr; cx.beginPath(); cx.arc(x, cy, r + 5, 0, Math.PI * 2); cx.fill();
-  }
   if (bhLeft > 0) {
     const p = 1 - bhLeft / 260;
     cx.save();
@@ -616,27 +610,11 @@ export function drawEnemy(e) {
   else if (tier === 2) { drawPoly(x, cy, r, 4, Math.PI / 4 + Math.sin(e.t * .7) * .1); }
   else if (tier === 3) { drawPoly(x, cy, r, 5, -Math.PI / 2 + f * .08); }
   else { drawStar(x, cy, r * 1.1, 5, e.t * .4); }
-  cx.strokeStyle = tier >= 3 ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.08)"; cx.lineWidth = tier >= 3 ? 1.5 : 1; cx.stroke();
-  // highlight
-  cx.beginPath(); cx.arc(x + f * r * .15, cy - r * .22, r * .28, 0, Math.PI * 2); cx.fillStyle = "rgba(255,255,255,.2)"; cx.fill();
-  // face
-  const s = r * .26, pd = f * s * .2;
-  const fwS = 1.08, bwS = .88;
-  const leS = f < 0 ? fwS : bwS, reS = f > 0 ? fwS : bwS;
-  cx.fillStyle = "#222";
-  if (tier <= 1) {
-    cx.beginPath(); cx.arc(x + pd - s * .75, cy, s * .27 * leS, 0, Math.PI * 2); cx.fill();
-    cx.beginPath(); cx.arc(x + pd + s * .75, cy, s * .27 * reS, 0, Math.PI * 2); cx.fill();
-    cx.fillStyle = "#fff";
-    cx.beginPath(); cx.arc(x + pd - s * .6 + f * s * .08, cy - s * .15, s * .12, 0, Math.PI * 2); cx.fill();
-    cx.beginPath(); cx.arc(x + pd + s * .9 + f * s * .08, cy - s * .15, s * .12, 0, Math.PI * 2); cx.fill();
-  } else {
-    cx.beginPath(); cx.ellipse(x + pd - s * .8, cy - s * .1, s * .38 * leS, s * .25, 0, 0, Math.PI * 2); cx.fill();
-    cx.beginPath(); cx.ellipse(x + pd + s * .8, cy - s * .1, s * .38 * reS, s * .25, 0, 0, Math.PI * 2); cx.fill();
-    cx.fillStyle = tier >= 4 ? "#FF6B6B" : "#fff";
-    cx.beginPath(); cx.arc(x + pd - s * .65 + f * s * .1, cy - s * .2, s * .14, 0, Math.PI * 2); cx.fill();
-    cx.beginPath(); cx.arc(x + pd + s * .95 + f * s * .1, cy - s * .2, s * .14, 0, Math.PI * 2); cx.fill();
-  }
+  cx.strokeStyle="#162333";cx.lineWidth=2;cx.lineJoin="round";cx.stroke();
+  // Faceted highlights and equal pixel eyes preserve each geometric silhouette.
+  cx.save();cx.globalAlpha=.19;cx.fillStyle='#eaf2d2';cx.beginPath();cx.moveTo(x-r*.62,cy-r*.35);cx.lineTo(x-r*.13,cy-r*.65);cx.lineTo(x+r*.13,cy-r*.38);cx.lineTo(x-r*.32,cy-r*.17);cx.closePath();cx.fill();cx.restore();
+  const s=r*.26,pd=f*s*.2,eye=Math.max(2,Math.round(r*.15)),eyeY=Math.round(cy-eye*.6),gap=Math.max(3,Math.round(r*.24));
+  cx.fillStyle='#152131';for(const side of [-1,1]){const ex=Math.round(x+pd+side*gap-eye/2);cx.fillRect(ex,eyeY,eye,eye);cx.fillStyle=tier>=4?'#ee907d':'#fff0ce';cx.fillRect(ex,eyeY,1,1);cx.fillStyle='#152131';}
   // brows
   cx.strokeStyle = "#222"; cx.lineWidth = tier >= 3 ? 2 : 1.5;
   cx.beginPath(); cx.moveTo(x + pd - s * 1.3, cy - s * (.8 + (f < 0 ? .15 : 0))); cx.lineTo(x + pd - s * .25, cy - s * (.5 - (f < 0 ? .05 : 0))); cx.stroke();

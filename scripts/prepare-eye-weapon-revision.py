@@ -35,3 +35,7 @@ for col,tile in enumerate(cells):
  tile=tile.resize((max(1,round(tile.width*scale)),round(tile.height*scale)),Image.Resampling.NEAREST);sheet.paste(tile,(col*64+(64-tile.width)//2,(64-tile.height)//2),tile)
 sheet.save(root/'assets'/'tank-shield.png')
 print('Exported eye repairs, dual daggers and shield views.')
+
+# Restore authored weapon mounts after regenerating the sprite contract.
+import subprocess, sys
+subprocess.run([sys.executable,str(Path(__file__).resolve().parents[1]/"scripts/apply-weapon-mounts.py")],check=True)

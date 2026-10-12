@@ -1,4 +1,4 @@
-export const ART_REVISION='attached-epic-boss-20261012-v4';
+export const ART_REVISION='weapon-mounts-ice-20261012-v5';
 // Approved raster art, packed offline. Drawing always restores canvas state.
 let atlas=null,contract=null;
 export const generatedArtReady=Promise.all([
@@ -36,3 +36,13 @@ export function artThumbnail(name,index=0){
  drawArt(c,name,index,48,32,82,56);return cv.toDataURL();
 }
 export function directionIndex(angle){return ((Math.round(angle/(Math.PI/4))%8)+8)%8;}
+
+export function drawMountedArt(c,name,index,grip,tip,mount){
+ const f=artFrame(name,index);if(!atlas||!f)return false;
+ const sx=(f.index%contract.columns)*contract.cell,sy=Math.floor(f.index/contract.columns)*contract.cell;
+ const ax=mount.tip[0]-mount.grip[0],ay=mount.tip[1]-mount.grip[1],dx=tip[0]-grip[0],dy=tip[1]-grip[1];
+ const sourceLength=Math.hypot(ax,ay),length=Math.hypot(dx,dy);if(sourceLength<1||length<1)return false;
+ const k=length/sourceLength,a=Math.atan2(dy,dx)-Math.atan2(mount.mirrorY?-ay:ay,ax),b=mount.crop||[0,0,contract.cell,contract.cell];
+ c.save();c.shadowBlur=0;c.imageSmoothingEnabled=false;c.translate(grip[0],grip[1]);c.rotate(a);if(mount.mirrorY)c.scale(1,-1);
+ c.drawImage(atlas,sx+b[0],sy+b[1],b[2]-b[0],b[3]-b[1],(b[0]-mount.grip[0])*k,(b[1]-mount.grip[1])*k,(b[2]-b[0])*k,(b[3]-b[1])*k);c.restore();return true;
+}

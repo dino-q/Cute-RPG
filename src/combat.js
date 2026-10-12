@@ -1,3 +1,4 @@
+import {applyIceControl} from './enemy-control.js';
 import {recordRoleEffect} from './role-card-art.js';
 import { addCardImpact } from './card-vfx.js';
 import { getGunnerMuzzle } from "./gunner-sprite.js";
@@ -147,7 +148,7 @@ export function fire(dmg, dx, dy, sp, p) {
   const shots = pp.split || 1, ba = Math.atan2(dy, dx), bc = heavy ? { f: "#FF922B", g: "#FF4500", t: "#FF922B" } : (p === g.p2 ? { f: "#F06595", g: "#DA77F2", t: "#F06595" } : bCol());
   const dbl = Math.random() < (pp.dblAtk || 0);
   const _ct = (p === g.p2) ? (g.p2.charType || "gunner") : (g ? g.charType : "gunner");
-  const _pixelOrigin = _ct === "gunner" ? getGunnerMuzzle(pp.x, pp.y, PR, { x: dx, y: dy }) : null;
+  const _pixelOrigin = _ct === "gunner" ? getGunnerMuzzle(pp.x, pp.y, PR, { x: dx, y: dy },pp._pixelShotAt,pp) : null;
   if (_ct === "gunner") pp._pixelShotAt = performance.now();
   if (_ct === "gunner" && par.length < MAX_PARTICLES - 6) {
     const _fAd = (p === g.p2) ? (pp._ad || { x: pp.face || 1, y: 0 }) : ((g && g.ad) ? g.ad : { x: pp.face || 1, y: 0 });
@@ -174,7 +175,7 @@ export function fire(dmg, dx, dy, sp, p) {
         var _cyc = (_nt - pp._hmCycleT) % 3500;
         _hmOn = _cyc < 500;
       }
-      g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, cardFx:{_legendCards:{...pp._legendCards},fx:{...pp.fx},_lightSaber:pp._lightSaber,_poisonBlade:pp._poisonBlade,_roleCards:{...pp._roleCards}}, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
+      g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, cardFx:{elemBoost:pp.elemBoost,_legendCards:{...pp._legendCards},fx:{...pp.fx},_lightSaber:pp._lightSaber,_poisonBlade:pp._poisonBlade,_roleCards:{...pp._roleCards}}, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
     }
   });
 }
@@ -232,7 +233,7 @@ export function swordSwing(_pp, _isP2) {
     const fx = _pp.fx;
     if (fx.fire) { e.burnT = Math.max(e.burnT || 0, 1400 + Math.max(fx.fire || 0, 1) * 600); e.burnLv = Math.max(fx.fire || 0, 1); }
     if (fx.poison && _pp.poison > 0) { e.poisonT = _pp.poison * 1000 * (_pp.elemBoost || 1); e.poisonLv = Math.max(fx.poison || 0, 1); }
-    if (fx.ice) { if (Math.random() < .25) e.frozen = Math.max(e.frozen || 0, 500); else e.st = Math.max(e.st || 0, 1200); }
+    if(fx.ice)applyIceControl(e,_pp,performance.now(),{chance:.25,allowFreeze:!_isElite()});
     if (_pp._bleedChance && Math.random() < _pp._bleedChance) {
       e._bleedEnd = now + 2000; e._bleedDmg = _pp.atk * .3;
       for (let bi = 0; bi < 3; bi++) par.push({ x: e.x + rn(-5, 5), y: e.y + rn(-5, 5), vx: rn(-.5, .5), vy: rn(.5, 1.5), life: .5, color: "#FF4040", sz: rn(1.5, 3), g: .05 });
@@ -391,7 +392,7 @@ export function shieldBash(_pp, _isP2) {
     const fx = _pp.fx;
     if (fx.fire) { e.burnT = Math.max(e.burnT || 0, 1400 + Math.max(fx.fire || 0, 1) * 600); e.burnLv = Math.max(fx.fire || 0, 1); }
     if (fx.poison && _pp.poison > 0) { e.poisonT = _pp.poison * 1000 * (_pp.elemBoost || 1); e.poisonLv = Math.max(fx.poison || 0, 1); }
-    if (fx.ice) { if (Math.random() < .3) e.frozen = Math.max(e.frozen || 0, 600); else e.st = Math.max(e.st || 0, 1500); }
+    if(fx.ice)applyIceControl(e,_pp,performance.now(),{chance:.3,allowFreeze:!_isElite()});
     burst(e.x, e.y, _tankCrit ? "#FFD43B" : "#51CF66", 6);
     g.dn.push({ x: e.x, y: e.y - e.r, d: Math.floor(fd), life: 1, color: _tankCrit ? "#FFD43B" : "#51CF66", big: _tankCrit });
     sfxHit();
@@ -507,7 +508,7 @@ export function daggerStrike(_pp, _isP2) {
     const fx = _pp.fx;
     if (fx.fire) { e.burnT = Math.max(e.burnT || 0, 1200 + Math.max(fx.fire || 0, 1) * 500); e.burnLv = Math.max(fx.fire || 0, 1); }
     if (fx.poison && _pp.poison > 0) { e.poisonT = _pp.poison * 1000 * (_pp.elemBoost || 1); e.poisonLv = Math.max(fx.poison || 0, 1); }
-    if (fx.ice) { if (Math.random() < .2) e.frozen = Math.max(e.frozen || 0, 400); else e.st = Math.max(e.st || 0, 1000); }
+    if(fx.ice)applyIceControl(e,_pp,performance.now(),{chance:.2,allowFreeze:!_isElite()});
     // 毒刃（卡片效果）
     if (_pp._poisonBlade && Math.random() < _pp._poisonBlade) {
       recordRoleEffect(g,"poison",e.x,e.y,atkAngle);

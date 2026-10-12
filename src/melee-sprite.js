@@ -1,3 +1,4 @@
+import {drawRiggedWeapons,drawRiggedHands} from './weapon-rig.js';
 import {drawAttachedCardLayer} from './attached-card-art.js';
 import {ART_REVISION} from './generated-art.js';
 import { cardWeaponAtlas } from './card-vfx.js';
@@ -46,9 +47,9 @@ export function drawPixelMelee(ctx,role,x,y,r,direction,animation,player,fx,weap
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.shadowBlur=0;
   if(role==='assassin'&&((player?._shadowStrikeEnd||0)>now||(player?._shadowStepEnd||0)>now))ctx.globalAlpha*=.4;
   const attachment={left:Math.round(x-48*scale+Math.cos(attackAngle)*stride),top:Math.round(y-56*scale+Math.sin(attackAngle)*stride),scale,cell:96,torso:frame.torso,direction:lockedIndex,effects};
-  drawAttachedCardLayer(ctx,player,attachment,now,false);
+  drawAttachedCardLayer(ctx,player,attachment,now,false);drawRiggedWeapons(ctx,player,frame,attachment,false);
   drawSpriteWithEyes(ctx,cardWeaponAtlas(actionAtlas,role+'-action',player,actionContract),role==='swordsman'?'swordsman-action':'assassin-action',frame.x,frame.y,96,Math.round(x-48*scale+Math.cos(attackAngle)*stride),Math.round(y-56*scale+Math.sin(attackAngle)*stride),96*scale);
-  drawAttachedCardLayer(ctx,player,attachment,now,true);
+  drawRiggedWeapons(ctx,player,frame,attachment,true);drawRiggedHands(ctx,actionAtlas,player,frame,attachment);drawAttachedCardLayer(ctx,player,attachment,now,true);
   ctx.restore();return true;
  }
  const frame=contract.roles[role][index];

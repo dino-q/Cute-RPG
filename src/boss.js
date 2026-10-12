@@ -1,3 +1,4 @@
+import {enemySlowFactor} from './enemy-control.js';
 import {updateBossPattern,clearBossPattern,queueBossGroundHit} from './boss-patterns.js';
 import {drawBossArt,bossName} from './boss-art.js';
 // Stage Boss system — Lv20  / Lv30 
@@ -399,7 +400,7 @@ export function updateStageBoss(e,now,dt){
     e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
   }else{
     if(e._retreatEnd)e._retreatEnd=0;
-    const spd=e.speed*(e.frozen>0?0:1)*(e.st>0?.5:1);
+    const spd=e.speed*(e.frozen>0?0:1)*enemySlowFactor(e,e.st>0&&!(e._iceChill>0)?.5:1);
     e.x+=dx/d*spd*dt;e.y+=dy/d*spd*dt;
     e.x=cl(e.x,e.r,mapW()-e.r);e.y=cl(e.y,e.r,mapH()-e.r);
   }

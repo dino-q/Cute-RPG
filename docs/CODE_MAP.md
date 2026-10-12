@@ -96,3 +96,11 @@
 
 ♻️ 沿用 drawPixelMelee、drawPixelGunner、drawSpriteWithEyes、cardWeaponAtlas、drawArt、updateBossPattern、serializeCoopState、applyCoopState。
 🆕 drawAttachedCardLayer（原外層不知道实际圖片姿勢）、legend-card-art（三卡原共用 fx.star 無辨識）、boss-telegraph-art（原純幾何提示無專用美術）。
+
+| drawMountedArt | src/generated-art.js | 握柄／刀尖兩軸對齊，避免固定偏移角與外框縮放。 |
+| weaponStyle / drawRiggedWeapons / gunRigSpec / gunRigPlacement / drawRiggedGun / drawRiggedHands | src/weapon-rig.js | 明確握點、前後遮擋、原手掌覆蓋與一致槍口。 |
+| applyIceControl / tickEnemyControl / enemySlowFactor | src/enemy-control.js | 全職業冰系控制、不可刷新與解凍保護、Boss減速。 |
+| apply-weapon-mounts.py | scripts/apply-weapon-mounts.py | 重套 docs/weapon-mounts.json 作者資料，圖集重製後仍保留定位。 |
+
+♻️ 沿用 drawSpriteWithEyes、cardWeaponAtlas、drawPixelMelee、drawPixelGunner、getGunnerMuzzle、fire、drawEnemy 與原元素命中入口。
+🆕 weapon-rig（原固定45度與亮色推算無法分辨刀尖握柄）、enemy-control（原各職業各自刷新 frozen，無共用限制）、drawMountedArt（drawArt 只有外框尺寸，沒有握柄軸）。

@@ -1,3 +1,4 @@
+import {drawEnemy,setCx,setG} from './render.js';
 import {updateBossPattern,drawBossPatternGround,drawBossPatternCore} from './boss-patterns.js';
 import {recordRoleEffect} from './role-card-art.js';
 import {generatedArtReady,drawArt} from './generated-art.js';
@@ -8,7 +9,7 @@ import {drawCardBullet,drawCardWorld,drawCardGround,drawCardPlayerLayer,drawCard
 import {drawTreasure} from './treasure-art.js';
 import {C} from './cards.js';
 const $=id=>document.getElementById(id);
-const actor=$('actor').getContext('2d'),bosses=$('bosses').getContext('2d'),ending=$('ending').getContext('2d'),directions=$('directions').getContext('2d'),encounter=$('encounter').getContext('2d');
+const actor=$('actor').getContext('2d'),bosses=$('bosses').getContext('2d'),ending=$('ending').getContext('2d'),directions=$('directions').getContext('2d'),encounter=$('encounter').getContext('2d'),geometry=$('geometry').getContext('2d');
 let angle=Math.PI/2,bossAngle=Math.PI/2,attackAt=-1e5,bossAttackUntil=0,deathAt=-1e5,chestAt=-1e5,endAt=null,endType=30;
 const player={x:260,y:136,charType:'swordsman',face:1,fx:{},hp:100,maxHp:100};
 const scene={p:player};
@@ -61,10 +62,11 @@ function frame(now){
  actor.clearRect(0,0,960,230);actor.fillStyle='#27394c';actor.fillRect(0,178,960,1);drawCardGround(actor,scene,now);drawCardPlayerLayer(actor,player,player.x,player.y,23,now,false);hero(actor,player.x,player.y,23,role,dir,anim);
  drawGhostSlash(actor,scene,now,23,(x,y,r,t,col,face,p,opts)=>hero(actor,x,y,r,'swordsman',opts.travelDirection,opts.animation,p));
  drawCardPlayerLayer(actor,player,player.x,player.y,23,now,true);
- if(role==='gunner'&&now-attackAt>=0&&now-attackAt<650){const age=(now-attackAt)/650,m=getGunnerMuzzle(player.x,player.y,23,dir,attackAt);if(m)for(const spread of player._roleCards?.['分裂彈']||player._roleCards?.['彈幕之王']?[-.22,0,.22]:[0]){const a=angle+spread;drawCardBullet(actor,{x:m.x+Math.cos(a)*age*140,y:m.y+Math.sin(a)*age*140,vx:Math.cos(a),vy:Math.sin(a),hm:player.homing,cardFx:player,_minigun:player._minigun},scene,now,4);}}
+ if(role==='gunner'&&now-attackAt>=0&&now-attackAt<650){const age=(now-attackAt)/650,m=getGunnerMuzzle(player.x,player.y,23,dir,attackAt,player);if(m)for(const spread of player._roleCards?.['分裂彈']||player._roleCards?.['彈幕之王']?[-.22,0,.22]:[0]){const a=angle+spread;drawCardBullet(actor,{x:m.x+Math.cos(a)*age*140,y:m.y+Math.sin(a)*age*140,vx:Math.cos(a),vy:Math.sin(a),hm:player.homing,cardFx:player,_minigun:player._minigun},scene,now,4);}}
  drawCardStrike(actor,player,anim,now,23);drawCardWorld(actor,scene,now,23);
  dscene._dragonPet.x=665+Math.cos(now/1600)*35;dscene._dragonPet.y=126+Math.sin(now/1600)*20;dscene._dragonPet.breathCycle=now%3500;dscene._dragonBreathFx.on=now%3500<2000;dscene._dragonBreathFx.ang=angle;drawCardWorld(actor,dscene,now,23);
  actor.fillStyle='#bac9ce';actor.font='14px sans-serif';actor.textAlign='center';actor.fillText('人物與武器',260,210);actor.fillText('龍之心：飛行、振翅、噴火',665,210);
+ geometry.clearRect(0,0,960,180);setCx(geometry);setG({time:now});for(let tier=0;tier<5;tier++){const x=120+tier*180;drawEnemy({x,y:90,r:23,t:now/1000,tier,color:['#8dbb89','#e8b375','#89bdd0','#b4a1d0','#d78e91'][tier],face:1,hp:100,mhp:100,role:0,st:0,frozen:0});geometry.font='12px sans-serif';geometry.fillStyle='#d6d7c4';geometry.textAlign='center';geometry.fillText(['軟糖圓形','尖角三角','晶體菱形','五角怪','星形怪'][tier],x,155);}
  directions.clearRect(0,0,960,210);
  for(let i=0;i<8;i++){const dir={x:Math.cos(i*Math.PI/4),y:Math.sin(i*Math.PI/4)},x=70+i*116,p={...player,x,y:110};hero(directions,x,110,18,role,dir,{...anim,angle:i*Math.PI/4},p);directions.fillStyle='#ccdadb';directions.font='12px sans-serif';directions.textAlign='center';directions.fillText(['東','東南','南','西南','西','西北','北','東北'][i],x,184);}
  encounter.clearRect(0,0,960,500);
