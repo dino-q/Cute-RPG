@@ -54,6 +54,7 @@ export function pks(n, excludeIds, _useInv, _useCharType) {
     const _ct2 = _useCharType || (g ? g.charType : "gunner");
     const _charBan = c => {
       if (c.charReq && c.charReq !== _ct2) return true;
+      if (c.p1Only && _useInv && _useInv !== inv) return true; // P1-only mechanics (e.g. 守護星)
       return false;
     };
     const pool = C.filter(c => c.r === r && !u.has(c.id) && !ex.has(c.id) && (c.once ? _getClv(c.id) < 0 : _getClv(c.id) < 2) && !(c.n === "命運轉輪" && _inv2.length === 0) && !(_eliteExpBan && _eliteExpBan(c)) && !_charBan(c));

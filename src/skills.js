@@ -344,11 +344,11 @@ export function updateSummonOrbs(now,elapsedMs){
    if(!ball.hit&&ball.age>=180){
     ball.hit=true;
     if(target.hp>0&&!target._coopShield&&!(target._spawnShield>now)&&di(player,target)<(player._orbRange||300)+target.r){
-     let dmg=(player.atk*1.3+8)*(player._orbPower||1)*(player.elemBoost||1)*(player.levelDmgMul||1);
+     let dmg=(player.atk*1.3+8)*(player._orbPower||1)*(player.elemBoost||1)*(player.levelDmgMul||1);const orbCrit=Math.random()<(player.crit||.05);if(orbCrit)dmg*=2;
      if(target.boss&&target.bossType==='armor')dmg*=.7;
      dmg*=target.boss?(player.bossDmg||1):(player.mobDmg||1);target.hp-=dmg;
      recordRoleEffect(g,'orb-impact',target.x,target.y,Math.atan2(ty,tx),{owner:isP2?'p2':'p1',follow:false,life:220});
-     g.dn.push({x:target.x,y:target.y-target.r,d:Math.floor(dmg),life:.7,color:'#f1daa2'});
+     g.dn.push({x:target.x,y:target.y-target.r,d:Math.floor(dmg),life:.7,color:orbCrit?'#FFD43B':'#f1daa2',big:orbCrit});
     }
    }
    if(ball.age>=400){ball.target=null;ball.nextAt=now+Math.max(0,(player._orbCD||500)-400);}

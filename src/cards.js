@@ -56,7 +56,7 @@ function card(n,e,r,tp,d,ap,c,fx,once){
 }
 // once=1 的卡片只能拿一次、不能升級（拿過後不再出現在選卡池）。
 // 它們的 3 個等級定義相同是因為 card() 固定吃 [Lv1,Lv2,Lv3] 陣列，並非設計失誤。
-// once 卡：幸運幣、磁力場、自癒術、鐵壁金身、守護星、影分身、閃電步、命運轉輪、時間停止。
+// once 卡：自癒術、幸運幣、石膚術、鐵壁金身、影分身、閃電步、命運轉輪、達摩的光劍、連環殺戮。
 // --- R: 17 cards ---
 // All upgrade descriptions are the current total contributed by this card.
 card("火焰彈","","R","atk",["攻+4 火焰 燒傷+20% 王燃+40%","攻+8 烈焰 燒傷+35% 王燃+70%","攻+14 獄火 燒傷+50% 王燃+100%"],[s=>{s.atk+=4;s.burnBoost=(s.burnBoost||1)*1.2;s.burnBossMul=Math.max(s.burnBossMul||1,1.4);s.fx.fire=1},s=>{s.atk+=8;s.burnBoost=(s.burnBoost||1)*1.35;s.burnBossMul=Math.max(s.burnBossMul||1,1.7);s.fx.fire=2},s=>{s.atk+=14;s.burnBoost=(s.burnBoost||1)*1.5;s.burnBossMul=Math.max(s.burnBossMul||1,2);s.fx.fire=3}],"#FF6B6B","fire");
@@ -73,30 +73,31 @@ card("磁力場","","R","atk",["大招：磁力吸引+爆發 CD12秒","範圍↑
 card("毒刺","","R","atk",["中毒3秒 毒傷+2 王毒+30%","中毒5秒 毒傷+4 王毒+60%","劇毒7秒 毒傷+6 王毒+100%"],[s=>{s.poison=3;s.poisonDmg=2;s.poisonBossMul=1.3;s.fx.poison=1},s=>{s.poison=5;s.poisonDmg=4;s.poisonBossMul=1.6;s.fx.poison=2},s=>{s.poison=7;s.poisonDmg=6;s.poisonBossMul=2;s.fx.poison=3}],"#A9E34B","poison");
 card("穿透之力","","R","atk",["穿透+1 攻+2 王傷+20%","穿透+2 攻+4 王傷+40%","穿透極 攻+7 王傷+60%"],[s=>{s.pierce=(s.pierce||0)+1;s.atk+=2;s.bossDmg=(s.bossDmg||1)*1.2},s=>{s.pierce=(s.pierce||0)+2;s.atk+=4;s.bossDmg=(s.bossDmg||1)*1.4},s=>{s.pierce=99;s.atk+=7;s.bossDmg=(s.bossDmg||1)*1.6}],"#F08C00");
 card("蓄力拳","","R","atk",["攻+5 每5次重擊×2","攻+10 每4次重擊×2","攻+16 每3次重擊×2"],[s=>{s.atk+=5;s.heavyEvery=5},s=>{s.atk+=10;s.heavyEvery=4},s=>{s.atk+=16;s.heavyEvery=3}],"#E8590C");
-card("回血斬","","R","pas",["擊殺回5HP","回12HP","回22HP"],[s=>{s.ls=(s.ls||0)+5},s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+22}],"#E64980");
+card("回血斬","","R","pas",["擊殺回8HP 攻+3","回15HP 攻+6","回25HP 攻+10"],[s=>{s.ls=(s.ls||0)+8;s.atk+=3},s=>{s.ls=(s.ls||0)+15;s.atk+=6},s=>{s.ls=(s.ls||0)+25;s.atk+=10}],"#E64980");
 card("探索靴","","R","pas",["閃避+10% 擲幣50%得寶箱","閃避+15% 擲幣50%得寶箱","閃避+20% 擲幣50%得寶箱"],[s=>{s.dodge=Math.min(1,(s.dodge||0)+.1);s._coinFlip=true},s=>{s.dodge=Math.min(1,(s.dodge||0)+.15);s._coinFlip=true},s=>{s.dodge=Math.min(1,(s.dodge||0)+.2);s._coinFlip=true}],"#12B886");
 card("堅韌心","","R","pas",["HP+50 回血+8/秒","HP+100 回血+15/秒","HP+150 回血+20/秒"],[s=>{s.maxHp+=50;s.hp=Math.min(s.hp+50,s.maxHp);s.regen=(s.regen||0)+8},s=>{s.maxHp+=100;s.hp=Math.min(s.hp+100,s.maxHp);s.regen=(s.regen||0)+15},s=>{s.maxHp+=150;s.hp=Math.min(s.hp+150,s.maxHp);s.regen=(s.regen||0)+20}],"#FF922B");
 // --- SR: 21 cards ---
-card("石膚術","","SR","pas",["撞擊傷害上限40"],[s=>{s.contactCap=40}],"#ADB5BD",null,1);
+card("石膚術","","SR","pas",["撞擊傷害上限30 受傷-8%"],[s=>{s.contactCap=30;if(!s._stoneSkin){s._stoneSkin=1;s.armor=1-(1-s.armor)*.92;}}],"#ADB5BD",null,1);
 card("雷擊鏈","","SR","atk",["連鎖雷電 鏈傷+30% 小怪+30%","鏈傷+50% 小怪+50%","鏈傷+80% 小怪+80%"],[s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.3;s.mobDmg=(s.mobDmg||1)*1.3;s.fx.lightning=1},s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.5;s.mobDmg=(s.mobDmg||1)*1.5;s.fx.lightning=2},s=>{s.chain=1;s.chainDmg=(s.chainDmg||1)*1.8;s.mobDmg=(s.mobDmg||1)*1.8;s.fx.lightning=3}],"#FAB005","lightning");
 card("分裂彈","","SR","atk",["3發","5發","7發彈幕"],[s=>{s.split=(s.split||1)+2},s=>{s.split=(s.split||1)+4},s=>{s.split=(s.split||1)+6}],"#845EF7");C[C.length-1].charReq="gunner";
 card("閃避斗篷","","SR","pas",["12%閃避","25%閃避","40%閃避"],[s=>{s.dodge=(s.dodge||0)+.12},s=>{s.dodge=(s.dodge||0)+.25},s=>{s.dodge=(s.dodge||0)+.4}],"#B197FC");
 card("鐵壁金身","","SR","pas",["完全免疫遠程攻擊","完全免疫遠程攻擊","完全免疫遠程攻擊"],[s=>{s.projImmune=true},s=>{s.projImmune=true},s=>{s.projImmune=true}],"#CED4DA",null,1);
-card("守護星","","SR","pas",["每8秒自動護盾","每8秒自動護盾","每8秒自動護盾"],[s=>{s.shieldCD=8e3;s._sh=true;s._shT=0;s._shSpawn=performance.now()},s=>{s.shieldCD=8e3;s._sh=true;s._shT=0;s._shSpawn=performance.now()},s=>{s.shieldCD=8e3;s._sh=true;s._shT=0;s._shSpawn=performance.now()}],"#4DABF7",null,1);
+const guardStar=(cd,max,lv)=>s=>{s.shieldCD=cd;s._shMax=max;s._shLv=lv;if(!s._sh){s._sh=true;s._shN=1;s._shT=0;s._shSpawn=performance.now();}};
+card("守護星","","SR","pas",["每8秒充能1層護盾","每6秒充能・可存2層","每4秒充能・可存2層・擋下後無敵1秒・可擋Boss大招"],[guardStar(8e3,1,1),guardStar(6e3,2,2),guardStar(4e3,2,3)],"#4DABF7");C[C.length-1].p1Only=true;
 card("影分身","","SR","pas",["影分身","影分身","影分身"],[s=>{s.dblAtk=1;s._cloneCD=3000},s=>{s.dblAtk=1;s._cloneCD=3000},s=>{s.dblAtk=1;s._cloneCD=3000}],"#868E96",null,1);
 card("烈焰風暴","","SR","atk",["攻+4 濺射 王燃+50%","攻+8 大濺射 王燃+80%","攻+14 超大濺射 王燃+120%"],[s=>{s.atk+=4;s.splash=(s.splash||0)+30;s.burnBossMul=Math.max(s.burnBossMul||1,1.5);s.fx.fire=Math.max(s.fx.fire||0,2)},s=>{s.atk+=8;s.splash=(s.splash||0)+45;s.burnBossMul=Math.max(s.burnBossMul||1,1.8);s.fx.fire=3},s=>{s.atk+=14;s.splash=(s.splash||0)+60;s.burnBossMul=Math.max(s.burnBossMul||1,2.2);s.fx.fire=3}],"#E03131","fire");
 card("暴風雪","","SR","atk",["攻+3 減速40%+短凍結 冰脆+20%","攻+6 減速50%+短凍結 冰脆+30%","攻+10 減速50%+短凍結 冰脆+40%"],[s=>{s.atk+=3;s.slow=.6;s.iceFrag=Math.max(s.iceFrag||0,.2);s.fx.ice=2},s=>{s.atk+=6;s.slow=.5;s.iceFrag=Math.max(s.iceFrag||0,.3);s.fx.ice=3},s=>{s.atk+=10;s.slow=.5;s.iceFrag=Math.max(s.iceFrag||0,.4);s.fx.ice=3}],"#339AF0","ice");
 card("追蹤彈","","SR","atk",["微追蹤","強追蹤 範圍↑ 攻+3","完美追蹤 攻+6 穿透1"],[s=>{s.homing=.03;s.homingR=200},s=>{s.homing=.06;s.homingR=320;s.atk+=3},s=>{s.homing=.1;s.homingR=400;s.atk+=6;s.pierce=(s.pierce||0)+1}],"#F06595");C[C.length-1].charReq="gunner";
 card("吸血領主","","SR","pas",["擊殺回12HP","回25HP","回40HP+攻+5"],[s=>{s.ls=(s.ls||0)+12},s=>{s.ls=(s.ls||0)+25},s=>{s.ls=(s.ls||0)+40;s.atk+=5}],"#C2255C");
-card("召喚球","","SR","atk",["1顆守護球・自動出擊 範圍300","2顆守護球・傷害+35% 範圍340","3顆守護球・傷害+70% 範圍380"],[s=>{s.orbiters=1;s._orbLevel=1;s._orbPower=1;s._orbRange=300;s._orbCD=500},s=>{s.orbiters=2;s._orbLevel=2;s._orbPower=1.35;s._orbRange=340;s._orbCD=450},s=>{s.orbiters=3;s._orbLevel=3;s._orbPower=1.7;s._orbRange=380;s._orbCD=400}],"#FCC419");
+card("召喚球","","SR","atk",["1顆守護球・傷害×1.4 可暴擊 範圍320","2顆守護球・傷害×2 範圍370","3顆守護球・傷害×2.8 範圍420"],[s=>{s.orbiters=1;s._orbLevel=1;s._orbPower=1.4;s._orbRange=320;s._orbCD=450},s=>{s.orbiters=2;s._orbLevel=2;s._orbPower=2;s._orbRange=370;s._orbCD=400},s=>{s.orbiters=3;s._orbLevel=3;s._orbPower=2.8;s._orbRange=420;s._orbCD=330}],"#FCC419");
 card("旋風斬","","SR","atk",["風刃追擊3秒","2道風刃追擊","3道風刃追擊"],[s=>{s.windBlades=1;s.fx.whirl=1},s=>{s.windBlades=2;s.fx.whirl=2},s=>{s.windBlades=3;s.fx.whirl=3}],"#99E9F2");
 card("狂暴之力","","SR","pas",["HP<30%時 攻擊翻倍","HP<40%時 攻擊翻倍","HP<50%時 攻擊翻倍"],[s=>{s.berserk=.3},s=>{s.berserk=.4},s=>{s.berserk=.5}],"#FF6B6B");
 card("連鎖爆破","","SR","atk",["敵人死亡後爆炸 周圍傷8","敵人死亡 周圍傷18","敵人死亡 周圍傷30"],[s=>{s.deathBoom=(s.deathBoom||0)+8},s=>{s.deathBoom=(s.deathBoom||0)+18},s=>{s.deathBoom=(s.deathBoom||0)+30}],"#FF922B");
-card("破甲箭","","SR","atk",["攻+3 護甲Boss每秒傷害上限+25%","攻+4 護甲Boss每秒傷害上限+35%","攻+5 護甲Boss每秒傷害上限+50% 穿透+1"],[s=>{s.atk+=3;s.armorCapBonus=(s.armorCapBonus||0)+.25},s=>{s.atk+=4;s.armorCapBonus=(s.armorCapBonus||0)+.35},s=>{s.atk+=5;s.armorCapBonus=(s.armorCapBonus||0)+.5;s.pierce=(s.pierce||0)+1}],"#D4A017");
+card("破甲箭","","SR","atk",["攻+5 護甲Boss每秒傷害上限+25%","攻+8 護甲Boss每秒傷害上限+35%","攻+12 護甲Boss每秒傷害上限+50% 穿透+1"],[s=>{s.atk+=5;s.armorCapBonus=(s.armorCapBonus||0)+.25},s=>{s.atk+=8;s.armorCapBonus=(s.armorCapBonus||0)+.35},s=>{s.atk+=12;s.armorCapBonus=(s.armorCapBonus||0)+.5;s.pierce=(s.pierce||0)+1}],"#D4A017");
 card("迴力鏢","","SR","atk",["攻+2 1個迴力鏢","攻+5 2個迴力鏢","攻+8 3個迴力鏢 穿透+1"],[s=>{s.atk+=2;s.boomerang=1},s=>{s.atk+=5;s.boomerang=2;s.homingR=(s.homingR||200)+40},s=>{s.atk+=8;s.boomerang=3;s.pierce=(s.pierce||0)+1}],"#20C997");
-card("機關槍","","SR","atk",["攻速+30% 攻-3","攻速+60% 攻-5 無過熱","攻速+100% 攻-8 狂暴模式"],[s=>{s.fr*=.7;s.atk=Math.max(1,s.atk-3);s._minigun=1},s=>{s.fr*=.4;s.atk=Math.max(1,s.atk-5);s._minigun=2;s._noOverheat=true},s=>{s.fr*=.5*.4;s.atk=Math.max(1,s.atk-8);s._minigun=3;s._noOverheat=true;s._minigunBerserk=true}],"#FF8C00");C[C.length-1].charReq="gunner";
+card("機關槍","","SR","atk",["攻速+30% 攻-1","攻速+60% 攻-2 無過熱","攻速+100% 攻-3 狂暴模式"],[s=>{s.fr*=.7;s.atk=Math.max(1,s.atk-1);s._minigun=1},s=>{s.fr*=.4;s.atk=Math.max(1,s.atk-2);s._minigun=2;s._noOverheat=true},s=>{s.fr*=.5*.4;s.atk=Math.max(1,s.atk-3);s._minigun=3;s._noOverheat=true;s._minigunBerserk=true}],"#FF8C00");C[C.length-1].charReq="gunner";
 card("閃電步","","SR","pas",["大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招","大招衝刺+殘影+無敵 CD同步大招"],[s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8},s=>{s.lStep=true;s.lStepDur=200;s.lStepSpd=8}],"#FFE066",null,1);
-card("元素精通","","SR","pas",["元素傷害+15%","元素傷害+30%","元素傷害+50%"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15},s=>{s.elemBoost=(s.elemBoost||1)*1.3},s=>{s.elemBoost=(s.elemBoost||1)*1.5}],"#B197FC");
+card("元素精通","","SR","pas",["元素傷害+15% 攻+3","元素傷害+30% 攻+6","元素傷害+50% 攻+10"],[s=>{s.elemBoost=(s.elemBoost||1)*1.15;s.atk+=3},s=>{s.elemBoost=(s.elemBoost||1)*1.3;s.atk+=6},s=>{s.elemBoost=(s.elemBoost||1)*1.5;s.atk+=10}],"#B197FC");
 card("大招增幅","","SR","pas",["大招傷害+30%","傷害+60%","傷害+100%"],[s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.3},s=>{s.ultDmgMul=(s.ultDmgMul||1)*1.6},s=>{s.ultDmgMul=(s.ultDmgMul||1)*2}],"#BE4BDB");
 card("彈幕之王","","SR","atk",["子彈+1 攻速+8%","子彈+2 攻速+15%","子彈+3 攻速+25%"],[s=>{s.split=(s.split||1)+1;s.fr*=.92},s=>{s.split=(s.split||1)+2;s.fr*=.85},s=>{s.split=(s.split||1)+3;s.fr*=.75}],"#FF6B6B");C[C.length-1].charReq="gunner";
 // --- SSR: 13 cards ---
@@ -111,7 +112,7 @@ card("無盡之刃","","SSR","atk",["攻+10 穿透全部","攻+20 穿透全部",
 card("虛空步","","SSR","pas",["35%閃避+反擊傷10","50%閃避+反擊傷15","65%閃避+反擊傷30"],[s=>{s.dodge=(s.dodge||0)+.35;s.dodgeAtk=(s.dodgeAtk||0)+10},s=>{s.dodge=(s.dodge||0)+.5;s.dodgeAtk=(s.dodgeAtk||0)+15},s=>{s.dodge=(s.dodge||0)+.65;s.dodgeAtk=(s.dodgeAtk||0)+30}],"#343A40");
 card("命運轉輪","","SSR","pas",["重抽所有能力+強化","重抽所有能力+強化","重抽所有能力+強化"],[s=>{s._fateWheel=true},s=>{s._fateWheel=true},s=>{s._fateWheel=true}],"#F59F00",null,1);
 card("混沌核心","","SSR","atk",["隨機3項能力提升","隨機5項能力提升","隨機8項能力提升"],[s=>{for(let i=0;i<3;i++)rndBuff(s)},s=>{for(let i=0;i<5;i++)rndBuff(s)},s=>{for(let i=0;i<8;i++)rndBuff(s)}],"#E599F7");
-card("時間停止","","SSR","pas",["大招：凍結普通敵人2秒（Boss免疫） CD15秒","大招：凍結普通敵人2秒（Boss免疫） CD15秒","大招：凍結普通敵人2秒（Boss免疫） CD15秒"],[s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true},s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true},s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true}],"#74C0FC",null,1);
+card("時間停止","","SSR","pas",["大招：凍結普通敵人2秒（Boss免疫） CD15秒","凍結3秒 CD12秒","凍結4秒 CD9秒"],[s=>{s.hasTS=true;s.tsFrzDur=2e3;s.tsCd=15e3;s._resetUlt=true},s=>{s.hasTS=true;s.tsFrzDur=3e3;s.tsCd=12e3;s._resetUlt=true},s=>{s.hasTS=true;s.tsFrzDur=4e3;s.tsCd=9e3;s._resetUlt=true}],"#74C0FC");
 // ═══ 劍士專屬卡 ═══
 card("殘影斬","","SR","atk",["攻擊留殘影(50%傷害)","殘影傷害75%","殘影傷害100%"],[s=>{s._ghostSlash=.5},s=>{s._ghostSlash=.75},s=>{s._ghostSlash=1}],"#DA77F2");C[C.length-1].charReq="swordsman";
 card("劍氣強化","","R","atk",["劍氣每4次觸發","劍氣每3次+250%傷害","劍氣每2次+400%傷害"],[s=>{s._qiEvery=4;s._qiMul=2},s=>{s._qiEvery=3;s._qiMul=2.5},s=>{s._qiEvery=2;s._qiMul=4}],"#74C0FC");C[C.length-1].charReq="swordsman";
@@ -121,7 +122,7 @@ card("達摩的光劍","","SSR","atk",["攻+15 揮劍射出3道光束","攻+15 �
 card("荊棘之盾","","R","pas",["攻+4 接觸反傷75%・盾擊刺芒","攻+8 接觸反傷150%・盾擊刺芒","攻+12 接觸反傷300%・盾擊刺芒"],[s=>{s.atk+=4;s.thorns=(s.thorns||0)+.75},s=>{s.atk+=8;s.thorns=(s.thorns||0)+1.5},s=>{s.atk+=12;s.thorns=(s.thorns||0)+3}],"#51CF66");C[C.length-1].charReq="tank";
 card("大地震擊","","SR","atk",["盾擊觸發全向地震與擊退・範圍210(Boss最高80)","地震傷害+50%・範圍240","地震傷害+100%・範圍270"],[s=>{s._quake=1},s=>{s._quake=2},s=>{s._quake=3}],"#FF922B");C[C.length-1].charReq="tank";
 card("鋼鐵意志","","R","pas",["<30%HP自動減傷30%+回血","<30%HP減傷40%+回血","<30%HP減傷50%+回血"],[s=>{s._ironWill=.3},s=>{s._ironWill=.4},s=>{s._ironWill=.5}],"#868E96");C[C.length-1].charReq="tank";
-card("守護者光環","","SR","pas",["周圍減傷10%+自己5%","周圍減傷15%+自己10%","周圍減傷20%+自己15%"],[s=>{s._guardAura=1;s.armor=(s.armor||0)+.05},s=>{s._guardAura=2;s.armor=(s.armor||0)+.1},s=>{s._guardAura=3;s.armor=(s.armor||0)+.15}],"#FFD43B");C[C.length-1].charReq="tank";
+card("守護者光環","","SR","pas",["周圍減傷10%+自己8%","周圍減傷15%+自己14%","周圍減傷20%+自己20%"],[s=>{s._guardAura=1;s.armor=(s.armor||0)+.08},s=>{s._guardAura=2;s.armor=(s.armor||0)+.14},s=>{s._guardAura=3;s.armor=(s.armor||0)+.2}],"#FFD43B");C[C.length-1].charReq="tank";
 // ═══ 刺客專屬卡 ═══
 card("致命打擊","","R","atk",["暴擊率+20% 暴傷+50%","暴擊率+40% 暴傷+100%","暴擊率+50% 暴傷+200%"],[s=>{s.crit=Math.min(1,(s.crit||0)+.2);s._critDmgMul=(s._critDmgMul||1)+.5},s=>{s.crit=Math.min(1,(s.crit||0)+.4);s._critDmgMul=(s._critDmgMul||1)+1},s=>{s.crit=Math.min(1,(s.crit||0)+.5);s._critDmgMul=(s._critDmgMul||1)+2}],"#DA77F2");C[C.length-1].charReq="assassin";
 card("暗影步","","SR","pas",["攻速+20% 擊殺隱身1秒(無敵)","攻速+30% 擊殺隱身1.5秒(無敵)","攻速+50% 擊殺隱身2秒(無敵)"],[s=>{s.fr*=.8;s._shadowStep=1000},s=>{s.fr*=.7;s._shadowStep=1500},s=>{s.fr*=.5;s._shadowStep=2000}],"#9C36B5");C[C.length-1].charReq="assassin";

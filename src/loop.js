@@ -106,6 +106,8 @@ let _dpWingImg, _dpBodyImg, _dpW, _dpH, _dpJX, _dpJY;
 // map helpers
 let mapW, mapH, crateActive;
 
+// 守護星: spend one stored layer; Lv3 also grants 1s of invulnerability.
+function consumeGuardStar(p,now){p._shN=Math.max(0,(p._shN||1)-1);p._sh=p._shN>0;if(p._shLv>=3)p._iFrameEnd=Math.max(p._iFrameEnd||0,now+1000);}
 export function initLoop(deps) {
   if (deps.getG)        g         = deps.getG();
   if (deps.getCx)       cx        = deps.getCx();
@@ -593,7 +595,7 @@ export function loop(){
     // 視覺光環在渲染區處理
   }
   // shield timer (守護星)
-  if(g.p.shieldCD>0){g.p._shT=(g.p._shT||0)+dt*16.67;if(g.p._shT>=g.p.shieldCD&&!g.p._sh){g.p._sh=true;g.p._shT=0;g.p._shSpawn=now;burst(g.p.x,g.p.y,"#4DABF7",12);g.dn.push({x:g.p.x,y:g.p.y-30,d:"守護星",life:1,color:"#4DABF7"});}}
+  if(g.p.shieldCD>0){var _shN=g.p._sh?(g.p._shN||1):0;if(_shN<(g.p._shMax||1))g.p._shT=(g.p._shT||0)+dt*16.67;if(g.p._shT>=g.p.shieldCD&&_shN<(g.p._shMax||1)){g.p._sh=true;g.p._shN=_shN+1;g.p._shT=0;g.p._shSpawn=now;burst(g.p.x,g.p.y,"#4DABF7",12);g.dn.push({x:g.p.x,y:g.p.y-30,d:"守護星",life:1,color:"#4DABF7"});}}
   // invincibility timer (天使之翼) — 用 game-time 計時，暫停時不消耗
   if(g.p.invCD>0){
     g.p._ivT=(g.p._ivT||0)+dt*16.67;
@@ -1084,7 +1086,7 @@ export function loop(){
         // 坦克：內建遠距傷害減半
         var _tankProjMit=!b._groundHit&&g.charType==="tank"?.5:1;
         if(!b._absoluteBossDamage&&Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});return false;}
-        if(!b._absoluteBossDamage&&g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"擋住",life:1,color:"#4DABF7",big:1});return false;}
+        if((!b._absoluteBossDamage||g.p._shLv>=3)&&g.p._sh){consumeGuardStar(g.p,now);burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"擋住",life:1,color:"#4DABF7",big:1});return false;}
         var lateMul=1+Math.max(0,g.wave-10)*.07;
         var surv=(g.p.armor||0)+(g.p.dodge||0)*.9;
         var survMit=1-Math.min(.42,surv*.36);
@@ -1314,7 +1316,8 @@ export function loop(){
       return true;
     }
     if(Math.random()<(g.p.dodge||0)){g.dn.push({x:g.p.x,y:g.p.y-25,d:"MISS",life:1,color:"#B197FC"});if(g.p.dodgeAtk>0){e.hp-=g.p.dodgeAtk;g.dn.push({x:e.x,y:e.y-e.r,d:Math.floor(g.p.dodgeAtk),life:1,color:"#FFE066"});}applyBossDamageBudget(e,g.p,now,_isElite());return _isWB||e.hp>0;}
-    if(g.p._sh){g.p._sh=false;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"擋住",life:1,color:"#4DABF7",big:1});return true;}
+    if(g.p._iFrameEnd>now)return true;
+    if(g.p._sh){consumeGuardStar(g.p,now);g.p._iFrameEnd=Math.max(g.p._iFrameEnd||0,now+400);e._retreatEnd=now+800;burst(g.p.x,g.p.y,"#4DABF7",10);g.dn.push({x:g.p.x,y:g.p.y-25,d:"擋住",life:1,color:"#4DABF7",big:1});return true;}
     var lateMul=1+Math.max(0,g.wave-10)*.07;
     var surv=(g.p.armor||0)+(g.p.dodge||0)*.9;
     var survMit=1-Math.min(.42,surv*.36);

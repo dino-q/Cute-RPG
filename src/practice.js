@@ -199,7 +199,7 @@ export function pracRefreshStats() {
 export function pracCycleCard(cid) {
   const cur = _pracCardLvs[cid];
   if (cur === undefined) _pracCardLvs[cid] = 0;
-  else if (cur === 0) _pracCardLvs[cid] = 1;
+  else if (cur === 0 && !C.find(c => c.id === cid)?.once) _pracCardLvs[cid] = 1;
   else if (cur === 1) _pracCardLvs[cid] = 2;
   else delete _pracCardLvs[cid];
   try { pracRebuildCards(); } catch (e) { console.warn("pracRebuildCards error:", e); }
@@ -237,7 +237,7 @@ export function pracRebuildCards() {
   g.p.hasBH = false; g.p.hasTS = false; g.p.projImmune = false; g.p.boomerang = 0;
   g.p._minigun = 0; g.p._noOverheat = false; g.p._minigunBerserk = false;
   g.p.armorCapBonus = 0; g.p.burnBoost = 1; g.p.chainDmg = 1; g.p.poisonDmg = 0; g.p.poisonBossMul = 1;
-  g.p.shieldCD = 0; g.p._sh = false; g.p.lStep = false;
+  g.p.shieldCD = 0; g.p._sh = false; g.p._shN = 0; g.p._shMax = 0; g.p._shLv = 0; g.p._stoneSkin = 0; g.p.lStep = false;
   g.p.invCD = 0; g.p.invDur = 0; g.p._inv = false; g.p._invEnd = 0; g.p.contactCap = 100;
   g.p._legendCards={};g.p._roleCards={};g.p._crossbow=false;
   g.p._ghostSlash = 0; g.p._qiEvery = 0; g.p._qiMul = 0; g.p._drawSlash = 0; g.p._bleedChance = 0;
@@ -247,7 +247,7 @@ export function pracRebuildCards() {
   g.p.hasMF = false; g.p.mfCd = 0; g.p.mfR = 0; g.p.mfDur = 0; g.p.mfDmgMul = 0; g.p.mfSlow = 0; g.mfEnd = 0;
   Object.entries(_pracCardLvs).forEach(([cid, targetLv]) => {
     const cd = C.find(c => c.id === +cid); if (!cd || (cd.charReq&&cd.charReq!==g.charType)) return;
-    for (let l = 0; l <= targetLv; l++) {
+    for (let l = 0; l <= (cd.once ? 0 : targetLv); l++) {
       addCard(+cid);
       cd.ap[Math.min(l, 2)](g.p); revealCard(g.p,cd);
     }
