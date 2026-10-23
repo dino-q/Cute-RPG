@@ -166,7 +166,7 @@ export function showChaosNotice(notice,session=_getG()){
  const summary=document.createElement('div');summary.textContent='本次增加 '+notice.gains.length+' 項能力'+(notice.level>1?' · 累計 '+notice.total+' 項':'');summary.style.cssText='font-size:11px;color:#acb2bf;margin-bottom:8px';panel.appendChild(summary);
  for(const gain of notice.gains){const line=document.createElement('div');line.textContent=gain;line.style.cssText='font-size:13px;line-height:1.8';panel.appendChild(line);}
  const close=document.createElement('button');close.textContent='知道了';close.className='menu-control quiet';close.style.cssText='margin-top:10px;padding:5px 12px;font-size:11px';close.onclick=()=>{panel.hidden=true;};panel.appendChild(close);applyControlLayout();
- chaosNoticeTimer=setTimeout(()=>{panel.hidden=true;},12000);
+ chaosNoticeTimer=setTimeout(()=>{panel.hidden=true;},4000);
 }
 
 export function resetSessionUi() {
