@@ -557,7 +557,7 @@ export function updateStageBoss(e,now,dt){
       }
       if(e._p3cycle==="free"&&now-e._p3t>5000){
         e._p3cycle="idle";e._p3dashN=0;
-        e.sbTeleCD=now+2000; // 2秒後可再次進入循環
+        e.sbTeleCD=Math.min(e.sbTeleCD||Infinity,now+2000); // keep the earlier slot a finished combo already booked // 2秒後可再次進入循環
       }
     }
     // === 通用：執行瞬移 ===

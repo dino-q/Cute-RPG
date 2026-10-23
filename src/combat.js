@@ -173,12 +173,7 @@ export function fire(dmg, dx, dy, sp, p) {
     const count = Math.min(shots, 12);
     for (let i = 0; i < count; i++) {
       const a = dir + (i - (count - 1) / 2) * .16 + rn(-sp, sp);
-      var _nt = performance.now(), _hmOn = false;
-      if (pp.homing) {
-        if (!pp._hmCycleT) pp._hmCycleT = _nt;
-        var _cyc = (_nt - pp._hmCycleT) % 3500;
-        _hmOn = _cyc < 500;
-      }
+      var _hmOn = !!pp.homing; // every bullet homes (was only 0.5s out of each 3.5s)
       g.bul.push({ x: _pixelOrigin ? _pixelOrigin.x : pp.x, y: _pixelOrigin ? _pixelOrigin.y : pp.y - PR * .4, vx: Math.cos(a) * 7.5, vy: Math.sin(a) * 7.5, dmg, life: 1, crit: Math.random() < (pp.crit || .05), bc, cardFx:{elemBoost:pp.elemBoost,_legendCards:{...pp._legendCards},fx:{...pp.fx},_lightSaber:pp._lightSaber,_poisonBlade:pp._poisonBlade,_roleCards:{...pp._roleCards}}, trail: [], _tw: 0, pierce: pp.pierce || 0, hm: _hmOn ? pp.homing : 0, _minigun: pp._minigun || 0, _armorPen: pp.armorCapBonus || 0, _isP2: p === g.p2 });
     }
   });
