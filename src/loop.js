@@ -1420,7 +1420,7 @@ export function loop(){
     }else{
       // 經典模式：3個前期小寶箱 + 3個大寶箱(各5選) = 18張卡
       if(g.level>=2&&g.level<=4){spawnBonusCrates(1);showHint(" 寶箱出現！");}
-      if([6,10,17,22].includes(g.level)){spawnBonusCrates(1);showHint(" 寶箱出現！");} // 中後期補寶箱，避免卡片太少
+      if([17,22].includes(g.level)){spawnBonusCrates(1);showHint(" 寶箱出現！");} // 中後期補寶箱，避免卡片太少
       if(g.level===7){triggerBigChest(1);}
       if(g.level===14){triggerBigChest(1);}
       if(g.level===20&&!g._boss20){g._boss20=true;triggerStageBoss(20);} // boss後給大寶箱

@@ -25,7 +25,9 @@ export function applyBossDamageBudget(enemy,player,now,elite=false){
  if(!enemy?.boss||enemy.miniPoo||enemy.miniDemon||enemy.ragePoo||enemy._bossCore||enemy.deadHandled)return;
  const seconds=enemy.stageBoss===20?(elite?150:30):enemy.stageBoss===30?(elite?240:45):elite?(enemy.mega?30:15):(enemy.mega?14:8);
  const bonus=(player?._angelBuff?1.6:1)*(enemy.bossType==='armor'?Math.min(1.5,1+(player?.armorCapBonus||0)):1);
- const cap=enemy.mhp/seconds*bonus;
+ // Boss-damage cards also widen the cap so 王傷/王燃/王毒 still matter once a build hits it (capped at +60%).
+ const bossCards=1+Math.min(.6,.5*Math.max(0,(player?.bossDmg||1)-1)+.25*Math.max(0,Math.max(player?.burnBossMul||1,player?.poisonBossMul||1)-1));
+ const cap=enemy.mhp/seconds*bonus*bossCards;
  if(enemy._secSnap===undefined){enemy._secSnap=enemy.mhp;enemy._secReset=now;}
  // First enforce the previous window; resetting before enforcement loses lethal hits.
  enemy.hp=Math.min(enemy.mhp,Math.max(enemy.hp,enemy._secSnap-cap));
