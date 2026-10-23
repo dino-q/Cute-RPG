@@ -7,6 +7,7 @@
 | getG / setG / setCx | src/render.js | 取得遊戲狀態與繪圖畫布。 |
 | charCfg | src/config.js | 職業數值與預設值。 |
 | loop / clientRenderLoop | src/loop.js、src/coop.js | 單人／雙人主機與連線客戶端共用 drawPlayer。 |
+| consumeGuardStar | src/loop.js | 守護星擋下一次攻擊時扣一層護盾；Lv3 另給 1 秒無敵。P1 碰撞與飛彈受傷路徑共用。 |
 
 | gunnerSpriteReady | src/gunner-sprite.js | 載入八方向圖片及位置資料，失敗時沿用原本外觀。 |
 | getGunnerPose | src/gunner-sprite.js | 將任意瞄準角度對應八方向圖片。 |
