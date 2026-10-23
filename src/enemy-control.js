@@ -23,7 +23,7 @@ export function enemySlowFactor(enemy,base=1){
 // Clamp all damage sources before any reward/filter can remove a major enemy.
 export function applyBossDamageBudget(enemy,player,now,elite=false){
  if(!enemy?.boss||enemy.miniPoo||enemy.miniDemon||enemy.ragePoo||enemy._bossCore||enemy.deadHandled)return;
- const seconds=enemy.stageBoss===20?(elite?150:45):enemy.stageBoss===30?(elite?240:65):elite?(enemy.mega?30:15):(enemy.mega?14:8);
+ const seconds=enemy.stageBoss===20?(elite?150:30):enemy.stageBoss===30?(elite?240:45):elite?(enemy.mega?30:15):(enemy.mega?14:8);
  const bonus=(player?._angelBuff?1.6:1)*(enemy.bossType==='armor'?Math.min(1.5,1+(player?.armorCapBonus||0)):1);
  const cap=enemy.mhp/seconds*bonus;
  if(enemy._secSnap===undefined){enemy._secSnap=enemy.mhp;enemy._secReset=now;}

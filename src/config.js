@@ -44,7 +44,7 @@ export const MODE = {
     startAtk:2.5,startHp:120,startSpeed:PS,
     maxEnemies:140,spawnBase:1280,spawnWaveMul:65,
     enemyContactVanish:true,
-    atkPerLv:2,hpPerLv:10,
+    atkPerLv:3,hpPerLv:12,
     smallHpBase:null,
   },
   elite:{

@@ -141,7 +141,7 @@ export function triggerStageBoss(lv){
   const dps=estimateBossDPS(lv);
   const _bossEliteMul=isElite()?10:1;
   const baseHp=isElite()?(lv===20?30000:50000):(1500+g.wave*100)*_bossEliteMul;
-  const hpMul=isElite()?1:(lv===20?1.2:3.5);
+  const hpMul=isElite()?1:(lv===20?1.2:2.6);
   const bossHp=baseHp*hpMul;
   const estTime=bossHp/Math.max(dps,0.1);
   const angelKey="_angelOffer"+lv;
