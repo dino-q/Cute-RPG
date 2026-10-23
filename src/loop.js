@@ -767,7 +767,10 @@ export function loop(){
     }
     for(var ti=0;ti<b.trail.length;ti++)b.trail[ti].life-=.18*dt;
     // homing
-    if(b.hm>0){var hmR=(b._isP2&&g.p2?g.p2.homingR:g.p.homingR)||200;var nr=null,nd=1e9;g.ene.forEach(e=>{if(e.ragePoo||e.hp<=0)return;var d=di(b,e);if(d<nd){nd=d;nr=e;}});if(nr&&nd<hmR){/* turn toward the target at a fixed rate so the curve is visible */var want=Math.atan2(nr.y-b.y,nr.x-b.x),cur=Math.atan2(b.vy,b.vx),diff=Math.atan2(Math.sin(want-cur),Math.cos(want-cur)),na=cur+Math.sign(diff)*Math.min(Math.abs(diff),b.hm*2.2*dt),bs=Math.hypot(b.vx,b.vy)||7.5;b.vx=Math.cos(na)*bs;b.vy=Math.sin(na)*bs;}}
+    // Homing steers for at most ~0.8s, then the bullet flies straight; ex-homing bullets expire after ~2.5s so none can orbit forever.
+    if(b._hmT>48)b._hmDone=1;/* keep hm so the star look stays */
+    if(b._hmT){b._hmAge=(b._hmAge||0)+dt;if(b._hmAge>150)return false;}
+    if(b.hm>0&&!b._hmDone){var hmR=(b._isP2&&g.p2?g.p2.homingR:g.p.homingR)||200;var nr=null,nd=1e9;g.ene.forEach(e=>{if(e.ragePoo||e.hp<=0)return;var d=di(b,e);if(d<nd){nd=d;nr=e;}});if(nr&&nd<hmR){b._hmT=(b._hmT||0)+dt;/* turn toward the target at a fixed rate so the curve is visible */var want=Math.atan2(nr.y-b.y,nr.x-b.x),cur=Math.atan2(b.vy,b.vx),diff=Math.atan2(Math.sin(want-cur),Math.cos(want-cur)),na=cur+Math.sign(diff)*Math.min(Math.abs(diff),b.hm*2.2*dt),bs=Math.hypot(b.vx,b.vy)||7.5;b.vx=Math.cos(na)*bs;b.vy=Math.sin(na)*bs;}}
     b.x+=b.vx*dt;b.y+=b.vy*dt;
     return b.x>g.p.x-VW&&b.x<g.p.x+VW&&b.y>g.p.y-VH&&b.y<g.p.y+VH&&b.life>0;
   });

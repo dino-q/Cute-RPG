@@ -14,7 +14,7 @@ function rest(e,now,duration=2500){
 }
 export function clearBossPattern(g,e){
  if(e)g.ene=g.ene.filter(m=>!m._bossCore||m._bossOwner!==e.stageBoss);
- if(e){e._pattern=null;e._patternRecoveryEnd=0;e._comboLeft=0;e._comboStep=0;}
+ if(e){e._pattern=null;e._patternRecoveryEnd=0;e._comboLeft=0;e._comboStep=0;e._comboGapEnd=0;}
  g._bossHazards=[];
 }
 export function updateBossPattern(g,e,now,dt,target,mw,mh){
@@ -25,10 +25,11 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
  const gap=e._patternLastTick?now-e._patternLastTick:0;e._patternLastTick=now;
  if(gap>250){
   const shift=gap-16;for(const key of ['_teleExe','_teleLandShow','_dashChargeEnd','_chargeEnd','_p3dashPause','_p3t'])if(e[key])e[key]+=shift;e._patternAt=(e._patternAt||now)+shift;
-  if(e._patternRecoveryEnd)e._patternRecoveryEnd+=shift;
+  if(e._patternRecoveryEnd)e._patternRecoveryEnd+=shift;if(e._comboGapEnd)e._comboGapEnd+=shift;
   if(e._pattern){e._pattern.startAt+=shift;e._pattern.executeAt+=shift;e._pattern.endAt+=shift;if(e._pattern.lockAt)e._pattern.lockAt+=shift;if(e._spawnShield)e._spawnShield+=shift;}
  }
- if(e._patternRecoveryEnd>now)return true;
+ // The short gap inside a combo blocks other attacks but is not a recovery window (no counter-attack hint).
+ if(e._patternRecoveryEnd>now||e._comboGapEnd>now)return true;
  if(!e._patternAt)e._patternAt=now+900;
  const busy=!!e._teleExe||!!e._chargeEnd||!!e._dashChargeEnd||(e._p3cycle&&!['idle','free'].includes(e._p3cycle));
  if(!e._pattern&&now>=e._patternAt&&!busy){
@@ -94,7 +95,7 @@ export function updateBossPattern(g,e,now,dt,target,mw,mh){
   for(const player of players(g)){const id=player===g.p?'p1':'p2';if(!p.hitPlayers.includes(id)&&segmentDistance(player.x,player.y,old,e)<e.r*.7+12){p.hitPlayers.push(id);hit(g,player,damage,'#caa2e8');}}
  }
  if(now>=p.endAt){
-  if(e._comboLeft>1){const gap=phase===3?260:420;e._comboLeft--;e._pattern=null;e._patternRecoveryEnd=now+gap;e._patternAt=now+gap;}
+  if(e._comboLeft>1){const gap=phase===3?260:420;e._comboLeft--;e._pattern=null;e._comboGapEnd=now+gap;e._patternAt=now+gap;}
   else{e._comboLeft=0;e._comboStep=0;rest(e,now,p.recovery||(e.stageBoss===30?[2600,2200,1600][phase-1]:2600));}
  }
  return true;

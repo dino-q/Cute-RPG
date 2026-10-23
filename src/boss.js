@@ -281,7 +281,7 @@ export function updateStageBoss(e,now,dt){
   //  Phase transitions
   if(lv===30){
     const hpPct=e.hp/e.mhp,newPhase=hpPct>.66?1:hpPct>.33?2:3;
-    const casting=!!e._pattern||e._patternRecoveryEnd>now||!!e._teleExe||!!e._dashChargeEnd||!!e._chargeEnd||(e._p3cycle&&!['idle','free'].includes(e._p3cycle));
+    const casting=!!e._pattern||e._patternRecoveryEnd>now||e._comboGapEnd>now||!!e._teleExe||!!e._dashChargeEnd||!!e._chargeEnd||(e._p3cycle&&!['idle','free'].includes(e._p3cycle));
     if(newPhase!==e.sbPhase&&!casting){
       const oldPhase=e.sbPhase;clearBossPattern(g,e);e._patternAt=now+2500;e.sbPhase=newPhase;sfxBossAtk("phase");setHitFlash(.5);setShake(.4,6);
       burst(e.x,e.y,"#9B59B6",30);
