@@ -262,7 +262,7 @@ export function loop(){
   // move P2 (co-op) — AI 模式跳過（AI 自己控制移動）
   if(_isCoopMode&&g.p2&&!_p2AI&&!g.p2._pickPending){
     var p2i=(_net&&_net.role==="host")?_p2Input:joy; // Client 用自己的 joy
-    if(g.p2._gsDash||g.p2._bladeRush){
+    if(g.p2._gsDash||g.p2._bladeRush||g.p2._shadowMark?.ret){
       // 鬼斬衝刺中，不處理手動移動
     }else if(!g.p2._downed){
       if(p2i.dx||p2i.dy){g.p2.x+=p2i.dx*g.p2.speed*dt*(g.p2._mudSlowEnd>now?.35:1);g.p2.y+=p2i.dy*g.p2.speed*dt*(g.p2._mudSlowEnd>now?.35:1);if(Math.abs(p2i.dx)>.2)g.p2.face=p2i.dx>0?1:-1;}
@@ -272,7 +272,7 @@ export function loop(){
     g.p2.x=cl(g.p2.x,PR+4,mapW()-PR-4);g.p2.y=cl(g.p2.y,PR+4,mapH()-PR-4);
   }
   // AI P2 行為
-  if(_p2AI&&g.p2&&!g.p2._downed&&!g.p2._pickPending&&!g.p2._gsDash&&!g.p2._bladeRush&&_isCoopMode){
+  if(_p2AI&&g.p2&&!g.p2._downed&&!g.p2._pickPending&&!g.p2._gsDash&&!g.p2._bladeRush&&!g.p2._shadowMark?.ret&&_isCoopMode){
     if(!g.p2._aiWander){g.p2._aiWander={tx:g.p2.x,ty:g.p2.y,nextT:0};}
     var aw=g.p2._aiWander;
     var spd2=g.p2.speed*dt*(g.p2._mudSlowEnd>now?.35:1);
@@ -1577,6 +1577,8 @@ export function loop(){
     g._p2WbSwing=g._p2AtkAnim.active?Math.max(0,1-_ae2/_ad3):0;
   }else{g._p2WbSwing=0;}
 
+  // Safety net: the 影襲 lock (99999ms) must never outlive the shadow mark itself.
+  if(!g._shadowReturn&&getSkillCdEnd()-now>10000)setSkillCdEnd(now+1700);
   // 影襲自動回歸（4秒後）
   if(g._shadowReturn){
     const sr=g._shadowReturn,srEl=now-sr.t,srDur=sr.dur||4000;

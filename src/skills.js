@@ -73,7 +73,8 @@ export function p2UseSkill() {
   const now = performance.now();
   if (now < _p2SkillCdEnd) return;
   const ct = g.p2.charType || "gunner";
-  _p2SkillCdEnd = now + (SKILL_CDS[ct] || 5000);
+  if (ct === "assassin" && g.p2._shadowMark) return; // 影襲標記中不可重放、不扣冷卻
+  _p2SkillCdEnd = now + (ct === "assassin" ? 4400 : (SKILL_CDS[ct] || 5000)); // 影襲: covers the 4s mark and the return
   _castSkill(ct, now, g.p2, true);
 }
 
@@ -197,6 +198,13 @@ export function skillTaunt(now, _pp, _isP2) {
 // 放置閃光標記 → 自由行動 4 秒 → 自動回歸（回程無敵）→ CD 1.7 秒
 export function skillShadowStrike(now, _pp, _isP2) {
   if (!_pp) _pp = g.p;
+  if (_isP2) {
+    if (_pp._shadowMark) return;
+    sfx("ult");_pp._shadowMark = { x: _pp.x, y: _pp.y, t: now, dur: 4000 };
+    burst(_pp.x, _pp.y, "#DDB4FE", 8);
+    g.dn.push({ x: _pp.x, y: _pp.y - 30, d: " 影襲！攻擊×1.5・4秒後回歸", life: 2, color: "#DDB4FE", big: 1 });
+    return;
+  }
   if (g._shadowReturn) return;
   sfx("ult");
   g._shadowReturn = { x: _pp.x, y: _pp.y, t: now, dur: 4000 };
@@ -205,7 +213,14 @@ export function skillShadowStrike(now, _pp, _isP2) {
   const cdEl = $("skillCd"); if (cdEl) { cdEl.style.display = "flex"; cdEl.textContent = "冷卻"; }
   burst(_pp.x, _pp.y, "#fff", 12);
   burst(_pp.x, _pp.y, "#DDB4FE", 8);
-  g.dn.push({ x: _pp.x, y: _pp.y - 30, d: " 影襲！4秒後回歸", life: 2, color: "#DDB4FE", big: 1 });
+  g.dn.push({ x: _pp.x, y: _pp.y - 30, d: " 影襲！攻擊×1.5・4秒後回歸", life: 2, color: "#DDB4FE", big: 1 });
+}
+
+// 影襲 locks its cooldown until the return; anything that cancels the return early must use this.
+export function releaseShadowLock(now){
+  _skillCdEnd = now + 1700;
+  const cdEl = $("skillCd"); if (!cdEl) return; cdEl.style.display = "flex";
+  const timer = setInterval(() => { const left = Math.max(0, _skillCdEnd - performance.now()); if (left <= 0) { cdEl.style.display = "none"; clearInterval(timer); } else cdEl.textContent = (left / 1000).toFixed(1); }, 100);
 }
 
 /* ═══ dash (lightning step) ═══ */
@@ -236,7 +251,7 @@ export function castRoleUltimate(player,now,damage,isP2=false){
  if(ct==='assassin'){
   const viewW=document.getElementById('cv')?.width||window.innerWidth,viewH=document.getElementById('cv')?.height||window.innerHeight;
   const targets=g.ene.filter(e=>e.hp>0&&!e.ragePoo&&!e._bossCore&&Math.abs(e.x-player.x)<Math.min(650,viewW*.58)&&Math.abs(e.y-player.y)<Math.min(650,viewH*.58)).sort((a,b)=>di(player,a)-di(player,b)).slice(0,8);
-  player._gsDash=null;player._dashEnd=0;if(!isP2)g._shadowReturn=null;
+  player._gsDash=null;player._dashEnd=0;if(!isP2&&g._shadowReturn){g._shadowReturn=null;releaseShadowLock(now);}if(isP2&&player._shadowMark){player._shadowMark=null;_p2SkillCdEnd=now+1700;}
   player._bladeRush={elapsed:0,leg:-1,targets,damage,isP2,angle,origin:{x:player.x,y:player.y},hits:new Map(),lastGhost:0};
   player._iFrameEnd=Math.max(player._iFrameEnd||0,now+1450);
   recordRoleEffect(g,'rush-start',player.x,player.y,angle,{owner,follow:true,life:250});
@@ -265,9 +280,19 @@ export function castRoleUltimate(player,now,damage,isP2=false){
 }
 
 
+// Each enemy takes at most 1.2x of the ultimate in total (elite stage boss: 5% max HP).
+function rushBudget(rush,enemy){return _isElite()&&enemy.stageBoss?Math.min(rush.damage*1.2,enemy.mhp*.05):rush.damage*1.2;}
 // Host-owned timed movement: pause-safe, no delayed callbacks from a previous game.
 export function updateAssassinUltimates(now,elapsedMs){
  if(!g)return;
+ // P2 影襲: after 4s glide back to the mark with brief invulnerability.
+ const p2=g.p2,mark=p2?._shadowMark;
+ if(mark){
+  if(p2.hp<=0||p2._downed||p2.charType!=='assassin'){p2._shadowMark=null;_p2SkillCdEnd=now+1700;}
+  else if(!mark.ret&&now-mark.t>=mark.dur){mark.ret={x:p2.x,y:p2.y,start:now,dur:Math.min(400,Math.max(150,Math.hypot(mark.x-p2.x,mark.y-p2.y)*.8))};p2._iFrameEnd=Math.max(p2._iFrameEnd||0,now+mark.ret.dur+500);sfx('ult');}
+  if(p2._shadowMark&&mark.ret){const q=Math.min(1,(now-mark.ret.start)/mark.ret.dur),t=q<.5?2*q*q:1-Math.pow(-2*q+2,2)/2;p2.x=mark.ret.x+(mark.x-mark.ret.x)*t;p2.y=mark.ret.y+(mark.y-mark.ret.y)*t;
+   if(q>=1){p2._shadowMark=null;_p2SkillCdEnd=now+1700;burst(p2.x,p2.y,'#DDB4FE',8);g.dn.push({x:p2.x,y:p2.y-25,d:'✦ 回歸！',life:1.2,color:'#fff',big:1});}}
+ }
  for(const player of [g.p,g.p2].filter(Boolean)){
   const rush=player._bladeRush;if(!rush)continue;
   if((player.charType||(rush.isP2?'assassin':g.charType))!=='assassin'||player.hp<=0||player._downed||player._pickPending){player._bladeRush=null;continue;}
@@ -297,7 +322,7 @@ export function updateAssassinUltimates(now,elapsedMs){
   const dx=player.x-old.x,dy=player.y-old.y,length=dx*dx+dy*dy;
   if(!rush.legVictim||rush.legVictim.hp<=0){
    rush.legVictim=rush.targets.find(enemy=>{
-    if(enemy.hp<=0||enemy._coopShield)return false;
+    if(enemy.hp<=0||enemy._coopShield||(rush.hits.get(enemy)||0)>=rushBudget(rush,enemy)-1e-6)return false;
     const along=length?cl(((enemy.x-old.x)*dx+(enemy.y-old.y)*dy)/length,0,1):0;
     return Math.hypot(enemy.x-old.x-dx*along,enemy.y-old.y-dy*along)<=enemy.r+42;
    })||null;
@@ -306,8 +331,10 @@ export function updateAssassinUltimates(now,elapsedMs){
   if(enemy&&enemy.hp>0&&!enemy._coopShield){
    const due=Math.min(3,Math.floor(q*3)+1);
    while(rush.legCuts<due&&enemy.hp>0){
-    rush.legCuts++;const dmg=_isElite()&&enemy.stageBoss?Math.min(rush.damage/24,enemy.mhp*.05/24):rush.damage/24;
-    enemy.hp-=dmg;recordRoleEffect(g,'ultimate-target',enemy.x,enemy.y,rush.angle+(rush.legCuts-2)*.25,{owner,follow:false,life:160});
+    const budget=rushBudget(rush,enemy),dealt=rush.hits.get(enemy)||0;
+    const n=Math.max(1,rush.targets.length),dmg=Math.min(budget*n/(24-n),budget-dealt); /* spare cuts absorb each target's partial last cut, so all 24 cover every full budget */
+    if(dmg<=1e-6){rush.legVictim=null;break;}rush.legCuts++;
+    rush.hits.set(enemy,dealt+dmg);enemy.hp-=dmg;recordRoleEffect(g,'ultimate-target',enemy.x,enemy.y,rush.angle+(rush.legCuts-2)*.25,{owner,follow:false,life:160});
     g.dn.push({x:enemy.x+(rush.legCuts-2)*12,y:enemy.y-enemy.r,d:Math.round(dmg*10)/10,life:.6,color:'#d3bbf4'});burst(enemy.x,enemy.y,'#c1a7ea',2);
    }
   }

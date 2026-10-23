@@ -8,6 +8,8 @@
 | charCfg | src/config.js | 職業數值與預設值。 |
 | loop / clientRenderLoop | src/loop.js、src/coop.js | 單人／雙人主機與連線客戶端共用 drawPlayer。 |
 | consumeGuardStar | src/loop.js | 守護星擋下一次攻擊時扣一層護盾；Lv3 另給 1 秒無敵。P1 碰撞與飛彈受傷路徑共用。 |
+| releaseShadowLock | src/skills.js | 影襲被提前取消時（例如刺客大招）解除 99999ms 冷卻鎖，改為 1.7 秒並顯示倒數。 |
+| rushBudget | src/skills.js | 刺客大招每隻目標的總傷害上限（1.2×大招傷害；菁英關卡 Boss 為 5% 血量）。 |
 
 | gunnerSpriteReady | src/gunner-sprite.js | 載入八方向圖片及位置資料，失敗時沿用原本外觀。 |
 | getGunnerPose | src/gunner-sprite.js | 將任意瞄準角度對應八方向圖片。 |

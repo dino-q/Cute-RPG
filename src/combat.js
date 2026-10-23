@@ -451,7 +451,8 @@ export function daggerStrike(_pp, _isP2) {
   if (_pp.heavyEvery > 0) { _pp._heavyCount = (_pp._heavyCount || 0) + 1; if (_pp._heavyCount >= _pp.heavyEvery) { _pp._heavyCount = 0; _assHeavy = true; } }
   const heavyMul = _assHeavy ? 2 : 1;
   const berserkMul = (_pp.berserk && _pp.hp / _pp.maxHp < _pp.berserk) ? 2 : 1;
-  const baseDmg = (3.5 + _pp.atk) * splitBonus * heavyMul * berserkMul * (_pp.elemBoost || 1) * (_pp.levelDmgMul || 1);
+  const shadowMul = (_isP2 ? !!_pp._shadowMark : (!!g._shadowReturn || _pp._shadowStrikeEnd > now)) ? 1.5 : 1; // 影襲期間攻擊×1.5（各自玩家）
+  const baseDmg = (3.5 + _pp.atk) * splitBonus * heavyMul * berserkMul * (_pp.elemBoost || 1) * (_pp.levelDmgMul || 1) * shadowMul;
   const range = PR * 5;
   const atkAngle = Math.atan2(_pad.y, _pad.x);
   const _dblMelee = Math.random() < (_pp.dblAtk || 0);
