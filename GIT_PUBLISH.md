@@ -54,3 +54,5 @@
 - 2026-10-23 Dino 回覆「好」同意上線：魔王連招／瞬移／三段衝刺安全圈、追蹤彈、混沌核心提示4秒自動關閉、弱卡平衡（守護星、召喚球等）。推送 main 並以 scripts/deploy-pages.ps1 部署 gh-pages。
 
 - 2026-10-24 Dino 回覆「好」同意上線：經典模式節奏（ae4a7b2）、王傷類提高Boss上限與寶箱收斂（f97f5cc）、刺客影襲／大招修正（bea1b13）。推送 main 並以 scripts/deploy-pages.ps1 部署 gh-pages。
+
+- 2026-10-24 Dino 回覆「好」同意上線修正版：經典模式還原、改調菁英模式（f5b4af6）。
