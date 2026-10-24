@@ -140,8 +140,9 @@ export function triggerStageBoss(lv){
   // 計算是否需要天使卡
   const dps=estimateBossDPS(lv);
   const _bossEliteMul=isElite()?10:1;
-  const baseHp=isElite()?(lv===20?30000:50000):(1500+g.wave*100)*_bossEliteMul;
-  const hpMul=isElite()?1:(lv===20?1.2:2.6);
+  const _soloElite=isElite()&&!_isCoopMode; // 菁英單人：Boss 血量與最短擊殺時間縮短，雙人維持
+  const baseHp=isElite()?(lv===20?(_soloElite?22000:30000):(_soloElite?36000:50000)):(1500+g.wave*100)*_bossEliteMul;
+  const hpMul=isElite()?1:(lv===20?1.2:3.5);
   const bossHp=baseHp*hpMul;
   const estTime=bossHp/Math.max(dps,0.1);
   const angelKey="_angelOffer"+lv;
@@ -237,7 +238,7 @@ export function triggerStageBoss(lv){
       boss:true,mega:true,tier:4,face:1,xp:lv===20?200:500,
       poisonT:0,frozen:0,burnT:0,burnLv:0,poisonLv:0,dmgMul:lv===20?2:3.5,
       role:ROLE_NORMAL,flankA:0,shootCD:0,dashState:0,dashTimer:0,dashDx:0,dashDy:0,shieldAng:0,bossSkillCD:0,bossSkill:0,
-      stageBoss:lv,bossType:lv===20?"armor":"tough",sbPhase:1,sbAtkCD:now2+3000,sbSpawnCD:now2+10000,sbTeleCD:now2+8000,sbPulseCD:now2+12000,deadHandled:false,_pendingPulse:0,_spawnShield:now2+2500,_spawnTime:now2};
+      stageBoss:lv,_capSeconds:_soloElite?(lv===20?100:150):0,bossType:lv===20?"armor":"tough",sbPhase:1,sbAtkCD:now2+3000,sbSpawnCD:now2+10000,sbTeleCD:now2+8000,sbPulseCD:now2+12000,deadHandled:false,_pendingPulse:0,_spawnShield:now2+2500,_spawnTime:now2};
     g.ene.push(sb);_stageBoss=sb;
     // 練習模式：Boss 創建後立刻套用階段設定（在 g.run=true 之前！）
     if(g._pracBossSetup){
