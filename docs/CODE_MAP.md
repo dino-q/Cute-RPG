@@ -181,3 +181,7 @@
 | prepare-card-icons.py | scripts/prepare-card-icons.py | 沿用generate2dsprite去底與分格；整理64px图示、明確對應、完整總覽及素材檢查紀錄。 |
 
 ♻️ 沿用 cardEmblem、cardIllustration、drawCardIcon、drawAbilitySidebar、generate2dsprite。🆕 card-icons模組（原regex配圖與compact SVG互不一致，無一張卡一張圖的契約）。game-art-ready卡圖更新改為card-icons-ready；非卡片按鈕pixelEmblem仍沿用。
+
+## App 圖示（2026-10-26）
+
+♻️ 沿用 Vite publicDir: assets，R2 圖示與 app.webmanifest 由同一打包流程輸出。index.html 宣告分頁及 Apple 主畫面圖示，manifest 以相對路徑支援 /Cute-RPG/。未新增 JavaScript 函式；來源與完整檔案清單見 docs/APP_ICONS.md。

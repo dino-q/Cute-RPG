@@ -56,3 +56,5 @@
 - 2026-10-24 Dino 回覆「好」同意上線：經典模式節奏（ae4a7b2）、王傷類提高Boss上限與寶箱收斂（f97f5cc）、刺客影襲／大招修正（bea1b13）。推送 main 並以 scripts/deploy-pages.ps1 部署 gh-pages。
 
 - 2026-10-24 Dino 回覆「好」同意上線修正版：經典模式還原、改調菁英模式（f5b4af6）。
+
+- 2026-10-26 Dino 明確授權「都可以套用上線了」：RPG R2 App 圖示、分頁與主畫面圖示設定，沿用既有 GitHub repository 與 Pages 發布流程；不另建 repository、不改可見性。LINE L1 維持本機工具。
